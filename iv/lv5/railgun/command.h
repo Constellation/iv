@@ -40,7 +40,7 @@ static void Execute(const core::StringPiece& data,
 
 #if defined(IV_ENABLE_JIT)
   iv::lv5::breaker::Compile(code);
-  iv::lv5::breaker::Run(&ctx, code);
+  iv::lv5::breaker::Run(&ctx, code, e);
 #else
   ctx.vm()->Run(code, e);
 #endif

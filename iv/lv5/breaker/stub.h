@@ -14,19 +14,29 @@ inline Rep Extract(JSVal val) {
 
 namespace stub {
 
+#define RAISE()\
+  do {\
+    void* pc = *stack->ret;\
+    *stack->ret = Templates<>::dispatch_exception_handler();  /* NOLINT */\
+    return core::BitCast<uint64_t>(pc);\
+  } while (0)
+
 #define ERR\
-  ctx->PendingError());\
-  if (*ctx->PendingError()) {\
-    IV_LV5_BREAKER_RAISE();\
-  }\
+  stack->error);\
+  do {\
+    if (*stack->error) {\
+      RAISE();\
+    }\
+  } while (0);\
 ((void)0
 #define DUMMY )  // to make indentation work
 #undef DUMMY
 
 static railgun::Instruction* const kDummyInstruction =
-    reinterpret_cast<railgun::Instruction*>(0xF0);
+    reinterpret_cast<railgun::Instruction*>(0x1000);
 
-inline void BUILD_ENV(railgun::Context* ctx, railgun::Frame* frame,
+inline void BUILD_ENV(railgun::Context* ctx,
+                      railgun::Frame* frame,
                       uint32_t size, uint32_t mutable_start) {
   frame->variable_env_ = frame->lexical_env_ =
       JSDeclEnv::New(ctx,
@@ -36,22 +46,23 @@ inline void BUILD_ENV(railgun::Context* ctx, railgun::Frame* frame,
                      mutable_start);
 }
 
-inline Rep WITH_SETUP(railgun::Context* ctx, railgun::Frame* frame, JSVal src) {
-  JSObject* const obj = src.ToObject(ctx, ERR);
+inline Rep WITH_SETUP(Frame* stack, JSVal src) {
+  JSObject* const obj = src.ToObject(stack->ctx, ERR);
   JSObjectEnv* const with_env =
-      JSObjectEnv::New(ctx, frame->lexical_env(), obj);
+      JSObjectEnv::New(stack->ctx, stack->frame->lexical_env(), obj);
   with_env->set_provide_this(true);
-  frame->set_lexical_env(with_env);
+  stack->frame->set_lexical_env(with_env);
   return 0;
 }
 
-inline Rep FORIN_SETUP(railgun::Context* ctx, JSVal enumerable) {
+inline Rep FORIN_SETUP(Frame* stack, JSVal enumerable) {
+  railgun::Context* ctx = stack->ctx;
   railgun::NativeIterator* it;
   if (enumerable.IsString()) {
-    it = ctx->GainNativeIterator(enumerable.string());
+    it = stack->ctx->GainNativeIterator(enumerable.string());
   } else {
     JSObject* const obj = enumerable.ToObject(ctx, ERR);
-    it = ctx->GainNativeIterator(obj);
+    it = stack->ctx->GainNativeIterator(obj);
   }
   return Extract(JSVal::Cell(it));
 }
@@ -73,7 +84,8 @@ inline void FORIN_LEAVE(railgun::Context* ctx, JSVal iterator) {
   ctx->ReleaseNativeIterator(it);
 }
 
-inline Rep BINARY_ADD(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+inline Rep BINARY_ADD(Frame* stack, JSVal lhs, JSVal rhs) {
+  railgun::Context* ctx = stack->ctx;
   if (lhs.IsString()) {
     if (rhs.IsString()) {
       return Extract(JSString::New(ctx, lhs.string(), rhs.string()));
@@ -97,134 +109,151 @@ inline Rep BINARY_ADD(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
   return Extract(left + right);
 }
 
-inline Rep BINARY_SUBTRACT(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+inline Rep BINARY_SUBTRACT(Frame* stack, JSVal lhs, JSVal rhs) {
+  railgun::Context* ctx = stack->ctx;
   const double left = lhs.ToNumber(ctx, ERR);
   const double res = left -  rhs.ToNumber(ctx, ERR);
   return Extract(res);
 }
 
-inline Rep BINARY_MULTIPLY(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+inline Rep BINARY_MULTIPLY(Frame* stack, JSVal lhs, JSVal rhs) {
+  railgun::Context* ctx = stack->ctx;
   const double left = lhs.ToNumber(ctx, ERR);
   const double res = left *  rhs.ToNumber(ctx, ERR);
   return Extract(res);
 }
 
-inline Rep BINARY_DIVIDE(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+inline Rep BINARY_DIVIDE(Frame* stack, JSVal lhs, JSVal rhs) {
+  railgun::Context* ctx = stack->ctx;
   const double left = lhs.ToNumber(ctx, ERR);
   const double res = left / rhs.ToNumber(ctx, ERR);
   return Extract(res);
 }
 
-inline Rep BINARY_MODULO(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+inline Rep BINARY_MODULO(Frame* stack, JSVal lhs, JSVal rhs) {
+  railgun::Context* ctx = stack->ctx;
   const double left = lhs.ToNumber(ctx, ERR);
   const double right = rhs.ToNumber(ctx, ERR);
   return Extract(core::math::Modulo(left, right));
 }
 
-inline Rep BINARY_LSHIFT(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+inline Rep BINARY_LSHIFT(Frame* stack, JSVal lhs, JSVal rhs) {
+  railgun::Context* ctx = stack->ctx;
   const int32_t left = lhs.ToInt32(ctx, ERR);
   const int32_t right = rhs.ToInt32(ctx, ERR);
   return Extract(JSVal::Int32(left << (right & 0x1f)));
 }
 
-inline Rep BINARY_RSHIFT(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+inline Rep BINARY_RSHIFT(Frame* stack, JSVal lhs, JSVal rhs) {
+  railgun::Context* ctx = stack->ctx;
   const int32_t left = lhs.ToInt32(ctx, ERR);
   const int32_t right = rhs.ToInt32(ctx, ERR);
   return Extract(JSVal::Int32(left >> (right & 0x1f)));
 }
 
-inline Rep BINARY_RSHIFT_LOGICAL(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+inline Rep BINARY_RSHIFT_LOGICAL(Frame* stack, JSVal lhs, JSVal rhs) {
+  railgun::Context* ctx = stack->ctx;
   const uint32_t left = lhs.ToUInt32(ctx, ERR);
   const int32_t right = rhs.ToInt32(ctx, ERR);
   return Extract(JSVal::UInt32(left >> (right & 0x1f)));
 }
 
-inline Rep BINARY_LT(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+inline Rep BINARY_LT(Frame* stack, JSVal lhs, JSVal rhs) {
+  railgun::Context* ctx = stack->ctx;
   const CompareResult res = JSVal::Compare<true>(ctx, lhs, rhs, ERR);
   return Extract(JSVal::Bool(res == CMP_TRUE));
 }
 
-inline Rep BINARY_LTE(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+inline Rep BINARY_LTE(Frame* stack, JSVal lhs, JSVal rhs) {
+  railgun::Context* ctx = stack->ctx;
   const CompareResult res = JSVal::Compare<false>(ctx, rhs, lhs, ERR);
   return Extract(JSVal::Bool(res == CMP_FALSE));
 }
 
-inline Rep BINARY_GT(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+inline Rep BINARY_GT(Frame* stack, JSVal lhs, JSVal rhs) {
+  railgun::Context* ctx = stack->ctx;
   const CompareResult res = JSVal::Compare<false>(ctx, rhs, lhs, ERR);
   return Extract(JSVal::Bool(res == CMP_TRUE));
 }
 
-inline Rep BINARY_GTE(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+inline Rep BINARY_GTE(Frame* stack, JSVal lhs, JSVal rhs) {
+  railgun::Context* ctx = stack->ctx;
   const CompareResult res = JSVal::Compare<true>(ctx, lhs, rhs, ERR);
   return Extract(JSVal::Bool(res == CMP_FALSE));
 }
 
-inline Rep BINARY_INSTANCEOF(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+inline Rep BINARY_INSTANCEOF(Frame* stack, JSVal lhs, JSVal rhs) {
+  railgun::Context* ctx = stack->ctx;
   if (!rhs.IsObject()) {
-    ctx->PendingError()->Report(Error::Type, "instanceof requires object");
-    IV_LV5_BREAKER_RAISE();
+    stack->error->Report(Error::Type, "instanceof requires object");
+    RAISE();
   }
   JSObject* const robj = rhs.object();
   if (!robj->IsCallable()) {
-    ctx->PendingError()->Report(Error::Type, "instanceof requires constructor");
-    IV_LV5_BREAKER_RAISE();
+    stack->error->Report(Error::Type, "instanceof requires constructor");
+    RAISE();
   }
   const bool result = robj->AsCallable()->HasInstance(ctx, lhs, ERR);
   return Extract(JSVal::Bool(result));
 }
 
-inline Rep BINARY_IN(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+inline Rep BINARY_IN(Frame* stack, JSVal lhs, JSVal rhs) {
+  railgun::Context* ctx = stack->ctx;
   if (!rhs.IsObject()) {
-    ctx->PendingError()->Report(Error::Type, "in requires object");
-    IV_LV5_BREAKER_RAISE();
+    stack->error->Report(Error::Type, "in requires object");
+    RAISE();
   }
   const Symbol s = lhs.ToSymbol(ctx, ERR);
   return Extract(JSVal::Bool(rhs.object()->HasProperty(ctx, s)));
 }
 
-inline Rep BINARY_EQ(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+inline Rep BINARY_EQ(Frame* stack, JSVal lhs, JSVal rhs) {
+  railgun::Context* ctx = stack->ctx;
   const bool result = JSVal::AbstractEqual(ctx, lhs, rhs, ERR);
   return Extract(JSVal::Bool(result));
 }
 
-inline Rep BINARY_STRICT_EQ(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+inline Rep BINARY_STRICT_EQ(JSVal lhs, JSVal rhs) {
   return Extract(JSVal::Bool(JSVal::StrictEqual(lhs, rhs)));
 }
 
-inline Rep BINARY_NE(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
-  const bool result = JSVal::AbstractEqual(ctx, lhs, rhs, ERR);
+inline Rep BINARY_NE(Frame* stack, JSVal lhs, JSVal rhs) {
+  const bool result = JSVal::AbstractEqual(stack->ctx, lhs, rhs, ERR);
   return Extract(JSVal::Bool(!result));
 }
 
-inline Rep BINARY_STRICT_NE(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+inline Rep BINARY_STRICT_NE(JSVal lhs, JSVal rhs) {
   return Extract(JSVal::Bool(!JSVal::StrictEqual(lhs, rhs)));
 }
 
-inline Rep BINARY_BIT_AND(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+inline Rep BINARY_BIT_AND(Frame* stack, JSVal lhs, JSVal rhs) {
+  railgun::Context* ctx = stack->ctx;
   const int32_t left = lhs.ToInt32(ctx, ERR);
   const int32_t right = rhs.ToInt32(ctx, ERR);
   return Extract(JSVal::Int32(left & right));
 }
 
-inline Rep BINARY_BIT_XOR(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+inline Rep BINARY_BIT_XOR(Frame* stack, JSVal lhs, JSVal rhs) {
+  railgun::Context* ctx = stack->ctx;
   const int32_t left = lhs.ToInt32(ctx, ERR);
   const int32_t right = rhs.ToInt32(ctx, ERR);
   return Extract(JSVal::Int32(left ^ right));
 }
 
-inline Rep BINARY_BIT_OR(railgun::Context* ctx, JSVal lhs, JSVal rhs) {
+inline Rep BINARY_BIT_OR(Frame* stack, JSVal lhs, JSVal rhs) {
+  railgun::Context* ctx = stack->ctx;
   const int32_t left = lhs.ToInt32(ctx, ERR);
   const int32_t right = rhs.ToInt32(ctx, ERR);
   return Extract(JSVal::Int32(left | right));
 }
 
-inline Rep TO_NUMBER(railgun::Context* ctx, JSVal src) {
-  const double x = src.ToNumber(ctx, ERR);
+inline Rep TO_NUMBER(Frame* stack, JSVal src) {
+  const double x = src.ToNumber(stack->ctx, ERR);
   return Extract(x);
 }
 
-inline Rep UNARY_NEGATIVE(railgun::Context* ctx, JSVal src) {
-  const double x = src.ToNumber(ctx, ERR);
+inline Rep UNARY_NEGATIVE(Frame* stack, JSVal src) {
+  const double x = src.ToNumber(stack->ctx, ERR);
   return Extract(-x);
 }
 
@@ -232,14 +261,14 @@ inline JSVal UNARY_NOT(JSVal src) {
   return JSVal::Bool(!src.ToBoolean());
 }
 
-inline Rep UNARY_BIT_NOT(railgun::Context* ctx, JSVal src) {
-  const double value = src.ToNumber(ctx, ERR);
+inline Rep UNARY_BIT_NOT(Frame* stack, JSVal src) {
+  const double value = src.ToNumber(stack->ctx, ERR);
   return Extract(JSVal::Int32(~core::DoubleToInt32(value)));
 }
 
-inline Rep THROW(railgun::Context* ctx, JSVal src) {
-  ctx->PendingError()->Report(src);
-  IV_LV5_BREAKER_RAISE();
+inline Rep THROW(Frame* stack, JSVal src) {
+  stack->error->Report(src);
+  RAISE();
 }
 
 inline void POP_ENV(railgun::Frame* frame) {
@@ -267,9 +296,11 @@ inline JSEnv* GetEnv(railgun::Context* ctx, JSEnv* env, Symbol name) {
 }
 
 template<bool STRICT>
-inline Rep LOAD_GLOBAL(railgun::Context* ctx,
-                       Symbol name, railgun::Instruction* instr) {
+inline Rep LOAD_GLOBAL(Frame* stack,
+                       Symbol name,
+                       railgun::Instruction* instr) {
   // opcode | (dst | index) | nop | nop
+  railgun::Context* ctx = stack->ctx;
   JSGlobal* global = ctx->global_obj();
   if (instr[2].map == global->map()) {
     // map is cached, so use previous index code
@@ -290,16 +321,19 @@ inline Rep LOAD_GLOBAL(railgun::Context* ctx,
         const JSVal res = current->GetBindingValue(ctx, name, STRICT, ERR);
         return Extract(res);
       }
-      RaiseReferenceError(name, ERR);
+      RaiseReferenceError(name, stack->error);
+      RAISE();
       return 0;
     }
   }
 }
 
 template<bool STRICT>
-inline Rep STORE_GLOBAL(railgun::Context* ctx,
-                        JSVal src, Symbol name, railgun::Instruction* instr) {
+inline Rep STORE_GLOBAL(Frame* stack,
+                        JSVal src,
+                        Symbol name, railgun::Instruction* instr) {
   // opcode | (src | name) | nop | nop
+  railgun::Context* ctx = stack->ctx;
   JSGlobal* global = ctx->global_obj();
   if (instr[2].map == global->map()) {
     // map is cached, so use previous index code
@@ -316,10 +350,10 @@ inline Rep STORE_GLOBAL(railgun::Context* ctx,
         current->SetMutableBinding(ctx, name, src, STRICT, ERR);
       } else {
         if (STRICT) {
-          ctx->PendingError()->Report(Error::Reference,
+          stack->error->Report(Error::Reference,
                     "putting to unresolvable reference "
                     "not allowed in strict reference");
-          IV_LV5_BREAKER_RAISE();
+          RAISE();
         } else {
           ctx->global_obj()->Put(ctx, name, src, STRICT, ERR);
         }
@@ -329,7 +363,8 @@ inline Rep STORE_GLOBAL(railgun::Context* ctx,
   return 0;
 }
 
-inline Rep DELETE_GLOBAL(railgun::Context* ctx, Symbol name) {
+inline Rep DELETE_GLOBAL(Frame* stack, Symbol name) {
+  railgun::Context* ctx = stack->ctx;
   JSEnv* global = ctx->global_env();
   if (global->HasBinding(ctx, name)) {
     const bool res = global->DeleteBinding(ctx, name);
@@ -341,7 +376,8 @@ inline Rep DELETE_GLOBAL(railgun::Context* ctx, Symbol name) {
 }
 
 template<bool STRICT>
-inline Rep TYPEOF_GLOBAL(railgun::Context* ctx, Symbol name) {
+inline Rep TYPEOF_GLOBAL(Frame* stack, Symbol name) {
+  railgun::Context* ctx = stack->ctx;
   JSEnv* global = ctx->global_env();
   if (global->HasBinding(ctx, name)) {
     const JSVal res = global->GetBindingValue(ctx, name, STRICT, ERR);
@@ -361,22 +397,24 @@ inline JSDeclEnv* GetHeapEnv(JSEnv* env, uint32_t nest) {
 }
 
 template<bool STRICT>
-inline Rep LOAD_HEAP(railgun::Context* ctx, JSEnv* env,
+inline Rep LOAD_HEAP(Frame* stack,
+                     JSEnv* env,
                      uint32_t offset, uint32_t nest) {
   const JSVal res = GetHeapEnv(env, nest)->GetByOffset(offset, STRICT, ERR);
   return Extract(res);
 }
 
 template<bool STRICT>
-inline Rep STORE_HEAP(railgun::Context* ctx, JSEnv* env,
+inline Rep STORE_HEAP(Frame* stack, JSEnv* env,
                       uint32_t offset, uint32_t nest, JSVal src) {
   GetHeapEnv(env, nest)->SetByOffset(offset, src, STRICT, ERR);
   return 0;
 }
 
 template<int Target, std::size_t Returned, bool STRICT>
-inline Rep IncrementHeap(railgun::Context* ctx, JSEnv* env,
-                         uint32_t offset, uint32_t nest) {
+inline Rep INCREMENT_HEAP(Frame* stack, JSEnv* env,
+                          uint32_t offset, uint32_t nest) {
+  railgun::Context* ctx = stack->ctx;
   JSDeclEnv* decl = GetHeapEnv(env, nest);
   const JSVal w = decl->GetByOffset(offset, STRICT, ERR);
   if (w.IsInt32() &&
@@ -397,15 +435,15 @@ inline Rep IncrementHeap(railgun::Context* ctx, JSEnv* env,
 }
 
 template<bool STRICT>
-inline Rep TYPEOF_HEAP(railgun::Context* ctx, JSEnv* env,
+inline Rep TYPEOF_HEAP(Frame* stack, JSEnv* env,
                        uint32_t offset, uint32_t nest) {
   const JSVal res = GetHeapEnv(env, nest)->GetByOffset(offset, STRICT, ERR);
-  return Extract(res.TypeOf(ctx));
+  return Extract(res.TypeOf(stack->ctx));
 }
 
 template<int Target, std::size_t Returned, bool STRICT>
-inline JSVal IncrementNameWithError(railgun::Context* ctx,
-                                    JSEnv* env, Symbol s, Error* e) {
+inline JSVal IncrementName(railgun::Context* ctx,
+                           JSEnv* env, Symbol s, Error* e) {
   if (JSEnv* current = GetEnv(ctx, env, s)) {
     const JSVal w = current->GetBindingValue(ctx, s, STRICT, IV_LV5_ERROR(e));
     if (w.IsInt32() &&
@@ -429,16 +467,16 @@ inline JSVal IncrementNameWithError(railgun::Context* ctx,
 }
 
 template<int Target, std::size_t Returned, bool STRICT>
-inline Rep IncrementName(railgun::Context* ctx, JSEnv* env, Symbol name) {
+inline Rep INCREMENT_NAME(Frame* stack, JSEnv* env, Symbol name) {
   const JSVal res =
-      IncrementNameWithError<Target, Returned, STRICT>(ctx, env, name, ERR);
+      IncrementName<Target, Returned, STRICT>(stack->ctx, env, name, ERR);
   return Extract(res);
 }
 
 template<int Target, std::size_t Returned, bool STRICT>
-inline JSVal IncrementGlobalWithSlot(Context* ctx,
-                                     JSGlobal* global,
-                                     std::size_t slot, Error* e) {
+inline JSVal IncrementGlobal(Context* ctx,
+                             JSGlobal* global,
+                             std::size_t slot, Error* e) {
   const JSVal w = global->GetBySlotOffset(ctx, slot, e);
   if (w.IsInt32() &&
       railgun::detail::IsIncrementOverflowSafe<Target>(w.int32())) {
@@ -458,16 +496,17 @@ inline JSVal IncrementGlobalWithSlot(Context* ctx,
 }
 
 template<int Target, std::size_t Returned, bool STRICT>
-inline Rep IncrementGlobal(railgun::Context* ctx,
-                           railgun::Instruction* instr, Symbol s) {
+inline Rep INCREMENT_GLOBAL(Frame* stack,
+                            railgun::Instruction* instr, Symbol s) {
   // opcode | (dst | name) | nop | nop
+  railgun::Context* ctx = stack->ctx;
   JSGlobal* global = ctx->global_obj();
   if (instr[2].map == global->map()) {
     // map is cached, so use previous index code
     const JSVal res =
-        IncrementGlobalWithSlot<Target,
-                                Returned,
-                                STRICT>(ctx, global, instr[3].u32[0], ERR);
+        IncrementGlobal<Target,
+                        Returned,
+                        STRICT>(ctx, global, instr[3].u32[0], ERR);
     return Extract(res);
   } else {
     Slot slot;
@@ -475,29 +514,30 @@ inline Rep IncrementGlobal(railgun::Context* ctx,
       instr[2].map = global->map();
       instr[3].u32[0] = slot.offset();
       const JSVal res =
-          IncrementGlobalWithSlot<Target,
-                                  Returned,
-                                  STRICT>(ctx, global, instr[3].u32[0], ERR);
+          IncrementGlobal<Target,
+                          Returned,
+                          STRICT>(ctx, global, instr[3].u32[0], ERR);
       return Extract(res);
     } else {
       instr[2].map = NULL;
       const JSVal res =
-          IncrementNameWithError<Target,
-                                 Returned,
-                                 STRICT>(ctx, ctx->global_env(), s, ERR);
+          IncrementName<Target,
+                        Returned,
+                        STRICT>(ctx, ctx->global_env(), s, ERR);
       return Extract(res);
     }
   }
 }
 
-inline Rep CALL(railgun::Context* ctx,
+inline Rep CALL(Frame* stack,
                 JSVal callee,
                 JSVal* offset,
                 uint64_t argc_with_this,
                 railgun::Frame** out_frame) {
+  railgun::Context* ctx = stack->ctx;
   if (!callee.IsCallable()) {
-    ctx->PendingError()->Report(Error::Type, "not callable object");
-    IV_LV5_BREAKER_RAISE();
+    stack->error->Report(Error::Type, "not callable object");
+    RAISE();
   }
   JSFunction* func = callee.object()->AsCallable();
   if (!func->IsNativeFunction()) {
@@ -516,9 +556,8 @@ inline Rep CALL(railgun::Context* ctx,
         kDummyInstruction,
         argc_with_this, false);
     if (!new_frame) {
-      ctx->PendingError()->Report(Error::Range,
-                                  "maximum call stack size exceeded");
-      IV_LV5_BREAKER_RAISE();
+      stack->error->Report(Error::Range, "maximum call stack size exceeded");
+      RAISE();
     }
     new_frame->InitThisBinding(ctx, ERR);
     *out_frame = new_frame;
@@ -535,14 +574,15 @@ inline Rep CALL(railgun::Context* ctx,
   }
 }
 
-inline Rep EVAL(railgun::Context* ctx,
+inline Rep EVAL(Frame* stack,
                 JSVal callee,
                 JSVal* offset,
                 uint64_t argc_with_this,
                 railgun::Frame** out_frame) {
+  railgun::Context* ctx = stack->ctx;
   if (!callee.IsCallable()) {
-    ctx->PendingError()->Report(Error::Type, "not callable object");
-    IV_LV5_BREAKER_RAISE();
+    stack->error->Report(Error::Type, "not callable object");
+    RAISE();
   }
   JSFunction* func = callee.object()->AsCallable();
   if (!func->IsNativeFunction()) {
@@ -561,9 +601,8 @@ inline Rep EVAL(railgun::Context* ctx,
         kDummyInstruction,
         argc_with_this, false);
     if (!new_frame) {
-      ctx->PendingError()->Report(Error::Range,
-                                  "maximum call stack size exceeded");
-      IV_LV5_BREAKER_RAISE();
+      stack->error->Report(Error::Range, "maximum call stack size exceeded");
+      RAISE();
     }
     new_frame->InitThisBinding(ctx, ERR);
     *out_frame = new_frame;
@@ -587,14 +626,15 @@ inline Rep EVAL(railgun::Context* ctx,
   }
 }
 
-inline Rep CONSTRUCT(railgun::Context* ctx,
+inline Rep CONSTRUCT(Frame* stack,
                      JSVal callee,
                      JSVal* offset,
                      uint64_t argc_with_this,
                      railgun::Frame** out_frame) {
+  railgun::Context* ctx = stack->ctx;
   if (!callee.IsCallable()) {
-    ctx->PendingError()->Report(Error::Type, "not callable object");
-    IV_LV5_BREAKER_RAISE();
+    stack->error->Report(Error::Type, "not callable object");
+    RAISE();
   }
   JSFunction* func = callee.object()->AsCallable();
   if (!func->IsNativeFunction()) {
@@ -610,9 +650,8 @@ inline Rep CONSTRUCT(railgun::Context* ctx,
         kDummyInstruction,
         argc_with_this, false);
     if (!new_frame) {
-      ctx->PendingError()->Report(Error::Range,
-                                  "maximum call stack size exceeded");
-      IV_LV5_BREAKER_RAISE();
+      stack->error->Report(Error::Range, "maximum call stack size exceeded");
+      RAISE();
     }
     JSObject* const obj = JSObject::New(ctx, code->ConstructMap(ctx));
     new_frame->set_this_binding(obj);
@@ -640,21 +679,21 @@ inline Rep CONCAT(railgun::Context* ctx, JSVal* src, uint32_t count) {
   return Extract(JSString::New(ctx, src, count));
 }
 
-inline Rep RAISE_REFERENCE(railgun::Context* ctx, Symbol name) {
+inline Rep RAISE_REFERENCE(Frame* stack) {
   core::UStringBuilder builder;
   builder.Append("Invalid left-hand side expression");
-  ctx->PendingError()->Report(Error::Reference, builder.BuildPiece());
-  IV_LV5_BREAKER_RAISE();
+  stack->error->Report(Error::Reference, builder.BuildPiece());
+  RAISE();
   return 0;
 }
 
-inline Rep RAISE_IMMUTABLE(railgun::Context* ctx, Symbol name) {
+inline Rep RAISE_IMMUTABLE(Frame* stack, Symbol name) {
   core::UStringBuilder builder;
   builder.Append("mutating immutable binding \"");
   builder.Append(symbol::GetSymbolString(name));
   builder.Append("\" not allowed in strict mode");
-  ctx->PendingError()->Report(Error::Type, builder.BuildPiece());
-  IV_LV5_BREAKER_RAISE();
+  stack->error->Report(Error::Type, builder.BuildPiece());
+  RAISE();
   return 0;
 }
 
@@ -662,15 +701,15 @@ inline Rep TYPEOF(railgun::Context* ctx, JSVal src) {
   return Extract(src.TypeOf(ctx));
 }
 
-inline Rep TO_PRIMITIVE_AND_TO_STRING(railgun::Context* ctx, JSVal src) {
+inline Rep TO_PRIMITIVE_AND_TO_STRING(Frame* stack, JSVal src) {
+  railgun::Context* ctx = stack->ctx;
   const JSVal primitive = src.ToPrimitive(ctx, Hint::NONE, ERR);
   JSString* str = primitive.ToString(ctx, ERR);
   return Extract(str);
 }
 
 template<bool MERGED>
-inline void STORE_OBJECT_DATA(railgun::Context* ctx,
-                              JSVal target, JSVal item, uint32_t offset) {
+inline void STORE_OBJECT_DATA(JSVal target, JSVal item, uint32_t offset) {
   JSObject* obj = target.object();
   if (MERGED) {
     obj->GetSlot(offset) =
@@ -684,8 +723,7 @@ inline void STORE_OBJECT_DATA(railgun::Context* ctx,
 }
 
 template<bool MERGED>
-inline void STORE_OBJECT_GET(railgun::Context* ctx,
-                             JSVal target, JSVal item, uint32_t offset) {
+inline void STORE_OBJECT_GET(JSVal target, JSVal item, uint32_t offset) {
   JSObject* obj = target.object();
   if (MERGED) {
     obj->GetSlot(offset) =
@@ -701,8 +739,7 @@ inline void STORE_OBJECT_GET(railgun::Context* ctx,
 }
 
 template<bool MERGED>
-inline void STORE_OBJECT_SET(railgun::Context* ctx,
-                             JSVal target, JSVal item, uint32_t offset) {
+inline void STORE_OBJECT_SET(JSVal target, JSVal item, uint32_t offset) {
   JSObject* obj = target.object();
   if (MERGED) {
     obj->GetSlot(offset) =
@@ -730,8 +767,8 @@ inline void INIT_SPARSE_ARRAY_ELEMENT(
 }
 
 template<bool CONFIGURABLE>
-inline Rep INSTANTIATE_DECLARATION_BINDING(railgun::Context* ctx,
-                                           JSEnv* env, Symbol name) {
+inline Rep INSTANTIATE_DECLARATION_BINDING(Frame* stack, JSEnv* env, Symbol name) {
+  railgun::Context* ctx = stack->ctx;
   if (!env->HasBinding(ctx, name)) {
     env->CreateMutableBinding(ctx, name, CONFIGURABLE, ERR);
   } else if (env == ctx->global_env()) {
@@ -748,15 +785,15 @@ inline Rep INSTANTIATE_DECLARATION_BINDING(railgun::Context* ctx,
           true, ERR);
     } else {
       if (existing_prop.IsAccessorDescriptor()) {
-        ctx->PendingError()->Report(Error::Type,
-                                    "create mutable function binding failed");
-        IV_LV5_BREAKER_RAISE();
+        stack->error->Report(Error::Type,
+                             "create mutable function binding failed");
+        RAISE();
       }
       const DataDescriptor* const data = existing_prop.AsDataDescriptor();
       if (!data->IsWritable() || !data->IsEnumerable()) {
-        ctx->PendingError()->Report(Error::Type,
-                                    "create mutable function binding failed");
-        IV_LV5_BREAKER_RAISE();
+        stack->error->Report(Error::Type,
+                             "create mutable function binding failed");
+        RAISE();
       }
     }
   }
@@ -764,9 +801,8 @@ inline Rep INSTANTIATE_DECLARATION_BINDING(railgun::Context* ctx,
 }
 
 template<bool CONFIGURABLE, bool STRICT>
-inline Rep INSTANTIATE_VARIABLE_BINDING(railgun::Context* ctx,
-                                        JSEnv* env, Symbol name) {
-  // opcode | (name | configurable)
+inline Rep INSTANTIATE_VARIABLE_BINDING(Frame* stack, JSEnv* env, Symbol name) {
+  railgun::Context* ctx = stack->ctx;
   if (!env->HasBinding(ctx, name)) {
     env->CreateMutableBinding(ctx, name, CONFIGURABLE, ERR);
     env->SetMutableBinding(ctx, name, JSUndefined, STRICT, ERR);
@@ -778,27 +814,26 @@ inline void INITIALIZE_HEAP_IMMUTABLE(JSEnv* env, JSVal src, uint32_t offset) {
   static_cast<JSDeclEnv*>(env)->InitializeImmutable(offset, src);
 }
 
-inline Rep INCREMENT(railgun::Context* ctx, JSVal src) {
-  const double res = src.ToNumber(ctx, ERR);
+inline Rep INCREMENT(Frame* stack, JSVal src) {
+  const double res = src.ToNumber(stack->ctx, ERR);
   return Extract(res + 1);
 }
 
 
-inline Rep DECREMENT(railgun::Context* ctx, JSVal src) {
-  const double res = src.ToNumber(ctx, ERR);
+inline Rep DECREMENT(Frame* stack, JSVal src) {
+  const double res = src.ToNumber(stack->ctx, ERR);
   return Extract(res - 1);
 }
 
-inline Rep POSTFIX_INCREMENT(railgun::Context* ctx,
-                             JSVal val, JSVal* src) {
-  const double res = val.ToNumber(ctx, ERR);
+inline Rep POSTFIX_INCREMENT(Frame* stack, JSVal val, JSVal* src) {
+  const double res = val.ToNumber(stack->ctx, ERR);
   *src = res;
   return Extract(res + 1);
 }
 
-inline Rep POSTFIX_DECREMENT(railgun::Context* ctx,
+inline Rep POSTFIX_DECREMENT(Frame* stack,
                              JSVal val, JSVal* src) {
-  const double res = val.ToNumber(ctx, ERR);
+  const double res = val.ToNumber(stack->ctx, ERR);
   *src = res;
   return Extract(res - 1);
 }
@@ -808,17 +843,17 @@ inline bool TO_BOOLEAN(JSVal src) {
 }
 
 template<bool STRICT>
-inline Rep LOAD_ARGUMENTS(railgun::Context* ctx, railgun::Frame* frame) {
+inline Rep LOAD_ARGUMENTS(Frame* stack, railgun::Frame* frame) {
   if (STRICT) {
     JSObject* obj = JSStrictArguments::New(
-        ctx, frame->callee().object()->AsCallable(),
+        stack->ctx, frame->callee().object()->AsCallable(),
         frame->arguments_crbegin(),
         frame->arguments_crend(),
         ERR);
     return Extract(obj);
   } else {
     JSObject* obj = JSNormalArguments::New(
-        ctx, frame->callee().object()->AsCallable(),
+        stack->ctx, frame->callee().object()->AsCallable(),
         frame->code()->params(),
         frame->arguments_crbegin(),
         frame->arguments_crend(),
@@ -828,41 +863,42 @@ inline Rep LOAD_ARGUMENTS(railgun::Context* ctx, railgun::Frame* frame) {
   }
 }
 
-inline Rep PREPARE_DYNAMIC_CALL(railgun::Context* ctx,
+inline Rep PREPARE_DYNAMIC_CALL(Frame* stack,
                                 JSEnv* env,
                                 Symbol name,
                                 JSVal* base) {
+  railgun::Context* ctx = stack->ctx;
   if (JSEnv* target_env = GetEnv(ctx, env, name)) {
     const JSVal res = target_env->GetBindingValue(ctx, name, false, ERR);
     *base = target_env->ImplicitThisValue();
     return Extract(res);
   }
-  RaiseReferenceError(name, ctx->PendingError());
-  IV_LV5_BREAKER_RAISE();
+  RaiseReferenceError(name, stack->error);
+  RAISE();
 }
 
 template<bool STRICT>
-inline Rep LOAD_NAME(railgun::Context* ctx, JSEnv* env, Symbol name) {
+inline Rep LOAD_NAME(Frame* stack, JSEnv* env, Symbol name) {
+  railgun::Context* ctx = stack->ctx;
   if (JSEnv* current = GetEnv(ctx, env, name)) {
     const JSVal res = current->GetBindingValue(ctx, name, STRICT, ERR);
     return Extract(res);
   }
-  RaiseReferenceError(name, ctx->PendingError());
-  IV_LV5_BREAKER_RAISE();
+  RaiseReferenceError(name, stack->error);
+  RAISE();
 }
 
 template<bool STRICT>
-inline Rep STORE_NAME(railgun::Context* ctx,
-                      JSEnv* env, Symbol name, JSVal src) {
+inline Rep STORE_NAME(Frame* stack, JSEnv* env, Symbol name, JSVal src) {
+  railgun::Context* ctx = stack->ctx;
   if (JSEnv* current = GetEnv(ctx, env, name)) {
     current->SetMutableBinding(ctx, name, src, STRICT, ERR);
   } else {
     if (STRICT) {
-      ctx->PendingError()->Report(
-          Error::Reference,
-          "putting to unresolvable reference "
-          "not allowed in strict reference");
-      IV_LV5_BREAKER_RAISE();
+      stack->error->Report(Error::Reference,
+                           "putting to unresolvable reference "
+                           "not allowed in strict reference");
+      RAISE();
     } else {
       ctx->global_obj()->Put(ctx, name, src, STRICT, ERR);
     }
@@ -871,7 +907,8 @@ inline Rep STORE_NAME(railgun::Context* ctx,
 }
 
 template<bool STRICT>
-inline Rep DELETE_NAME(railgun::Context* ctx, JSEnv* env, Symbol name) {
+inline Rep DELETE_NAME(Frame* stack, JSEnv* env, Symbol name) {
+  railgun::Context* ctx = stack->ctx;
   if (JSEnv* current = GetEnv(ctx, env, name)) {
     return Extract(JSVal::Bool(current->DeleteBinding(ctx, name)));
   }
@@ -879,7 +916,8 @@ inline Rep DELETE_NAME(railgun::Context* ctx, JSEnv* env, Symbol name) {
 }
 
 template<bool STRICT>
-inline Rep TYPEOF_NAME(railgun::Context* ctx, JSEnv* env, Symbol name) {
+inline Rep TYPEOF_NAME(Frame* stack, JSEnv* env, Symbol name) {
+  railgun::Context* ctx = stack->ctx;
   if (JSEnv* current = GetEnv(ctx, env, name)) {
     const JSVal res = current->GetBindingValue(ctx, name, STRICT, ERR);
     return Extract(res.TypeOf(ctx));
@@ -934,7 +972,8 @@ inline JSVal LoadPropImpl(railgun::Context* ctx, JSVal base, Symbol name, Error*
   }
 }
 
-inline Rep LOAD_ELEMENT(railgun::Context* ctx, JSVal base, JSVal element) {
+inline Rep LOAD_ELEMENT(Frame* stack, JSVal base, JSVal element) {
+  railgun::Context* ctx = stack->ctx;
   base.CheckObjectCoercible(ERR);
   // array fast path
   uint32_t index;
@@ -999,8 +1038,8 @@ inline void StorePropImpl(railgun::Context* ctx,
 }
 
 template<bool STRICT>
-inline Rep STORE_ELEMENT(railgun::Context* ctx,
-                         JSVal base, JSVal element, JSVal src) {
+inline Rep STORE_ELEMENT(Frame* stack, JSVal base, JSVal element, JSVal src) {
+  railgun::Context* ctx = stack->ctx;
   base.CheckObjectCoercible(ERR);
   // array fast path
   uint32_t index;
@@ -1024,7 +1063,8 @@ inline Rep STORE_ELEMENT(railgun::Context* ctx,
 }
 
 template<bool STRICT>
-inline Rep DELETE_ELEMENT(railgun::Context* ctx, JSVal base, JSVal element) {
+inline Rep DELETE_ELEMENT(Frame* stack, JSVal base, JSVal element) {
+  railgun::Context* ctx = stack->ctx;
   base.CheckObjectCoercible(ERR);
   uint32_t index;
   if (element.GetUInt32(&index)) {
@@ -1041,8 +1081,8 @@ inline Rep DELETE_ELEMENT(railgun::Context* ctx, JSVal base, JSVal element) {
 }
 
 template<int Target, std::size_t Returned, bool STRICT>
-inline Rep IncrementElement(railgun::Context* ctx,
-                            JSVal base, JSVal element) {
+inline Rep INCREMENT_ELEMENT(Frame* stack, JSVal base, JSVal element) {
+  railgun::Context* ctx = stack->ctx;
   base.CheckObjectCoercible(ERR);
   const Symbol s = element.ToSymbol(ctx, ERR);
   const JSVal w = LoadPropImpl(ctx, base, s, ERR);
@@ -1086,32 +1126,33 @@ inline JSEnv* TRY_CATCH_SETUP(railgun::Context* ctx,
 }
 
 template<bool STRICT>
-inline Rep STORE_PROP_GENERIC(railgun::Context* ctx,
+inline Rep STORE_PROP_GENERIC(Frame* stack,
                               JSVal base, Symbol name, JSVal src,
                               railgun::Instruction* instr, void** repatch) {
   base.CheckObjectCoercible(ERR);
-  StorePropImpl<STRICT>(ctx, base, name, src, ERR);
+  StorePropImpl<STRICT>(stack->ctx, base, name, src, ERR);
   return 0;
 }
 
 template<bool STRICT>
-Rep LOAD_PROP(railgun::Context* ctx,
+Rep LOAD_PROP(Frame* stack,
               JSVal base, Symbol name,
               railgun::Instruction* instr, void** repatch);
 
 template<bool STRICT>
-inline Rep LOAD_PROP_GENERIC(railgun::Context* ctx,
+inline Rep LOAD_PROP_GENERIC(Frame* stack,
                              JSVal base, Symbol name,
                              railgun::Instruction* instr, void** repatch) {
   base.CheckObjectCoercible(ERR);
-  const JSVal res = LoadPropImpl(ctx, base, name, ERR);
+  const JSVal res = LoadPropImpl(stack->ctx, base, name, ERR);
   return Extract(res);
 }
 
 template<bool STRICT>
-inline Rep LOAD_PROP_OWN_MEGAMORPHIC(railgun::Context* ctx,
+inline Rep LOAD_PROP_OWN_MEGAMORPHIC(Frame* stack,
                                      JSVal base, Symbol name,
                                      railgun::Instruction* instr, void** repatch) {
+  railgun::Context* ctx = stack->ctx;
   base.CheckObjectCoercible(ERR);
   JSObject* obj = NULL;
   if (base.IsPrimitive()) {
@@ -1163,9 +1204,10 @@ inline Rep LOAD_PROP_OWN_MEGAMORPHIC(railgun::Context* ctx,
 }
 
 template<bool STRICT>
-inline Rep LOAD_PROP_OWN(railgun::Context* ctx,
+inline Rep LOAD_PROP_OWN(Frame* stack,
                          JSVal base, Symbol name,
                          railgun::Instruction* instr, void** repatch) {
+  railgun::Context* ctx = stack->ctx;
   base.CheckObjectCoercible(ERR);
   JSObject* obj = NULL;
   if (base.IsPrimitive()) {
@@ -1241,9 +1283,10 @@ inline Rep LOAD_PROP_OWN(railgun::Context* ctx,
 }
 
 template<bool STRICT>
-inline Rep LOAD_PROP_PROTO(railgun::Context* ctx,
+inline Rep LOAD_PROP_PROTO(Frame* stack,
                            JSVal base, Symbol name,
                            railgun::Instruction* instr, void** repatch) {
+  railgun::Context* ctx = stack->ctx;
   base.CheckObjectCoercible(ERR);
   JSObject* obj = NULL;
   if (base.IsPrimitive()) {
@@ -1272,9 +1315,10 @@ inline Rep LOAD_PROP_PROTO(railgun::Context* ctx,
 }
 
 template<bool STRICT>
-inline Rep LOAD_PROP_CHAIN(railgun::Context* ctx,
+inline Rep LOAD_PROP_CHAIN(Frame* stack,
                            JSVal base, Symbol name,
                            railgun::Instruction* instr, void** repatch) {
+  railgun::Context* ctx = stack->ctx;
   base.CheckObjectCoercible(ERR);
   JSObject* obj = NULL;
   if (base.IsPrimitive()) {
@@ -1302,9 +1346,10 @@ inline Rep LOAD_PROP_CHAIN(railgun::Context* ctx,
 }
 
 template<bool STRICT>
-inline Rep LOAD_PROP(railgun::Context* ctx,
+inline Rep LOAD_PROP(Frame* stack,
                      JSVal base, Symbol name,
                      railgun::Instruction* instr, void** repatch) {
+  railgun::Context* ctx = stack->ctx;
   base.CheckObjectCoercible(ERR);
   JSObject* obj = NULL;
   if (base.IsPrimitive()) {
@@ -1368,9 +1413,10 @@ inline Rep LOAD_PROP(railgun::Context* ctx,
 }
 
 template<bool STRICT>
-inline Rep STORE_PROP(railgun::Context* ctx,
+inline Rep STORE_PROP(Frame* stack,
                       JSVal base, Symbol name, JSVal src,
                       railgun::Instruction* instr, void** repatch) {
+  railgun::Context* ctx = stack->ctx;
   base.CheckObjectCoercible(ERR);
   if (base.IsPrimitive()) {
     StorePropPrimitive<STRICT>(ctx, base, name, src, ERR);
@@ -1403,7 +1449,8 @@ inline Rep STORE_PROP(railgun::Context* ctx,
 }
 
 template<bool STRICT>
-inline Rep DELETE_PROP(railgun::Context* ctx, JSVal base, Symbol name) {
+inline Rep DELETE_PROP(Frame* stack, JSVal base, Symbol name) {
+  railgun::Context* ctx = stack->ctx;
   base.CheckObjectCoercible(ERR);
   JSObject* const obj = base.ToObject(ctx, ERR);
   const bool res = obj->Delete(ctx, name, STRICT, ERR);
@@ -1411,7 +1458,8 @@ inline Rep DELETE_PROP(railgun::Context* ctx, JSVal base, Symbol name) {
 }
 
 template<int Target, std::size_t Returned, bool STRICT>
-inline Rep INCREMENT_PROP(railgun::Context* ctx, JSVal base, Symbol name) {
+inline Rep INCREMENT_PROP(Frame* stack, JSVal base, Symbol name) {
+  railgun::Context* ctx = stack->ctx;
   base.CheckObjectCoercible(ERR);
   const JSVal w = LoadPropImpl(ctx, base, name, ERR);
   if (w.IsInt32() &&
@@ -1432,5 +1480,6 @@ inline Rep INCREMENT_PROP(railgun::Context* ctx, JSVal base, Symbol name) {
 }
 
 #undef ERR
+#undef RAISE
 } } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_STUB_H_

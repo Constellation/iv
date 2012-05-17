@@ -22,7 +22,7 @@ class JSVMFunction : public JSFunction {
   virtual JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
     args->set_this_binding(this_binding);
 #if defined(IV_ENABLE_JIT)
-    return breaker::Execute(static_cast<Context*>(args->ctx()), args, this);
+    return breaker::Execute(static_cast<Context*>(args->ctx()), args, this, e);
 #else
     return static_cast<Context*>(args->ctx())->vm()->Execute(args, this, e);
 #endif

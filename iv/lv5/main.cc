@@ -36,6 +36,7 @@ iv::lv5::railgun::Code* Compile(iv::lv5::railgun::Context* ctx,
 
 int Execute(const iv::core::StringPiece& data,
             const std::string& filename, bool statistics) {
+  iv::lv5::Error e;
   iv::lv5::railgun::Context ctx;
   iv::core::FileSource src(data, filename);
   iv::lv5::railgun::Code* code = Compile(&ctx, src);
@@ -50,11 +51,9 @@ int Execute(const iv::core::StringPiece& data,
   ctx.DefineFunction<&iv::lv5::railgun::StackDepth, 0>("StackDepth");
   ctx.DefineFunction<&iv::lv5::railgun::Dis, 1>("dis");
 #if defined(IV_ENABLE_JIT)
-  iv::lv5::Error& e = *ctx.PendingError();
   iv::lv5::breaker::Compile(code);
-  iv::lv5::breaker::Run(&ctx, code);
+  iv::lv5::breaker::Run(&ctx, code, &e);
 #else
-  iv::lv5::Error e;
   ctx.vm()->Run(code, &e);
 #endif
   if (e) {
@@ -67,7 +66,9 @@ int Execute(const iv::core::StringPiece& data,
     return EXIT_FAILURE;
   }
   if (statistics) {
+#if !defined(IV_ENABLE_JIT)
     ctx.vm()->DumpStatistics();
+#endif
   }
   ctx.Validate();
   return EXIT_SUCCESS;

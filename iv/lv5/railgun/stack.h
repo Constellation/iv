@@ -89,7 +89,6 @@ class Stack : public lv5::Stack {
       frame->prev_pc_ = pc;
       frame->variable_env_ = frame->lexical_env_ = env;
       frame->prev_ = current_;
-      frame->ctx_ = ctx;
       frame->callee_ = callee;
       frame->argc_ = argc_with_this - 1;
       std::fill_n<JSVal*, std::size_t, JSVal>(
@@ -115,7 +114,6 @@ class Stack : public lv5::Stack {
       frame->variable_env_ = variable_env;
       frame->lexical_env_ = lexical_env;
       frame->prev_ = current_;
-      frame->ctx_ = ctx;
       frame->callee_ = JSVal(JSUndefined);
       frame->argc_ = 0;
       std::fill_n<JSVal*, std::size_t, JSVal>(

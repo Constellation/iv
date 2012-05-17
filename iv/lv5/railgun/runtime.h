@@ -80,7 +80,7 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
       code,
       ctx->global_env(),
       ctx->global_env(),
-      ctx->global_obj());
+      ctx->global_obj(), e);
 #else
   return ctx->vm()->RunEval(
       code,
@@ -144,7 +144,7 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
       code,
       vm->stack()->current()->variable_env(),
       vm->stack()->current()->lexical_env(),
-      vm->stack()->current()->GetThis());
+      vm->stack()->current()->GetThis(), e);
 #else
   VM* const vm = ctx->vm();
   return vm->RunEval(

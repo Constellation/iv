@@ -25,7 +25,7 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     CompileExceptionHandlerIsNotFound(kBreakerPrologue);
     CompileBreakerPrologue(0);
 
-    prologue_ =
+    prologue =
         core::BitCast<TemplatesGenerator::PrologueType>(ptr + kBreakerPrologue);
   }
 
@@ -36,46 +36,59 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     //   pc to 1st argument
     //   Frame to 2nd argument
     mov(rdi, rax);
-    mov(rsi, r12);
-    push(rax);
-    push(r13);
-    mov(rdx, rsp);
+    mov(rsi, rsp);
+    mov(rdx, r14);
+    mov(rcx, r13);
     mov(rax, core::BitCast<uint64_t>(&search_exception_handler));
     call(rax);
-    pop(r13);  // unwinded frame
-    pop(rsp);  // calculated rsp
+    mov(r13, ptr[r14 + offsetof(Frame, frame)]);
+    mov(rsp, ptr[r14 + offsetof(Frame, rsp)]);
     jmp(rax);  // jump to exception handler
     Padding(size);
   }
 
   void CompileExceptionHandlerIsNotFound(std::size_t size) {
     // restore callee-save registers
-    pop(r13);
-    pop(r12);
-    pop(rcx);  // alignment element
+    mov(r14, ptr[rsp + offsetof(Frame, r14)]);
+    mov(r13, ptr[rsp + offsetof(Frame, r13)]);
+    mov(r12, ptr[rsp + offsetof(Frame, r12)]);
+    add(rsp, sizeof(Frame));
     ret();
     Padding(size);
   }
 
   typedef JSVal(*PrologueType)(railgun::Context* ctx,
-                               railgun::Frame* frame, void* code);
+                               railgun::Frame* frame, void* code, Error* e);
   // rdi : context
   // rsi : frame
   // rdx : code ptr
+  // rcx : error ptr
   void CompileBreakerPrologue(std::size_t size) {
-    sub(rsp, k64Size * 3);
-    mov(ptr[rsp + k64Size * 0], r13);
-    mov(ptr[rsp + k64Size * 1], r12);
+    sub(rsp, sizeof(Frame));
+
+    // construct breaker::Frame
+    mov(ptr[rsp + offsetof(Frame, r14)], r14);
+    mov(ptr[rsp + offsetof(Frame, r13)], r13);
+    mov(ptr[rsp + offsetof(Frame, r12)], r12);
+    mov(ptr[rsp + offsetof(Frame, ctx)], rdi);
+    mov(ptr[rsp + offsetof(Frame, frame)], rsi);
+    mov(ptr[rsp + offsetof(Frame, error)], rcx);
     mov(r12, rdi);
     mov(r13, rsi);
+    mov(r14, rsp);
+    lea(rcx, ptr[rsp - k64Size * 2]);
+    mov(ptr[rsp + offsetof(Frame, rsp)], rcx);
+    lea(rcx, ptr[rsp - k64Size]);
+    mov(ptr[rsp + offsetof(Frame, ret)], rcx);
 
     // initialize return address of frame
-    lea(rcx, ptr[rsp - k64Size * 3]);
-    mov(qword[r13 + IV_OFFSETOF(railgun::Frame, return_address_position_)], rcx);
     call(rdx);
-    mov(r13, ptr[rsp + k64Size * 0]);
-    mov(r12, ptr[rsp + k64Size * 1]);
-    add(rsp, k64Size * 3);
+
+    mov(r14, ptr[rsp + offsetof(Frame, r14)]);
+    mov(r13, ptr[rsp + offsetof(Frame, r13)]);
+    mov(r12, ptr[rsp + offsetof(Frame, r12)]);
+    add(rsp, sizeof(Frame));
+
     ret();
     Padding(size);
   }
@@ -91,7 +104,7 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
   }
 
  public:  // opened
-  PrologueType prologue_;
+  PrologueType prologue;
 };
 
 template<typename D = void>
@@ -123,30 +136,23 @@ static const uint64_t kStackPayload = 2;  // NOLINT
 // Search exception handler from pc, and unwind frames.
 // If handler is found, return to handler pc.
 // copied from railgun::VM exception handler phase
-inline void* search_exception_handler(void* pc,
-                                      iv::lv5::railgun::Context* ctx,
-                                      void** target) {
+inline void* search_exception_handler(void* pc, void** rsp,
+                                      Frame* stack, railgun::Frame* frame) {
   using namespace iv::lv5;  // NOLINT
-  railgun::Frame** frame_out = reinterpret_cast<railgun::Frame**>(target);
-  uintptr_t* rsp_out = (reinterpret_cast<uintptr_t*>(target) + 1);
-  uintptr_t rsp = reinterpret_cast<uintptr_t>(target + 2);
-  railgun::Frame* frame = *frame_out;
-  Error* e = ctx->PendingError();
-  std::cout << "current is " << pc << std::endl;
+  railgun::Context* ctx = stack->ctx;
+  Error* e = stack->error;
+  assert(*e);
   while (true) {
     bool in_range = false;
     const railgun::ExceptionTable& table = frame->code()->exception_table();
     for (railgun::ExceptionTable::const_iterator it = table.begin(),
          last = table.end(); it != last; ++it) {
       const railgun::Handler& handler = *it;
-      std::cout << "handler! " << handler.program_counter_begin() << " to " << handler.program_counter_end() << std::endl;
       if (in_range && handler.program_counter_begin() > pc) {
         break;  // handler not found
       }
-      std::cout << "handler! check!" << std::endl;
       if (handler.program_counter_begin() <= pc &&
           pc < handler.program_counter_end()) {
-        std::cout << "handler! check! in range" << std::endl;
         in_range = true;
         switch (handler.type()) {
           case railgun::Handler::ITERATOR: {
@@ -175,13 +181,13 @@ inline void* search_exception_handler(void* pc,
             } else {
               reg[handler.ret()] = error;
             }
-            *frame_out = frame;
-            *rsp_out = rsp;
+            stack->rsp = rsp;
+            stack->frame = frame;
+            stack->ret = rsp - 1;
             return handler.program_counter_end();
           }
         }
       }
-      std::cout << "handler! next" << std::endl;
     }
     // handler not in this frame
     // so, unwind frame and search again
@@ -191,8 +197,8 @@ inline void* search_exception_handler(void* pc,
       break;
     } else {
       // unwind frame
-      rsp += (kStackPayload * k64Size);
-      pc = *core::BitCast<void**>(rsp - k64Size);
+      rsp = rsp + kStackPayload;
+      pc = *core::BitCast<void**>(rsp - 1);
       // because of Frame is code frame,
       // first lexical_env is variable_env.
       // (if Eval / Global, this is not valid)
@@ -200,15 +206,16 @@ inline void* search_exception_handler(void* pc,
       frame = ctx->vm()->stack()->Unwind(frame);
     }
   }
-  rsp += (kStackPayload * k64Size);
-  *frame_out = frame;
-  *rsp_out = rsp;
+  rsp = rsp + kStackPayload;
+  stack->rsp = rsp;
+  stack->frame = frame;
+  stack->ret = rsp - 1;
   return Templates<>::exception_handler_is_not_found();
 }
 
 inline JSVal breaker_prologue(railgun::Context* ctx,
-                              railgun::Frame* frame, void* ptr) {
-  return Templates<>::generator.prologue_(ctx, frame, ptr);
+                              railgun::Frame* frame, void* ptr, Error* e) {
+  return Templates<>::generator.prologue(ctx, frame, ptr, e);
 }
 
 } } }  // namespace iv::lv5::breaker

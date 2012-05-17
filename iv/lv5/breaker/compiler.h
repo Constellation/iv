@@ -203,6 +203,8 @@ class Compiler {
     // general storage space
     // We can access this space by qword[rsp + k64Size * 0] a.k.a. qword[rsp]
     asm_->push(asm_->r12);
+    asm_->sub(asm_->qword[asm_->r14 + offsetof(Frame, ret)], k64Size * kStackPayload);
+    asm_->mov(asm_->rcx, asm_->qword[asm_->r14 + offsetof(Frame, ret)]);
 
     for (const Instruction* instr = code_->begin(),
          *last = code_->end(); instr != last;) {
@@ -584,6 +586,7 @@ class Compiler {
   //  callee-save
   //   r12 : context
   //   r13 : frame
+  //   r14 : breaker frame
 
   static int16_t Reg(int16_t reg) {
     return railgun::FrameConstant<>::kFrameSize + reg;
@@ -615,9 +618,8 @@ class Compiler {
   // opcode | src
   void EmitWITH_SETUP(const Instruction* instr) {
     const int16_t src = Reg(instr[1].i32[0]);
-    asm_->mov(asm_->rdi, asm_->r12);
-    asm_->mov(asm_->rsi, asm_->r13);
-    asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    asm_->mov(asm_->rdi, asm_->r14);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
     asm_->Call(&stub::WITH_SETUP);
   }
 
@@ -638,7 +640,7 @@ class Compiler {
       asm_->jmp(asm_->rax);
 
       asm_->L(".RETURN_TO_HANDLING");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + jump * kJSValSize]);
       asm_->Call(&stub::THROW);
     }
@@ -694,7 +696,7 @@ class Compiler {
       asm_->jmp(".BINARY_ADD_EXIT");
 
       asm_->L(".BINARY_ADD_SLOW_GENERIC");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_ADD);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       asm_->L(".BINARY_ADD_EXIT");
@@ -735,7 +737,7 @@ class Compiler {
       asm_->jmp(".BINARY_SUBTRACT_EXIT");
 
       asm_->L(".BINARY_SUBTRACT_SLOW_GENERIC");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_SUBTRACT);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       asm_->L(".BINARY_SUBTRACT_EXIT");
@@ -772,7 +774,7 @@ class Compiler {
       asm_->jmp(".BINARY_MULTIPLY_EXIT");
 
       asm_->L(".BINARY_MULTIPLY_SLOW_GENERIC");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_MULTIPLY);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       asm_->L(".BINARY_MULTIPLY_EXIT");
@@ -785,7 +787,7 @@ class Compiler {
     const int16_t lhs = Reg(instr[1].i16[1]);
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
       asm_->Call(&stub::BINARY_DIVIDE);
@@ -824,7 +826,7 @@ class Compiler {
       asm_->jmp(".BINARY_MODULO_EXIT");
 
       asm_->L(".BINARY_MODULO_SLOW_GENERIC");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_MODULO);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       asm_->L(".BINARY_MODULO_EXIT");
@@ -849,7 +851,7 @@ class Compiler {
       asm_->jmp(".BINARY_LSHIFT_EXIT");
 
       asm_->L(".BINARY_LSHIFT_SLOW_GENERIC");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->mov(asm_->rdx, asm_->rcx);
       asm_->Call(&stub::BINARY_LSHIFT);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
@@ -875,7 +877,7 @@ class Compiler {
       asm_->jmp(".BINARY_RSHIFT_EXIT");
 
       asm_->L(".BINARY_RSHIFT_SLOW_GENERIC");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->mov(asm_->rdx, asm_->rcx);
       asm_->Call(&stub::BINARY_RSHIFT);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
@@ -910,7 +912,7 @@ class Compiler {
       asm_->jmp(".BINARY_RSHIFT_LOGICAL_EXIT");
 
       asm_->L(".BINARY_RSHIFT_LOGICAL_SLOW_GENERIC");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->mov(asm_->rdx, asm_->rcx);
       asm_->Call(&stub::BINARY_RSHIFT_LOGICAL);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
@@ -938,7 +940,7 @@ class Compiler {
       ConvertBooleanToJSVal(asm_->rax);
       asm_->jmp(".BINARY_LT_EXIT");
       asm_->L(".BINARY_LT_SLOW");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_LT);
       asm_->L(".BINARY_LT_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
@@ -964,7 +966,7 @@ class Compiler {
       ConvertBooleanToJSVal(asm_->rax);
       asm_->jmp(".BINARY_LTE_EXIT");
       asm_->L(".BINARY_LTE_SLOW");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_LTE);
       asm_->L(".BINARY_LTE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
@@ -990,7 +992,7 @@ class Compiler {
       ConvertBooleanToJSVal(asm_->rax);
       asm_->jmp(".BINARY_GT_EXIT");
       asm_->L(".BINARY_GT_SLOW");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_GT);
       asm_->L(".BINARY_GT_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
@@ -1016,7 +1018,7 @@ class Compiler {
       ConvertBooleanToJSVal(asm_->rax);
       asm_->jmp(".BINARY_GTE_EXIT");
       asm_->L(".BINARY_GTE_SLOW");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_GTE);
       asm_->L(".BINARY_GTE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
@@ -1030,7 +1032,7 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
       asm_->Call(&stub::BINARY_INSTANCEOF);
@@ -1045,7 +1047,7 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
       asm_->Call(&stub::BINARY_IN);
@@ -1071,7 +1073,7 @@ class Compiler {
       ConvertBooleanToJSVal(asm_->rax);
       asm_->jmp(".BINARY_EQ_EXIT");
       asm_->L(".BINARY_EQ_SLOW");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_EQ);
       asm_->L(".BINARY_EQ_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
@@ -1085,10 +1087,10 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      Int32Guard(asm_->rdi, asm_->rax, asm_->rcx, ".BINARY_STRICT_EQ_SLOW");
       Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_STRICT_EQ_SLOW");
-      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_STRICT_EQ_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_STRICT_EQ and IF_FALSE
@@ -1096,7 +1098,6 @@ class Compiler {
       ConvertBooleanToJSVal(asm_->rax);
       asm_->jmp(".BINARY_STRICT_EQ_EXIT");
       asm_->L(".BINARY_STRICT_EQ_SLOW");
-      asm_->mov(asm_->rdi, asm_->r12);
       asm_->Call(&stub::BINARY_STRICT_EQ);
       asm_->L(".BINARY_STRICT_EQ_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
@@ -1121,7 +1122,7 @@ class Compiler {
       ConvertBooleanToJSVal(asm_->rax);
       asm_->jmp(".BINARY_NE_EXIT");
       asm_->L(".BINARY_NE_SLOW");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_NE);
       asm_->L(".BINARY_NE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
@@ -1135,10 +1136,10 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
+      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      Int32Guard(asm_->rdi, asm_->rax, asm_->rcx, ".BINARY_STRICT_NE_SLOW");
       Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_STRICT_NE_SLOW");
-      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_STRICT_NE_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_STRICT_NE and IF_FALSE
@@ -1146,7 +1147,6 @@ class Compiler {
       ConvertBooleanToJSVal(asm_->rax);
       asm_->jmp(".BINARY_STRICT_NE_EXIT");
       asm_->L(".BINARY_STRICT_NE_SLOW");
-      asm_->mov(asm_->rdi, asm_->r12);
       asm_->Call(&stub::BINARY_STRICT_NE);
       asm_->L(".BINARY_STRICT_NE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
@@ -1170,7 +1170,7 @@ class Compiler {
       asm_->jmp(".BINARY_BIT_AND_EXIT");
 
       asm_->L(".BINARY_BIT_AND_SLOW");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_BIT_AND);
 
       asm_->L(".BINARY_BIT_AND_EXIT");
@@ -1195,7 +1195,7 @@ class Compiler {
       asm_->jmp(".BINARY_BIT_XOR_EXIT");
 
       asm_->L(".BINARY_BIT_XOR_SLOW");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_BIT_XOR);
 
       asm_->L(".BINARY_BIT_XOR_EXIT");
@@ -1220,7 +1220,7 @@ class Compiler {
       asm_->jmp(".BINARY_BIT_OR_EXIT");
 
       asm_->L(".BINARY_BIT_OR_SLOW");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_BIT_OR);
 
       asm_->L(".BINARY_BIT_OR_EXIT");
@@ -1277,7 +1277,7 @@ class Compiler {
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
       IsNumber(asm_->rsi, asm_->rax);
       asm_->jnz(".UNARY_POSITIVE_FAST");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::TO_NUMBER);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       asm_->jmp(".UNARY_POSITIVE_EXIT");
@@ -1300,7 +1300,7 @@ class Compiler {
       asm_->add(asm_->rax, asm_->rdi);
       asm_->jmp(".UNARY_NEGATIVE_EXIT");
       asm_->L(".UNARY_NEGATIVE_SLOW");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::UNARY_NEGATIVE);
       asm_->L(".UNARY_NEGATIVE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
@@ -1331,7 +1331,7 @@ class Compiler {
       asm_->jmp(".UNARY_BIT_NOT_EXIT");
 
       asm_->L(".UNARY_BIT_NOT_SLOW");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::UNARY_BIT_NOT);
 
       asm_->L(".UNARY_BIT_NOT_EXIT");
@@ -1342,7 +1342,7 @@ class Compiler {
   // opcode | src
   void EmitTHROW(const Instruction* instr) {
     const int16_t src = Reg(instr[1].i32[0]);
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
     asm_->Call(&stub::THROW);
   }
@@ -1358,7 +1358,7 @@ class Compiler {
   // opcode | src
   void EmitTO_NUMBER(const Instruction* instr) {
     const int16_t src = Reg(instr[1].i32[0]);
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
     asm_->Call(&stub::TO_NUMBER);
   }
@@ -1366,7 +1366,7 @@ class Compiler {
   // opcode | src
   void EmitTO_PRIMITIVE_AND_TO_STRING(const Instruction* instr) {
     const int16_t src = Reg(instr[1].i32[0]);
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
     asm_->Call(&stub::TO_PRIMITIVE_AND_TO_STRING);
     asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], asm_->rax);
@@ -1386,14 +1386,14 @@ class Compiler {
 
   // opcode
   void EmitRAISE_REFERENCE(const Instruction* instr) {
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->Call(&stub::RAISE_REFERENCE);
   }
 
   // opcode name
   void EmitRAISE_IMMUTABLE(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].u32[0]];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(name));
     asm_->Call(&stub::RAISE_IMMUTABLE);
   }
@@ -1414,10 +1414,9 @@ class Compiler {
     const int16_t item = Reg(instr[1].i16[1]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t merged = instr[2].u32[1];
-    asm_->mov(asm_->rdi, asm_->r12);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + obj * kJSValSize]);
-    asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + item * kJSValSize]);
-    asm_->mov(asm_->ecx, offset);
+    asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + obj * kJSValSize]);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + item * kJSValSize]);
+    asm_->mov(asm_->edx, offset);
     if (merged) {
       asm_->Call(&stub::STORE_OBJECT_DATA<true>);
     } else {
@@ -1431,10 +1430,9 @@ class Compiler {
     const int16_t item = Reg(instr[1].i16[1]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t merged = instr[2].u32[1];
-    asm_->mov(asm_->rdi, asm_->r12);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + obj * kJSValSize]);
-    asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + item * kJSValSize]);
-    asm_->mov(asm_->ecx, offset);
+    asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + obj * kJSValSize]);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + item * kJSValSize]);
+    asm_->mov(asm_->edx, offset);
     if (merged) {
       asm_->Call(&stub::STORE_OBJECT_GET<true>);
     } else {
@@ -1448,10 +1446,9 @@ class Compiler {
     const int16_t item = Reg(instr[1].i16[1]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t merged = instr[2].u32[1];
-    asm_->mov(asm_->rdi, asm_->r12);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + obj * kJSValSize]);
-    asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + item * kJSValSize]);
-    asm_->mov(asm_->ecx, offset);
+    asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + obj * kJSValSize]);
+    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + item * kJSValSize]);
+    asm_->mov(asm_->edx, offset);
     if (merged) {
       asm_->Call(&stub::STORE_OBJECT_SET<true>);
     } else {
@@ -1464,7 +1461,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const int16_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     asm_->mov(asm_->rcx, core::BitCast<uint64_t>(instr));
@@ -1491,7 +1488,7 @@ class Compiler {
     const int16_t base = Reg(instr[1].ssw.i16[0]);
     const int16_t src = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     asm_->mov(asm_->rcx, asm_->ptr[asm_->r13 + src * kJSValSize]);
@@ -1517,7 +1514,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const int16_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
@@ -1533,7 +1530,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const int16_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
@@ -1549,7 +1546,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const int16_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
@@ -1565,7 +1562,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const int16_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
@@ -1581,7 +1578,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const int16_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
@@ -1671,7 +1668,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t base = Reg(instr[1].i16[1]);
     const int16_t element = Reg(instr[1].i16[2]);
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
     asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
     asm_->Call(&stub::LOAD_ELEMENT);
@@ -1683,7 +1680,7 @@ class Compiler {
     const int16_t base = Reg(instr[1].i16[0]);
     const int16_t element = Reg(instr[1].i16[1]);
     const int16_t src = Reg(instr[1].i16[2]);
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
     asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
     asm_->mov(asm_->rcx, asm_->qword[asm_->r13 + src * kJSValSize]);
@@ -1699,7 +1696,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t base = Reg(instr[1].i16[1]);
     const int16_t element = Reg(instr[1].i16[2]);
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
     asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
     if (code_->strict()) {
@@ -1715,13 +1712,13 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t base = Reg(instr[1].i16[1]);
     const int16_t element = Reg(instr[1].i16[2]);
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
     asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
     if (code_->strict()) {
-      asm_->Call(&stub::IncrementElement<1, 1, true>);
+      asm_->Call(&stub::INCREMENT_ELEMENT<1, 1, true>);
     } else {
-      asm_->Call(&stub::IncrementElement<1, 1, false>);
+      asm_->Call(&stub::INCREMENT_ELEMENT<1, 1, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
@@ -1731,13 +1728,13 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t base = Reg(instr[1].i16[1]);
     const int16_t element = Reg(instr[1].i16[2]);
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
     asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
     if (code_->strict()) {
-      asm_->Call(&stub::IncrementElement<-1, 1, true>);
+      asm_->Call(&stub::INCREMENT_ELEMENT<-1, 1, true>);
     } else {
-      asm_->Call(&stub::IncrementElement<-1, 1, false>);
+      asm_->Call(&stub::INCREMENT_ELEMENT<-1, 1, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
@@ -1747,13 +1744,13 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t base = Reg(instr[1].i16[1]);
     const int16_t element = Reg(instr[1].i16[2]);
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
     asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
     if (code_->strict()) {
-      asm_->Call(&stub::IncrementElement<1, 0, true>);
+      asm_->Call(&stub::INCREMENT_ELEMENT<1, 0, true>);
     } else {
-      asm_->Call(&stub::IncrementElement<1, 0, false>);
+      asm_->Call(&stub::INCREMENT_ELEMENT<1, 0, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
@@ -1763,13 +1760,13 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t base = Reg(instr[1].i16[1]);
     const int16_t element = Reg(instr[1].i16[2]);
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
     asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
     if (code_->strict()) {
-      asm_->Call(&stub::IncrementElement<-1, 0, true>);
+      asm_->Call(&stub::INCREMENT_ELEMENT<-1, 0, true>);
     } else {
-      asm_->Call(&stub::IncrementElement<-1, 0, false>);
+      asm_->Call(&stub::INCREMENT_ELEMENT<-1, 0, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
@@ -1788,6 +1785,7 @@ class Compiler {
     const int16_t src = Reg(instr[1].i32[0]);
     asm_->mov(asm_->rax, asm_->ptr[asm_->r13 + src * kJSValSize]);
     asm_->add(asm_->rsp, k64Size);
+    asm_->add(asm_->qword[asm_->r14 + offsetof(Frame, ret)], k64Size * kStackPayload);
     asm_->ret();
   }
 
@@ -1795,7 +1793,7 @@ class Compiler {
   void EmitLOAD_GLOBAL(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(name));
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(instr));
     if (code_->strict()) {
@@ -1810,7 +1808,7 @@ class Compiler {
   void EmitSTORE_GLOBAL(const Instruction* instr) {
     const int16_t src = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     asm_->mov(asm_->rcx, core::BitCast<uint64_t>(instr));
@@ -1825,7 +1823,7 @@ class Compiler {
   void EmitDELETE_GLOBAL(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(name));
     asm_->Call(&stub::DELETE_GLOBAL);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
@@ -1835,13 +1833,13 @@ class Compiler {
   void EmitINCREMENT_GLOBAL(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(instr));
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
-      asm_->Call(&stub::IncrementGlobal<1, 1, true>);
+      asm_->Call(&stub::INCREMENT_GLOBAL<1, 1, true>);
     } else {
-      asm_->Call(&stub::IncrementGlobal<1, 1, false>);
+      asm_->Call(&stub::INCREMENT_GLOBAL<1, 1, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
@@ -1850,13 +1848,13 @@ class Compiler {
   void EmitDECREMENT_GLOBAL(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(instr));
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
-      asm_->Call(&stub::IncrementGlobal<-1, 1, true>);
+      asm_->Call(&stub::INCREMENT_GLOBAL<-1, 1, true>);
     } else {
-      asm_->Call(&stub::IncrementGlobal<-1, 1, false>);
+      asm_->Call(&stub::INCREMENT_GLOBAL<-1, 1, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
@@ -1865,13 +1863,13 @@ class Compiler {
   void EmitPOSTFIX_INCREMENT_GLOBAL(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(instr));
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
-      asm_->Call(&stub::IncrementGlobal<1, 0, true>);
+      asm_->Call(&stub::INCREMENT_GLOBAL<1, 0, true>);
     } else {
-      asm_->Call(&stub::IncrementGlobal<1, 0, false>);
+      asm_->Call(&stub::INCREMENT_GLOBAL<1, 0, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
@@ -1880,13 +1878,13 @@ class Compiler {
   void EmitPOSTFIX_DECREMENT_GLOBAL(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(instr));
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
-      asm_->Call(&stub::IncrementGlobal<-1, 0, true>);
+      asm_->Call(&stub::INCREMENT_GLOBAL<-1, 0, true>);
     } else {
-      asm_->Call(&stub::IncrementGlobal<-1, 0, false>);
+      asm_->Call(&stub::INCREMENT_GLOBAL<-1, 0, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
@@ -1895,7 +1893,7 @@ class Compiler {
   void EmitTYPEOF_GLOBAL(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::TYPEOF_GLOBAL<true>);
@@ -1911,7 +1909,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->edx, offset);
     asm_->mov(asm_->ecx, nest);
@@ -1929,7 +1927,7 @@ class Compiler {
     const int16_t src = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->edx, offset);
     asm_->mov(asm_->ecx, nest);
@@ -1953,14 +1951,14 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->edx, offset);
     asm_->mov(asm_->ecx, nest);
     if (code_->strict()) {
-      asm_->Call(&stub::IncrementHeap<1, 1, true>);
+      asm_->Call(&stub::INCREMENT_HEAP<1, 1, true>);
     } else {
-      asm_->Call(&stub::IncrementHeap<1, 1, false>);
+      asm_->Call(&stub::INCREMENT_HEAP<1, 1, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
@@ -1970,14 +1968,14 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->edx, offset);
     asm_->mov(asm_->ecx, nest);
     if (code_->strict()) {
-      asm_->Call(&stub::IncrementHeap<-1, 1, true>);
+      asm_->Call(&stub::INCREMENT_HEAP<-1, 1, true>);
     } else {
-      asm_->Call(&stub::IncrementHeap<-1, 1, false>);
+      asm_->Call(&stub::INCREMENT_HEAP<-1, 1, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
@@ -1987,14 +1985,14 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->edx, offset);
     asm_->mov(asm_->ecx, nest);
     if (code_->strict()) {
-      asm_->Call(&stub::IncrementHeap<1, 0, true>);
+      asm_->Call(&stub::INCREMENT_HEAP<1, 0, true>);
     } else {
-      asm_->Call(&stub::IncrementHeap<1, 0, false>);
+      asm_->Call(&stub::INCREMENT_HEAP<1, 0, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
@@ -2004,14 +2002,14 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->edx, offset);
     asm_->mov(asm_->ecx, nest);
     if (code_->strict()) {
-      asm_->Call(&stub::IncrementHeap<-1, 0, true>);
+      asm_->Call(&stub::INCREMENT_HEAP<-1, 0, true>);
     } else {
-      asm_->Call(&stub::IncrementHeap<-1, 0, false>);
+      asm_->Call(&stub::INCREMENT_HEAP<-1, 0, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
@@ -2022,7 +2020,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->edx, offset);
     asm_->mov(asm_->ecx, nest);
@@ -2041,7 +2039,7 @@ class Compiler {
     const uint32_t argc_with_this = instr[1].ssw.u32;
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + callee * kJSValSize]);
       asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + offset * kJSValSize]);
       asm_->mov(asm_->ecx, argc_with_this);
@@ -2054,9 +2052,6 @@ class Compiler {
 
       // move to new Frame
       asm_->mov(asm_->r13, asm_->rcx);
-      // initialize return address of frame
-      asm_->lea(asm_->rcx, asm_->ptr[asm_->rsp - k64Size * 3]);
-      asm_->mov(asm_->qword[asm_->r13 + IV_OFFSETOF(railgun::Frame, return_address_position_)], asm_->rcx);
       asm_->call(asm_->rax);
 
       // unwind Frame
@@ -2085,7 +2080,7 @@ class Compiler {
     const uint32_t argc_with_this = instr[1].ssw.u32;
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + callee * kJSValSize]);
       asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + offset * kJSValSize]);
       asm_->mov(asm_->ecx, argc_with_this);
@@ -2098,9 +2093,6 @@ class Compiler {
 
       // move to new Frame
       asm_->mov(asm_->r13, asm_->rcx);
-      // initialize return address of frame
-      asm_->lea(asm_->rcx, asm_->ptr[asm_->rsp - k64Size * 3]);
-      asm_->mov(asm_->qword[asm_->r13 + IV_OFFSETOF(railgun::Frame, return_address_position_)], asm_->rcx);
       asm_->call(asm_->rax);
 
       // unwind Frame
@@ -2146,7 +2138,7 @@ class Compiler {
     const uint32_t argc_with_this = instr[1].ssw.u32;
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + callee * kJSValSize]);
       asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + offset * kJSValSize]);
       asm_->mov(asm_->ecx, argc_with_this);
@@ -2159,9 +2151,6 @@ class Compiler {
 
       // move to new Frame
       asm_->mov(asm_->r13, asm_->rcx);
-      // initialize return address of frame
-      asm_->lea(asm_->rcx, asm_->ptr[asm_->rsp - k64Size * 3]);
-      asm_->mov(asm_->qword[asm_->r13 + IV_OFFSETOF(railgun::Frame, return_address_position_)], asm_->rcx);
       asm_->call(asm_->rax);
 
       // unwind Frame
@@ -2187,7 +2176,7 @@ class Compiler {
   void EmitINSTANTIATE_DECLARATION_BINDING(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].u32[0]];
     const bool configurable = instr[1].u32[1];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, variable_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (configurable) {
@@ -2201,7 +2190,7 @@ class Compiler {
   void EmitINSTANTIATE_VARIABLE_BINDING(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].u32[0]];
     const bool configurable = instr[1].u32[1];
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, variable_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (configurable) {
@@ -2252,7 +2241,7 @@ class Compiler {
       asm_->jmp(".INCREMENT_EXIT");
 
       asm_->L(".INCREMENT_SLOW");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::INCREMENT);
       asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
 
@@ -2283,7 +2272,7 @@ class Compiler {
       asm_->jmp(".DECREMENT_EXIT");
 
       asm_->L(".DECREMENT_SLOW");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::DECREMENT);
       asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
 
@@ -2317,7 +2306,7 @@ class Compiler {
       asm_->jmp(".INCREMENT_EXIT");
 
       asm_->L(".INCREMENT_SLOW");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + dst * kJSValSize]);
       asm_->Call(&stub::POSTFIX_INCREMENT);
       asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
@@ -2352,7 +2341,7 @@ class Compiler {
       asm_->jmp(".DECREMENT_EXIT");
 
       asm_->L(".DECREMENT_SLOW");
-      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->rdi, asm_->r14);
       asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + dst * kJSValSize]);
       asm_->Call(&stub::POSTFIX_DECREMENT);
       asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
@@ -2366,7 +2355,7 @@ class Compiler {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const int16_t base = Reg(instr[1].ssw.i16[1]);
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     asm_->lea(asm_->rcx, asm_->ptr[asm_->r13 + base * kJSValSize]);
@@ -2438,7 +2427,7 @@ class Compiler {
     const std::string label = MakeLabel(num);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + enumerable * kJSValSize]);
     NullOrUndefinedGuard(asm_->rsi, asm_->rdi, label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->Call(&stub::FORIN_SETUP);
     asm_->mov(asm_->ptr[asm_->r13 + iterator * kJSValSize], asm_->rax);
   }
@@ -2483,7 +2472,7 @@ class Compiler {
   void EmitLOAD_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
@@ -2498,7 +2487,7 @@ class Compiler {
   void EmitSTORE_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     const int16_t src = Reg(instr[1].ssw.i16[0]);
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     asm_->mov(asm_->rcx, asm_->ptr[asm_->r13 + src * kJSValSize]);
@@ -2513,7 +2502,7 @@ class Compiler {
   void EmitDELETE_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
@@ -2528,13 +2517,13 @@ class Compiler {
   void EmitINCREMENT_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
-      asm_->Call(&stub::IncrementName<1, 1, true>);
+      asm_->Call(&stub::INCREMENT_NAME<1, 1, true>);
     } else {
-      asm_->Call(&stub::IncrementName<1, 1, false>);
+      asm_->Call(&stub::INCREMENT_NAME<1, 1, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
@@ -2543,13 +2532,13 @@ class Compiler {
   void EmitDECREMENT_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
-      asm_->Call(&stub::IncrementName<-1, 1, true>);
+      asm_->Call(&stub::INCREMENT_NAME<-1, 1, true>);
     } else {
-      asm_->Call(&stub::IncrementName<-1, 1, false>);
+      asm_->Call(&stub::INCREMENT_NAME<-1, 1, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
@@ -2558,13 +2547,13 @@ class Compiler {
   void EmitPOSTFIX_INCREMENT_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
-      asm_->Call(&stub::IncrementName<1, 0, true>);
+      asm_->Call(&stub::INCREMENT_NAME<1, 0, true>);
     } else {
-      asm_->Call(&stub::IncrementName<1, 0, false>);
+      asm_->Call(&stub::INCREMENT_NAME<1, 0, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
@@ -2573,13 +2562,13 @@ class Compiler {
   void EmitPOSTFIX_DECREMENT_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
-      asm_->Call(&stub::IncrementName<-1, 0, true>);
+      asm_->Call(&stub::INCREMENT_NAME<-1, 0, true>);
     } else {
-      asm_->Call(&stub::IncrementName<-1, 0, false>);
+      asm_->Call(&stub::INCREMENT_NAME<-1, 0, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
@@ -2588,7 +2577,7 @@ class Compiler {
   void EmitTYPEOF_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
@@ -2611,7 +2600,7 @@ class Compiler {
   // opcode | dst
   void EmitLOAD_ARGUMENTS(const Instruction* instr) {
     const int32_t dst = Reg(instr[1].i32[0]);
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->r13);
     if (code_->strict()) {
       asm_->Call(&stub::LOAD_ARGUMENTS<true>);

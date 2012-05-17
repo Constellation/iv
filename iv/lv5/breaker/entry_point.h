@@ -10,8 +10,8 @@ inline JSVal RunEval(railgun::Context* ctx,
                      railgun::Code* code,
                      JSEnv* variable_env,
                      JSEnv* lexical_env,
-                     JSVal this_binding) {
-  Error* e = ctx->PendingError();
+                     JSVal this_binding,
+                     Error* e) {
   ScopedArguments args(ctx, 0, IV_LV5_ERROR(e));
   args.set_this_binding(this_binding);
   railgun::Frame* frame = ctx->vm()->stack()->NewEvalFrame(
@@ -29,7 +29,7 @@ inline JSVal RunEval(railgun::Context* ctx,
     ctx->vm()->stack()->Unwind(frame);
     return JSEmpty;
   }
-  const JSVal res = breaker_prologue(ctx, frame, code->executable());
+  const JSVal res = breaker_prologue(ctx, frame, code->executable(), e);
 #ifdef DEBUG
   if (code->needs_declarative_environment()) {
     assert(frame->lexical_env()->outer() == lexical_env);
@@ -41,16 +41,17 @@ inline JSVal RunEval(railgun::Context* ctx,
   return res;
 }
 
-inline JSVal Run(railgun::Context* ctx, railgun::Code* code) {
+inline JSVal Run(railgun::Context* ctx, railgun::Code* code, Error* e) {
   return RunEval(ctx,
                  code,
                  ctx->global_env(),
                  ctx->global_env(),
-                 ctx->global_obj());
+                 ctx->global_obj(), e);
 }
 
-inline JSVal Execute(railgun::Context* ctx, Arguments* args, railgun::JSVMFunction* func) {
-  Error* e = ctx->PendingError();
+inline JSVal Execute(railgun::Context* ctx,
+                     Arguments* args,
+                     railgun::JSVMFunction* func, Error* e) {
   railgun::Code* code = func->code();
   railgun::Frame* frame = ctx->vm()->stack()->NewCodeFrame(
       ctx,
@@ -69,7 +70,7 @@ inline JSVal Execute(railgun::Context* ctx, Arguments* args, railgun::JSVMFuncti
     ctx->vm()->stack()->Unwind(frame);
     return JSEmpty;
   }
-  const JSVal res = breaker_prologue(ctx, frame, code->executable());
+  const JSVal res = breaker_prologue(ctx, frame, code->executable(), e);
 #ifdef DEBUG
   if (code->needs_declarative_environment()) {
     assert(frame->lexical_env()->outer() == func->scope());
