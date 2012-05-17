@@ -21,11 +21,14 @@ inline void* SearchExceptionHandler(void* pc, void** rsp,
     for (railgun::ExceptionTable::const_iterator it = table.begin(),
          last = table.end(); it != last; ++it) {
       const railgun::Handler& handler = *it;
-      if (in_range && handler.program_counter_begin() > pc) {
+      if (in_range && handler.program_counter_begin() >= pc) {
         break;  // handler not found
       }
-      if (handler.program_counter_begin() <= pc &&
-          pc < handler.program_counter_end()) {
+
+      // Because return address points next instruction,
+      // handler range is begin < pc <= end
+      if (handler.program_counter_begin() < pc &&
+          pc <= handler.program_counter_end()) {
         in_range = true;
         switch (handler.type()) {
           case railgun::Handler::ITERATOR: {
