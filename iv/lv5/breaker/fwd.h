@@ -64,8 +64,8 @@ class Assembler;
 typedef uint64_t Rep;
 
 Rep Extract(JSVal val);
-void* search_exception_handler(void* pc, void** rsp,
-                               Frame* stack, railgun::Frame* frame);
+void* SearchExceptionHandler(void* pc, void** rsp,
+                             Frame* stack, railgun::Frame* frame);
 JSVal breaker_prologue(railgun::Context* ctx,
                        railgun::Frame* frame, void* ptr, Error* e);
 JSVal RunEval(railgun::Context* ctx,

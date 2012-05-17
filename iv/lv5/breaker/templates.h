@@ -3,7 +3,6 @@
 // so use Xbyak and generate templates code at runtime.
 #ifndef IV_LV5_BREAKER_TEMPLATES_H_
 #define IV_LV5_BREAKER_TEMPLATES_H_
-#include <iv/singleton.h>
 #include <iv/bit_cast.h>
 #include <iv/debug.h>
 #include <iv/lv5/breaker/fwd.h>
@@ -15,6 +14,7 @@ namespace breaker {
 static const std::size_t kDispatchExceptionHandler = 0;
 static const std::size_t kExceptionHandlerIsNotFound = kDispatchExceptionHandler + 96;
 static const std::size_t kBreakerPrologue = kExceptionHandlerIsNotFound + 96;
+static const uint64_t kStackPayload = 2;  // NOLINT
 
 class TemplatesGenerator : public Xbyak::CodeGenerator {
  public:
@@ -39,7 +39,7 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     mov(rsi, rsp);
     mov(rdx, r14);
     mov(rcx, r13);
-    mov(rax, core::BitCast<uint64_t>(&search_exception_handler));
+    mov(rax, core::BitCast<uint64_t>(&SearchExceptionHandler));
     call(rax);
     mov(r13, ptr[r14 + offsetof(Frame, frame)]);
     mov(rsp, ptr[r14 + offsetof(Frame, rsp)]);
@@ -130,88 +130,6 @@ char Templates<D>::code[4096];
 struct ForceInstantiate {
   ForceInstantiate() { Templates<>::generator.getCode(); }
 };
-
-static const uint64_t kStackPayload = 2;  // NOLINT
-
-// Search exception handler from pc, and unwind frames.
-// If handler is found, return to handler pc.
-// copied from railgun::VM exception handler phase
-inline void* search_exception_handler(void* pc, void** rsp,
-                                      Frame* stack, railgun::Frame* frame) {
-  using namespace iv::lv5;  // NOLINT
-  railgun::Context* ctx = stack->ctx;
-  Error* e = stack->error;
-  assert(*e);
-  while (true) {
-    bool in_range = false;
-    const railgun::ExceptionTable& table = frame->code()->exception_table();
-    for (railgun::ExceptionTable::const_iterator it = table.begin(),
-         last = table.end(); it != last; ++it) {
-      const railgun::Handler& handler = *it;
-      if (in_range && handler.program_counter_begin() > pc) {
-        break;  // handler not found
-      }
-      if (handler.program_counter_begin() <= pc &&
-          pc < handler.program_counter_end()) {
-        in_range = true;
-        switch (handler.type()) {
-          case railgun::Handler::ITERATOR: {
-            // control iterator lifetime
-            railgun::NativeIterator* it =
-                static_cast<railgun::NativeIterator*>(
-                    frame->RegisterFile()[handler.ret()].cell());
-            ctx->ReleaseNativeIterator(it);
-            continue;
-          }
-
-          case railgun::Handler::ENV: {
-            // roll up environment
-            frame->set_lexical_env(frame->lexical_env()->outer());
-            continue;
-          }
-
-          default: {
-            // catch or finally
-            const JSVal error = JSError::Detail(ctx, e);
-            e->Clear();
-            JSVal* reg = frame->RegisterFile();
-            if (handler.type() == railgun::Handler::FINALLY) {
-              reg[handler.flag()] = railgun::VM::kJumpFromFinally;
-              reg[handler.jmp()] = error;
-            } else {
-              reg[handler.ret()] = error;
-            }
-            stack->rsp = rsp;
-            stack->frame = frame;
-            stack->ret = rsp - 1;
-            return handler.program_counter_end();
-          }
-        }
-      }
-    }
-    // handler not in this frame
-    // so, unwind frame and search again
-    if (frame->prev_pc_ == NULL) {
-      // this code is invoked by native function
-      // so, not unwind and return (continues to after for main loop)
-      break;
-    } else {
-      // unwind frame
-      rsp = rsp + kStackPayload;
-      pc = *core::BitCast<void**>(rsp - 1);
-      // because of Frame is code frame,
-      // first lexical_env is variable_env.
-      // (if Eval / Global, this is not valid)
-      assert(frame->lexical_env() == frame->variable_env());
-      frame = ctx->vm()->stack()->Unwind(frame);
-    }
-  }
-  rsp = rsp + kStackPayload;
-  stack->rsp = rsp;
-  stack->frame = frame;
-  stack->ret = rsp - 1;
-  return Templates<>::exception_handler_is_not_found();
-}
 
 inline JSVal breaker_prologue(railgun::Context* ctx,
                               railgun::Frame* frame, void* ptr, Error* e) {
