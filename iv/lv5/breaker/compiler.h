@@ -1307,15 +1307,24 @@ class Compiler {
 
   // opcode | (dst | src)
   void EmitUNARY_NEGATIVE(const Instruction* instr) {
+    static const uint64_t layout = Extract(JSVal(-0.0));
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t src = Reg(instr[1].i16[1]);
     {
+      // Because ECMA262 number value is defined as double,
+      // -0 should be double -0.0.
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
       Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".UNARY_NEGATIVE_SLOW");
+      asm_->test(asm_->esi, asm_->esi);
+      asm_->jz(".UNARY_NEGATIVE_MINUS_ZERO");
       asm_->neg(asm_->esi);
       asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
       asm_->or(asm_->rax, asm_->esi);
+      asm_->jmp(".UNARY_NEGATIVE_EXIT");
+
+      asm_->L(".UNARY_NEGATIVE_MINUS_ZERO");
+      asm_->mov(asm_->rax, layout);
       asm_->jmp(".UNARY_NEGATIVE_EXIT");
 
       asm_->L(".UNARY_NEGATIVE_SLOW");
