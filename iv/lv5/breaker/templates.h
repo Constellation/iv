@@ -49,6 +49,7 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
 
   void CompileExceptionHandlerIsNotFound(std::size_t size) {
     // restore callee-save registers
+    mov(r15, ptr[rsp + offsetof(Frame, r15)]);
     mov(r14, ptr[rsp + offsetof(Frame, r14)]);
     mov(r13, ptr[rsp + offsetof(Frame, r13)]);
     mov(r12, ptr[rsp + offsetof(Frame, r12)]);
@@ -67,6 +68,7 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     sub(rsp, sizeof(Frame));
 
     // construct breaker::Frame
+    mov(ptr[rsp + offsetof(Frame, r15)], r15);
     mov(ptr[rsp + offsetof(Frame, r14)], r14);
     mov(ptr[rsp + offsetof(Frame, r13)], r13);
     mov(ptr[rsp + offsetof(Frame, r12)], r12);
@@ -76,6 +78,7 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     mov(r12, rdi);
     mov(r13, rsi);
     mov(r14, rsp);
+    mov(r15, detail::jsval64::kNumberMask);
     lea(rcx, ptr[rsp - k64Size * 2]);
     mov(ptr[rsp + offsetof(Frame, rsp)], rcx);
     lea(rcx, ptr[rsp - k64Size]);
@@ -84,6 +87,7 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     // initialize return address of frame
     call(rdx);
 
+    mov(r15, ptr[rsp + offsetof(Frame, r15)]);
     mov(r14, ptr[rsp + offsetof(Frame, r14)]);
     mov(r13, ptr[rsp + offsetof(Frame, r13)]);
     mov(r12, ptr[rsp + offsetof(Frame, r12)]);

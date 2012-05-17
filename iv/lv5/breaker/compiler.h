@@ -587,6 +587,7 @@ class Compiler {
   //   r12 : context
   //   r13 : frame
   //   r14 : breaker frame
+  //   r15 : number mask immediate
 
   static int16_t Reg(int16_t reg) {
     return railgun::FrameConstant<>::kFrameSize + reg;
@@ -672,13 +673,12 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_ADD_SLOW_GENERIC");
-      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_ADD_SLOW_GENERIC");
+      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_ADD_SLOW_GENERIC");
+      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_ADD_SLOW_GENERIC");
       AddingInt32OverflowGuard(asm_->esi,
                                asm_->edx, asm_->eax, ".BINARY_ADD_SLOW_NUMBER");
       asm_->mov(asm_->esi, asm_->eax);
-      asm_->mov(asm_->rdi, detail::jsval64::kNumberMask);
-      asm_->add(asm_->rsi, asm_->rdi);
+      asm_->add(asm_->rsi, asm_->r15);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
       asm_->jmp(".BINARY_ADD_EXIT");
 
@@ -714,13 +714,12 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_SUBTRACT_SLOW_GENERIC");
-      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_SUBTRACT_SLOW_GENERIC");
+      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_SUBTRACT_SLOW_GENERIC");
+      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_SUBTRACT_SLOW_GENERIC");
       SubtractingInt32OverflowGuard(asm_->esi,
                                     asm_->edx, asm_->eax, ".BINARY_SUBTRACT_SLOW_NUMBER");
       asm_->mov(asm_->esi, asm_->eax);
-      asm_->mov(asm_->rdi, detail::jsval64::kNumberMask);
-      asm_->add(asm_->rsi, asm_->rdi);
+      asm_->add(asm_->rsi, asm_->r15);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
       asm_->jmp(".BINARY_SUBTRACT_EXIT");
 
@@ -756,12 +755,11 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_MULTIPLY_SLOW_GENERIC");
-      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_MULTIPLY_SLOW_GENERIC");
+      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_MULTIPLY_SLOW_GENERIC");
+      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_MULTIPLY_SLOW_GENERIC");
       MultiplyingInt32OverflowGuard(asm_->esi,
                                     asm_->edx, asm_->eax, ".BINARY_MULTIPLY_SLOW_NUMBER");
-      asm_->mov(asm_->rdi, detail::jsval64::kNumberMask);
-      asm_->add(asm_->rax, asm_->rdi);
+      asm_->add(asm_->rax, asm_->r15);
       asm_->jmp(".BINARY_MULTIPLY_EXIT");
 
       // rdi and rsi is always int32 (but overflow)
@@ -805,8 +803,8 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_MODULO_SLOW_GENERIC");
-      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_MODULO_SLOW_GENERIC");
+      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_MODULO_SLOW_GENERIC");
+      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_MODULO_SLOW_GENERIC");
       // check rhs is more than 0 (n % 0 == NaN)
       // lhs is >= 0 and rhs is > 0 because example like
       //   -1 % -1
@@ -821,7 +819,7 @@ class Compiler {
       asm_->mov(asm_->edx, 0);
       asm_->idiv(asm_->ecx);
 
-      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->mov(asm_->rax, asm_->r15);
       asm_->add(asm_->rax, asm_->rdx);
       asm_->jmp(".BINARY_MODULO_EXIT");
 
@@ -843,10 +841,10 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rcx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rdx, ".BINARY_LSHIFT_SLOW_GENERIC");
-      Int32Guard(asm_->rcx, asm_->rax, asm_->rdx, ".BINARY_LSHIFT_SLOW_GENERIC");
+      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_LSHIFT_SLOW_GENERIC");
+      Int32Guard(asm_->rcx, asm_->rax, ".BINARY_LSHIFT_SLOW_GENERIC");
       asm_->sal(asm_->esi, asm_->cl);
-      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->mov(asm_->rax, asm_->r15);
       asm_->add(asm_->rax, asm_->rsi);
       asm_->jmp(".BINARY_LSHIFT_EXIT");
 
@@ -869,10 +867,10 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rcx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rdx, ".BINARY_RSHIFT_SLOW_GENERIC");
-      Int32Guard(asm_->rcx, asm_->rax, asm_->rdx, ".BINARY_RSHIFT_SLOW_GENERIC");
+      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_RSHIFT_SLOW_GENERIC");
+      Int32Guard(asm_->rcx, asm_->rax, ".BINARY_RSHIFT_SLOW_GENERIC");
       asm_->sar(asm_->esi, asm_->cl);
-      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->mov(asm_->rax, asm_->r15);
       asm_->add(asm_->rax, asm_->rsi);
       asm_->jmp(".BINARY_RSHIFT_EXIT");
 
@@ -895,12 +893,12 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rcx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rdx, ".BINARY_RSHIFT_LOGICAL_SLOW_GENERIC");
-      Int32Guard(asm_->rcx, asm_->rax, asm_->rdx, ".BINARY_RSHIFT_LOGICAL_SLOW_GENERIC");
+      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_RSHIFT_LOGICAL_SLOW_GENERIC");
+      Int32Guard(asm_->rcx, asm_->rax, ".BINARY_RSHIFT_LOGICAL_SLOW_GENERIC");
       asm_->shr(asm_->esi, asm_->cl);
       asm_->cmp(asm_->esi, 0);
       asm_->jl(".BINARY_RSHIFT_LOGICAL_DOUBLE");  // uint32_t
-      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->mov(asm_->rax, asm_->r15);
       asm_->add(asm_->rax, asm_->rsi);
       asm_->jmp(".BINARY_RSHIFT_LOGICAL_EXIT");
 
@@ -931,8 +929,8 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_LT_SLOW");
-      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_LT_SLOW");
+      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_LT_SLOW");
+      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_LT_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_LT and IF_FALSE
@@ -959,8 +957,8 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_LTE_SLOW");
-      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_LTE_SLOW");
+      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_LTE_SLOW");
+      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_LTE_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_LTE and IF_FALSE
@@ -987,8 +985,8 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_GT_SLOW");
-      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_GT_SLOW");
+      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_GT_SLOW");
+      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_GT_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_GT and IF_FALSE
@@ -1015,8 +1013,8 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_GTE_SLOW");
-      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_GTE_SLOW");
+      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_GTE_SLOW");
+      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_GTE_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_GTE and IF_FALSE
@@ -1072,8 +1070,8 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_EQ_SLOW");
-      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_EQ_SLOW");
+      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_EQ_SLOW");
+      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_EQ_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_EQ and IF_FALSE
@@ -1099,8 +1097,8 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rdi, asm_->rax, asm_->rcx, ".BINARY_STRICT_EQ_SLOW");
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_STRICT_EQ_SLOW");
+      Int32Guard(asm_->rdi, asm_->rax, ".BINARY_STRICT_EQ_SLOW");
+      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_STRICT_EQ_SLOW");
       asm_->cmp(asm_->esi, asm_->edi);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_STRICT_EQ and IF_FALSE
@@ -1125,8 +1123,8 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_NE_SLOW");
-      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_NE_SLOW");
+      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_NE_SLOW");
+      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_NE_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_NE and IF_FALSE
@@ -1152,8 +1150,8 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rdi, asm_->rax, asm_->rcx, ".BINARY_STRICT_NE_SLOW");
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_STRICT_NE_SLOW");
+      Int32Guard(asm_->rdi, asm_->rax, ".BINARY_STRICT_NE_SLOW");
+      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_STRICT_NE_SLOW");
       asm_->cmp(asm_->esi, asm_->edi);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_STRICT_NE and IF_FALSE
@@ -1178,10 +1176,10 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_BIT_AND_SLOW");
-      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_BIT_AND_SLOW");
+      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_BIT_AND_SLOW");
+      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_BIT_AND_SLOW");
       asm_->and(asm_->esi, asm_->edx);
-      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->mov(asm_->rax, asm_->r15);
       asm_->add(asm_->rax, asm_->rsi);
       asm_->jmp(".BINARY_BIT_AND_EXIT");
 
@@ -1203,10 +1201,10 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_BIT_XOR_SLOW");
-      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_BIT_XOR_SLOW");
+      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_BIT_XOR_SLOW");
+      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_BIT_XOR_SLOW");
       asm_->xor(asm_->esi, asm_->edx);
-      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->mov(asm_->rax, asm_->r15);
       asm_->add(asm_->rax, asm_->rsi);
       asm_->jmp(".BINARY_BIT_XOR_EXIT");
 
@@ -1228,10 +1226,10 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_BIT_OR_SLOW");
-      Int32Guard(asm_->rdx, asm_->rax, asm_->rcx, ".BINARY_BIT_OR_SLOW");
+      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_BIT_OR_SLOW");
+      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_BIT_OR_SLOW");
       asm_->or(asm_->esi, asm_->edx);
-      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->mov(asm_->rax, asm_->r15);
       asm_->add(asm_->rax, asm_->rsi);
       asm_->jmp(".BINARY_BIT_OR_EXIT");
 
@@ -1315,11 +1313,11 @@ class Compiler {
       // -0 should be double -0.0.
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".UNARY_NEGATIVE_SLOW");
+      Int32Guard(asm_->rsi, asm_->rax, ".UNARY_NEGATIVE_SLOW");
       asm_->test(asm_->esi, asm_->esi);
       asm_->jz(".UNARY_NEGATIVE_MINUS_ZERO");
       asm_->neg(asm_->esi);
-      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->mov(asm_->rax, asm_->r15);
       asm_->or(asm_->rax, asm_->esi);
       asm_->jmp(".UNARY_NEGATIVE_EXIT");
 
@@ -1353,9 +1351,9 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".UNARY_BIT_NOT_SLOW");
+      Int32Guard(asm_->rsi, asm_->rax, ".UNARY_BIT_NOT_SLOW");
       asm_->not(asm_->esi);
-      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->mov(asm_->rax, asm_->r15);
       asm_->add(asm_->rax, asm_->rsi);
       asm_->jmp(".UNARY_BIT_NOT_EXIT");
 
@@ -2254,11 +2252,11 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".INCREMENT_SLOW");
+      Int32Guard(asm_->rsi, asm_->rax, ".INCREMENT_SLOW");
       asm_->inc(asm_->esi);
       asm_->jo(".INCREMENT_OVERFLOW");
 
-      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->mov(asm_->rax, asm_->r15);
       asm_->add(asm_->rax, asm_->rsi);
       asm_->jmp(".INCREMENT_EXIT");
 
@@ -2283,11 +2281,11 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".DECREMENT_SLOW");
+      Int32Guard(asm_->rsi, asm_->rax, ".DECREMENT_SLOW");
       asm_->sub(asm_->esi, 1);
       asm_->jo(".DECREMENT_OVERFLOW");
 
-      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->mov(asm_->rax, asm_->r15);
       asm_->add(asm_->rax, asm_->rsi);
       asm_->jmp(".DECREMENT_EXIT");
 
@@ -2314,12 +2312,12 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->rsi);
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".INCREMENT_SLOW");
+      Int32Guard(asm_->rsi, asm_->rax, ".INCREMENT_SLOW");
       asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rdx);
       asm_->inc(asm_->esi);
       asm_->jo(".INCREMENT_OVERFLOW");
 
-      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->mov(asm_->rax, asm_->r15);
       asm_->add(asm_->rax, asm_->rsi);
       asm_->jmp(".INCREMENT_EXIT");
 
@@ -2347,12 +2345,12 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->rsi);
-      Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".DECREMENT_SLOW");
+      Int32Guard(asm_->rsi, asm_->rax, ".DECREMENT_SLOW");
       asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rdx);
       asm_->sub(asm_->esi, 1);
       asm_->jo(".DECREMENT_OVERFLOW");
 
-      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->mov(asm_->rax, asm_->r15);
       asm_->add(asm_->rax, asm_->rsi);
       asm_->jmp(".DECREMENT_EXIT");
 
@@ -2633,7 +2631,7 @@ class Compiler {
 
   // leave flags
   void IsNumber(const Xbyak::Reg64& reg, const Xbyak::Reg64& tmp) {
-    asm_->mov(tmp, detail::jsval64::kNumberMask);
+    asm_->mov(tmp, asm_->r15);
     asm_->and(tmp, reg);
   }
 
@@ -2653,13 +2651,11 @@ class Compiler {
 
   void Int32Guard(const Xbyak::Reg64& target,
                   const Xbyak::Reg64& tmp1,
-                  const Xbyak::Reg64& tmp2,
                   const char* label,
                   Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
-    asm_->mov(tmp1, detail::jsval64::kNumberMask);
+    asm_->mov(tmp1, asm_->r15);
     asm_->and(tmp1, target);
-    asm_->mov(tmp2, detail::jsval64::kNumberMask);
-    asm_->cmp(tmp1, tmp2);
+    asm_->cmp(tmp1, asm_->r15);
     asm_->jne(label, type);
   }
 
