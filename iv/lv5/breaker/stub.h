@@ -4,6 +4,7 @@
 #include <iv/lv5/breaker/fwd.h>
 #include <iv/lv5/railgun/railgun.h>
 #include <iv/lv5/breaker/templates.h>
+#include <iv/lv5/breaker/assembler.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {
@@ -1128,7 +1129,7 @@ inline JSEnv* TRY_CATCH_SETUP(railgun::Context* ctx,
 template<bool STRICT>
 inline Rep STORE_PROP_GENERIC(Frame* stack,
                               JSVal base, Symbol name, JSVal src,
-                              railgun::Instruction* instr, void** repatch) {
+                              railgun::Instruction* instr) {
   base.CheckObjectCoercible(ERR);
   StorePropImpl<STRICT>(stack->ctx, base, name, src, ERR);
   return 0;
@@ -1137,12 +1138,12 @@ inline Rep STORE_PROP_GENERIC(Frame* stack,
 template<bool STRICT>
 Rep LOAD_PROP(Frame* stack,
               JSVal base, Symbol name,
-              railgun::Instruction* instr, void** repatch);
+              railgun::Instruction* instr);
 
 template<bool STRICT>
 inline Rep LOAD_PROP_GENERIC(Frame* stack,
                              JSVal base, Symbol name,
-                             railgun::Instruction* instr, void** repatch) {
+                             railgun::Instruction* instr) {
   base.CheckObjectCoercible(ERR);
   const JSVal res = LoadPropImpl(stack->ctx, base, name, ERR);
   return Extract(res);
@@ -1151,7 +1152,7 @@ inline Rep LOAD_PROP_GENERIC(Frame* stack,
 template<bool STRICT>
 inline Rep LOAD_PROP_OWN_MEGAMORPHIC(Frame* stack,
                                      JSVal base, Symbol name,
-                                     railgun::Instruction* instr, void** repatch) {
+                                     railgun::Instruction* instr) {
   railgun::Context* ctx = stack->ctx;
   base.CheckObjectCoercible(ERR);
   JSObject* obj = NULL;
@@ -1183,7 +1184,8 @@ inline Rep LOAD_PROP_OWN_MEGAMORPHIC(Frame* stack,
       if (!slot.IsCacheable()) {
         // uncache
         instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
-        *repatch = core::BitCast<void*>(&stub::LOAD_PROP<STRICT>);
+        Assembler::RepatchSite::RepatchAfterCall(
+            stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP<STRICT>));
         const JSVal res = slot.Get(ctx, base, ERR);
         return Extract(res);
       }
@@ -1206,7 +1208,7 @@ inline Rep LOAD_PROP_OWN_MEGAMORPHIC(Frame* stack,
 template<bool STRICT>
 inline Rep LOAD_PROP_OWN(Frame* stack,
                          JSVal base, Symbol name,
-                         railgun::Instruction* instr, void** repatch) {
+                         railgun::Instruction* instr) {
   railgun::Context* ctx = stack->ctx;
   base.CheckObjectCoercible(ERR);
   JSObject* obj = NULL;
@@ -1244,7 +1246,8 @@ inline Rep LOAD_PROP_OWN(Frame* stack,
         if (!slot.IsCacheable()) {
           // uncacheable => uncache
           instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
-          *repatch = core::BitCast<void*>(&stub::LOAD_PROP<STRICT>);
+          Assembler::RepatchSite::RepatchAfterCall(
+              stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP<STRICT>));
           const JSVal res = slot.Get(ctx, base, ERR);
           return Extract(res);
         }
@@ -1253,7 +1256,8 @@ inline Rep LOAD_PROP_OWN(Frame* stack,
           // own property => register it to map cache
           instr[0] =
               railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP_OWN_MEGAMORPHIC);
-          *repatch = core::BitCast<void*>(&stub::LOAD_PROP_OWN_MEGAMORPHIC<STRICT>);
+          Assembler::RepatchSite::RepatchAfterCall(
+              stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP_OWN_MEGAMORPHIC<STRICT>));
           (*ctx->global_map_cache())[hash] =
               railgun::Context::MapCacheEntry(
                   railgun::Context::MapCacheKey(obj->map(), name), slot.offset());
@@ -1269,13 +1273,15 @@ inline Rep LOAD_PROP_OWN(Frame* stack,
         }
 
         instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
-        *repatch = core::BitCast<void*>(&stub::LOAD_PROP<STRICT>);
+        Assembler::RepatchSite::RepatchAfterCall(
+            stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP<STRICT>));
         const JSVal res = slot.Get(ctx, base, ERR);
         return Extract(res);
       } else {
         // not found => uncache
         instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
-        *repatch = core::BitCast<void*>(&stub::LOAD_PROP<STRICT>);
+        Assembler::RepatchSite::RepatchAfterCall(
+            stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP<STRICT>));
         return Extract(JSUndefined);
       }
     }
@@ -1285,7 +1291,7 @@ inline Rep LOAD_PROP_OWN(Frame* stack,
 template<bool STRICT>
 inline Rep LOAD_PROP_PROTO(Frame* stack,
                            JSVal base, Symbol name,
-                           railgun::Instruction* instr, void** repatch) {
+                           railgun::Instruction* instr) {
   railgun::Context* ctx = stack->ctx;
   base.CheckObjectCoercible(ERR);
   JSObject* obj = NULL;
@@ -1308,7 +1314,8 @@ inline Rep LOAD_PROP_PROTO(Frame* stack,
   } else {
     // uncache
     instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
-    *repatch = core::BitCast<void*>(&stub::LOAD_PROP<STRICT>);
+    Assembler::RepatchSite::RepatchAfterCall(
+        stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP<STRICT>));
     const JSVal res = LoadPropImpl(ctx, base, name, ERR);
     return Extract(res);
   }
@@ -1317,7 +1324,7 @@ inline Rep LOAD_PROP_PROTO(Frame* stack,
 template<bool STRICT>
 inline Rep LOAD_PROP_CHAIN(Frame* stack,
                            JSVal base, Symbol name,
-                           railgun::Instruction* instr, void** repatch) {
+                           railgun::Instruction* instr) {
   railgun::Context* ctx = stack->ctx;
   base.CheckObjectCoercible(ERR);
   JSObject* obj = NULL;
@@ -1339,7 +1346,8 @@ inline Rep LOAD_PROP_CHAIN(Frame* stack,
   } else {
     // uncache
     instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
-    *repatch = core::BitCast<void*>(&stub::LOAD_PROP<STRICT>);
+    Assembler::RepatchSite::RepatchAfterCall(
+        stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP<STRICT>));
     const JSVal res = LoadPropImpl(ctx, base, name, ERR);
     return Extract(res);
   }
@@ -1348,7 +1356,7 @@ inline Rep LOAD_PROP_CHAIN(Frame* stack,
 template<bool STRICT>
 inline Rep LOAD_PROP(Frame* stack,
                      JSVal base, Symbol name,
-                     railgun::Instruction* instr, void** repatch) {
+                     railgun::Instruction* instr) {
   railgun::Context* ctx = stack->ctx;
   base.CheckObjectCoercible(ERR);
   JSObject* obj = NULL;
@@ -1371,7 +1379,8 @@ inline Rep LOAD_PROP(Frame* stack,
     if (!slot.IsCacheable()) {
       // bailout to generic
       instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP_GENERIC);
-      *repatch = core::BitCast<void*>(&stub::LOAD_PROP_GENERIC<STRICT>);
+      Assembler::RepatchSite::RepatchAfterCall(
+          stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP_GENERIC<STRICT>));
       const JSVal res = slot.Get(ctx, base, ERR);
       return Extract(res);
     }
@@ -1381,7 +1390,8 @@ inline Rep LOAD_PROP(Frame* stack,
     if (slot.base() == obj) {
       // own property
       instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP_OWN);
-      *repatch = core::BitCast<void*>(&stub::LOAD_PROP_OWN<STRICT>);
+      Assembler::RepatchSite::RepatchAfterCall(
+          stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP_OWN<STRICT>));
       instr[2].map = obj->map();
       instr[3].u32[0] = slot.offset();
       const JSVal res = slot.Get(ctx, base, ERR);
@@ -1392,7 +1402,8 @@ inline Rep LOAD_PROP(Frame* stack,
       // proto property
       obj->FlattenMap();
       instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP_PROTO);
-      *repatch = core::BitCast<void*>(&stub::LOAD_PROP_PROTO<STRICT>);
+      Assembler::RepatchSite::RepatchAfterCall(
+          stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP_PROTO<STRICT>));
       instr[2].map = obj->map();
       instr[3].map = slot.base()->map();
       instr[4].u32[0] = slot.offset();
@@ -1402,7 +1413,8 @@ inline Rep LOAD_PROP(Frame* stack,
 
     // chain property
     instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP_CHAIN);
-    *repatch = core::BitCast<void*>(&stub::LOAD_PROP_CHAIN<STRICT>);
+    Assembler::RepatchSite::RepatchAfterCall(
+        stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP_CHAIN<STRICT>));
     instr[2].chain = Chain::New(obj, slot.base());
     instr[3].map = slot.base()->map();
     instr[4].u32[0] = slot.offset();
@@ -1415,7 +1427,7 @@ inline Rep LOAD_PROP(Frame* stack,
 template<bool STRICT>
 inline Rep STORE_PROP(Frame* stack,
                       JSVal base, Symbol name, JSVal src,
-                      railgun::Instruction* instr, void** repatch) {
+                      railgun::Instruction* instr) {
   railgun::Context* ctx = stack->ctx;
   base.CheckObjectCoercible(ERR);
   if (base.IsPrimitive()) {
@@ -1437,7 +1449,8 @@ inline Rep STORE_PROP(Frame* stack,
           // dispatch generic path
           obj->Put(ctx, name, src, STRICT, ERR);
           instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::STORE_PROP_GENERIC);
-          *repatch = core::BitCast<void*>(&stub::STORE_PROP_GENERIC<STRICT>);
+          Assembler::RepatchSite::RepatchAfterCall(
+              stack->ret, core::BitCast<uint64_t>(&stub::STORE_PROP_GENERIC<STRICT>));
         }
       } else {
         instr[2].map = NULL;

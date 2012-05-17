@@ -114,13 +114,6 @@ class Compiler {
         }
       }
     }
-    // link repatch sites
-    {
-      for (RepatchSites::const_iterator it = repatches_.begin(),
-           last = repatches_.end(); it != last; ++it) {
-        it->first.Repatch(asm_, core::BitCast<uint64_t>(asm_->GainExecutableByOffset(it->second)));
-      }
-    }
   }
 
   void Initialize(railgun::Code* code) {
@@ -1493,9 +1486,6 @@ class Compiler {
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     asm_->mov(asm_->rcx, core::BitCast<uint64_t>(instr));
 
-    Assembler::RepatchSite move;
-    move.Mov(asm_, asm_->r8);
-
     Assembler::RepatchSite site;
     site.MovRepatchableAligned(asm_, asm_->rax);
     if (code_->strict()) {
@@ -1505,8 +1495,6 @@ class Compiler {
     }
     asm_->call(asm_->rax);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-
-    repatches_.push_back(std::make_pair(move, site.offset()));
   }
 
   // opcode | (base | src | index) | nop | nop
@@ -1521,9 +1509,6 @@ class Compiler {
     asm_->mov(asm_->rcx, asm_->ptr[asm_->r13 + src * kJSValSize]);
     asm_->mov(asm_->r8, core::BitCast<uint64_t>(instr));
 
-    Assembler::RepatchSite move;
-    move.Mov(asm_, asm_->r9);
-
     Assembler::RepatchSite site;
     site.MovRepatchableAligned(asm_, asm_->rax);
     if (code_->strict()) {
@@ -1532,8 +1517,6 @@ class Compiler {
       site.Repatch(asm_, core::BitCast<uint64_t>(&stub::STORE_PROP<false>));
     }
     asm_->call(asm_->rax);
-
-    repatches_.push_back(std::make_pair(move, site.offset()));
   }
 
   // opcode | (dst | base | name) | nop | nop | nop
@@ -2716,7 +2699,6 @@ class Compiler {
   UnresolvedAddressMap unresolved_address_map_;
   HandlerLinks handler_links_;
   Codes codes_;
-  RepatchSites repatches_;
   std::size_t counter_;
 };
 

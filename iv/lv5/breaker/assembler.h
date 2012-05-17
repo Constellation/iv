@@ -26,6 +26,18 @@ class Assembler : public Xbyak::CodeGenerator {
    public:
     static const std::size_t kMovImmOffset = 2;  // rex and code
 
+    // repatch offset from call return address
+    //
+    // mov rax, $REPATCH
+    // call rax
+    // <RET ADDR>    -- from there to $REPATCH
+    //
+    // call rax is 2bytes, (FF D0)
+    // $REPATCH is 8bytes
+    //
+    // so offset is 2 + 8 = 10
+    static const std::size_t kRepatchOffset = 10;
+
     RepatchSite() : offset_(0) { }
 
     void Mov(Assembler* assembler, const Xbyak::Reg64& reg) {
@@ -51,6 +63,10 @@ class Assembler : public Xbyak::CodeGenerator {
     }
 
     std::size_t offset() const { return offset_; }
+
+    static void RepatchAfterCall(void** ret, uint64_t ptr) {
+      *reinterpret_cast<void**>((reinterpret_cast<uint8_t*>(*ret) - kRepatchOffset)) = reinterpret_cast<void*>(ptr);
+    }
 
    private:
     std::size_t offset_;
