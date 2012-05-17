@@ -936,12 +936,14 @@ class Compiler {
       asm_->cmp(asm_->esi, asm_->edx);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_LT and IF_FALSE
-      asm_->setl(asm_->al);
-      ConvertBooleanToJSVal(asm_->rax);
+      asm_->setl(asm_->cl);
+      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
       asm_->jmp(".BINARY_LT_EXIT");
+
       asm_->L(".BINARY_LT_SLOW");
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_LT);
+
       asm_->L(".BINARY_LT_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     }
@@ -962,12 +964,14 @@ class Compiler {
       asm_->cmp(asm_->esi, asm_->edx);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_LTE and IF_FALSE
-      asm_->setle(asm_->al);
-      ConvertBooleanToJSVal(asm_->rax);
+      asm_->setle(asm_->cl);
+      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
       asm_->jmp(".BINARY_LTE_EXIT");
+
       asm_->L(".BINARY_LTE_SLOW");
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_LTE);
+
       asm_->L(".BINARY_LTE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     }
@@ -988,12 +992,14 @@ class Compiler {
       asm_->cmp(asm_->esi, asm_->edx);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_GT and IF_FALSE
-      asm_->setg(asm_->al);
-      ConvertBooleanToJSVal(asm_->rax);
+      asm_->setg(asm_->cl);
+      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
       asm_->jmp(".BINARY_GT_EXIT");
+
       asm_->L(".BINARY_GT_SLOW");
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_GT);
+
       asm_->L(".BINARY_GT_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     }
@@ -1014,12 +1020,14 @@ class Compiler {
       asm_->cmp(asm_->esi, asm_->edx);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_GTE and IF_FALSE
-      asm_->setge(asm_->al);
-      ConvertBooleanToJSVal(asm_->rax);
+      asm_->setge(asm_->cl);
+      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
       asm_->jmp(".BINARY_GTE_EXIT");
+
       asm_->L(".BINARY_GTE_SLOW");
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_GTE);
+
       asm_->L(".BINARY_GTE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     }
@@ -1069,12 +1077,14 @@ class Compiler {
       asm_->cmp(asm_->esi, asm_->edx);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_EQ and IF_FALSE
-      asm_->sete(asm_->al);
-      ConvertBooleanToJSVal(asm_->rax);
+      asm_->sete(asm_->cl);
+      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
       asm_->jmp(".BINARY_EQ_EXIT");
+
       asm_->L(".BINARY_EQ_SLOW");
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_EQ);
+
       asm_->L(".BINARY_EQ_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     }
@@ -1091,14 +1101,16 @@ class Compiler {
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
       Int32Guard(asm_->rdi, asm_->rax, asm_->rcx, ".BINARY_STRICT_EQ_SLOW");
       Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_STRICT_EQ_SLOW");
-      asm_->cmp(asm_->esi, asm_->edx);
+      asm_->cmp(asm_->esi, asm_->edi);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_STRICT_EQ and IF_FALSE
-      asm_->sete(asm_->al);
-      ConvertBooleanToJSVal(asm_->rax);
+      asm_->sete(asm_->cl);
+      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
       asm_->jmp(".BINARY_STRICT_EQ_EXIT");
+
       asm_->L(".BINARY_STRICT_EQ_SLOW");
       asm_->Call(&stub::BINARY_STRICT_EQ);
+
       asm_->L(".BINARY_STRICT_EQ_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     }
@@ -1118,12 +1130,14 @@ class Compiler {
       asm_->cmp(asm_->esi, asm_->edx);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_NE and IF_FALSE
-      asm_->setne(asm_->al);
-      ConvertBooleanToJSVal(asm_->rax);
+      asm_->setne(asm_->cl);
+      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
       asm_->jmp(".BINARY_NE_EXIT");
+
       asm_->L(".BINARY_NE_SLOW");
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_NE);
+
       asm_->L(".BINARY_NE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     }
@@ -1140,14 +1154,16 @@ class Compiler {
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
       Int32Guard(asm_->rdi, asm_->rax, asm_->rcx, ".BINARY_STRICT_NE_SLOW");
       Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".BINARY_STRICT_NE_SLOW");
-      asm_->cmp(asm_->esi, asm_->edx);
+      asm_->cmp(asm_->esi, asm_->edi);
       // TODO(Constellation)
       // we should introduce fusion opcode, like BINARY_STRICT_NE and IF_FALSE
-      asm_->setne(asm_->al);
-      ConvertBooleanToJSVal(asm_->rax);
+      asm_->setne(asm_->cl);
+      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
       asm_->jmp(".BINARY_STRICT_NE_EXIT");
+
       asm_->L(".BINARY_STRICT_NE_SLOW");
       asm_->Call(&stub::BINARY_STRICT_NE);
+
       asm_->L(".BINARY_STRICT_NE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     }
@@ -1295,13 +1311,15 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
       Int32Guard(asm_->rsi, asm_->rax, asm_->rcx, ".UNARY_NEGATIVE_SLOW");
-      asm_->mov(asm_->eax, asm_->esi);
-      asm_->mov(asm_->rdi, detail::jsval64::kNumberMask);
-      asm_->add(asm_->rax, asm_->rdi);
+      asm_->neg(asm_->esi);
+      asm_->mov(asm_->rax, detail::jsval64::kNumberMask);
+      asm_->or(asm_->rax, asm_->esi);
       asm_->jmp(".UNARY_NEGATIVE_EXIT");
+
       asm_->L(".UNARY_NEGATIVE_SLOW");
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::UNARY_NEGATIVE);
+
       asm_->L(".UNARY_NEGATIVE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     }
@@ -2623,8 +2641,11 @@ class Compiler {
     asm_->add(target, tmp);
   }
 
-  void ConvertBooleanToJSVal(const Xbyak::Reg64& target) {
-    asm_->or(Xbyak::Reg32(target.getIdx()), detail::jsval64::kBooleanRepresentation);
+  void ConvertBooleanToJSVal(const Xbyak::Reg8& cond,
+                             const Xbyak::Reg64& result) {
+    assert(cond.getIdx() != result.getIdx());
+    asm_->mov(result, detail::jsval64::kBooleanRepresentation);
+    asm_->or(Xbyak::Reg8(result.getIdx()), cond);
   }
 
   void Int32Guard(const Xbyak::Reg64& target,
