@@ -513,14 +513,21 @@ inline JSVal StringCharAt(const Arguments& args, Error* e) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
-  const double pos = args.At(0).ToNumber(args.ctx(), IV_LV5_ERROR(e));
-  const double position = core::DoubleToInteger(pos);
-  if (position < 0 || position >= str->size()) {
-    return JSString::NewEmptyString(args.ctx());
+  const JSVal first = args.At(0);
+  uint32_t pos;
+  if (first.GetUInt32(&pos)) {
+    if (pos >= str->size()) {
+      return JSString::NewEmptyString(args.ctx());
+    }
   } else {
-    return JSString::NewSingle(args.ctx(),
-                               str->At(static_cast<std::size_t>(position)));
+    const double p = first.ToNumber(args.ctx(), IV_LV5_ERROR(e));
+    const double position = core::DoubleToInteger(p);
+    if (position < 0 || position >= str->size()) {
+      return JSString::NewEmptyString(args.ctx());
+    }
+    pos = static_cast<uint32_t>(position);
   }
+  return JSString::NewSingle(args.ctx(), str->At(pos));
 }
 
 // section 15.5.4.5 String.prototype.charCodeAt(pos)
@@ -529,13 +536,21 @@ inline JSVal StringCharCodeAt(const Arguments& args, Error* e) {
   const JSVal& val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
-  const double pos = args.At(0).ToNumber(args.ctx(), IV_LV5_ERROR(e));
-  const double position = core::DoubleToInteger(pos);
-  if (position < 0 || position >= str->size()) {
-    return JSNaN;
+  const JSVal first = args.At(0);
+  uint32_t pos;
+  if (first.GetUInt32(&pos)) {
+    if (pos >= str->size()) {
+      return JSNaN;
+    }
   } else {
-    return JSVal::UInt16(str->At(core::DoubleToUInt32(position)));
+    const double p = first.ToNumber(args.ctx(), IV_LV5_ERROR(e));
+    const double position = core::DoubleToInteger(p);
+    if (position < 0 || position >= str->size()) {
+      return JSNaN;
+    }
+    pos = static_cast<uint32_t>(position);
   }
+  return JSVal::UInt16(str->At(pos));
 }
 
 // section 15.5.4.6 String.prototype.concat([string1[, string2[, ...]]])
