@@ -876,10 +876,8 @@ bool JSLayout::IsCallable() const {
 
 void JSLayout::CheckObjectCoercible(Error* e) const {
   assert(!IsEnvironment() && !IsReference() && !IsEmpty());
-  if (IsNull()) {
-    e->Report(Error::Type, "null has no properties");
-  } else if (IsUndefined()) {
-    e->Report(Error::Type, "undefined has no properties");
+  if (IsNullOrUndefined()) {
+    e->Report(Error::Type, "null or undefined has no properties");
   }
 }
 
