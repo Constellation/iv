@@ -69,49 +69,32 @@ class JSDeclEnv : public JSEnv {
 
     UpValue()
       : attribute_(NONE),
-        escaped_(JSEmpty),
-        redirect_(&escaped_) {
-      assert(&escaped_ == redirect_);
+        escaped_(JSEmpty) {
     }
 
     UpValue(const UpValue& rhs)
       : attribute_(rhs.attribute_),
-        escaped_(rhs.escaped_),
-        redirect_(&escaped_) {
-      assert(&escaped_ == redirect_);
+        escaped_(rhs.escaped_) {
     }
 
     explicit UpValue(int attr)
       : attribute_(attr),
-        escaped_(JSUndefined),
-        redirect_(&escaped_) {
-      assert(&escaped_ == redirect_);
+        escaped_(JSUndefined) {
     }
 
     UpValue(int attr, JSVal* reg)
       : attribute_(attr),
-        escaped_(JSEmpty),
-        redirect_(reg) {
+        escaped_(JSEmpty) {
     }
 
     UpValue(int attr, JSVal val)
       : attribute_(attr),
-        escaped_(val),
-        redirect_(&escaped_) {
-      assert(&escaped_ == redirect_);
+        escaped_(val) {
     }
 
-    // close this upvalue to self referenced
-    void Close() {
-      escaped_ = *redirect_;
-      redirect_ = &escaped_;
-    }
+    JSVal value() const { return escaped_; }
 
-    bool IsRedirected() const { return redirect_ != &escaped_; }
-
-    JSVal value() const { return *redirect_; }
-
-    void set_value(JSVal value) { *redirect_ = value; }
+    void set_value(JSVal value) { escaped_ = value; }
 
     int attribute() const { return attribute_; }
 
@@ -137,7 +120,6 @@ class JSDeclEnv : public JSEnv {
    private:
     int attribute_;
     JSVal escaped_;
-    JSVal* redirect_;
   };
 
  public:
