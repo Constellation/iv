@@ -2380,6 +2380,36 @@ class Compiler {
   }
 
   // opcode | (jmp | cond)
+  void EmitIF_FALSE(const Instruction* instr) {
+    // TODO(Constelation) inlining this
+    const int16_t cond = Reg(instr[1].jump.i16[0]);
+    const int32_t jump = instr[1].jump.to;
+    const uint32_t to = (instr - code_->begin()) + jump;
+    const std::size_t num = jump_map_.find(to)->second.counter;
+    const std::string label = MakeLabel(num);
+    {
+      const Assembler::LocalLabelScope scope(asm_);
+      asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + cond * kJSValSize]);
+
+      // boolean and int32_t zero fast cases
+      asm_->cmp(asm_->rdi, asm_->r15);
+      asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+
+      asm_->cmp(asm_->rdi, detail::jsval64::kFalse);
+      asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+
+      asm_->cmp(asm_->rdi, detail::jsval64::kTrue);
+      asm_->je(".IF_FALSE_EXIT");
+
+      asm_->Call(&stub::TO_BOOLEAN);
+      asm_->test(asm_->eax, asm_->eax);
+      asm_->jz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+
+      asm_->L(".IF_FALSE_EXIT");
+    }
+  }
+
+  // opcode | (jmp | cond)
   void EmitIF_TRUE(const Instruction* instr) {
     // TODO(Constelation) inlining this
     const int16_t cond = Reg(instr[1].jump.i16[0]);
@@ -2387,10 +2417,26 @@ class Compiler {
     const uint32_t to = (instr - code_->begin()) + jump;
     const std::size_t num = jump_map_.find(to)->second.counter;
     const std::string label = MakeLabel(num);
-    asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + cond * kJSValSize]);
-    asm_->Call(&stub::TO_BOOLEAN);
-    asm_->test(asm_->eax, asm_->eax);
-    asm_->jnz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+    {
+      const Assembler::LocalLabelScope scope(asm_);
+      asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + cond * kJSValSize]);
+
+      // boolean and int32_t zero fast cases
+      asm_->cmp(asm_->rdi, asm_->r15);
+      asm_->je(".IF_TRUE_EXIT");
+
+      asm_->cmp(asm_->rdi, detail::jsval64::kFalse);
+      asm_->je(".IF_TRUE_EXIT");
+
+      asm_->cmp(asm_->rdi, detail::jsval64::kTrue);
+      asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+
+      asm_->Call(&stub::TO_BOOLEAN);
+      asm_->test(asm_->eax, asm_->eax);
+      asm_->jnz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+
+      asm_->L(".IF_TRUE_EXIT");
+    }
   }
 
   // opcode | (jmp : addr | flag)
@@ -2417,20 +2463,6 @@ class Compiler {
     // So we rotate this bit, make dummy double value
     // and store to virtual register
     unresolved_address_map_.insert(std::make_pair(asm_->size(), site));
-  }
-
-  // opcode | (jmp | cond)
-  void EmitIF_FALSE(const Instruction* instr) {
-    // TODO(Constelation) inlining this
-    const int16_t cond = Reg(instr[1].jump.i16[0]);
-    const int32_t jump = instr[1].jump.to;
-    const uint32_t to = (instr - code_->begin()) + jump;
-    const std::size_t num = jump_map_.find(to)->second.counter;
-    const std::string label = MakeLabel(num);
-    asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + cond * kJSValSize]);
-    asm_->Call(&stub::TO_BOOLEAN);
-    asm_->test(asm_->eax, asm_->eax);
-    asm_->jz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
   }
 
   // opcode | (jmp : iterator | enumerable)
