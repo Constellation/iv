@@ -1483,6 +1483,7 @@ class Compiler {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
+    CheckObjectCoercible(asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     asm_->mov(asm_->rcx, core::BitCast<uint64_t>(instr));
 
@@ -1505,6 +1506,7 @@ class Compiler {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
+    CheckObjectCoercible(asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     asm_->mov(asm_->rcx, asm_->ptr[asm_->r13 + src * kJSValSize]);
     asm_->mov(asm_->r8, core::BitCast<uint64_t>(instr));
@@ -1526,6 +1528,7 @@ class Compiler {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
+    CheckObjectCoercible(asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::DELETE_PROP<true>);
@@ -1542,6 +1545,7 @@ class Compiler {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
+    CheckObjectCoercible(asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_PROP<1, 1, true>);
@@ -1558,6 +1562,7 @@ class Compiler {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
+    CheckObjectCoercible(asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_PROP<-1, 1, true>);
@@ -1574,6 +1579,7 @@ class Compiler {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
+    CheckObjectCoercible(asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_PROP<1, 0, true>);
@@ -1590,6 +1596,7 @@ class Compiler {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
+    CheckObjectCoercible(asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_PROP<-1, 0, true>);
@@ -1680,6 +1687,7 @@ class Compiler {
     const int16_t element = Reg(instr[1].i16[2]);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
+    CheckObjectCoercible(asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
     asm_->Call(&stub::LOAD_ELEMENT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
@@ -1692,6 +1700,7 @@ class Compiler {
     const int16_t src = Reg(instr[1].i16[2]);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
+    CheckObjectCoercible(asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
     asm_->mov(asm_->rcx, asm_->qword[asm_->r13 + src * kJSValSize]);
     if (code_->strict()) {
@@ -1708,6 +1717,7 @@ class Compiler {
     const int16_t element = Reg(instr[1].i16[2]);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
+    CheckObjectCoercible(asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
     if (code_->strict()) {
       asm_->Call(&stub::DELETE_ELEMENT<true>);
@@ -1724,6 +1734,7 @@ class Compiler {
     const int16_t element = Reg(instr[1].i16[2]);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
+    CheckObjectCoercible(asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_ELEMENT<1, 1, true>);
@@ -1740,6 +1751,7 @@ class Compiler {
     const int16_t element = Reg(instr[1].i16[2]);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
+    CheckObjectCoercible(asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_ELEMENT<-1, 1, true>);
@@ -1756,6 +1768,7 @@ class Compiler {
     const int16_t element = Reg(instr[1].i16[2]);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
+    CheckObjectCoercible(asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_ELEMENT<1, 0, true>);
@@ -1772,6 +1785,7 @@ class Compiler {
     const int16_t element = Reg(instr[1].i16[2]);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
+    CheckObjectCoercible(asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_ELEMENT<-1, 0, true>);
@@ -2647,10 +2661,29 @@ class Compiler {
                             Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
     // (1000)2 = 8
     // Null is (0010)2 and Undefined is (1010)2
-    asm_->mov(tmp, ~UINT64_C(8));
-    asm_->and(tmp, target);
+    // ~UINT64_C(8) value is -9
+    asm_->mov(tmp, target);
+    asm_->and(tmp, -9);
     asm_->cmp(tmp, detail::jsval64::kNull);
     asm_->je(label, type);
+  }
+
+
+  void CheckObjectCoercible(const Xbyak::Reg64& target,
+                            const Xbyak::Reg64& tmp) {
+    // (1000)2 = 8
+    // Null is (0010)2 and Undefined is (1010)2
+    // ~UINT64_C(8) value is -9
+    {
+      const Assembler::LocalLabelScope scope(asm_);
+      asm_->mov(tmp, target);
+      asm_->and(tmp, -9);
+      asm_->cmp(tmp, detail::jsval64::kNull);
+      asm_->jne(".EXIT");
+      asm_->mov(asm_->rdi, asm_->r14);
+      asm_->Call(&stub::THROW_CHECK_OBJECT);
+      asm_->L(".EXIT");
+    }
   }
 
   void AddingInt32OverflowGuard(const Xbyak::Reg32& lhs,

@@ -12,8 +12,8 @@ namespace lv5 {
 namespace breaker {
 
 static const std::size_t kDispatchExceptionHandler = 0;
-static const std::size_t kExceptionHandlerIsNotFound = kDispatchExceptionHandler + 96;
-static const std::size_t kBreakerPrologue = kExceptionHandlerIsNotFound + 96;
+static const std::size_t kExceptionHandlerIsNotFound = kDispatchExceptionHandler + 64;
+static const std::size_t kBreakerPrologue = kExceptionHandlerIsNotFound + 64;
 static const uint64_t kStackPayload = 2;  // NOLINT
 
 class TemplatesGenerator : public Xbyak::CodeGenerator {

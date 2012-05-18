@@ -272,6 +272,11 @@ inline Rep THROW(Frame* stack, JSVal src) {
   RAISE();
 }
 
+inline Rep THROW_CHECK_OBJECT(Frame* stack) {
+  stack->error->Report(Error::Type, "null or undefined has no properties");
+  RAISE();
+}
+
 inline void POP_ENV(railgun::Frame* frame) {
   frame->set_lexical_env(frame->lexical_env()->outer());
 }
@@ -975,7 +980,6 @@ inline JSVal LoadPropImpl(railgun::Context* ctx, JSVal base, Symbol name, Error*
 
 inline Rep LOAD_ELEMENT(Frame* stack, JSVal base, JSVal element) {
   railgun::Context* ctx = stack->ctx;
-  base.CheckObjectCoercible(ERR);
   // array fast path
   uint32_t index;
   if (element.GetUInt32(&index)) {
@@ -1041,7 +1045,6 @@ inline void StorePropImpl(railgun::Context* ctx,
 template<bool STRICT>
 inline Rep STORE_ELEMENT(Frame* stack, JSVal base, JSVal element, JSVal src) {
   railgun::Context* ctx = stack->ctx;
-  base.CheckObjectCoercible(ERR);
   // array fast path
   uint32_t index;
   if (element.GetUInt32(&index)) {
@@ -1066,7 +1069,6 @@ inline Rep STORE_ELEMENT(Frame* stack, JSVal base, JSVal element, JSVal src) {
 template<bool STRICT>
 inline Rep DELETE_ELEMENT(Frame* stack, JSVal base, JSVal element) {
   railgun::Context* ctx = stack->ctx;
-  base.CheckObjectCoercible(ERR);
   uint32_t index;
   if (element.GetUInt32(&index)) {
     JSObject* const obj = base.ToObject(ctx, ERR);
@@ -1084,7 +1086,6 @@ inline Rep DELETE_ELEMENT(Frame* stack, JSVal base, JSVal element) {
 template<int Target, std::size_t Returned, bool STRICT>
 inline Rep INCREMENT_ELEMENT(Frame* stack, JSVal base, JSVal element) {
   railgun::Context* ctx = stack->ctx;
-  base.CheckObjectCoercible(ERR);
   const Symbol s = element.ToSymbol(ctx, ERR);
   const JSVal w = LoadPropImpl(ctx, base, s, ERR);
   if (w.IsInt32() &&
@@ -1130,7 +1131,6 @@ template<bool STRICT>
 inline Rep STORE_PROP_GENERIC(Frame* stack,
                               JSVal base, Symbol name, JSVal src,
                               railgun::Instruction* instr) {
-  base.CheckObjectCoercible(ERR);
   StorePropImpl<STRICT>(stack->ctx, base, name, src, ERR);
   return 0;
 }
@@ -1144,7 +1144,6 @@ template<bool STRICT>
 inline Rep LOAD_PROP_GENERIC(Frame* stack,
                              JSVal base, Symbol name,
                              railgun::Instruction* instr) {
-  base.CheckObjectCoercible(ERR);
   const JSVal res = LoadPropImpl(stack->ctx, base, name, ERR);
   return Extract(res);
 }
@@ -1154,7 +1153,6 @@ inline Rep LOAD_PROP_OWN_MEGAMORPHIC(Frame* stack,
                                      JSVal base, Symbol name,
                                      railgun::Instruction* instr) {
   railgun::Context* ctx = stack->ctx;
-  base.CheckObjectCoercible(ERR);
   JSObject* obj = NULL;
   if (base.IsPrimitive()) {
     // primitive prototype cache
@@ -1210,7 +1208,6 @@ inline Rep LOAD_PROP_OWN(Frame* stack,
                          JSVal base, Symbol name,
                          railgun::Instruction* instr) {
   railgun::Context* ctx = stack->ctx;
-  base.CheckObjectCoercible(ERR);
   JSObject* obj = NULL;
   if (base.IsPrimitive()) {
     // primitive prototype cache
@@ -1293,7 +1290,6 @@ inline Rep LOAD_PROP_PROTO(Frame* stack,
                            JSVal base, Symbol name,
                            railgun::Instruction* instr) {
   railgun::Context* ctx = stack->ctx;
-  base.CheckObjectCoercible(ERR);
   JSObject* obj = NULL;
   if (base.IsPrimitive()) {
     // primitive prototype cache
@@ -1326,7 +1322,6 @@ inline Rep LOAD_PROP_CHAIN(Frame* stack,
                            JSVal base, Symbol name,
                            railgun::Instruction* instr) {
   railgun::Context* ctx = stack->ctx;
-  base.CheckObjectCoercible(ERR);
   JSObject* obj = NULL;
   if (base.IsPrimitive()) {
     // primitive prototype cache
@@ -1358,7 +1353,6 @@ inline Rep LOAD_PROP(Frame* stack,
                      JSVal base, Symbol name,
                      railgun::Instruction* instr) {
   railgun::Context* ctx = stack->ctx;
-  base.CheckObjectCoercible(ERR);
   JSObject* obj = NULL;
   if (base.IsPrimitive()) {
     JSVal res;
@@ -1429,7 +1423,6 @@ inline Rep STORE_PROP(Frame* stack,
                       JSVal base, Symbol name, JSVal src,
                       railgun::Instruction* instr) {
   railgun::Context* ctx = stack->ctx;
-  base.CheckObjectCoercible(ERR);
   if (base.IsPrimitive()) {
     StorePropPrimitive<STRICT>(ctx, base, name, src, ERR);
   } else {
@@ -1464,7 +1457,6 @@ inline Rep STORE_PROP(Frame* stack,
 template<bool STRICT>
 inline Rep DELETE_PROP(Frame* stack, JSVal base, Symbol name) {
   railgun::Context* ctx = stack->ctx;
-  base.CheckObjectCoercible(ERR);
   JSObject* const obj = base.ToObject(ctx, ERR);
   const bool res = obj->Delete(ctx, name, STRICT, ERR);
   return Extract(JSVal::Bool(res));
@@ -1473,7 +1465,6 @@ inline Rep DELETE_PROP(Frame* stack, JSVal base, Symbol name) {
 template<int Target, std::size_t Returned, bool STRICT>
 inline Rep INCREMENT_PROP(Frame* stack, JSVal base, Symbol name) {
   railgun::Context* ctx = stack->ctx;
-  base.CheckObjectCoercible(ERR);
   const JSVal w = LoadPropImpl(ctx, base, name, ERR);
   if (w.IsInt32() &&
       railgun::detail::IsIncrementOverflowSafe<Target>(w.int32())) {
