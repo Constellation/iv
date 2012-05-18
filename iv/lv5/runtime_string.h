@@ -579,7 +579,9 @@ inline JSVal StringIndexOf(const Arguments& args, Error* e) {
   uint32_t pos = 0;
   if (args.size() > 1) {
     const JSVal first = args[1];
-    if (!first.GetUInt32(&pos)) {
+    if (first.GetUInt32(&pos)) {
+      pos = std::min<uint32_t>(pos, str->size());
+    } else {
       const double position = first.ToInteger(args.ctx(), IV_LV5_ERROR(e));
       if (position > 0.0) {
         if (position > str->size()) {
@@ -925,29 +927,42 @@ inline JSVal StringSubstring(const Arguments& args, Error* e) {
   Context* const ctx = args.ctx();
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
   const uint32_t len = str->size();
-  uint32_t start;
-  if (!args.empty()) {
-    const double integer = args.front().ToInteger(ctx, IV_LV5_ERROR(e));
-    start = core::DoubleToUInt32(
-        std::min<double>(std::max<double>(integer, 0.0), len));
+
+  const JSVal arg0 = args.At(0);
+  uint32_t start = 0;
+  if (arg0.GetUInt32(&start)) {
+    start = std::min(start, len);
   } else {
-    start = 0;
+    const double pos = arg0.ToInteger(ctx, IV_LV5_ERROR(e));
+    if (pos > 0.0) {
+      if (pos > len) {
+        start = len;
+      } else {
+        start = static_cast<uint32_t>(pos);
+      }
+    }
   }
 
-  uint32_t end;
-  if (args.size() > 1) {
-    if (args[1].IsUndefined()) {
-      end = len;
-    } else {
-      const double integer = args[1].ToInteger(ctx, IV_LV5_ERROR(e));
-      end = core::DoubleToUInt32(
-          std::min<double>(std::max<double>(integer, 0.0), len));
-    }
-  } else {
+  const JSVal arg1 = args.At(1);
+  uint32_t end = 0;
+  if (arg1.IsUndefined()) {
     end = len;
+  } else if (arg1.GetUInt32(&end)) {
+    end = std::min(end, len);
+  } else {
+    const double pos = arg1.ToInteger(ctx, IV_LV5_ERROR(e));
+    if (pos > 0.0) {
+      if (pos > len) {
+        end = len;
+      } else {
+        end = static_cast<uint32_t>(pos);
+      }
+    }
   }
+
   const uint32_t from = std::min<uint32_t>(start, end);
   const uint32_t to = std::max<uint32_t>(start, end);
+
   return str->Substring(ctx, from, to);
 }
 
@@ -1162,9 +1177,24 @@ inline JSVal StringStartsWith(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
   JSString* const search_string = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
-  const double position = args.At(1).ToInteger(ctx, IV_LV5_ERROR(e));
-  const std::size_t start = std::min(
-      static_cast<std::size_t>(std::max(position, 0.0)), str->size());
+
+  uint32_t start = 0;
+  if (args.size() > 1) {
+    const JSVal arg1 = args[1];
+    if (arg1.GetUInt32(&start)) {
+      start = std::min<uint32_t>(start, str->size());
+    } else {
+      const double pos = arg1.ToInteger(ctx, IV_LV5_ERROR(e));
+      if (pos > 0.0) {
+        if (pos > str->size()) {
+          start = str->size();
+        } else {
+          start = static_cast<uint32_t>(pos);
+        }
+      }
+    }
+  }
+
   if (search_string->size() + start > str->size()) {
     return JSFalse;
   }
@@ -1181,20 +1211,31 @@ inline JSVal StringEndsWith(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
   JSString* const search_string = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
-  const JSVal arg1 = args.At(1);
-  std::size_t end;
-  if (arg1.IsUndefined()) {
-    end = str->size();
-  } else {
-    const double position = arg1.ToInteger(ctx, IV_LV5_ERROR(e));
-    end = std::min(
-        static_cast<std::size_t>(std::max(position, 0.0)), str->size());
+
+  uint32_t end = 0;
+  if (args.size() > 1) {
+    const JSVal arg1 = args[1];
+    if (arg1.IsUndefined()) {
+      end = str->size();
+    } else if (arg1.GetUInt32(&end)) {
+      end = std::min<uint32_t>(end, str->size());
+    } else {
+      const double pos = arg1.ToInteger(ctx, IV_LV5_ERROR(e));
+      if (pos > 0.0) {
+        if (pos > str->size()) {
+          end = str->size();
+        } else {
+          end = static_cast<uint32_t>(pos);
+        }
+      }
+    }
   }
+
   if (search_string->size() > end) {
     return JSFalse;
   }
   const std::size_t start = end - search_string->size();
-  JSString::const_iterator it = str->begin() + start;
+  const JSString::const_iterator it = str->begin() + start;
   return JSVal::Bool(
       std::equal(search_string->begin(), search_string->end(), it));
 }
@@ -1207,9 +1248,24 @@ inline JSVal StringContains(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
   JSString* const search_string = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
-  const double position = args.At(1).ToInteger(ctx, IV_LV5_ERROR(e));
-  const std::size_t start = std::min(
-      static_cast<std::size_t>(std::max(position, 0.0)), str->size());
+
+  uint32_t start = 0;
+  if (args.size() > 1) {
+    const JSVal arg1 = args[1];
+    if (arg1.GetUInt32(&start)) {
+      start = std::min<uint32_t>(start, str->size());
+    } else {
+      const double pos = arg1.ToInteger(ctx, IV_LV5_ERROR(e));
+      if (pos > 0.0) {
+        if (pos > str->size()) {
+          start = str->size();
+        } else {
+          start = static_cast<uint32_t>(pos);
+        }
+      }
+    }
+  }
+
   if ((search_string->size() + start) > str->size()) {
     return JSFalse;
   }
