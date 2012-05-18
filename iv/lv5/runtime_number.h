@@ -84,8 +84,7 @@ inline JSVal NumberToInt(const Arguments& args, Error* e) {
   if (num.IsInt32()) {
     return num;
   }
-  const double n = num.ToNumber(args.ctx(), IV_LV5_ERROR(e));
-  return core::DoubleToInteger(n);
+  return num.ToInteger(args.ctx(), e);
 }
 
 // section 15.7.4.2 Number.prototype.toString([radix])
@@ -110,8 +109,7 @@ inline JSVal NumberToString(const Arguments& args, Error* e) {
     if (first.IsUndefined()) {
       radix = 10;
     } else {
-      radix = first.ToNumber(args.ctx(), IV_LV5_ERROR(e));
-      radix = core::DoubleToInteger(radix);
+      radix = first.ToInteger(args.ctx(), IV_LV5_ERROR(e));
     }
     if (2 <= radix && radix <= 36) {
       // if radix == 10, through to radix 10 or no radix
@@ -197,8 +195,7 @@ inline JSVal NumberToFixed(const Arguments& args, Error* e) {
     if (first.IsUndefined()) {
       fd = 0.0;
     } else {
-      fd = first.ToNumber(ctx, IV_LV5_ERROR(e));
-      fd = core::DoubleToInteger(fd);
+      fd = first.ToInteger(ctx, IV_LV5_ERROR(e));
     }
   }
   if (fd < 0 || fd > 20) {
@@ -270,8 +267,7 @@ inline JSVal NumberToExponential(const Arguments& args, Error* e) {
     if (fractionDigits.IsUndefined()) {
       fd = 0.0;
     } else {
-      fd = fractionDigits.ToNumber(ctx, IV_LV5_ERROR(e));
-      fd = core::DoubleToInteger(fd);
+      fd = fractionDigits.ToInteger(ctx, IV_LV5_ERROR(e));
     }
   }
   if (!fractionDigits.IsUndefined() && (fd < 0 || fd > 20)) {
@@ -323,8 +319,7 @@ inline JSVal NumberToPrecision(const Arguments& args, Error* e) {
     if (precision.IsUndefined()) {
       return obj.ToString(ctx, e);
     } else {
-      p = precision.ToNumber(ctx, IV_LV5_ERROR(e));
-      p = core::DoubleToInteger(p);
+      p = precision.ToInteger(ctx, IV_LV5_ERROR(e));
     }
   }
 

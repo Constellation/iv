@@ -520,8 +520,7 @@ inline JSVal StringCharAt(const Arguments& args, Error* e) {
       return JSString::NewEmptyString(args.ctx());
     }
   } else {
-    const double p = first.ToNumber(args.ctx(), IV_LV5_ERROR(e));
-    const double position = core::DoubleToInteger(p);
+    const double position = first.ToInteger(args.ctx(), IV_LV5_ERROR(e));
     if (position < 0 || position >= str->size()) {
       return JSString::NewEmptyString(args.ctx());
     }
@@ -543,8 +542,7 @@ inline JSVal StringCharCodeAt(const Arguments& args, Error* e) {
       return JSNaN;
     }
   } else {
-    const double p = first.ToNumber(args.ctx(), IV_LV5_ERROR(e));
-    const double position = core::DoubleToInteger(p);
+    const double position = first.ToInteger(args.ctx(), IV_LV5_ERROR(e));
     if (position < 0 || position >= str->size()) {
       return JSNaN;
     }
@@ -576,15 +574,24 @@ inline JSVal StringIndexOf(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   JSString* const search_str = args.At(0).ToString(args.ctx(), IV_LV5_ERROR(e));
+
   // undefined -> NaN -> 0
-  double position = 0;
+  uint32_t pos = 0;
   if (args.size() > 1) {
-    position = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(e));
-    position = core::DoubleToInteger(position);
+    const JSVal first = args[1];
+    if (!first.GetUInt32(&pos)) {
+      const double position = first.ToInteger(args.ctx(), IV_LV5_ERROR(e));
+      if (position > 0.0) {
+        if (position > str->size()) {
+          pos = str->size();
+        } else {
+          pos = static_cast<uint32_t>(position);
+        }
+      }
+    }
   }
-  const std::size_t start = std::min(
-      static_cast<std::size_t>(std::max(position, 0.0)), str->size());
-  const JSString::size_type loc = str->find(*search_str, start);
+
+  const JSString::size_type loc = str->find(*search_str, pos);
   return (loc == JSString::npos) ? JSVal::Int32(-1) : JSVal(loc);
 }
 
@@ -780,8 +787,7 @@ inline JSVal StringSlice(const Arguments& args, Error* e) {
   const uint32_t len = str->size();
   uint32_t start;
   if (!args.empty()) {
-    double relative_start = args.front().ToNumber(ctx, IV_LV5_ERROR(e));
-    relative_start = core::DoubleToInteger(relative_start);
+    const double relative_start = args.front().ToInteger(ctx, IV_LV5_ERROR(e));
     if (relative_start < 0) {
       start = core::DoubleToUInt32(std::max<double>(relative_start + len, 0.0));
     } else {
@@ -795,8 +801,7 @@ inline JSVal StringSlice(const Arguments& args, Error* e) {
     if (args[1].IsUndefined()) {
       end = len;
     } else {
-      double relative_end = args[1].ToNumber(ctx, IV_LV5_ERROR(e));
-      relative_end = core::DoubleToInteger(relative_end);
+      const double relative_end = args[1].ToInteger(ctx, IV_LV5_ERROR(e));
       if (relative_end < 0) {
         end = core::DoubleToUInt32(std::max<double>(relative_end + len, 0.0));
       } else {
@@ -922,8 +927,7 @@ inline JSVal StringSubstring(const Arguments& args, Error* e) {
   const uint32_t len = str->size();
   uint32_t start;
   if (!args.empty()) {
-    double integer = args.front().ToNumber(ctx, IV_LV5_ERROR(e));
-    integer = core::DoubleToInteger(integer);
+    const double integer = args.front().ToInteger(ctx, IV_LV5_ERROR(e));
     start = core::DoubleToUInt32(
         std::min<double>(std::max<double>(integer, 0.0), len));
   } else {
@@ -935,8 +939,7 @@ inline JSVal StringSubstring(const Arguments& args, Error* e) {
     if (args[1].IsUndefined()) {
       end = len;
     } else {
-      double integer = args[1].ToNumber(ctx, IV_LV5_ERROR(e));
-      integer = core::DoubleToInteger(integer);
+      const double integer = args[1].ToInteger(ctx, IV_LV5_ERROR(e));
       end = core::DoubleToUInt32(
           std::min<double>(std::max<double>(integer, 0.0), len));
     }
@@ -1159,8 +1162,7 @@ inline JSVal StringStartsWith(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
   JSString* const search_string = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
-  const double arg1 = args.At(1).ToNumber(ctx, IV_LV5_ERROR(e));
-  const double position = core::DoubleToInteger(arg1);
+  const double position = args.At(1).ToInteger(ctx, IV_LV5_ERROR(e));
   const std::size_t start = std::min(
       static_cast<std::size_t>(std::max(position, 0.0)), str->size());
   if (search_string->size() + start > str->size()) {
@@ -1184,8 +1186,7 @@ inline JSVal StringEndsWith(const Arguments& args, Error* e) {
   if (arg1.IsUndefined()) {
     end = str->size();
   } else {
-    const double pos = arg1.ToNumber(ctx, IV_LV5_ERROR(e));
-    const double position = core::DoubleToInteger(pos);
+    const double position = arg1.ToInteger(ctx, IV_LV5_ERROR(e));
     end = std::min(
         static_cast<std::size_t>(std::max(position, 0.0)), str->size());
   }
@@ -1206,8 +1207,7 @@ inline JSVal StringContains(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
   JSString* const search_string = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
-  const double arg1 = args.At(1).ToNumber(ctx, IV_LV5_ERROR(e));
-  const double position = core::DoubleToInteger(arg1);
+  const double position = args.At(1).ToInteger(ctx, IV_LV5_ERROR(e));
   const std::size_t start = std::min(
       static_cast<std::size_t>(std::max(position, 0.0)), str->size());
   if ((search_string->size() + start) > str->size()) {
@@ -1254,8 +1254,7 @@ inline JSVal StringSubstr(const Arguments& args, Error* e) {
 
   double start;
   if (!args.empty()) {
-    const double integer = args.front().ToNumber(ctx, IV_LV5_ERROR(e));
-    start = core::DoubleToInteger(integer);
+    start = args.front().ToInteger(ctx, IV_LV5_ERROR(e));
   } else {
     start = 0.0;
   }
@@ -1265,8 +1264,7 @@ inline JSVal StringSubstr(const Arguments& args, Error* e) {
     if (args[1].IsUndefined()) {
       length = std::numeric_limits<double>::infinity();
     } else {
-      const double integer = args[1].ToNumber(ctx, IV_LV5_ERROR(e));
-      length = core::DoubleToInteger(integer);
+      length = args[1].ToInteger(ctx, IV_LV5_ERROR(e));
     }
   } else {
     length = std::numeric_limits<double>::infinity();

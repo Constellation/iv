@@ -507,8 +507,7 @@ inline JSVal ArraySlice(const Arguments& args, Error* e) {
   const uint32_t len = internal::GetLength(ctx, obj, IV_LV5_ERROR(e));
   uint32_t k;
   if (!args.empty()) {
-    double relative_start = args[0].ToNumber(ctx, IV_LV5_ERROR(e));
-    relative_start = core::DoubleToInteger(relative_start);
+    const double relative_start = args[0].ToInteger(ctx, IV_LV5_ERROR(e));
     if (relative_start < 0) {
       k = core::DoubleToUInt32(std::max<double>(relative_start + len, 0.0));
     } else {
@@ -522,8 +521,7 @@ inline JSVal ArraySlice(const Arguments& args, Error* e) {
     if (args[1].IsUndefined()) {
       final = len;
     } else {
-      double relative_end = args[1].ToNumber(ctx, IV_LV5_ERROR(e));
-      relative_end = core::DoubleToInteger(relative_end);
+      const double relative_end = args[1].ToInteger(ctx, IV_LV5_ERROR(e));
       if (relative_end < 0) {
         final = core::DoubleToUInt32(std::max<double>(relative_end + len, 0.0));
       } else {
@@ -866,8 +864,7 @@ inline JSVal ArraySplice(const Arguments& args, Error* e) {
   const uint32_t args_size = args.size();
   uint32_t actual_start;
   if (args_size > 0) {
-    double relative_start = args[0].ToNumber(ctx, IV_LV5_ERROR(e));
-    relative_start = core::DoubleToInteger(relative_start);
+    const double relative_start = args[0].ToInteger(ctx, IV_LV5_ERROR(e));
     if (relative_start < 0) {
       actual_start = core::DoubleToUInt32(
           std::max<double>(relative_start + len, 0.0));
@@ -880,8 +877,7 @@ inline JSVal ArraySplice(const Arguments& args, Error* e) {
   }
   uint32_t actual_delete_count;
   if (args_size > 1) {
-    double delete_count = args[1].ToNumber(ctx, IV_LV5_ERROR(e));
-    delete_count = core::DoubleToInteger(delete_count);
+    const double delete_count = args[1].ToInteger(ctx, IV_LV5_ERROR(e));
     actual_delete_count = core::DoubleToUInt32(
         std::min<double>(
             std::max<double>(delete_count, 0.0), len - actual_start));
@@ -1035,8 +1031,7 @@ inline JSVal ArrayIndexOf(const Arguments& args, Error* e) {
 
   uint32_t k;
   if (arg_count > 1) {
-    double fromIndex = args[1].ToNumber(ctx, IV_LV5_ERROR(e));
-    fromIndex = core::DoubleToInteger(fromIndex);
+    const double fromIndex = args[1].ToInteger(ctx, IV_LV5_ERROR(e));
     if (fromIndex >= len) {
       return -1;
     }
@@ -1095,8 +1090,7 @@ inline JSVal ArrayLastIndexOf(const Arguments& args, Error* e) {
 
   uint32_t k;
   if (arg_count > 1) {
-    double fromIndex = args[1].ToNumber(ctx, IV_LV5_ERROR(e));
-    fromIndex = core::DoubleToInteger(fromIndex);
+    const double fromIndex = args[1].ToInteger(ctx, IV_LV5_ERROR(e));
     if (fromIndex >= 0) {
       if (fromIndex > (len - 1)) {
         k = len - 1;

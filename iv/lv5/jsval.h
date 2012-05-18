@@ -760,7 +760,7 @@ core::UString JSLayout::ToUString(Context* ctx, Error* e) const {
   }
 }
 
-double JSLayout::ToNumber(Context* ctx, Error* e) const {
+inline double JSLayout::ToNumber(Context* ctx, Error* e) const {
   if (IsNumber()) {
     return number();
   } else if (IsString()) {
@@ -782,6 +782,10 @@ double JSLayout::ToNumber(Context* ctx, Error* e) const {
         object()->DefaultValue(ctx, Hint::NUMBER, IV_LV5_ERROR_WITH(e, 0.0));
     return prim.ToNumber(ctx, e);
   }
+}
+
+inline double JSLayout::ToInteger(Context* ctx, Error* e) const {
+  return core::DoubleToInteger(ToNumber(ctx, e));
 }
 
 JSVal JSVal::ToNumberValue(Context* ctx, Error* e) const {

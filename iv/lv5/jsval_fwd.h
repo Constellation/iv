@@ -183,7 +183,9 @@ class JSLayout {
 
   inline core::UString ToUString(Context* ctx, Error* e) const;
 
-  inline double ToNumber(Context* ctx, Error* e) const;
+  double ToNumber(Context* ctx, Error* e) const;
+
+  double ToInteger(Context* ctx, Error* e) const;
 
   inline int32_t ToInt32(Context* ctx, Error* e) const;
 
