@@ -14,6 +14,7 @@
 #include <iv/lv5/jsval_fwd.h>
 #include <iv/lv5/radio/cell.h>
 #include <iv/lv5/radio/core_fwd.h>
+#include <iv/lv5/breaker/fwd.h>
 
 namespace iv {
 namespace lv5 {
@@ -24,6 +25,7 @@ class JSStaticEnv;
 
 class JSEnv : public radio::HeapObject<radio::ENVIRONMENT> {
  public:
+  friend class breaker::Compiler;
   virtual bool HasBinding(Context* ctx, Symbol name) const = 0;
   virtual bool DeleteBinding(Context* ctx, Symbol name) = 0;
   virtual void CreateMutableBinding(Context* ctx, Symbol name,

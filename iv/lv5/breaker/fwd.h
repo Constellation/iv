@@ -32,6 +32,9 @@
 
 namespace iv {
 namespace lv5 {
+
+class Arguments;
+
 namespace railgun {
 
 class Context;

@@ -277,10 +277,6 @@ inline Rep THROW_CHECK_OBJECT(Frame* stack) {
   RAISE();
 }
 
-inline void POP_ENV(railgun::Frame* frame) {
-  frame->set_lexical_env(frame->lexical_env()->outer());
-}
-
 inline void RaiseReferenceError(Symbol name, Error* e) {
   core::UStringBuilder builder;
   builder.Append('"');

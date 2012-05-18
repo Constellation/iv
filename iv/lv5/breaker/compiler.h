@@ -1608,9 +1608,9 @@ class Compiler {
 
   // opcode
   void EmitPOP_ENV(const Instruction* instr) {
-    // TODO(Constellation) inline this function
-    asm_->mov(asm_->rdi, asm_->r13);
-    asm_->Call(&stub::POP_ENV);
+    asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(asm_->rdi, asm_->ptr[asm_->rdi + IV_OFFSETOF(JSEnv, outer_)]);
+    asm_->mov(asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)], asm_->rdi);
   }
 
   // opcode | (ary | reg) | (index | size)
