@@ -36,7 +36,15 @@ class JSVMFunction : public JSFunction {
       obj->set_prototype(proto.object());
     }
     assert(args->IsConstructorCalled());
+#if defined(IV_ENABLE_JIT)
+    const JSVal val = JSVMFunction::Call(args, obj, IV_LV5_ERROR(e));
+    if (!val.IsObject()) {
+      return obj;
+    }
+    return val;
+#else
     return JSVMFunction::Call(args, obj, e);
+#endif
   }
 
   static JSVMFunction* New(Context* ctx,
