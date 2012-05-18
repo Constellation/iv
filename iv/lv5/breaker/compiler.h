@@ -11,7 +11,6 @@
 #include <iv/debug.h>
 #include <iv/lv5/breaker/fwd.h>
 #include <iv/lv5/railgun/railgun.h>
-#include <iv/lv5/breaker/executable.h>
 #include <iv/lv5/breaker/assembler.h>
 #include <iv/lv5/breaker/stub.h>
 namespace iv {
