@@ -7,10 +7,11 @@
 #ifndef IV_I18N_H_
 #define IV_I18N_H_
 #include <iv/character.h>
-#include <iv/i18n_language_tag_scanner.h>
 #include <iv/stringpiece.h>
 #include <iv/ustringpiece.h>
 #include <iv/notfound.h>
+#include <iv/i18n_language_tag_scanner.h>
+#include <iv/i18n_number_format.h>
 namespace iv {
 namespace core {
 namespace i18n {
@@ -143,7 +144,6 @@ class I18N {
     if (pos != alast) {
       return LookupResult(*pos, locale);
     }
-    // TODO(Constellation) fix default locale
     return LookupResult(DefaultLocale());
   }
 
