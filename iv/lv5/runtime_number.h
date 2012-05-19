@@ -358,8 +358,7 @@ inline JSVal NumberCLZ(const Arguments& args, Error* e) {
     if (obj.IsObject() && obj.object()->IsClass<Class::Number>()) {
       x = core::DoubleToUInt32(static_cast<JSNumberObject*>(obj.object())->value());
     } else {
-      e->Report(Error::Type,
-                "Number.prototype.clz is not generic function");
+      e->Report(Error::Type, "Number.prototype.clz is not generic function");
       return JSEmpty;
     }
   } else {

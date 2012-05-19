@@ -94,9 +94,15 @@ inline JSVal ArrayIsArray(const Arguments& args, Error* e) {
 // They may be changed without any notice.
 //
 // http://wiki.ecmascript.org/doku.php?id=strawman:array_extras
-// https://gist.github.com/1074126
 
-// ES.next Array.from(arg)
+// section 15.4.3.3 Array.of(...items)
+inline JSVal ArrayOf(const Arguments& args, Error* e) {
+  // TODO(Constellation) fix this
+  IV_LV5_CONSTRUCTOR_CHECK("Array.of", args, e);
+  return JSArray::New(args.ctx(), args.begin(), args.end());
+}
+
+// section 15.4.3.4 Array.from(arrayLike)
 inline JSVal ArrayFrom(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.from", args, e);
   const JSVal arg1 = args.At(0);
@@ -137,12 +143,6 @@ inline JSVal ArrayFrom(const Arguments& args, Error* e) {
     }
     return vec->ToJSArray();
   }
-}
-
-// ES.next Array.of()
-inline JSVal ArrayOf(const Arguments& args, Error* e) {
-  IV_LV5_CONSTRUCTOR_CHECK("Array.of", args, e);
-  return JSArray::New(args.ctx(), args.begin(), args.end());
 }
 
 // section 15.4.4.2 Array.prototype.toString()
