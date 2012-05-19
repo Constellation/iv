@@ -1212,7 +1212,7 @@ inline JSVal StringEndsWith(const Arguments& args, Error* e) {
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
   JSString* const search_string = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
 
-  uint32_t end = 0;
+  uint32_t end = str->size();
   if (args.size() > 1) {
     const JSVal arg1 = args[1];
     if (arg1.IsUndefined()) {
