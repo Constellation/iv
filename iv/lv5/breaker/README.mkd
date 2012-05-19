@@ -1,3 +1,11 @@
 # iv / lv5 / breaker
 
-breaker is ECMAScript JIT module namespace
+breaker is ECMAScript JIT module
+
+## Design
+
+This compiler parses railgun::opcodes and emits native code.
+
+Some primitive operations and branch operations are emitted as raw native code,
+and basic complex opcodes are emitted as call to stub function,
+that is, Context Threading JIT.
