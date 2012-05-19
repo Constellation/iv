@@ -540,7 +540,7 @@ inline JSVal LookupSupportedLocales(
       const std::string locale(
           core::i18n::LanguageTagScanner::RemoveExtension(str->begin(),
                                                           str->end()));
-      const AvailIter t = core::i18n::IndexOfMatch(it, last, locale);
+      const AvailIter t = ctx->i18n()->IndexOfMatch(it, last, locale);
       if (t != last) {
         subset.push_back(locale);
       }
@@ -647,7 +647,7 @@ inline core::i18n::LookupResult ResolveLocale(Context* ctx,
     if (!req->IsClass<Class::LocaleList>()) {
       list = static_cast<JSLocaleList*>(requested.object());
     } else {
-      list = detail_i18n::CreateLocaleList(
+      list = JSLocaleList::CreateLocaleList(
           ctx, req, IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
     }
   }
