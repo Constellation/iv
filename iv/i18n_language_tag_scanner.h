@@ -176,65 +176,96 @@ class LanguageTagScanner {
   std::string Canonicalize(bool remove_extensions = false) {
     assert(IsStructurallyValid());
 
-    // treat extlang
-    if (!locale_.extlang().empty()) {
-      locale_.language_ = locale_.extlang_[0];
-      locale_.extlang_.clear();
-    }
+    Locale& locale = locale_;
 
-    {
+    // treat extlang
+    if (!locale.extlang().empty()) {
+      std::size_t i = 0;
+      while (i < locale.extlang_.size()) {
+        const std::string extlang = locale.extlang_[i];
+        const data::ExtlangMap::const_iterator found =
+            data::Extlang().find(extlang);
+        if (found != data::Extlang().end()) {
+          if (i == 0 && found->second.second == locale.language_) {
+            // remove prefix and use extlang as language
+            locale.language_ = found->second.first;
+            locale.extlang_.erase(locale.extlang_.begin());
+
+            // canonicalize language
+            const data::TagMap::const_iterator it =
+                data::Language().find(locale.language_);
+            if (it != data::Language().end()) {
+              locale.language_ = it->second;
+            }
+
+            continue;
+          } else {
+            locale.extlang_[i] = found->second.first;
+          }
+        }
+        ++i;
+      }
+    } else {
       // canonicalize language
-      const TagMap::const_iterator it = Language().find(locale_.language_);
-      if (it != Language().end()) {
-        locale_.language_ = it->second;
+      const data::TagMap::const_iterator it =
+          data::Language().find(locale.language_);
+      if (it != data::Language().end()) {
+        locale.language_ = it->second;
       }
     }
 
     {
       // canonicalize region
-      const TagMap::const_iterator it = Region().find(locale_.region_);
-      if (it != Region().end()) {
-        locale_.region_ = it->second;
+      const data::TagMap::const_iterator it =
+          data::Region().find(locale.region_);
+      if (it != data::Region().end()) {
+        locale.region_ = it->second;
       }
     }
 
     {
       // canonicalize variant
-      for (Locale::Vector::iterator it = locale_.variants_.begin(),
-           last = locale_.variants_.end(); it != last; ++it) {
-        const TagMap::const_iterator found = Variant().find(*it);
-        if (found != Variant().end()) {
+      for (Locale::Vector::iterator it = locale.variants_.begin(),
+           last = locale.variants_.end(); it != last; ++it) {
+        const data::TagMap::const_iterator found = data::Variant().find(*it);
+        if (found != data::Variant().end()) {
           *it = found->second;
         }
       }
     }
 
-    if (locale_.language_.empty()) {
+    if (locale.language_.empty()) {
       // privateuse only
-      return locale_.privateuse_;
+      return locale.privateuse_;
     }
 
-    std::string lang(locale_.language_);
+    std::string lang(locale.language_);
 
-    if (!locale_.script_.empty()) {
+    for (Locale::Vector::iterator it = locale.extlang_.begin(),
+         last = locale.extlang_.end(); it != last; ++it) {
       lang.push_back('-');
-      lang.append(locale_.script_);
+      lang.append(*it);
     }
 
-    if (!locale_.region_.empty()) {
+    if (!locale.script_.empty()) {
       lang.push_back('-');
-      lang.append(locale_.region_);
+      lang.append(locale.script_);
     }
 
-    for (Locale::Vector::const_iterator it = locale_.variants_.begin(),
-         last = locale_.variants_.end(); it != last; ++it) {
+    if (!locale.region_.empty()) {
+      lang.push_back('-');
+      lang.append(locale.region_);
+    }
+
+    for (Locale::Vector::const_iterator it = locale.variants_.begin(),
+         last = locale.variants_.end(); it != last; ++it) {
       lang.push_back('-');
       lang.append(*it);
     }
 
     if (!remove_extensions) {
-      for (Locale::Map::const_iterator it = locale_.extensions_.begin(),
-           last = locale_.extensions_.end(); it != last; ++it) {
+      for (Locale::Map::const_iterator it = locale.extensions_.begin(),
+           last = locale.extensions_.end(); it != last; ++it) {
         const char first = it->first;
         lang.push_back('-');
         lang.push_back(first);
@@ -244,9 +275,9 @@ class LanguageTagScanner {
         }
       }
 
-      if (!locale_.privateuse_.empty()) {
+      if (!locale.privateuse_.empty()) {
         lang.push_back('-');
-        lang.append(locale_.privateuse_);
+        lang.append(locale.privateuse_);
       }
     }
 
@@ -265,8 +296,9 @@ class LanguageTagScanner {
     // check grandfathered
     const std::string lower_case = ToLowerCase(start_, last_);
     {
-      const TagMap::const_iterator it = Grandfathered().find(lower_case);
-      if (it != Grandfathered().end()) {
+      const data::TagMap::const_iterator it =
+          data::Grandfathered().find(lower_case);
+      if (it != data::Grandfathered().end()) {
         LanguageTagScanner scan2(it->second.begin(), it->second.end());
         const bool valid = scan2.IsStructurallyValid();
         if (valid) {
@@ -278,8 +310,9 @@ class LanguageTagScanner {
 
     // check redundant
     {
-      const TagMap::const_iterator it = Redundant().find(lower_case);
-      if (it != Redundant().end()) {
+      const data::TagMap::const_iterator it =
+          data::Redundant().find(lower_case);
+      if (it != data::Redundant().end()) {
         LanguageTagScanner scan2(it->second.begin(), it->second.end());
         const bool valid = scan2.IsStructurallyValid();
         if (valid) {
