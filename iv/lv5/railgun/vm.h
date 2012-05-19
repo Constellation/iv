@@ -330,9 +330,8 @@ JSVal VM::Execute(Frame* start, Error* e) {
         frame = stack_.Unwind(frame);
         strict = frame->code()->strict();
 
-        // inline RESULT
-        REG(instr[1].i32[0]) = src;
-        DISPATCH(RESULT);
+        ctx()->RAX()  = src;
+        DISPATCH_WITH_NO_INCREMENT();
       }
 
       DEFINE_OPCODE(BUILD_ENV) {
@@ -1744,7 +1743,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
           Code* code = vm_func->code();
           if (code->empty()) {
             ctx()->RAX() = JSUndefined;
-            PREDICT(CALL, RESULT);
+            DISPATCH(CALL);
           }
           Frame* new_frame = stack_.NewCodeFrame(
               ctx(),
@@ -1765,12 +1764,8 @@ JSVal VM::Execute(Frame* start, Error* e) {
           DISPATCH_WITH_NO_INCREMENT();
         }
         // Native Function, so use Invoke
-        const JSVal ret = Invoke(func, offset, argc_with_this, ERR);
-
-        // inlined RESULT
-        INCREMENT_NEXT(CALL);
-        REG(instr[1].i32[0]) = ret;
-        DISPATCH(RESULT);
+        ctx()->RAX() = Invoke(func, offset, argc_with_this, ERR);
+        DISPATCH(CALL);
       }
 
       DEFINE_OPCODE(CONSTRUCT) {
@@ -1813,12 +1808,8 @@ JSVal VM::Execute(Frame* start, Error* e) {
         }
 
         // Native Function, so use Invoke
-        const JSVal ret = Construct(func, offset, argc_with_this, ERR);
-
-        // inlined RESULT
-        INCREMENT_NEXT(CONSTRUCT);
-        REG(instr[1].i32[0]) = ret;
-        DISPATCH(RESULT);
+        ctx()->RAX() = Construct(func, offset, argc_with_this, ERR);
+        DISPATCH(CONSTRUCT);
       }
 
       DEFINE_OPCODE(EVAL) {
@@ -1838,7 +1829,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
           Code* code = vm_func->code();
           if (code->empty()) {
             ctx()->RAX() = JSUndefined;
-            PREDICT(EVAL, RESULT);
+            DISPATCH(EVAL);
           }
           Frame* new_frame = stack_.NewCodeFrame(
               ctx(),
@@ -1860,13 +1851,9 @@ JSVal VM::Execute(Frame* start, Error* e) {
         }
 
         // Native Function, so use Invoke
-        const JSVal ret =
+        ctx()->RAX() =
             InvokeMaybeEval(func, offset, argc_with_this, frame, ERR);
-
-        // inlined RESULT
-        INCREMENT_NEXT(EVAL);
-        REG(instr[1].i32[0]) = ret;
-        DISPATCH(RESULT);
+        DISPATCH(EVAL);
       }
 
       DEFINE_OPCODE(RESULT) {

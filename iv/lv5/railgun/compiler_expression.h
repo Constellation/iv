@@ -1143,7 +1143,10 @@ inline RegisterID Compiler::EmitCall(const Call& call, RegisterID dst) {
                          site.argc_with_this()));
   }
 
-  Emit<OP::RESULT>(dst);
+
+  if (!ignore_result()) {
+    Emit<OP::RESULT>(dst);
+  }
   assert(registers_.IsLiveTop(site.base()->register_offset()));
   return dst;
 }
