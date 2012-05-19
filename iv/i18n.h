@@ -53,74 +53,6 @@ inline bool IsStructurallyValidLanguageTag(const UStringPiece& piece) {
   return verifier.IsStructurallyValid();
 }
 
-// 10.2.1 IndexOfMatch(availableLocales, locale)
-// use kNotFound instead of -1
-template<typename AvailIter>
-inline AvailIter IndexOfMatch(AvailIter ait,
-                              AvailIter alast, const std::string& locale) {
-  std::string candidate = locale;
-  while (!candidate.empty()) {
-    const AvailIter it = std::find(ait, alast, candidate);
-    if (it != alast) {
-      return it;
-    }
-    std::size_t pos = locale.rfind('-');
-    if (pos == std::string::npos) {
-      return alast;
-    }
-    if (pos >= 2 && candidate[pos - 2] == '-') {
-      pos -= 2;
-    }
-    candidate.resize(pos);
-  }
-  return alast;
-}
-
-// 10.2.2 LookupMatch(availableLocales, requestedLocales)
-class LookupResult {
- public:
-  typedef Locale::Map Extensions;
-  LookupResult() : locale_(), extensions_() { }
-  explicit LookupResult(const std::string& l)
-    : locale_(l), extensions_() { }
-  LookupResult(const std::string& l, Locale loc)
-    : locale_(l), extensions_(loc.extensions()) { }
-
-  const std::string& locale() const { return locale_; }
-  const Extensions& extensions() const { return extensions_; }
- private:
-  std::string locale_;
-  Extensions extensions_;
-};
-
-template<typename AvailIter, typename ReqIter>
-inline LookupResult LookupMatch(AvailIter ait, AvailIter alast,
-                                ReqIter rit, ReqIter rlast) {
-  AvailIter pos = alast;
-  Locale locale;
-  for (ReqIter it = rit; it != rlast && pos == alast; ++it) {
-    LanguageTagScanner scanner(it->begin(), it->end());
-    if (!scanner.IsStructurallyValid()) {
-      continue;
-    }
-    const std::string no_extensions_locale = scanner.Canonicalize(true);
-    locale = scanner.locale();
-    pos = IndexOfMatch(ait, alast, no_extensions_locale);
-  }
-  if (pos != alast) {
-    return LookupResult(*pos, locale);
-  }
-  // TODO(Constellation) fix default locale
-  return LookupResult("en-US");
-}
-
-template<typename AvailIter, typename ReqIter>
-inline LookupResult BestFitMatch(AvailIter ait, AvailIter alast,
-                                 ReqIter rit, ReqIter rlast) {
-  // TODO(Constellation) implement BestFitMatch
-  return LookupMatch(ait, alast, rit, rlast);
-}
-
 
 // Currency
 // based on
@@ -143,6 +75,23 @@ inline bool IsWellFormedCurrencyCode(Iter it, Iter last) {
   return true;
 }
 
+// 10.2.2 LookupMatch(availableLocales, requestedLocales)
+class LookupResult {
+ public:
+  typedef Locale::Map Extensions;
+  LookupResult() : locale_(), extensions_() { }
+  explicit LookupResult(const std::string& l)
+    : locale_(l), extensions_() { }
+  LookupResult(const std::string& l, Locale loc)
+    : locale_(l), extensions_(loc.extensions()) { }
+
+  const std::string& locale() const { return locale_; }
+  const Extensions& extensions() const { return extensions_; }
+ private:
+  std::string locale_;
+  Extensions extensions_;
+};
+
 class I18N {
  public:
   I18N() { }
@@ -152,6 +101,57 @@ class I18N {
   std::string DefaultLocale() const {
     // TODO(Constellation) not implemented properly yet
     return "en-US";
+  }
+
+  // 10.2.1 IndexOfMatch(availableLocales, locale)
+  // use kNotFound instead of -1
+  template<typename AvailIter>
+  inline AvailIter IndexOfMatch(AvailIter ait,
+                                AvailIter alast, const std::string& locale) {
+    std::string candidate = locale;
+    while (!candidate.empty()) {
+      const AvailIter it = std::find(ait, alast, candidate);
+      if (it != alast) {
+        return it;
+      }
+      std::size_t pos = locale.rfind('-');
+      if (pos == std::string::npos) {
+        return alast;
+      }
+      if (pos >= 2 && candidate[pos - 2] == '-') {
+        pos -= 2;
+      }
+      candidate.resize(pos);
+    }
+    return alast;
+  }
+
+  template<typename AvailIter, typename ReqIter>
+  inline LookupResult LookupMatch(AvailIter ait, AvailIter alast,
+                                  ReqIter rit, ReqIter rlast) {
+    AvailIter pos = alast;
+    Locale locale;
+    for (ReqIter it = rit; it != rlast && pos == alast; ++it) {
+      LanguageTagScanner scanner(it->begin(), it->end());
+      if (!scanner.IsStructurallyValid()) {
+        continue;
+      }
+      const std::string no_extensions_locale = scanner.Canonicalize(true);
+      locale = scanner.locale();
+      pos = IndexOfMatch(ait, alast, no_extensions_locale);
+    }
+    if (pos != alast) {
+      return LookupResult(*pos, locale);
+    }
+    // TODO(Constellation) fix default locale
+    return LookupResult(DefaultLocale());
+  }
+
+  template<typename AvailIter, typename ReqIter>
+  inline LookupResult BestFitMatch(AvailIter ait, AvailIter alast,
+                                   ReqIter rit, ReqIter rlast) {
+    // TODO(Constellation) implement BestFitMatch
+    return LookupMatch(ait, alast, rit, rlast);
   }
 };
 

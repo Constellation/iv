@@ -690,8 +690,8 @@ inline core::i18n::LookupResult ResolveLocale(Context* ctx,
   }
 
   core::i18n::LookupResult res = (best_fit) ?
-      core::i18n::BestFitMatch(it, last, locales.begin(), locales.end()) :
-      core::i18n::LookupMatch(it, last, locales.begin(), locales.end());
+      ctx->i18n()->BestFitMatch(it, last, locales.begin(), locales.end()) :
+      ctx->i18n()->LookupMatch(it, last, locales.begin(), locales.end());
   return res;
 }
 
