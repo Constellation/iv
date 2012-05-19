@@ -125,9 +125,7 @@ class LanguageTagScanner {
     Restore(start_);
 
     // check ascii
-    if (std::find_if(it,
-                     last,
-                     IsNotASCII()) != last) {
+    if (std::find_if(it, last, IsNotASCII()) != last) {
       valid_ = false;
     } else {
       valid_ = Scan();
@@ -197,6 +195,17 @@ class LanguageTagScanner {
       const TagMap::const_iterator it = Region().find(locale_.region_);
       if (it != Region().end()) {
         locale_.region_ = it->second;
+      }
+    }
+
+    {
+      // canonicalize variant
+      for (Locale::Vector::iterator it = locale_.variants_.begin(),
+           last = locale_.variants_.end(); it != last; ++it) {
+        const TagMap::const_iterator found = Variant().find(*it);
+        if (found != Variant().end()) {
+          *it = found->second;
+        }
       }
     }
 
@@ -408,7 +417,14 @@ class LanguageTagScanner {
         Advance();
       }
       if (MaybeValid()) {
-        locale_.variants_.push_back(ToLowerCase(restore2, current()));
+        const std::string variant = ToLowerCase(restore2, current());
+        if (std::find(
+                locale_.variants_.begin(),
+                locale_.variants_.end(), variant) != locale_.variants_.end()) {
+          Restore(restore);
+          return false;
+        }
+        locale_.variants_.push_back(variant);
         return true;
       }
     }
@@ -423,7 +439,14 @@ class LanguageTagScanner {
       Restore(restore);
       return false;
     }
-    locale_.variants_.push_back(ToLowerCase(restore2, current()));
+    const std::string variant = ToLowerCase(restore2, current());
+    if (std::find(
+            locale_.variants_.begin(),
+            locale_.variants_.end(), variant) != locale_.variants_.end()) {
+      Restore(restore);
+      return false;
+    }
+    locale_.variants_.push_back(variant);
     return true;
   }
 

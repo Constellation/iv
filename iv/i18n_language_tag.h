@@ -113,6 +113,12 @@ static const RegionArray kRegion = { {
   std::make_pair("ZR", "CD")
 } };
 
+// Variant tags with Preferred-Value.
+typedef std::array<std::pair<StringPiece, StringPiece>, 1> VariantArray;
+static const VariantArray kVariant = { {
+  std::make_pair("heploc", "alalc97")
+} };
+
 typedef std::unordered_map<std::string, std::string> TagMap;
 
 inline const TagMap& Grandfathered() {
@@ -132,6 +138,11 @@ inline const TagMap& Language() {
 
 inline const TagMap& Region() {
   static const TagMap map(kRegion.begin(), kRegion.end());
+  return map;
+}
+
+inline const TagMap& Variant() {
+  static const TagMap map(kVariant.begin(), kVariant.end());
   return map;
 }
 
