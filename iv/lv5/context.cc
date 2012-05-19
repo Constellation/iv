@@ -286,9 +286,7 @@ void Context::Initialize() {
   InitJSON(func_cls, obj_proto, &global_binder);
 
   // ES.next
-#ifdef IV_ENABLE_I18N
   InitIntl(func_cls, obj_proto, &global_binder);
-#endif  // IV_ENABLE_I18N
   InitMap(func_cls, obj_proto, &global_binder);
   InitSet(func_cls, obj_proto, &global_binder);
 
@@ -1240,7 +1238,6 @@ void Context::InitSet(const ClassSlot& func_cls,
       .def<&runtime::SetDelete, 1>("delete");
 }
 
-#ifdef IV_ENABLE_I18N
 void Context::InitIntl(const ClassSlot& func_cls,
                        JSObject* obj_proto, bind::Object* global_binder) {
   struct ClassSlot cls = {
@@ -1289,6 +1286,8 @@ void Context::InitIntl(const ClassSlot& func_cls,
         .def(symbol::constructor(), constructor, ATTR::W | ATTR::C);
   }
 
+#ifdef IV_ENABLE_I18N
+  // Currently, Collator, NumberFormat, DateTimeFormat need ICU
   {
     // Collator
     JSObject* const proto =
@@ -1390,7 +1389,7 @@ void Context::InitIntl(const ClassSlot& func_cls,
         .def_getter<
           &runtime::DateTimeFormatResolvedOptionsGetter, 0>("resolvedOptions");
   }
-}
 #endif  // IV_ENABLE_I18N
+}
 
 } }  // namespace iv::lv5

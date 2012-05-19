@@ -1,16 +1,23 @@
-// Currently, we implement them by ICU.
-// So this is enabled when IV_ENABLE_I18N flag is enabled and ICU is provided.
 #ifndef IV_LV5_JSI18N_H_
 #define IV_LV5_JSI18N_H_
-#ifdef IV_ENABLE_I18N
 #include <iterator>
 #include <string>
+
+#ifdef IV_ENABLE_I18N
+// Currently, we implement them by ICU.
+// So this is enabled when IV_ENABLE_I18N flag is enabled and ICU is provided.
 #include <unicode/coll.h>
 #include <unicode/decimfmt.h>
 #include <unicode/datefmt.h>
 #include <unicode/numsys.h>
 #include <unicode/dtptngen.h>
 #include <unicode/smpdtfmt.h>
+#define IV_ICU_VERSION \
+    (U_ICU_VERSION_MAJOR_NUM * 10000 + \
+     U_ICU_VERSION_MINOR_NUM * 100 + \
+     U_ICU_VERSION_PATCHLEVEL_NUM)
+#endif  // IV_ENABLE_I18N
+
 #include <iv/detail/unique_ptr.h>
 #include <iv/detail/unordered_map.h>
 #include <iv/i18n.h>
@@ -21,11 +28,45 @@
 #include <iv/lv5/map.h>
 #include <iv/lv5/class.h>
 #include <iv/lv5/internal.h>
-#include <iv/detail/unique_ptr.h>
-
-#define IV_ICU_VERSION (U_ICU_VERSION_MAJOR_NUM * 10000 + U_ICU_VERSION_MINOR_NUM * 100 + U_ICU_VERSION_PATCHLEVEL_NUM)  // NOLINT
 namespace iv {
 namespace lv5 {
+
+class JSIntl : public JSObject {
+ public:
+  template<typename T>
+  class GCHandle : public gc_cleanup {
+   public:
+    core::unique_ptr<T> handle;
+  };
+
+  IV_LV5_DEFINE_JSCLASS(Intl)
+};
+
+class JSLocaleList : public JSObject {
+ public:
+  IV_LV5_DEFINE_JSCLASS(LocaleList)
+
+  explicit JSLocaleList(Context* ctx)
+    : JSObject(Map::NewUniqueMap(ctx)) {
+  }
+
+  JSLocaleList(Context* ctx, Map* map)
+    : JSObject(map) {
+  }
+
+  static JSLocaleList* New(Context* ctx) {
+    JSLocaleList* const localelist = new JSLocaleList(ctx);
+    localelist->set_cls(JSLocaleList::GetClass());
+    localelist->set_prototype(
+        context::GetClassSlot(ctx, Class::LocaleList).prototype);
+    return localelist;
+  }
+
+  // i18n draft CreateLocaleList abstract operation
+  static JSLocaleList* CreateLocaleList(Context* ctx, JSVal target, Error* e);
+};
+
+#ifdef IV_ENABLE_I18N
 
 class ICUStringIteration
   : public std::iterator<std::forward_iterator_tag, const char*> {
@@ -112,37 +153,7 @@ class ICUStringIteration
   const char* current_;
 };
 
-class JSIntl : public JSObject {
- public:
-  template<typename T>
-  class GCHandle : public gc_cleanup {
-   public:
-    core::unique_ptr<T> handle;
-  };
 
-  IV_LV5_DEFINE_JSCLASS(Intl)
-};
-
-class JSLocaleList : public JSObject {
- public:
-  IV_LV5_DEFINE_JSCLASS(LocaleList)
-
-  explicit JSLocaleList(Context* ctx)
-    : JSObject(Map::NewUniqueMap(ctx)) {
-  }
-
-  JSLocaleList(Context* ctx, Map* map)
-    : JSObject(map) {
-  }
-
-  static JSLocaleList* New(Context* ctx) {
-    JSLocaleList* const localelist = new JSLocaleList(ctx);
-    localelist->set_cls(JSLocaleList::GetClass());
-    localelist->set_prototype(
-        context::GetClassSlot(ctx, Class::LocaleList).prototype);
-    return localelist;
-  }
-};
 
 class JSCollator : public JSObject {
  public:
@@ -460,10 +471,10 @@ class JSDateTimeFormat : public JSObject {
   std::array<JSVal, NUM_OF_FIELDS> fields_;
 };
 
-namespace detail_i18n {
+#endif  // IV_ENABLE_I18N
 
-inline JSLocaleList* CreateLocaleList(
-    Context* ctx, JSVal target, Error* e) {
+inline JSLocaleList* JSLocaleList::CreateLocaleList(Context* ctx,
+                                                    JSVal target, Error* e) {
   std::vector<std::string> list;
   if (target.IsUndefined()) {
     // const Locale& locale = icu::Locale::getDefault();
@@ -515,6 +526,9 @@ inline JSLocaleList* CreateLocaleList(
       true, IV_LV5_ERROR_WITH(e, NULL));
   return localelist;
 }
+
+#ifdef IV_ENABLE_I18N
+namespace detail_i18n {
 
 template<typename AvailIter>
 inline JSVal LookupSupportedLocales(
@@ -573,7 +587,7 @@ inline JSVal SupportedLocales(Context* ctx,
   if (!req->IsClass<Class::LocaleList>()) {
     list = static_cast<JSLocaleList*>(requested.object());
   } else {
-    list = detail_i18n::CreateLocaleList(ctx, req, IV_LV5_ERROR(e));
+    list = JSLocaleList::CreateLocaleList(ctx, req, IV_LV5_ERROR(e));
   }
   bool best_fit = true;
   if (!options.IsUndefined()) {
@@ -1727,6 +1741,6 @@ inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
   return obj;
 }
 
-} }  // namespace iv::lv5
 #endif  // IV_ENABLE_I18N
+} }  // namespace iv::lv5
 #endif  // IV_LV5_JSI18N_H_
