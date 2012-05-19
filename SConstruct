@@ -63,7 +63,7 @@ def Build():
     EnumVariable('sse', 'sse option', 'no',
                  allowed_values=('no', 'sse', 'sse2', 'sse3', 'sse4'),
                  map={}, ignorecase=2),
-    BoolVariable('cxx1x', '', 0),
+    BoolVariable('cxx11', '', 0),
     BoolVariable('direct_threading', '', 0),
     BoolVariable('release', '', 0),
     BoolVariable('i18n', '', 0)
@@ -112,12 +112,14 @@ def Build():
       LINKFLAGS=["-coverage"]
     )
 
-  if env['cxx0x'] or env['cxx1x']:
-    env.Append(CXXFLAGS=["-std=c++0x"])
+  if env['cxx0x'] or env['cxx11']:
     if env['CC'] == 'clang':
       # use libc++
+      env.Append(CXXFLAGS=["-std=c++11"])
       env.Append(CXXFLAGS=["-stdlib=libc++"])
       env.Append(LIBS=["c++"])
+    else:
+      env.Append(CXXFLAGS=["-std=c++0x"])
 
   if env['debug']:
     # -Werror is defined in debug mode only
