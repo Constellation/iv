@@ -2089,7 +2089,7 @@ class Compiler {
 
       // rcx is new stack pointer
       asm_->L(".CALL_UNWIND_OLD");
-      asm_->mov(asm_->r10, asm_->ptr[asm_->r12 + IV_OFFSETOF(railgun::Context, vm_)]);
+      asm_->mov(asm_->r10, asm_->ptr[asm_->r12 + IV_OFFSETOF(Context, vm_)]);
       asm_->mov(asm_->ptr[asm_->r10 + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, stack_pointer_))], asm_->rcx);
       asm_->mov(asm_->ptr[asm_->r10 + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, current_))], asm_->r13);
 
@@ -2131,7 +2131,7 @@ class Compiler {
 
       // rcx is new stack pointer
       asm_->L(".CALL_UNWIND_OLD");
-      asm_->mov(asm_->r10, asm_->ptr[asm_->r12 + IV_OFFSETOF(railgun::Context, vm_)]);
+      asm_->mov(asm_->r10, asm_->ptr[asm_->r12 + IV_OFFSETOF(Context, vm_)]);
       asm_->mov(asm_->ptr[asm_->r10 + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, stack_pointer_))], asm_->rcx);
       asm_->mov(asm_->ptr[asm_->r10 + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, current_))], asm_->r13);
 
@@ -2188,7 +2188,7 @@ class Compiler {
 
       // rcx is new stack pointer
       asm_->L(".CALL_UNWIND_OLD");
-      asm_->mov(asm_->r10, asm_->ptr[asm_->r12 + IV_OFFSETOF(railgun::Context, vm_)]);
+      asm_->mov(asm_->r10, asm_->ptr[asm_->r12 + IV_OFFSETOF(Context, vm_)]);
       asm_->mov(asm_->ptr[asm_->r10 + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, stack_pointer_))], asm_->rcx);
       asm_->mov(asm_->ptr[asm_->r10 + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, current_))], asm_->r13);
 

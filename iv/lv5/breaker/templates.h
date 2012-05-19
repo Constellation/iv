@@ -12,7 +12,7 @@ namespace lv5 {
 namespace breaker {
 
 static const std::size_t kDispatchExceptionHandler = 0;
-static const std::size_t kExceptionHandlerIsNotFound = kDispatchExceptionHandler + 64;
+static const std::size_t kExceptionHandlerIsNotFound = kDispatchExceptionHandler + 64;  // NOLINT
 static const std::size_t kBreakerPrologue = kExceptionHandlerIsNotFound + 64;
 static const uint64_t kStackPayload = 2;  // NOLINT
 
@@ -58,7 +58,7 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     Padding(size);
   }
 
-  typedef JSVal(*PrologueType)(railgun::Context* ctx,
+  typedef JSVal(*PrologueType)(Context* ctx,
                                railgun::Frame* frame, void* code, Error* e);
   // rdi : context
   // rsi : frame
@@ -135,7 +135,7 @@ struct ForceInstantiate {
   ForceInstantiate() { Templates<>::generator.getCode(); }
 };
 
-inline JSVal breaker_prologue(railgun::Context* ctx,
+inline JSVal breaker_prologue(Context* ctx,
                               railgun::Frame* frame, void* ptr, Error* e) {
   return Templates<>::generator.prologue(ctx, frame, ptr, e);
 }

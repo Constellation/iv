@@ -6,6 +6,7 @@
 #include <iv/lv5/breaker/templates.h>
 #include <iv/lv5/breaker/assembler.h>
 #include <iv/lv5/breaker/jsfunction.h>
+#include <iv/lv5/breaker/context.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {
@@ -37,7 +38,7 @@ namespace stub {
 static railgun::Instruction* const kDummyInstruction =
     reinterpret_cast<railgun::Instruction*>(0x1000);
 
-inline void BUILD_ENV(railgun::Context* ctx,
+inline void BUILD_ENV(Context* ctx,
                       railgun::Frame* frame,
                       uint32_t size, uint32_t mutable_start) {
   frame->variable_env_ = frame->lexical_env_ =
@@ -58,7 +59,7 @@ inline Rep WITH_SETUP(Frame* stack, railgun::Frame* frame, JSVal src) {
 }
 
 inline Rep FORIN_SETUP(Frame* stack, JSVal enumerable) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   railgun::NativeIterator* it;
   if (enumerable.IsString()) {
     it = stack->ctx->GainNativeIterator(enumerable.string());
@@ -69,7 +70,7 @@ inline Rep FORIN_SETUP(Frame* stack, JSVal enumerable) {
   return Extract(JSVal::Cell(it));
 }
 
-inline Rep FORIN_ENUMERATE(railgun::Context* ctx, JSVal iterator) {
+inline Rep FORIN_ENUMERATE(Context* ctx, JSVal iterator) {
   railgun::NativeIterator* it =
       static_cast<railgun::NativeIterator*>(iterator.cell());
   if (it->Has()) {
@@ -80,14 +81,14 @@ inline Rep FORIN_ENUMERATE(railgun::Context* ctx, JSVal iterator) {
   return 0;
 }
 
-inline void FORIN_LEAVE(railgun::Context* ctx, JSVal iterator) {
+inline void FORIN_LEAVE(Context* ctx, JSVal iterator) {
   railgun::NativeIterator* it =
       static_cast<railgun::NativeIterator*>(iterator.cell());
   ctx->ReleaseNativeIterator(it);
 }
 
 inline Rep BINARY_ADD(Frame* stack, JSVal lhs, JSVal rhs) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   if (lhs.IsString()) {
     if (rhs.IsString()) {
       return Extract(JSString::New(ctx, lhs.string(), rhs.string()));
@@ -112,80 +113,80 @@ inline Rep BINARY_ADD(Frame* stack, JSVal lhs, JSVal rhs) {
 }
 
 inline Rep BINARY_SUBTRACT(Frame* stack, JSVal lhs, JSVal rhs) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   const double left = lhs.ToNumber(ctx, ERR);
   const double res = left -  rhs.ToNumber(ctx, ERR);
   return Extract(res);
 }
 
 inline Rep BINARY_MULTIPLY(Frame* stack, JSVal lhs, JSVal rhs) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   const double left = lhs.ToNumber(ctx, ERR);
   const double res = left *  rhs.ToNumber(ctx, ERR);
   return Extract(res);
 }
 
 inline Rep BINARY_DIVIDE(Frame* stack, JSVal lhs, JSVal rhs) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   const double left = lhs.ToNumber(ctx, ERR);
   const double res = left / rhs.ToNumber(ctx, ERR);
   return Extract(res);
 }
 
 inline Rep BINARY_MODULO(Frame* stack, JSVal lhs, JSVal rhs) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   const double left = lhs.ToNumber(ctx, ERR);
   const double right = rhs.ToNumber(ctx, ERR);
   return Extract(core::math::Modulo(left, right));
 }
 
 inline Rep BINARY_LSHIFT(Frame* stack, JSVal lhs, JSVal rhs) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   const int32_t left = lhs.ToInt32(ctx, ERR);
   const int32_t right = rhs.ToInt32(ctx, ERR);
   return Extract(JSVal::Int32(left << (right & 0x1f)));
 }
 
 inline Rep BINARY_RSHIFT(Frame* stack, JSVal lhs, JSVal rhs) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   const int32_t left = lhs.ToInt32(ctx, ERR);
   const int32_t right = rhs.ToInt32(ctx, ERR);
   return Extract(JSVal::Int32(left >> (right & 0x1f)));
 }
 
 inline Rep BINARY_RSHIFT_LOGICAL(Frame* stack, JSVal lhs, JSVal rhs) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   const uint32_t left = lhs.ToUInt32(ctx, ERR);
   const int32_t right = rhs.ToInt32(ctx, ERR);
   return Extract(JSVal::UInt32(left >> (right & 0x1f)));
 }
 
 inline Rep BINARY_LT(Frame* stack, JSVal lhs, JSVal rhs) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   const CompareResult res = JSVal::Compare<true>(ctx, lhs, rhs, ERR);
   return Extract(JSVal::Bool(res == CMP_TRUE));
 }
 
 inline Rep BINARY_LTE(Frame* stack, JSVal lhs, JSVal rhs) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   const CompareResult res = JSVal::Compare<false>(ctx, rhs, lhs, ERR);
   return Extract(JSVal::Bool(res == CMP_FALSE));
 }
 
 inline Rep BINARY_GT(Frame* stack, JSVal lhs, JSVal rhs) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   const CompareResult res = JSVal::Compare<false>(ctx, rhs, lhs, ERR);
   return Extract(JSVal::Bool(res == CMP_TRUE));
 }
 
 inline Rep BINARY_GTE(Frame* stack, JSVal lhs, JSVal rhs) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   const CompareResult res = JSVal::Compare<true>(ctx, lhs, rhs, ERR);
   return Extract(JSVal::Bool(res == CMP_FALSE));
 }
 
 inline Rep BINARY_INSTANCEOF(Frame* stack, JSVal lhs, JSVal rhs) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   if (!rhs.IsObject()) {
     stack->error->Report(Error::Type, "instanceof requires object");
     RAISE();
@@ -200,7 +201,7 @@ inline Rep BINARY_INSTANCEOF(Frame* stack, JSVal lhs, JSVal rhs) {
 }
 
 inline Rep BINARY_IN(Frame* stack, JSVal lhs, JSVal rhs) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   if (!rhs.IsObject()) {
     stack->error->Report(Error::Type, "in requires object");
     RAISE();
@@ -210,7 +211,7 @@ inline Rep BINARY_IN(Frame* stack, JSVal lhs, JSVal rhs) {
 }
 
 inline Rep BINARY_EQ(Frame* stack, JSVal lhs, JSVal rhs) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   const bool result = JSVal::AbstractEqual(ctx, lhs, rhs, ERR);
   return Extract(JSVal::Bool(result));
 }
@@ -229,21 +230,21 @@ inline Rep BINARY_STRICT_NE(JSVal lhs, JSVal rhs) {
 }
 
 inline Rep BINARY_BIT_AND(Frame* stack, JSVal lhs, JSVal rhs) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   const int32_t left = lhs.ToInt32(ctx, ERR);
   const int32_t right = rhs.ToInt32(ctx, ERR);
   return Extract(JSVal::Int32(left & right));
 }
 
 inline Rep BINARY_BIT_XOR(Frame* stack, JSVal lhs, JSVal rhs) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   const int32_t left = lhs.ToInt32(ctx, ERR);
   const int32_t right = rhs.ToInt32(ctx, ERR);
   return Extract(JSVal::Int32(left ^ right));
 }
 
 inline Rep BINARY_BIT_OR(Frame* stack, JSVal lhs, JSVal rhs) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   const int32_t left = lhs.ToInt32(ctx, ERR);
   const int32_t right = rhs.ToInt32(ctx, ERR);
   return Extract(JSVal::Int32(left | right));
@@ -286,7 +287,7 @@ inline void RaiseReferenceError(Symbol name, Error* e) {
   e->Report(Error::Reference, builder.BuildPiece());
 }
 
-inline JSEnv* GetEnv(railgun::Context* ctx, JSEnv* env, Symbol name) {
+inline JSEnv* GetEnv(Context* ctx, JSEnv* env, Symbol name) {
   JSEnv* current = env;
   while (current) {
     if (current->HasBinding(ctx, name)) {
@@ -303,7 +304,7 @@ inline Rep LOAD_GLOBAL(Frame* stack,
                        Symbol name,
                        railgun::Instruction* instr) {
   // opcode | (dst | index) | nop | nop
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   JSGlobal* global = ctx->global_obj();
   if (instr[2].map == global->map()) {
     // map is cached, so use previous index code
@@ -336,7 +337,7 @@ inline Rep STORE_GLOBAL(Frame* stack,
                         JSVal src,
                         Symbol name, railgun::Instruction* instr) {
   // opcode | (src | name) | nop | nop
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   JSGlobal* global = ctx->global_obj();
   if (instr[2].map == global->map()) {
     // map is cached, so use previous index code
@@ -367,7 +368,7 @@ inline Rep STORE_GLOBAL(Frame* stack,
 }
 
 inline Rep DELETE_GLOBAL(Frame* stack, Symbol name) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   JSEnv* global = ctx->global_env();
   if (global->HasBinding(ctx, name)) {
     const bool res = global->DeleteBinding(ctx, name);
@@ -380,7 +381,7 @@ inline Rep DELETE_GLOBAL(Frame* stack, Symbol name) {
 
 template<bool STRICT>
 inline Rep TYPEOF_GLOBAL(Frame* stack, Symbol name) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   JSEnv* global = ctx->global_env();
   if (global->HasBinding(ctx, name)) {
     const JSVal res = global->GetBindingValue(ctx, name, STRICT, ERR);
@@ -417,7 +418,7 @@ inline Rep STORE_HEAP(Frame* stack, JSEnv* env,
 template<int Target, std::size_t Returned, bool STRICT>
 inline Rep INCREMENT_HEAP(Frame* stack, JSEnv* env,
                           uint32_t offset, uint32_t nest) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   JSDeclEnv* decl = GetHeapEnv(env, nest);
   const JSVal w = decl->GetByOffset(offset, STRICT, ERR);
   if (w.IsInt32() &&
@@ -445,7 +446,7 @@ inline Rep TYPEOF_HEAP(Frame* stack, JSEnv* env,
 }
 
 template<int Target, std::size_t Returned, bool STRICT>
-inline JSVal IncrementName(railgun::Context* ctx,
+inline JSVal IncrementName(Context* ctx,
                            JSEnv* env, Symbol s, Error* e) {
   if (JSEnv* current = GetEnv(ctx, env, s)) {
     const JSVal w = current->GetBindingValue(ctx, s, STRICT, IV_LV5_ERROR(e));
@@ -477,7 +478,7 @@ inline Rep INCREMENT_NAME(Frame* stack, JSEnv* env, Symbol name) {
 }
 
 template<int Target, std::size_t Returned, bool STRICT>
-inline JSVal IncrementGlobal(railgun::Context* ctx,
+inline JSVal IncrementGlobal(Context* ctx,
                              JSGlobal* global,
                              std::size_t slot, Error* e) {
   const JSVal w = global->GetBySlotOffset(ctx, slot, e);
@@ -502,7 +503,7 @@ template<int Target, std::size_t Returned, bool STRICT>
 inline Rep INCREMENT_GLOBAL(Frame* stack,
                             railgun::Instruction* instr, Symbol s) {
   // opcode | (dst | name) | nop | nop
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   JSGlobal* global = ctx->global_obj();
   if (instr[2].map == global->map()) {
     // map is cached, so use previous index code
@@ -537,7 +538,7 @@ inline Rep CALL(Frame* stack,
                 JSVal* offset,
                 uint64_t argc_with_this,
                 railgun::Frame** out_frame) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   if (!callee.IsCallable()) {
     stack->error->Report(Error::Type, "not callable object");
     RAISE();
@@ -582,7 +583,7 @@ inline Rep EVAL(Frame* stack,
                 JSVal* offset,
                 uint64_t argc_with_this,
                 railgun::Frame** out_frame) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   if (!callee.IsCallable()) {
     stack->error->Report(Error::Type, "not callable object");
     RAISE();
@@ -634,7 +635,7 @@ inline Rep CONSTRUCT(Frame* stack,
                      JSVal* offset,
                      uint64_t argc_with_this,
                      railgun::Frame** out_frame) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   if (!callee.IsCallable()) {
     stack->error->Report(Error::Type, "not callable object");
     RAISE();
@@ -678,7 +679,7 @@ inline Rep CONSTRUCT(Frame* stack,
   }
 }
 
-inline Rep CONCAT(railgun::Context* ctx, JSVal* src, uint32_t count) {
+inline Rep CONCAT(Context* ctx, JSVal* src, uint32_t count) {
   return Extract(JSString::New(ctx, src, count));
 }
 
@@ -700,12 +701,12 @@ inline Rep RAISE_IMMUTABLE(Frame* stack, Symbol name) {
   return 0;
 }
 
-inline Rep TYPEOF(railgun::Context* ctx, JSVal src) {
+inline Rep TYPEOF(Context* ctx, JSVal src) {
   return Extract(src.TypeOf(ctx));
 }
 
 inline Rep TO_PRIMITIVE_AND_TO_STRING(Frame* stack, JSVal src) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   const JSVal primitive = src.ToPrimitive(ctx, Hint::NONE, ERR);
   JSString* str = primitive.ToString(ctx, ERR);
   return Extract(str);
@@ -771,7 +772,7 @@ inline void INIT_SPARSE_ARRAY_ELEMENT(
 
 template<bool CONFIGURABLE>
 inline Rep INSTANTIATE_DECLARATION_BINDING(Frame* stack, JSEnv* env, Symbol name) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   if (!env->HasBinding(ctx, name)) {
     env->CreateMutableBinding(ctx, name, CONFIGURABLE, ERR);
   } else if (env == ctx->global_env()) {
@@ -805,7 +806,7 @@ inline Rep INSTANTIATE_DECLARATION_BINDING(Frame* stack, JSEnv* env, Symbol name
 
 template<bool CONFIGURABLE, bool STRICT>
 inline Rep INSTANTIATE_VARIABLE_BINDING(Frame* stack, JSEnv* env, Symbol name) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   if (!env->HasBinding(ctx, name)) {
     env->CreateMutableBinding(ctx, name, CONFIGURABLE, ERR);
     env->SetMutableBinding(ctx, name, JSUndefined, STRICT, ERR);
@@ -870,7 +871,7 @@ inline Rep PREPARE_DYNAMIC_CALL(Frame* stack,
                                 JSEnv* env,
                                 Symbol name,
                                 JSVal* base) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   if (JSEnv* target_env = GetEnv(ctx, env, name)) {
     const JSVal res = target_env->GetBindingValue(ctx, name, false, ERR);
     *base = target_env->ImplicitThisValue();
@@ -882,7 +883,7 @@ inline Rep PREPARE_DYNAMIC_CALL(Frame* stack,
 
 template<bool STRICT>
 inline Rep LOAD_NAME(Frame* stack, JSEnv* env, Symbol name) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   if (JSEnv* current = GetEnv(ctx, env, name)) {
     const JSVal res = current->GetBindingValue(ctx, name, STRICT, ERR);
     return Extract(res);
@@ -893,7 +894,7 @@ inline Rep LOAD_NAME(Frame* stack, JSEnv* env, Symbol name) {
 
 template<bool STRICT>
 inline Rep STORE_NAME(Frame* stack, JSEnv* env, Symbol name, JSVal src) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   if (JSEnv* current = GetEnv(ctx, env, name)) {
     current->SetMutableBinding(ctx, name, src, STRICT, ERR);
   } else {
@@ -911,7 +912,7 @@ inline Rep STORE_NAME(Frame* stack, JSEnv* env, Symbol name, JSVal src) {
 
 template<bool STRICT>
 inline Rep DELETE_NAME(Frame* stack, JSEnv* env, Symbol name) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   if (JSEnv* current = GetEnv(ctx, env, name)) {
     return Extract(JSVal::Bool(current->DeleteBinding(ctx, name)));
   }
@@ -920,7 +921,7 @@ inline Rep DELETE_NAME(Frame* stack, JSEnv* env, Symbol name) {
 
 template<bool STRICT>
 inline Rep TYPEOF_NAME(Frame* stack, JSEnv* env, Symbol name) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   if (JSEnv* current = GetEnv(ctx, env, name)) {
     const JSVal res = current->GetBindingValue(ctx, name, STRICT, ERR);
     return Extract(res.TypeOf(ctx));
@@ -928,7 +929,7 @@ inline Rep TYPEOF_NAME(Frame* stack, JSEnv* env, Symbol name) {
   return Extract(ctx->global_data()->string_undefined());
 }
 
-inline bool GetPrimitiveOwnProperty(railgun::Context* ctx,
+inline bool GetPrimitiveOwnProperty(Context* ctx,
                                     JSVal base, Symbol name, JSVal* res) {
   // section 8.7.1 special [[Get]]
   assert(base.IsPrimitive());
@@ -950,7 +951,7 @@ inline bool GetPrimitiveOwnProperty(railgun::Context* ctx,
   return false;
 }
 
-inline JSVal LoadPropPrimitive(railgun::Context* ctx,
+inline JSVal LoadPropPrimitive(Context* ctx,
                                JSVal base, Symbol name, Error* e) {
   JSVal res;
   if (GetPrimitiveOwnProperty(ctx, base, name, &res)) {
@@ -967,7 +968,7 @@ inline JSVal LoadPropPrimitive(railgun::Context* ctx,
   }
 }
 
-inline JSVal LoadPropImpl(railgun::Context* ctx, JSVal base, Symbol name, Error* e) {
+inline JSVal LoadPropImpl(Context* ctx, JSVal base, Symbol name, Error* e) {
   if (base.IsPrimitive()) {
     return LoadPropPrimitive(ctx, base, name, e);
   } else {
@@ -976,7 +977,7 @@ inline JSVal LoadPropImpl(railgun::Context* ctx, JSVal base, Symbol name, Error*
 }
 
 inline Rep LOAD_ELEMENT(Frame* stack, JSVal base, JSVal element) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   // array fast path
   uint32_t index;
   if (element.GetUInt32(&index)) {
@@ -996,7 +997,7 @@ inline Rep LOAD_ELEMENT(Frame* stack, JSVal base, JSVal element) {
 }
 
 template<bool STRICT>
-void StorePropPrimitive(railgun::Context* ctx,
+void StorePropPrimitive(Context* ctx,
                         JSVal base, Symbol name, JSVal stored, Error* e) {
   assert(base.IsPrimitive());
   JSObject* const o = base.ToObject(ctx, IV_LV5_ERROR_VOID(e));
@@ -1030,7 +1031,7 @@ void StorePropPrimitive(railgun::Context* ctx,
 }
 
 template<bool STRICT>
-inline void StorePropImpl(railgun::Context* ctx,
+inline void StorePropImpl(Context* ctx,
                           JSVal base, Symbol name, JSVal stored, Error* e) {
   if (base.IsPrimitive()) {
     StorePropPrimitive<STRICT>(ctx, base, name, stored, e);
@@ -1041,7 +1042,7 @@ inline void StorePropImpl(railgun::Context* ctx,
 
 template<bool STRICT>
 inline Rep STORE_ELEMENT(Frame* stack, JSVal base, JSVal element, JSVal src) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   // array fast path
   uint32_t index;
   if (element.GetUInt32(&index)) {
@@ -1065,7 +1066,7 @@ inline Rep STORE_ELEMENT(Frame* stack, JSVal base, JSVal element, JSVal src) {
 
 template<bool STRICT>
 inline Rep DELETE_ELEMENT(Frame* stack, JSVal base, JSVal element) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   uint32_t index;
   if (element.GetUInt32(&index)) {
     JSObject* const obj = base.ToObject(ctx, ERR);
@@ -1082,7 +1083,7 @@ inline Rep DELETE_ELEMENT(Frame* stack, JSVal base, JSVal element) {
 
 template<int Target, std::size_t Returned, bool STRICT>
 inline Rep INCREMENT_ELEMENT(Frame* stack, JSVal base, JSVal element) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   const Symbol s = element.ToSymbol(ctx, ERR);
   const JSVal w = LoadPropImpl(ctx, base, s, ERR);
   if (w.IsInt32() &&
@@ -1102,19 +1103,19 @@ inline Rep INCREMENT_ELEMENT(Frame* stack, JSVal base, JSVal element) {
   }
 }
 
-inline Rep LOAD_REGEXP(railgun::Context* ctx, JSRegExp* reg) {
+inline Rep LOAD_REGEXP(Context* ctx, JSRegExp* reg) {
   return Extract(JSRegExp::New(ctx, reg));
 }
 
-inline Rep LOAD_OBJECT(railgun::Context* ctx, Map* map) {
+inline Rep LOAD_OBJECT(Context* ctx, Map* map) {
   return Extract(JSObject::New(ctx, map));
 }
 
-inline Rep LOAD_ARRAY(railgun::Context* ctx, uint32_t len) {
+inline Rep LOAD_ARRAY(Context* ctx, uint32_t len) {
   return Extract(JSArray::ReservedNew(ctx, len));
 }
 
-inline JSEnv* TRY_CATCH_SETUP(railgun::Context* ctx,
+inline JSEnv* TRY_CATCH_SETUP(Context* ctx,
                               JSEnv* outer, Symbol sym, JSVal value) {
   return JSStaticEnv::New(ctx, outer, sym, value);
 }
@@ -1144,7 +1145,7 @@ template<bool STRICT>
 inline Rep LOAD_PROP_OWN_MEGAMORPHIC(Frame* stack,
                                      JSVal base, Symbol name,
                                      railgun::Instruction* instr) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   JSObject* obj = NULL;
   if (base.IsPrimitive()) {
     // primitive prototype cache
@@ -1160,8 +1161,8 @@ inline Rep LOAD_PROP_OWN_MEGAMORPHIC(Frame* stack,
   assert(obj);
   const std::size_t hash =
       (std::hash<Map*>()(obj->map()) + std::hash<Symbol>()(name)) %
-      railgun::Context::kGlobalMapCacheSize;
-  const railgun::Context::MapCacheEntry& value =
+      Context::kGlobalMapCacheSize;
+  const Context::MapCacheEntry& value =
       (*ctx->global_map_cache())[hash];
   if (value.first.first == obj->map() && value.first.second == name) {
     // cache hit
@@ -1182,8 +1183,8 @@ inline Rep LOAD_PROP_OWN_MEGAMORPHIC(Frame* stack,
       if (slot.base() == obj) {
         // own property => register it to map cache
         (*ctx->global_map_cache())[hash] =
-            railgun::Context::MapCacheEntry(
-                railgun::Context::MapCacheKey(obj->map(), name), slot.offset());
+            Context::MapCacheEntry(
+                Context::MapCacheKey(obj->map(), name), slot.offset());
         const JSVal res = slot.Get(ctx, base, ERR);
         return Extract(res);
       }
@@ -1199,7 +1200,7 @@ template<bool STRICT>
 inline Rep LOAD_PROP_OWN(Frame* stack,
                          JSVal base, Symbol name,
                          railgun::Instruction* instr) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   JSObject* obj = NULL;
   if (base.IsPrimitive()) {
     // primitive prototype cache
@@ -1222,8 +1223,8 @@ inline Rep LOAD_PROP_OWN(Frame* stack,
     // search megamorphic cache table
     const std::size_t hash =
         (std::hash<Map*>()(obj->map()) + std::hash<Symbol>()(name)) %
-        railgun::Context::kGlobalMapCacheSize;
-    const railgun::Context::MapCacheEntry& value = (*ctx->global_map_cache())[hash];
+        Context::kGlobalMapCacheSize;
+    const Context::MapCacheEntry& value = (*ctx->global_map_cache())[hash];
     if (value.first.first == obj->map() && value.first.second == name) {
       // cache hit
       const JSVal res = obj->GetSlot(value.second).Get(ctx, base, ERR);
@@ -1248,14 +1249,14 @@ inline Rep LOAD_PROP_OWN(Frame* stack,
           Assembler::RepatchSite::RepatchAfterCall(
               stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP_OWN_MEGAMORPHIC<STRICT>));
           (*ctx->global_map_cache())[hash] =
-              railgun::Context::MapCacheEntry(
-                  railgun::Context::MapCacheKey(obj->map(), name), slot.offset());
+              Context::MapCacheEntry(
+                  Context::MapCacheKey(obj->map(), name), slot.offset());
           (*ctx->global_map_cache())[
               (std::hash<Map*>()(instr[2].map) +
-               std::hash<Symbol>()(name)) % railgun::Context::kGlobalMapCacheSize
+               std::hash<Symbol>()(name)) % Context::kGlobalMapCacheSize
               ] =
-              railgun::Context::MapCacheEntry(
-                  railgun::Context::MapCacheKey(instr[2].map, name),
+              Context::MapCacheEntry(
+                  Context::MapCacheKey(instr[2].map, name),
                   instr[3].u32[0]);
           const JSVal res = slot.Get(ctx, base, ERR);
           return Extract(res);
@@ -1281,7 +1282,7 @@ template<bool STRICT>
 inline Rep LOAD_PROP_PROTO(Frame* stack,
                            JSVal base, Symbol name,
                            railgun::Instruction* instr) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   JSObject* obj = NULL;
   if (base.IsPrimitive()) {
     // primitive prototype cache
@@ -1313,7 +1314,7 @@ template<bool STRICT>
 inline Rep LOAD_PROP_CHAIN(Frame* stack,
                            JSVal base, Symbol name,
                            railgun::Instruction* instr) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   JSObject* obj = NULL;
   if (base.IsPrimitive()) {
     // primitive prototype cache
@@ -1344,7 +1345,7 @@ template<bool STRICT>
 inline Rep LOAD_PROP(Frame* stack,
                      JSVal base, Symbol name,
                      railgun::Instruction* instr) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   JSObject* obj = NULL;
   if (base.IsPrimitive()) {
     JSVal res;
@@ -1414,7 +1415,7 @@ template<bool STRICT>
 inline Rep STORE_PROP(Frame* stack,
                       JSVal base, Symbol name, JSVal src,
                       railgun::Instruction* instr) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   if (base.IsPrimitive()) {
     StorePropPrimitive<STRICT>(ctx, base, name, src, ERR);
   } else {
@@ -1448,7 +1449,7 @@ inline Rep STORE_PROP(Frame* stack,
 
 template<bool STRICT>
 inline Rep DELETE_PROP(Frame* stack, JSVal base, Symbol name) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   JSObject* const obj = base.ToObject(ctx, ERR);
   const bool res = obj->Delete(ctx, name, STRICT, ERR);
   return Extract(JSVal::Bool(res));
@@ -1456,7 +1457,7 @@ inline Rep DELETE_PROP(Frame* stack, JSVal base, Symbol name) {
 
 template<int Target, std::size_t Returned, bool STRICT>
 inline Rep INCREMENT_PROP(Frame* stack, JSVal base, Symbol name) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   const JSVal w = LoadPropImpl(ctx, base, name, ERR);
   if (w.IsInt32() &&
       railgun::detail::IsIncrementOverflowSafe<Target>(w.int32())) {

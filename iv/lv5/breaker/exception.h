@@ -12,7 +12,7 @@ namespace breaker {
 // copied from railgun::VM exception handler phase
 inline void* SearchExceptionHandler(void* pc, void** rsp,
                                     Frame* stack, railgun::Frame* frame) {
-  railgun::Context* ctx = stack->ctx;
+  Context* ctx = stack->ctx;
   Error* e = stack->error;
   assert(*e);
   while (true) {
