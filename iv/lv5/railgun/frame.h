@@ -18,8 +18,16 @@ struct FrameConstant {
   static const int kFrameSize;
   static const int kThisOffset;
   static const int kCalleeOffset;
-  static int Arg(int i);
-  static int FromRegisterToArg(int16_t i);
+
+  // offset from register start to args
+  static int Arg(int i) {
+    return kThisOffset - (i + 1);
+  }
+
+  // convert register number to arguments number
+  static int ConvertRegisterToArg(int16_t i) {
+    return kThisOffset - 1 + i;
+  }
 };
 
 //
@@ -184,7 +192,7 @@ struct Frame {
 
   JSVal callee() const { return callee_; }
 
-  JSLayout callee_;  // for POD
+  JSLayout callee_;  // JSLayout for POD
   Code* code_;
   Instruction* prev_pc_;
   JSEnv* variable_env_;
@@ -202,26 +210,18 @@ template<typename T>
 const int FrameConstant<T>::kFrameSize =
   (IV_ROUNDUP(sizeof(Frame), sizeof(JSVal)) / sizeof(JSVal));
 
+// offset from register start to this
 template<typename T>
 const int FrameConstant<T>::kThisOffset = (-FrameConstant<>::kFrameSize - 1);
 
+// offset from register start to callee
 template<typename T>
 const int FrameConstant<T>::kCalleeOffset =
   -FrameConstant<>::kFrameSize +
   static_cast<int>((offsetof(Frame, callee_) / sizeof(JSVal)));
 
-template<typename T>
-int FrameConstant<T>::Arg(int i) {
-  return kThisOffset - (i + 1);
-}
-
 inline JSVal* Frame::RegisterFile() {
   return GetFrameBase() + FrameConstant<>::kFrameSize;
-}
-
-template<typename T>
-int FrameConstant<T>::FromRegisterToArg(int16_t i) {
-  return kThisOffset - 1 + i;
 }
 
 // Registers implementation
