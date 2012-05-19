@@ -1,21 +1,15 @@
-#ifndef IV_LV5_RAILGUN_RUNTIME_H_
-#define IV_LV5_RAILGUN_RUNTIME_H_
-#include <iv/detail/memory.h>
-#include <iv/parser.h>
-#include <iv/lv5/error_check.h>
-#include <iv/lv5/constructor_check.h>
-#include <iv/lv5/internal.h>
-#include <iv/lv5/json.h>
-#include <iv/lv5/railgun/fwd.h>
-#include <iv/lv5/railgun/frame.h>
-#include <iv/lv5/railgun/jsfunction.h>
-#include <iv/lv5/breaker/fwd.h>
+#ifndef IV_LV5_BREAKER_RUNTIME_H_
+#define IV_LV5_BREAKER_RUNTIME_H_
+#include <iv/lv5/railgun/railgun.h>
+#include <iv/lv5/breaker/jsfunction.h>
 namespace iv {
 namespace lv5 {
-namespace railgun {
+namespace breaker {
+
+// TODO(Constellation) this is almost copy of railgun/runtime.h
 
 inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
-  Context* const ctx = static_cast<Context*>(args.ctx());
+  railgun::Context* const ctx = static_cast<railgun::Context*>(args.ctx());
   JSStringBuilder builder;
   internal::BuildFunctionSource(&builder, args, IV_LV5_ERROR(e));
   const JSString* str = builder.Build(ctx);
@@ -30,9 +24,10 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
   }
   const FunctionLiteral* const func =
       internal::IsOneFunctionExpression(*eval, IV_LV5_ERROR(e));
-  JSScript* script = JSEvalScript<EvalSource>::New(ctx, src);
-  Code* code = CompileFunction(ctx, *func, script);
-  return JSVMFunction::New(ctx, code, ctx->global_env());
+  railgun::JSScript* script = railgun::JSEvalScript<EvalSource>::New(ctx, src);
+  railgun::Code* code = railgun::CompileFunction(ctx, *func, script);
+  Compile(code);
+  return JSFunction::New(ctx, code, ctx->global_env());
 }
 
 inline JSVal GlobalEval(const Arguments& args, Error* e) {
@@ -45,7 +40,7 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
     return first;
   }
   JSString* str = first.string();
-  Context* const ctx = static_cast<Context*>(args.ctx());
+  railgun::Context* const ctx = static_cast<railgun::Context*>(args.ctx());
   // if str is (...) expression,
   // parse as JSON (RejectLineTerminator Pattern) at first
   if (str->size() > 2) {
@@ -68,16 +63,18 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
     e->Report(Error::Syntax, parser.error());
     return JSUndefined;
   }
-  JSScript* script = JSEvalScript<EvalSource>::New(ctx, src);
-  Code* code = CompileIndirectEval(ctx, *eval, script);
-  return ctx->vm()->RunEval(
+  railgun::JSScript* script = railgun::JSEvalScript<EvalSource>::New(ctx, src);
+  railgun::Code* code = railgun::CompileIndirectEval(ctx, *eval, script);
+  Compile(code);
+  return breaker::RunEval(
+      ctx,
       code,
       ctx->global_env(),
       ctx->global_env(),
       ctx->global_obj(), e);
 }
 
-inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
+inline JSVal DirectCallToEval(const Arguments& args, railgun::Frame* frame, Error* e) {
   if (!args.size()) {
     return JSUndefined;
   }
@@ -86,7 +83,7 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
     return first;
   }
   JSString* str = first.string();
-  Context* const ctx = static_cast<Context*>(args.ctx());
+  railgun::Context* const ctx = static_cast<railgun::Context*>(args.ctx());
   const bool strict = frame->code()->strict();
   // if str is (...) expression,
   // parse as JSON (RejectLineTerminator Pattern) at first
@@ -101,7 +98,7 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
     }
   }
 
-  Code* code = ctx->direct_eval_map()->Lookup(str);
+  railgun::Code* code = ctx->direct_eval_map()->Lookup(str);
 
   if (!code) {
     std::shared_ptr<EvalSource> const src(new EvalSource(*str));
@@ -114,20 +111,22 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
       e->Report(Error::Syntax, parser.error());
       return JSUndefined;
     }
-    JSScript* script = JSEvalScript<EvalSource>::New(ctx, src);
-    code = CompileEval(ctx, *eval, script);
+    railgun::JSScript* script = railgun::JSEvalScript<EvalSource>::New(ctx, src);
+    code = railgun::CompileEval(ctx, *eval, script);
+    breaker::Compile(code);
     if (!code->strict()) {
       ctx->direct_eval_map()->Insert(str, code);
     }
   }
 
-  VM* const vm = ctx->vm();
-  return vm->RunEval(
+  railgun::VM* const vm = ctx->vm();
+  return breaker::RunEval(
+      ctx,
       code,
       vm->stack()->current()->variable_env(),
       vm->stack()->current()->lexical_env(),
       vm->stack()->current()->GetThis(), e);
 }
 
-} } }  // namespace iv::lv5::railgun
-#endif  // IV_LV5_RAILGUN_RUNTIME_H_
+} } }  // namespace iv::lv5::breaker
+#endif  // IV_LV5_BREAKER_RUNTIME_H_

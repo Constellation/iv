@@ -21,11 +21,7 @@ class JSVMFunction : public JSFunction {
  public:
   virtual JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
     args->set_this_binding(this_binding);
-#if defined(IV_ENABLE_JIT)
-    return breaker::Execute(static_cast<Context*>(args->ctx()), args, this, e);
-#else
     return static_cast<Context*>(args->ctx())->vm()->Execute(args, this, e);
-#endif
   }
 
   virtual JSVal Construct(Arguments* args, Error* e) {
@@ -36,15 +32,7 @@ class JSVMFunction : public JSFunction {
       obj->set_prototype(proto.object());
     }
     assert(args->IsConstructorCalled());
-#if defined(IV_ENABLE_JIT)
-    const JSVal val = JSVMFunction::Call(args, obj, IV_LV5_ERROR(e));
-    if (!val.IsObject()) {
-      return obj;
-    }
-    return val;
-#else
     return JSVMFunction::Call(args, obj, e);
-#endif
   }
 
   static JSVMFunction* New(Context* ctx,
@@ -73,7 +61,7 @@ class JSVMFunction : public JSFunction {
 
   Code* code() const { return code_; }
 
- private:
+ protected:
   JSVMFunction(Context* ctx,
                railgun::Code* code, JSEnv* env)
     : JSFunction(ctx),

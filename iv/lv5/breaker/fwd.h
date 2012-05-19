@@ -60,8 +60,10 @@ struct Frame {
   void** ret;
 };
 
+class Context;
 class Compiler;
 class Assembler;
+class JSFunction;
 
 // Representation of JSVal, it is uint64_t in 64bit system
 typedef uint64_t Rep;
@@ -79,8 +81,12 @@ JSVal RunEval(railgun::Context* ctx,
               Error* e);
 JSVal Run(railgun::Context* ctx, railgun::Code* code, Error* e);
 JSVal Execute(railgun::Context* ctx, Arguments* args,
-              railgun::JSVMFunction* func, Error* e);
+              JSFunction* func, Error* e);
 void Compile(railgun::Code* code);
+
+JSVal FunctionConstructor(const Arguments& args, Error* e);
+JSVal GlobalEval(const Arguments& args, Error* e);
+JSVal DirectCallToEval(const Arguments& args, railgun::Frame* frame, Error* e);
 
 } } }  // namespace iv::lv5::breaker
 #endif  // IV_LV5_BREAKER_FWD_H_

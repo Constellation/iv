@@ -23,7 +23,7 @@ class Context : public iv::lv5::Context {
   };
 
   Context()
-    : iv::lv5::Context(),
+    : iv::lv5::Context(&FunctionConstructor, &GlobalEval),
       lexical_env_(global_env()),
       variable_env_(global_env()),
       interp_(new Interpreter(this)),
@@ -36,7 +36,6 @@ class Context : public iv::lv5::Context {
       strict_(false),
       stack_resource_() {
     RegisterStack(stack_resource_.stack());
-    Initialize<&FunctionConstructor, &GlobalEval>();
   }
 
   class ScriptScope : private core::Noncopyable<> {

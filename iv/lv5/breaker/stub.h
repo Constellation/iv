@@ -5,6 +5,7 @@
 #include <iv/lv5/railgun/railgun.h>
 #include <iv/lv5/breaker/templates.h>
 #include <iv/lv5/breaker/assembler.h>
+#include <iv/lv5/breaker/jsfunction.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {
@@ -476,7 +477,7 @@ inline Rep INCREMENT_NAME(Frame* stack, JSEnv* env, Symbol name) {
 }
 
 template<int Target, std::size_t Returned, bool STRICT>
-inline JSVal IncrementGlobal(Context* ctx,
+inline JSVal IncrementGlobal(railgun::Context* ctx,
                              JSGlobal* global,
                              std::size_t slot, Error* e) {
   const JSVal w = global->GetBySlotOffset(ctx, slot, e);
@@ -541,10 +542,10 @@ inline Rep CALL(Frame* stack,
     stack->error->Report(Error::Type, "not callable object");
     RAISE();
   }
-  JSFunction* func = callee.object()->AsCallable();
+  lv5::JSFunction* func = callee.object()->AsCallable();
   if (!func->IsNativeFunction()) {
     // inline call
-    railgun::JSVMFunction* vm_func = static_cast<railgun::JSVMFunction*>(func);
+    JSFunction* vm_func = static_cast<JSFunction*>(func);
     railgun::Code* code = vm_func->code();
     if (code->empty()) {
       return Extract(JSUndefined);
@@ -586,10 +587,10 @@ inline Rep EVAL(Frame* stack,
     stack->error->Report(Error::Type, "not callable object");
     RAISE();
   }
-  JSFunction* func = callee.object()->AsCallable();
+  lv5::JSFunction* func = callee.object()->AsCallable();
   if (!func->IsNativeFunction()) {
     // inline call
-    railgun::JSVMFunction* vm_func = static_cast<railgun::JSVMFunction*>(func);
+    JSFunction* vm_func = static_cast<JSFunction*>(func);
     railgun::Code* code = vm_func->code();
     if (code->empty()) {
       return Extract(JSUndefined);
@@ -617,10 +618,10 @@ inline Rep EVAL(Frame* stack,
                                       offset + (argc_with_this - 1),
                                       argc_with_this - 1);
     const JSAPI native = func->NativeFunction();
-    if (native && native == &railgun::GlobalEval) {
+    if (native && native == &GlobalEval) {
       // direct call to eval point
       args.set_this_binding(args.this_binding());
-      const JSVal res = DirectCallToEval(args, *out_frame, ERR);
+      const JSVal res = breaker::DirectCallToEval(args, *out_frame, ERR);
       return Extract(res);
     }
     const JSVal res = func->Call(&args, args.this_binding(), ERR);
@@ -638,10 +639,10 @@ inline Rep CONSTRUCT(Frame* stack,
     stack->error->Report(Error::Type, "not callable object");
     RAISE();
   }
-  JSFunction* func = callee.object()->AsCallable();
+  lv5::JSFunction* func = callee.object()->AsCallable();
   if (!func->IsNativeFunction()) {
     // inline call
-    railgun::JSVMFunction* vm_func = static_cast<railgun::JSVMFunction*>(func);
+    JSFunction* vm_func = static_cast<JSFunction*>(func);
     railgun::Code* code = vm_func->code();
     railgun::Frame* new_frame = ctx->vm()->stack()->NewCodeFrame(
         ctx,
@@ -1107,11 +1108,6 @@ inline Rep LOAD_REGEXP(railgun::Context* ctx, JSRegExp* reg) {
 
 inline Rep LOAD_OBJECT(railgun::Context* ctx, Map* map) {
   return Extract(JSObject::New(ctx, map));
-}
-
-inline Rep LOAD_FUNCTION(railgun::Context* ctx,
-                         railgun::Code* code, JSEnv* env) {
-  return Extract(railgun::JSVMFunction::New(ctx, code, env));
 }
 
 inline Rep LOAD_ARRAY(railgun::Context* ctx, uint32_t len) {

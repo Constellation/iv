@@ -13,6 +13,7 @@
 #include <iv/lv5/railgun/railgun.h>
 #include <iv/lv5/breaker/assembler.h>
 #include <iv/lv5/breaker/stub.h>
+#include <iv/lv5/breaker/jsfunction.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {
@@ -1655,7 +1656,7 @@ class Compiler {
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(target));
     asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    asm_->Call(&stub::LOAD_FUNCTION);
+    asm_->Call(&breaker::JSFunction::New);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 

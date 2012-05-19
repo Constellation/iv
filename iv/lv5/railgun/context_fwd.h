@@ -19,7 +19,9 @@ class Context : public lv5::Context {
   typedef std::pair<MapCacheKey, std::size_t> MapCacheEntry;
   typedef std::array<MapCacheEntry, kGlobalMapCacheSize> MapCache;
 
-  explicit Context();
+  Context();
+  Context(JSAPI function_constructor, JSAPI global_eval);
+
   ~Context();
 
   VM* vm() {
@@ -43,6 +45,8 @@ class Context : public lv5::Context {
   void Validate();  // for debug only
 
  private:
+  void Init();
+
   NativeIterator* GainNativeIterator();
   VM* vm_;
   JSVal RAX_;

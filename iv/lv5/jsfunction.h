@@ -113,28 +113,34 @@ class JSNativeFunction : public JSFunction {
   virtual JSAPI NativeFunction() const { return func_; }
 
   template<typename Func>
-  static JSNativeFunction* New(Context* ctx, const Func& func, std::size_t n) {
-    JSNativeFunction* const obj = new JSNativeFunction(ctx, func, n);
+  static JSNativeFunction* New(Context* ctx,
+                               const Func& func, std::size_t n,
+                               Symbol name) {
+    JSNativeFunction* const obj = new JSNativeFunction(ctx, func, n, name);
     obj->Initialize(ctx);
     return obj;
   }
 
   template<typename Func>
   static JSNativeFunction* NewPlain(Context* ctx,
-                                    const Func& func, std::size_t n) {
-    return new JSNativeFunction(ctx, func, n);
+                                    const Func& func, std::size_t n,
+                                    Symbol name) {
+    return new JSNativeFunction(ctx, func, n, name);
   }
 
  private:
   explicit JSNativeFunction(Context* ctx)
     : JSFunction(ctx), func_() { }
 
-  JSNativeFunction(Context* ctx, JSAPI func, uint32_t n)
+  JSNativeFunction(Context* ctx, JSAPI func, uint32_t n, Symbol name)
     : JSFunction(ctx),
       func_(func) {
     DefineOwnProperty(
         ctx, symbol::length(),
         DataDescriptor(JSVal::UInt32(n), ATTR::NONE), false, NULL);
+    DefineOwnProperty(
+        ctx, symbol::name(),
+        DataDescriptor(JSString::New(ctx, name), ATTR::NONE), false, NULL);
   }
 
   JSAPI func_;

@@ -11,14 +11,27 @@ namespace lv5 {
 namespace railgun {
 
 inline Context::Context()
-  : lv5::Context(),
+  : lv5::Context(&FunctionConstructor, &GlobalEval),
     vm_(),
     RAX_(),
     direct_eval_map_(10),
     iterator_cache_(),
     global_map_cache_(NULL) {
+  Init();
+}
+
+inline Context::Context(JSAPI function_constructor, JSAPI global_eval)
+  : lv5::Context(function_constructor, global_eval),
+    vm_(),
+    RAX_(),
+    direct_eval_map_(10),
+    iterator_cache_(),
+    global_map_cache_(NULL) {
+  Init();
+}
+
+inline void Context::Init() {
   vm_ = new(GC_MALLOC_UNCOLLECTABLE(sizeof(VM)))VM(this);
-  Initialize<&FunctionConstructor, &GlobalEval>();
   RegisterStack(vm_->stack());
   global_map_cache_ = new(GC)MapCache();
   {

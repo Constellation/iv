@@ -132,7 +132,7 @@ core::Space* GetRegExpAllocator(Context* ctx) {
 
 }  // namespace context
 
-Context::Context()
+Context::Context(JSAPI fc, JSAPI ge)
   : global_data_(this),
     throw_type_error_(
         JSInlinedFunction<&runtime::ThrowTypeError, 0>::NewPlain(
@@ -140,11 +140,18 @@ Context::Context()
     global_env_(JSObjectEnv::New(this, NULL, global_obj())),
     regexp_allocator_(),
     regexp_vm_(),
-    stack_(NULL) {
+    stack_(NULL),
+    function_constructor_(fc),
+    global_eval_(ge) {
+  Initialize();
 }
 
-void Context::InitContext(JSFunction* func_constructor,
-                          JSFunction* eval_function) {
+void Context::Initialize() {
+  JSFunction* func_constructor =
+      JSNativeFunction::NewPlain(this, function_constructor_, 1, context::Intern(this, "Function"));
+  JSFunction* eval_function =
+      JSNativeFunction::NewPlain(this, global_eval_, 1, symbol::eval());
+
   bind::Object global_binder(this, global_obj());
 
   // Object and Function

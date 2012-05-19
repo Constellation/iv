@@ -37,7 +37,11 @@ iv::lv5::railgun::Code* Compile(iv::lv5::railgun::Context* ctx,
 int Execute(const iv::core::StringPiece& data,
             const std::string& filename, bool statistics) {
   iv::lv5::Error e;
+#if defined(IV_ENABLE_JIT)
+  iv::lv5::breaker::Context ctx;
+#else
   iv::lv5::railgun::Context ctx;
+#endif
   iv::core::FileSource src(data, filename);
   iv::lv5::railgun::Code* code = Compile(&ctx, src);
   if (!code) {
@@ -46,16 +50,19 @@ int Execute(const iv::core::StringPiece& data,
   ctx.DefineFunction<&iv::lv5::Print, 1>("print");
   ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
   ctx.DefineFunction<&iv::lv5::CollectGarbage, 0>("gc");
-  ctx.DefineFunction<&iv::lv5::railgun::Run, 0>("run");
   ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
-  ctx.DefineFunction<&iv::lv5::railgun::StackDepth, 0>("StackDepth");
   ctx.DefineFunction<&iv::lv5::railgun::Dis, 1>("dis");
+
 #if defined(IV_ENABLE_JIT)
+  ctx.DefineFunction<&iv::lv5::breaker::Run, 0>("run");
   iv::lv5::breaker::Compile(code);
   iv::lv5::breaker::Run(&ctx, code, &e);
 #else
+  ctx.DefineFunction<&iv::lv5::railgun::Run, 0>("run");
+  ctx.DefineFunction<&iv::lv5::railgun::StackDepth, 0>("StackDepth");
   ctx.vm()->Run(code, &e);
 #endif
+
   if (e) {
     const iv::lv5::JSVal res = iv::lv5::JSError::Detail(&ctx, &e);
     e.Clear();
@@ -121,7 +128,7 @@ int Interpret(const iv::core::StringPiece& data, const std::string& filename) {
 
 int Ast(const iv::core::StringPiece& data, const std::string& filename) {
   iv::core::FileSource src(data, filename);
-  iv::lv5::Context ctx;
+  iv::lv5::railgun::Context ctx;
   iv::lv5::AstFactory factory(&ctx);
   iv::core::Parser<iv::lv5::AstFactory,
                    iv::core::FileSource> parser(&factory,

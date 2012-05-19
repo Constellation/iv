@@ -51,7 +51,7 @@ inline JSVal Run(railgun::Context* ctx, railgun::Code* code, Error* e) {
 
 inline JSVal Execute(railgun::Context* ctx,
                      Arguments* args,
-                     railgun::JSVMFunction* func, Error* e) {
+                     JSFunction* func, Error* e) {
   railgun::Code* code = func->code();
   railgun::Frame* frame = ctx->vm()->stack()->NewCodeFrame(
       ctx,

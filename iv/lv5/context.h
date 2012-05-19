@@ -41,7 +41,7 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
 
   friend void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg);
 
-  Context();
+  Context(JSAPI fc, JSAPI ge);
   virtual ~Context() { }
 
   const JSGlobal* global_obj() const {
@@ -59,6 +59,8 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
   inline JSVal* StackGain(std::size_t size) { return stack_->Gain(size); }
 
   inline void StackRestore(JSVal* ptr) { stack_->Restore(ptr); }
+
+  void Initialize();
 
   template<typename Func>
   void DefineFunction(const Func& f,
@@ -78,14 +80,6 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
     JSFunction* const f = JSInlinedFunction<func, n>::New(this, name);
     global_env_->CreateMutableBinding(this, name, false, IV_LV5_ERROR_VOID(&e));
     global_env_->SetMutableBinding(this, name, f, false, &e);
-  }
-
-  template<JSAPI FunctionConstructor, JSAPI GlobalEval>
-  void Initialize() {
-    InitContext(
-        JSInlinedFunction<FunctionConstructor, 1>::NewPlain(
-            this, context::Intern(this, "Function")),
-        JSInlinedFunction<GlobalEval, 1>::NewPlain(this, symbol::eval()));
   }
 
   JSFunction* throw_type_error() {
@@ -109,8 +103,6 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
   void RegisterStack(Stack* stack) { stack_ = stack; }
 
  private:
-  void InitContext(JSFunction* func_constructor, JSFunction* eval_function);
-
   void InitGlobal(const ClassSlot& func_cls,
                   JSObject* obj_proto, JSFunction* eval_function,
                   bind::Object* global_binder);
@@ -160,6 +152,8 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
   core::Space regexp_allocator_;  // for RegExp AST
   aero::VM regexp_vm_;
   Stack* stack_;
+  JSAPI function_constructor_;
+  JSAPI global_eval_;
 };
 
 } }  // namespace iv::lv5
