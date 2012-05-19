@@ -130,6 +130,10 @@ core::Space* GetRegExpAllocator(Context* ctx) {
   return ctx->regexp_allocator();
 }
 
+core::i18n::I18N* I18N(Context* ctx) {
+  return ctx->i18n();
+}
+
 }  // namespace context
 
 Context::Context(JSAPI fc, JSAPI ge)
@@ -142,7 +146,8 @@ Context::Context(JSAPI fc, JSAPI ge)
     regexp_vm_(),
     stack_(NULL),
     function_constructor_(fc),
-    global_eval_(ge) {
+    global_eval_(ge),
+    i18n_() {
   Initialize();
 }
 

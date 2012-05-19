@@ -4,6 +4,7 @@
 #include <iv/stringpiece.h>
 #include <iv/ustringpiece.h>
 #include <iv/space.h>
+#include <iv/i18n.h>
 #include <iv/lv5/class.h>
 #include <iv/lv5/symbol.h>
 namespace iv {
@@ -46,6 +47,8 @@ Map* GetErrorMap(Context* ctx);
 core::Space* GetRegExpAllocator(Context* ctx);
 
 JSFunction* throw_type_error(Context* ctx);
+
+core::i18n::I18N* I18N(Context* ctx);
 
 bool IsStrict(const Context* ctx);
 

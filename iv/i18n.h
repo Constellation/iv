@@ -145,20 +145,14 @@ inline bool IsWellFormedCurrencyCode(Iter it, Iter last) {
 
 class I18N {
  public:
-  I18N()
-    : default_locale_(character::locale::EN),
-      current_locale_(character::locale::EN) {
-  }
+  I18N() { }
 
   // 6.2.4 DefaultLocale()
   // the well-formed (6.2.2) and canonicalized (6.2.3) BCP 47 language tag
-  character::locale::Locale DefaultLocale() const {
-    return default_locale_;
+  std::string DefaultLocale() const {
+    // TODO(Constellation) not implemented properly yet
+    return "en-US";
   }
-
- private:
-  character::locale::Locale default_locale_;
-  character::locale::Locale current_locale_;
 };
 
 } } }  // namespace iv::core::i18n

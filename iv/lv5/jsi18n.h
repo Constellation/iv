@@ -477,11 +477,7 @@ inline JSLocaleList* JSLocaleList::CreateLocaleList(Context* ctx,
                                                     JSVal target, Error* e) {
   std::vector<std::string> list;
   if (target.IsUndefined()) {
-    // const Locale& locale = icu::Locale::getDefault();
-    // list.push_back(locale.getName());
-
-    // default locale
-    list.push_back("en-US");
+    list.push_back(ctx->i18n()->DefaultLocale());
   } else {
     JSObject* obj = target.ToObject(ctx, IV_LV5_ERROR_WITH(e, NULL));
     const uint32_t len =
