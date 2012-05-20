@@ -1,9 +1,11 @@
 #ifndef IV_I18N_NUMBER_FORMAT_H_
 #define IV_I18N_NUMBER_FORMAT_H_
 #include <string>
+#include <cstdlib>
 #include <iv/detail/array.h>
 #include <iv/platform_math.h>
 #include <iv/dtoa.h>
+#include <iv/i18n_numbering_system.h>
 namespace iv {
 namespace core {
 namespace i18n {
@@ -68,7 +70,7 @@ class NumberFormat {
       minimum_significant_digits_(minimum_significant_digits),
       maximum_significant_digits_(maximum_significant_digits),
       minimum_integer_digits_(minimum_integer_digits),
-      minimum_fraction_digits_(minimum_integer_digits),
+      minimum_fraction_digits_(minimum_fraction_digits),
       maximum_fraction_digits_(maximum_fraction_digits) {
   }
 
@@ -83,9 +85,16 @@ class NumberFormat {
       double x,
       int min_precision,
       int max_precision) {
+    assert(min_precision >= 1 && min_precision <= 21);
+    assert(max_precision >= 1 && max_precision <= 21);
+    assert(math::IsFinite(x) && x >= 0);
+
     std::string m = ToPrecision(x, max_precision);
-    const std::size_t i = m.find('.');
-    if (i != std::string::npos && max_precision > min_precision) {
+    // Expand exponential.
+    m = ExpandExponential(m);
+
+    const std::size_t period = m.find('.');
+    if (period != std::string::npos && max_precision > min_precision) {
       int cut = max_precision - min_precision;
       while (cut > 0 && m[m.size() - 1] == '0') {
         m.erase(m.size() - 1);
@@ -101,12 +110,48 @@ class NumberFormat {
   static std::string ToFixed(double x, int frac) {
     assert(math::IsFinite(x));
     if (!(std::fabs(x) < 1e+21)) {
-      // included NaN and Infinity
       dtoa::StringDToA builder;
       return builder.Build(x);
     } else {
       dtoa::StringDToA builder;
       return builder.BuildFixed(x, frac, 0);
+    }
+  }
+
+  static std::string ExpandExponential(const std::string& m) {
+    const std::string::size_type dot_pos = m.find('.');
+    const std::string::size_type exp_pos = m.find('e');
+
+    std::string before_dot;
+    std::string after_dot;
+    std::string exp;
+
+    if (dot_pos == std::string::npos) {
+      if (exp_pos  == std::string::npos) {
+        before_dot = m;
+      } else {
+        before_dot.assign(m.begin(), m.begin() + exp_pos);
+        exp.assign(m.begin() + exp_pos, m.end());
+      }
+    } else {
+      before_dot.assign(m.begin(), m.begin() + dot_pos);
+      if (exp_pos == std::string::npos) {
+        after_dot.assign(m.begin() + dot_pos + 1, m.end());
+      } else {
+        after_dot.assign(m.begin() + dot_pos + 1, m.begin() + exp_pos);
+        exp.assign(m.begin() + exp_pos, m.end());
+      }
+    }
+
+    if (exp.empty() || after_dot.empty()) {
+      return m;
+    }
+
+    const int e = std::atoi(exp.c_str() + 1);
+    if (exp[0] == '-') {
+      return "0." + std::string(e - 1, '0') + before_dot + after_dot;
+    } else {
+      return before_dot + after_dot + std::string(e - after_dot.size(), '0');
     }
   }
 
@@ -116,16 +161,25 @@ class NumberFormat {
       int minimum_integer_digits,
       int minimum_fraction_digits,
       int maximum_fraction_digits) {
+    assert(minimum_integer_digits >= 1 && minimum_integer_digits <= 21);
+    assert(minimum_fraction_digits >= 0 && minimum_fraction_digits <= 21);
+    assert(maximum_fraction_digits >= 0 && maximum_fraction_digits <= 21);
+    assert(math::IsFinite(x) && x >= 0);
+
     std::string m = ToFixed(x, maximum_fraction_digits);
-    int i = 0;
-    {
-      const std::size_t t = m.find('.');
-      if (t == std::string::npos) {
-        i = m.size();
-      } else {
-        i = t;
-      }
+
+    // Expand exponential and add trailing zeros.
+    // We must ensure digits after dot exactly equals to max_fraction_digits.
+    // So If it is less, we should append trailing zeros.
+    m = ExpandExponential(m);
+    if (m.find('.') == std::string::npos) {
+      m.push_back('.');
+      m.append(std::string(maximum_fraction_digits, '0'));
     }
+
+    assert(static_cast<int>(m.size() - m.find('.') - 1) == maximum_fraction_digits);
+
+    const int i = m.find('.');
     int cut = maximum_fraction_digits - minimum_fraction_digits;
     while (cut > 0 && m[m.size() - 1] == '0') {
       m.erase(m.size() - 1);
