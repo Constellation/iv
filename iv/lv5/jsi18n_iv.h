@@ -218,7 +218,8 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
                 JSVal::Int32(minimum_integer_digits));
 
   const int32_t minimum_fraction_digits_default =
-      (style == core::i18n::NumberFormat::CURRENCY) ? currency_data->digits : 0;
+      (style == core::i18n::NumberFormat::CURRENCY) ?
+      currency_data->CurrencyDigits(): 0;
 
   const int32_t minimum_fraction_digits =
       opt.GetNumber(ctx,
@@ -231,7 +232,7 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
 
   const int32_t maximum_fraction_digits_default =
       (style == core::i18n::NumberFormat::CURRENCY) ?
-        (std::max)(minimum_fraction_digits_default, currency_data->digits) :
+        (std::max)(minimum_fraction_digits_default, currency_data->CurrencyDigits()) :
       (style == core::i18n::NumberFormat::PERCENT) ?
         (std::max)(minimum_fraction_digits_default, 0) :
         (std::max)(minimum_fraction_digits_default, 3);

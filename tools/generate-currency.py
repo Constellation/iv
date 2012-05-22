@@ -22,6 +22,10 @@ struct CurrencyData {
     std::size_t size;
     uint16_t data[kMaxCurrencyCodeSize];
   } symbol;
+
+  int CurrencyDigits() const {
+    return (digits == -1) ? 0 : digits;
+  }
 };
 
 typedef std::array<CurrencyData, %d> CurrencyDataArray;

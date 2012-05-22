@@ -17,6 +17,10 @@ struct CurrencyData {
     std::size_t size;
     uint16_t data[kMaxCurrencyCodeSize];
   } symbol;
+
+  int CurrencyDigits() const {
+    return (digits == -1) ? 0 : digits;
+  }
 };
 
 typedef std::array<CurrencyData, 271> CurrencyDataArray;
@@ -580,8 +584,8 @@ class Currency {
   typedef CurrencyData Data;
   typedef std::unordered_map<std::string, const Data*> CurrencyMap;
 
-  static const Data* Lookup(StringPiece code) {
-    const CurrencyMap::const_iterator it = Map().find(code);
+  static const Data* Lookup(StringPiece name) {
+    const CurrencyMap::const_iterator it = Map().find(name);
     if (it != Map().end()) {
       return it->second;
     }
@@ -604,7 +608,7 @@ class Currency {
     for (const Data* it = kCurrencyData.data(),  // NOLINT
          *last = kCurrencyData.data() + kCurrencyData.size();
          it != last; ++it) {
-      map.insert(std::make_pair(it->code, it));
+      map.insert(std::make_pair(it->name, it));
     }
     return map;
   }
