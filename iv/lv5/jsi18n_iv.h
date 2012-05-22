@@ -217,8 +217,8 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
   obj->SetField(JSNumberFormat::MINIMUM_INTEGER_DIGITS,
                 JSVal::Int32(minimum_integer_digits));
 
-  // TODO(Constellation) use CurrencyDigits(c)
-  const int32_t minimum_fraction_digits_default = 0;
+  const int32_t minimum_fraction_digits_default =
+      (style == core::i18n::NumberFormat::CURRENCY) ? currency_data->digits : 0;
 
   const int32_t minimum_fraction_digits =
       opt.GetNumber(ctx,
@@ -229,10 +229,9 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
   obj->SetField(JSNumberFormat::MINIMUM_FRACTION_DIGITS,
                 JSVal::Int32(minimum_fraction_digits));
 
-  // TODO(Constellation) use CurrencyDigits(c)
   const int32_t maximum_fraction_digits_default =
       (style == core::i18n::NumberFormat::CURRENCY) ?
-        (std::max)(minimum_fraction_digits_default, 3) :
+        (std::max)(minimum_fraction_digits_default, currency_data->digits) :
       (style == core::i18n::NumberFormat::PERCENT) ?
         (std::max)(minimum_fraction_digits_default, 0) :
         (std::max)(minimum_fraction_digits_default, 3);

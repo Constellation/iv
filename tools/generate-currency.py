@@ -1,4 +1,5 @@
 import sys
+import re
 from xml.etree.ElementTree import ElementTree
 
 HEADER = """
@@ -14,11 +15,13 @@ namespace i18n {
 
 struct CurrencyData {
   static const int kMaxCurrencyCodeSize = %d;
+  const char* code;
   const char* name;
+  int digits;
   struct CurrencyCode {
     std::size_t size;
     uint16_t data[kMaxCurrencyCodeSize];
-  } code;
+  } symbol;
 };
 
 typedef std::array<CurrencyData, %d> CurrencyDataArray;
@@ -76,13 +79,28 @@ class Currency {
 #endif  // IV_I18N_CURRENCY_H_
 """
 
+def is_ascii(s):
+  return all(ord(c) < 128 for c in s)
+
 def dump_line_currency(u):
   res = []
   for c in u:
     res.append(hex(ord(c)))
   return "{ %s }" % (', '.join(res))
 
-def main(source):
+def main(source, s2):
+  PATTERN = re.compile('^(?P<code>.+),(?P<v>\d+|Nil),(?P<digit>(\d+)|-1|0\.7)$')
+
+  digits = { }
+  with open(s2) as c:
+    for line in c:
+      m = PATTERN.match(line)
+      assert m
+      digit = m.group('digit')
+      if digit == '0.7':
+        digit = -1
+      digits[m.group('code')] = int(digit)
+
   xml = None
   with open(source) as c:
     xml = ElementTree(file=c)
@@ -90,22 +108,41 @@ def main(source):
   max_len = 0
   currencies = []
   for currency in xml.findall('.//currency'):
-    name = currency.get('type')
+    symbol = None
+    code = currency.get('type')
+
     elm = currency.find('symbol')
+    digit = -1;
     if elm is not None:
       symbol = unicode(elm.text)
-      currencies.append((name, symbol))
       if max_len < len(symbol):
         max_len = len(symbol)
+    else:
+      symbol = u""
+
+    elm2 = currency.find('displayName')
+    name = ""
+    if elm2 is not None:
+      t = elm2.text
+      # TODO(Constellation) more good method...
+      if is_ascii(unicode(name)):
+        name = '"' + t.encode('utf-8') + '"'
+      else:
+        name = 'NULL'
+
+    if digits.has_key(code):
+      digit = digits[code]
+
+    currencies.append((code, symbol, name, digit))
 
   print (HEADER %
       (
         max_len,
         len(currencies),
-        ',  // NOLINT\n'.join([ '  { "' + c[0] + '", { ' + str(len(c[1])) + 'U, ' + dump_line_currency(c[1]) + ' } }' for c in currencies]) + '  // NOLINT',
+        ',  // NOLINT\n'.join([ '  { "' + c[0] + '", ' + c[2] + ', ' + str(c[3]) + ', { ' + str(len(c[1])) + 'U, ' + dump_line_currency(c[1]) + ' } }' for c in currencies]) + '  // NOLINT',
         ',\n'.join([ '    ' + c[0].upper() for c in currencies])
        )
       ).strip()
 
 if __name__ == '__main__':
-  main(sys.argv[1])
+  main(sys.argv[1], sys.argv[2])

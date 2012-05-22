@@ -298,10 +298,12 @@ class NumberFormat {
       const std::size_t i = result.find(ToUString("{currency}"));
       assert(i != UString::npos);
       UString currency_result(result.begin(), result.begin() + i);
-      if (currency_display() == Currency::SYMBOL) {
-        currency_result.append(currency()->code.data, currency()->code.size);
-      } else {
+      if (currency_display() == Currency::SYMBOL && currency()->symbol.size != 0) {
+        currency_result.append(currency()->symbol.data, currency()->symbol.size);
+      } else if (currency_display() == Currency::NAME && currency()->name) {
         currency_result.append(currency()->name, currency()->name + std::strlen(currency()->name));
+      } else {
+        currency_result.append(currency()->code, currency()->code + std::strlen(currency()->code));
       }
       currency_result.append(result.begin() + i + std::strlen("{currency}"), result.end());
       return currency_result;
