@@ -33,6 +33,12 @@ class Currency {
     NUM_OF_CURRENCIES
   };
 
+  enum Display {
+    CODE,
+    SYMBOL,
+    NAME
+  };
+
   typedef CurrencyData Data;
   typedef std::unordered_map<std::string, const Data*> CurrencyMap;
 

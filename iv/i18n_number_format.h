@@ -70,7 +70,8 @@ class NumberFormat {
                int minimum_fraction_digits = kUnspecified,
                int maximum_fraction_digits = kUnspecified,
                const NumberingSystem::Data* numbering_system = NULL,
-               const Currency::Data* currency = NULL)
+               const Currency::Data* currency = NULL,
+               Currency::Display currency_display = Currency::NAME)
     : data_(data),
       style_(style),
       minimum_significant_digits_(minimum_significant_digits),
@@ -79,7 +80,8 @@ class NumberFormat {
       minimum_fraction_digits_(minimum_fraction_digits),
       maximum_fraction_digits_(maximum_fraction_digits),
       numbering_system_(numbering_system),
-      currency_(currency) {
+      currency_(currency),
+      currency_display_(currency_display) {
   }
 
   static std::string ToPrecision(double x, int max_precision) {
@@ -248,7 +250,7 @@ class NumberFormat {
         for (UString::iterator it = n.begin(), last = n.end();
              it != last; ++it) {
           const uint16_t ch = *it;
-          if (core::character::IsDecimalDigit(ch)) {
+          if (character::IsDecimalDigit(ch)) {
             *it = numbering_system()->mapping[DecimalValue(ch)];
           }
         }
@@ -269,14 +271,24 @@ class NumberFormat {
 
     const std::size_t i = pattern.find("{number}");
     assert(i != std::string::npos);
-    core::UString result(pattern.begin(), pattern.begin() + i);
+    UString result(pattern.begin(), pattern.begin() + i);
     result.append(n);
     result.append(pattern.begin() + i + std::strlen("{number}"), pattern.end());
 
     if (style_ == CURRENCY && currency()) {
-      // TODO(Constellation) implement currency pattern
+      const std::size_t i = result.find(ToUString("{currency}"));
+      assert(i != UString::npos);
+      UString currency_result(result.begin(), result.begin() + i);
+      if (currency_display() == Currency::SYMBOL) {
+        currency_result.append(currency()->code.data, currency()->code.size);
+      } else {
+        currency_result.append(currency()->name, currency()->name + std::strlen(currency()->name));
+      }
+      currency_result.append(result.begin() + i + std::strlen("{currency}"), result.end());
+      return currency_result;
+    } else {
+      return result;
     }
-    return result;
   }
 
   int minimum_significant_digits() const { return minimum_significant_digits_; }
@@ -288,6 +300,7 @@ class NumberFormat {
     return numbering_system_;
   }
   const Currency::Data* currency() const { return currency_; }
+  Currency::Display currency_display() const { return currency_display_; }
 
  private:
   const Data* data_;
@@ -299,6 +312,7 @@ class NumberFormat {
   int maximum_fraction_digits_;
   const NumberingSystem::Data* numbering_system_;
   const Currency::Data* currency_;
+  Currency::Display currency_display_;
 };
 
 } } }  // namespace iv::core::i18n
