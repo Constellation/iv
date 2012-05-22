@@ -122,11 +122,10 @@ def Build():
   if env['debug']:
     # -Werror is defined in debug mode only
     env.Append(CCFLAGS=["-g3"])
+    env.Append(CPPDEFINES=['_GLIBCXX_DEBUG'])
     # env.Append(CCFLAGS=["-Werror"])
   else:
-    env.Append(
-        CCFLAGS=["-O3", "-fomit-frame-pointer"],
-        CPPDEFINES=["NDEBUG"])
+    env.Append(CCFLAGS=["-O3", "-fomit-frame-pointer"], CPPDEFINES=["NDEBUG"])
 
   if env['direct_threading']:
     env.Append(CPPDEFINES="IV_USE_DIRECT_THREADED_CODE")
