@@ -115,10 +115,6 @@ class Context : public iv::lv5::Context {
     return &error_;
   }
 
-  void set_error(const Error& error) {
-    error_ = error;
-  }
-
   const JSVal& ret() const {
     return ret_;
   }
