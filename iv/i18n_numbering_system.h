@@ -38,9 +38,10 @@ static const NumberingSystemDataArray kNumberingSystemData = { {
 
 class NumberingSystem {
  public:
-  typedef std::unordered_map<std::string, const NumberingSystemData*> NumberingSystemMap;  // NOLINT
+  typedef NumberingSystemData Data;
+  typedef std::unordered_map<std::string, const Data*> NumberingSystemMap;  // NOLINT
 
-  static const NumberingSystemData* Find(StringPiece name) {
+  static const Data* Find(StringPiece name) {
     const NumberingSystemMap::const_iterator it = Map().find(name);
     if (it != Map().end()) {
       return it->second;
