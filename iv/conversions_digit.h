@@ -10,6 +10,13 @@ inline int OctalValue(const int c) {
   return -1;
 }
 
+inline int DecimalValue(const int c) {
+  if ('0' <= c && c <= '9') {
+    return c - '0';
+  }
+  return -1;
+}
+
 inline int HexValue(const int c) {
   if ('0' <= c && c <= '9') {
     return c - '0';

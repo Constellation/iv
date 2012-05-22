@@ -5,6 +5,7 @@
 #include <iv/detail/unordered_set.h>
 #include <iv/noncopyable.h>
 #include <iv/character.h>
+#include <iv/conversions_digit.h>
 #include <iv/debug.h>
 #include <iv/aero/flags.h>
 #include <iv/aero/op.h>
@@ -177,7 +178,7 @@ class Compiler : private Visitor {
         Buffer buffer = { { } };
         Buffer::const_iterator last = core::UInt32ToString(ref, buffer.begin());
         Buffer::const_iterator it = buffer.begin();
-        EmitCharacter(*it++ - '0');
+        EmitCharacter(core::DecimalValue(*it++));
         for (; it != last; ++it) {
           EmitCharacter(*it);
         }

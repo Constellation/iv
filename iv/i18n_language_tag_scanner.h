@@ -88,6 +88,7 @@
 #include <iv/character.h>
 #include <iv/stringpiece.h>
 #include <iv/ustring.h>
+#include <iv/conversions_digit.h>
 #include <iv/i18n_locale.h>
 #include <iv/i18n_language_tag.h>
 
@@ -488,7 +489,7 @@ class LanguageTagScanner {
     assert(character::IsASCIIAlphanumeric(ch));
     // 0 to 9 is assigned to '0' to '9'
     if ('0' <= ch && ch <= '9') {
-      return ch - '0';
+      return DecimalValue(ch);
     }
     if ('A' <= ch && ch <= 'Z') {
       return (ch - 'A') + 10;
