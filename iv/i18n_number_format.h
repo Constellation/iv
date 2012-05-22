@@ -2,6 +2,7 @@
 #define IV_I18N_NUMBER_FORMAT_H_
 #include <string>
 #include <cstdlib>
+#include <algorithm>
 #include <iv/detail/array.h>
 #include <iv/platform_math.h>
 #include <iv/dtoa.h>
@@ -87,7 +88,8 @@ class NumberFormat {
                int maximum_fraction_digits = kUnspecified,
                const NumberingSystem::Data* numbering_system = NULL,
                const Currency::Data* currency = NULL,
-               Currency::Display currency_display = Currency::NAME)
+               Currency::Display currency_display = Currency::NAME,
+               bool use_grouping = false)
     : data_(data),
       style_(style),
       minimum_significant_digits_(minimum_significant_digits),
@@ -97,7 +99,8 @@ class NumberFormat {
       maximum_fraction_digits_(maximum_fraction_digits),
       numbering_system_(numbering_system),
       currency_(currency),
-      currency_display_(currency_display) {
+      currency_display_(currency_display),
+      use_grouping_(use_grouping) {
   }
 
   static std::string ToPrecision(double x, int max_precision) {
@@ -276,10 +279,37 @@ class NumberFormat {
         }
       }
 
-      // TODO(Constellation)
-      // Implement period conversion
-      // This is ILND. So we can use simple '.'.
       // section 12.3.2-5-f
+      // period conversion
+      // This is ILND. So we can use simple '.'.
+
+      if (use_grouping()) {
+        using std::swap;
+        core::UString temp;
+        temp.reserve(n.size());
+        UString::size_type p = n.rfind('.');
+        if (p != UString::npos) {
+          p = n.size() - p;
+          temp.append(n.rbegin(), n.rbegin() + p);
+        } else {
+          p = 0;
+        }
+        uint32_t count = 0;
+        UString::const_reverse_iterator it = n.rbegin() + p;
+        const UString::const_reverse_iterator last = n.rend();
+        while (it != last) {
+          temp.push_back(*it);
+          ++it;
+          ++count;
+          if (count % 3 == 0) {
+            if (it != last) {
+              temp.push_back(',');
+            }
+            count = 0;
+          }
+        }
+        n.assign(temp.rbegin(), temp.rend());
+      }
     }
 
     std::string pattern;
@@ -349,6 +379,7 @@ class NumberFormat {
   }
   const Currency::Data* currency() const { return currency_; }
   Currency::Display currency_display() const { return currency_display_; }
+  bool use_grouping() const { return use_grouping_; }
 
  private:
   const Data* data_;
@@ -361,6 +392,7 @@ class NumberFormat {
   const NumberingSystem::Data* numbering_system_;
   const Currency::Data* currency_;
   Currency::Display currency_display_;
+  bool use_grouping_;
 };
 
 } } }  // namespace iv::core::i18n

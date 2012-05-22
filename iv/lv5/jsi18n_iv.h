@@ -232,10 +232,11 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
 
   const int32_t maximum_fraction_digits_default =
       (style == core::i18n::NumberFormat::CURRENCY) ?
-        (std::max)(minimum_fraction_digits_default, currency_data->CurrencyDigits()) :
+        (std::max)(minimum_fraction_digits,
+                   currency_data->CurrencyDigits()) :
       (style == core::i18n::NumberFormat::PERCENT) ?
-        (std::max)(minimum_fraction_digits_default, 0) :
-        (std::max)(minimum_fraction_digits_default, 3);
+        (std::max)(minimum_fraction_digits, 0) :
+        (std::max)(minimum_fraction_digits, 3);
   const int32_t maximum_fraction_digits =
       opt.GetNumber(ctx,
                     context::Intern(ctx, "maximumFractionDigits"),
@@ -269,12 +270,14 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
                   JSVal::Int32(maximum_significant_digits));
   }
 
+  bool use_grouping = false;
   {
     const JSVal ug = opt.Get(ctx,
                              context::Intern(ctx, "useGrouping"),
                              detail_i18n::Options::BOOLEAN, NULL,
                              JSTrue, IV_LV5_ERROR(e));
     obj->SetField(JSNumberFormat::USE_GROUPING, ug);
+    use_grouping = ug.ToBoolean();
   }
 
   obj->set_format(
@@ -288,12 +291,14 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
           maximum_fraction_digits,
           NULL,
           currency_data,
-          display
-  ));
+          display,
+          use_grouping));
   return obj;
 }
 
-inline JSVal JSNumberFormat::SupportedLocalesOf(Context* ctx, JSVal requested, JSVal options, Error* e) {
+inline JSVal JSNumberFormat::SupportedLocalesOf(Context* ctx,
+                                                JSVal requested,
+                                                JSVal options, Error* e) {
   return detail_i18n::SupportedLocales(
       ctx,
       core::i18n::NumberFormat::AvailableLocales().begin(),

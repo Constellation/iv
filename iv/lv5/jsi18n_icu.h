@@ -1253,10 +1253,10 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
   // TODO(Constellation) use CurrencyDigits(c)
   const int32_t maximum_fraction_digits_default =
       (style == CURRENCY_STYLE) ?
-        (std::max)(minimum_fraction_digits_default, 3) :
+        (std::max)(minimum_fraction_digits, 3) :
       (style == PERCENT_STYLE) ?
-        (std::max)(minimum_fraction_digits_default, 0) :
-        (std::max)(minimum_fraction_digits_default, 3);
+        (std::max)(minimum_fraction_digits, 0) :
+        (std::max)(minimum_fraction_digits, 3);
   const int32_t maximum_fraction_digits =
       opt.GetNumber(ctx,
                     context::Intern(ctx, "maximumFractionDigits"),
