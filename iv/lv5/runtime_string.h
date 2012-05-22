@@ -219,6 +219,7 @@ class StringReplacer : public Replacer<StringReplacer> {
     for (typename FiberType::const_iterator it = fiber->begin(),
          last = fiber->end();
          it != last; ++it) {
+start:
       const uint16_t ch = *it;
       if (state == Replace::kNormal) {
         if (ch == '$') {
@@ -265,6 +266,7 @@ class StringReplacer : public Replacer<StringReplacer> {
             }
         }
       } else if (state == Replace::kDigit) {  // twin digit pattern search
+        state = Replace::kNormal;
         if (core::character::IsDecimalDigit(ch)) {  // twin digit
           const std::size_t single_n = core::Radix36Value(upper_digit_char);
           const std::size_t n = single_n * 10 + core::Radix36Value(ch);
@@ -288,7 +290,7 @@ class StringReplacer : public Replacer<StringReplacer> {
               builder->Append('$');
               builder->Append(upper_digit_char);
             }
-            builder->Append(ch);
+            builder->Append(ch);  // Because it is not dollar
           }
         } else {
           const std::size_t n = core::Radix36Value(upper_digit_char);
@@ -303,11 +305,11 @@ class StringReplacer : public Replacer<StringReplacer> {
             builder->Append('$');
             builder->Append(upper_digit_char);
           }
-          builder->Append(ch);
+          goto start;
         }
-        state = Replace::kNormal;
       } else {  // twin digit pattern search
         assert(state == Replace::kDigitZero);
+        state = Replace::kNormal;
         if (core::character::IsDecimalDigit(ch)) {
           const std::size_t n =
               core::Radix36Value(upper_digit_char)*10 + core::Radix36Value(ch);
@@ -320,14 +322,13 @@ class StringReplacer : public Replacer<StringReplacer> {
             }
           } else {
             builder->Append("$0");
-            builder->Append(ch);
+            builder->Append(ch);  // Because it is not dollar
           }
         } else {
           // $0 is not used
           builder->Append("$0");
-          builder->Append(ch);
+          goto start;
         }
-        state = Replace::kNormal;
       }
     }
 

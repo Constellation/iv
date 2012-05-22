@@ -68,4 +68,16 @@ TEST(AeroCompilerCase, MainTest) {
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
   }
+  {
+    space.Clear();
+    iv::core::UString str = iv::core::ToUString("(?=\\d)(\\d{3})(\\d{3})+$");
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, str, iv::aero::NONE);
+    int error = 0;
+    iv::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    ASSERT_TRUE(data.pattern());
+    iv::aero::Compiler compiler(iv::aero::NONE);
+    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    EXPECT_EQ(3, code->captures());
+  }
 }
