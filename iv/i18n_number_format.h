@@ -13,54 +13,70 @@
 namespace iv {
 namespace core {
 namespace i18n {
-namespace number_format_data {
 
-struct PatternSet {
+struct NumberFormatPatternSet {
   std::string positive_pattern;
   std::string negative_pattern;
 };
 
-struct Data {
+struct NumberFormatData {
+  const char* name;
+  NumberingSystem::Type numbering_system;
   // 0 => DECIMAL
   // 1 => PRECENT
   // 2 => CURRENCY
-  PatternSet patterns[3];
+  NumberFormatPatternSet patterns[3];
 };
 
-static const Data EN = { {
-  {
-    "{number}",
-    "-{number}"
-  },
-  {
-    "{number}%",
-    "-{number}%"
-  },
-  {
-    "{currency} {number}",
-    "-{currency} {number}"
-  }
-} };
+namespace number_format_data {
 
-typedef std::array<std::pair<StringPiece, const Data*>, 1> NumberFormatDataArray;  // NOLINT
-static const NumberFormatDataArray kNumberFormatData = { {
-  std::make_pair("en", &EN)
-} };
+static const NumberFormatData EN = {
+  "en",
+  NumberingSystem::LATN,
+  {
+    {
+      "{number}",
+      "-{number}"
+    },
+    {
+      "{number}%",
+      "-{number}%"
+    },
+    {
+      "{currency} {number}",
+      "-{currency} {number}"
+    }
+  }
+};
 
 }  // namespace number_format_data
 
+typedef std::array<const char*, 1> NumberFormatDataNames;
+typedef std::array<const NumberFormatData*, 1> NumberFormatDataValues;
+
+static const NumberFormatDataNames kNumberFormatDataNames = { {
+  number_format_data::EN.name
+} };
+
+static const NumberFormatDataValues kNumberFormatDataValues = { {
+  &number_format_data::EN
+} };
 
 class NumberFormat {
  public:
   static const int kUnspecified = -1;
 
-  typedef number_format_data::Data Data;
+  typedef NumberFormatData Data;
 
   enum Style {
     DECIMAL = 0,
     PERCENT,
     CURRENCY
   };
+
+  static const NumberFormatDataNames& AvailableLocales() {
+    return kNumberFormatDataNames;
+  }
 
   NumberFormat(const Data* data,
                Style style,
@@ -102,6 +118,7 @@ class NumberFormat {
     std::string m = ToPrecision(x, max_precision);
     // Expand exponential.
     m = ExpandExponential(m);
+    assert(m.find('e') == std::string::npos);
 
     const std::size_t period = m.find('.');
     if (period != std::string::npos && max_precision > min_precision) {
@@ -153,7 +170,7 @@ class NumberFormat {
       }
     }
 
-    if (exp.empty() || after_dot.empty()) {
+    if (exp.empty()) {
       return m;
     }
 
@@ -182,6 +199,8 @@ class NumberFormat {
     // We must ensure digits after dot exactly equals to max_fraction_digits.
     // So If it is less, we should append trailing zeros.
     m = ExpandExponential(m);
+    assert(m.find('e') == std::string::npos);
+
     if (m.find('.') == std::string::npos) {
       m.push_back('.');
       m.append(std::string(maximum_fraction_digits, '0'));
@@ -289,6 +308,32 @@ class NumberFormat {
     } else {
       return result;
     }
+  }
+
+  typedef std::unordered_map<std::string, const Data*> NumberFormatDataMap;
+
+  static const Data* Lookup(StringPiece name) {
+    const NumberFormatDataMap::const_iterator it = Map().find(name);
+    if (it != Map().end()) {
+      return it->second;
+    }
+    return NULL;
+  }
+
+ private:
+  static const NumberFormatDataMap& Map() {
+    static const NumberFormatDataMap map = InitMap();
+    return map;
+  }
+
+  static NumberFormatDataMap InitMap() {
+    NumberFormatDataMap map;
+    for (NumberFormatDataValues::const_iterator it = kNumberFormatDataValues.data(),  // NOLINT
+         last = kNumberFormatDataValues.end();
+         it != last; ++it) {
+      map.insert(std::make_pair((*it)->name, *it));
+    }
+    return map;
   }
 
   int minimum_significant_digits() const { return minimum_significant_digits_; }

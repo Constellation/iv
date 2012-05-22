@@ -86,6 +86,7 @@ inline JSVal CollatorSupportedLocalesOf(const Arguments& args, Error* e) {
       ICUStringIteration(),
       args.At(0), args.At(1), e);
 }
+#endif  // IV_ENABLE_I18N
 
 inline JSVal NumberFormatConstructor(const Arguments& args, Error* e) {
   Context* ctx = args.ctx();
@@ -157,12 +158,10 @@ inline JSVal NumberFormatResolvedOptionsGetter(
 }
 
 inline JSVal NumberFormatSupportedLocalesOf(const Arguments& args, Error* e) {
-  return detail_i18n::SupportedLocales(
-      args.ctx(),
-      ICUStringIteration(icu::NumberFormat::getAvailableLocales()),
-      ICUStringIteration(),
-      args.At(0), args.At(1), e);
+  return JSNumberFormat::SupportedLocalesOf(args.ctx(), args.At(0), args.At(1), e);
 }
+
+#ifdef IV_ENABLE_I18N
 
 inline JSVal DateTimeFormatConstructor(const Arguments& args, Error* e) {
   Context* ctx = args.ctx();

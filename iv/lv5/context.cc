@@ -1326,6 +1326,7 @@ void Context::InitIntl(const ClassSlot& func_cls,
         .def_getter<
           &runtime::CollatorResolvedOptionsGetter, 0>("resolvedOptions");
   }
+#endif  // IV_ENABLE_I18N
 
   {
     // NumberFormat
@@ -1350,7 +1351,7 @@ void Context::InitIntl(const ClassSlot& func_cls,
         .cls(func_cls.cls)
         .prototype(func_cls.prototype)
         .def(symbol::prototype(), proto, ATTR::NONE)
-        .def<&runtime::CollatorSupportedLocalesOf, 1>("supportedLocalesOf");
+        .def<&runtime::NumberFormatSupportedLocalesOf, 1>("supportedLocalesOf");
 
     bind::Object(this, proto)
         .cls(cls.cls)
@@ -1361,6 +1362,7 @@ void Context::InitIntl(const ClassSlot& func_cls,
           &runtime::NumberFormatResolvedOptionsGetter, 0>("resolvedOptions");
   }
 
+#ifdef IV_ENABLE_I18N
   {
     // DateTimeFormat
     JSObject* const proto =

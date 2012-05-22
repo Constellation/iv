@@ -68,7 +68,7 @@ inline bool IsWellFormedCurrencyCode(Iter it, Iter last) {
     return false;
   }
   for (; it != last; ++it) {
-    const uint16_t ch = ToLocaleIdentifierLowerCase(*it);
+    const uint16_t ch = ToLocaleIdentifierUpperCase(*it);
     if (ch < 'A' || 'Z' < ch) {
       return false;
     }
@@ -101,7 +101,7 @@ class I18N {
   // the well-formed (6.2.2) and canonicalized (6.2.3) BCP 47 language tag
   std::string DefaultLocale() const {
     // TODO(Constellation) not implemented properly yet
-    return "en-US";
+    return "en";
   }
 
   // 10.2.1 IndexOfMatch(availableLocales, locale)
