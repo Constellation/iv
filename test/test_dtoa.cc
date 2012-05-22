@@ -34,7 +34,7 @@ TEST(DToACase, DToAGayFixed) {
     const PrecomputedFixed current_test = *it;
     double v = current_test.v;
     const std::size_t number_digits = current_test.number_digits;
-    iv::core::dtoa::DoubleToASCII<false, false, true, false>(
+    iv::core::dtoa::DoubleToASCII<iv::core::dtoa::ROUNDING_DECIMAL_PLACES, false>(
         buffer.data(), v, number_digits, &sign, &exponent, &precision);
     EXPECT_EQ(0, sign);  // All precomputed numbers are positive.
     TrimRepresentation(buffer.data());
@@ -64,7 +64,7 @@ TEST(DToACase, DToAGayPrecision) {
     const PrecomputedPrecision current_test = *it;
     double v = current_test.v;
     const std::size_t number_digits = current_test.number_digits;
-    iv::core::dtoa::DoubleToASCII<false, true, false, false>(
+    iv::core::dtoa::DoubleToASCII<iv::core::dtoa::ROUNDING_SIGNIFICANT_FIGURES, false>(
         buffer.data(), v, number_digits, &sign, &exponent, &precision);
     EXPECT_EQ(0, sign);  // All precomputed numbers are positive.
     EXPECT_EQ(current_test.decimal_point, exponent + 1);
@@ -86,7 +86,7 @@ TEST(DToACase, DToAGayShortest) {
     std::fill(buffer.begin(), buffer.end(), '\0');
     const PrecomputedShortest current_test = *it;
     double v = current_test.v;
-    iv::core::dtoa::DoubleToASCII<true, false, false, true>(
+    iv::core::dtoa::DoubleToASCII<iv::core::dtoa::ROUNDING_NONE, true>(
         buffer.data(), v, 0, &sign, &exponent, &precision);
     EXPECT_EQ(0, sign);  // All precomputed numbers are positive.
     EXPECT_EQ(current_test.decimal_point, exponent + 1);

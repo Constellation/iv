@@ -631,18 +631,27 @@ inline int Quorem(BigInt* b, BigInt* S) {
   return q;
 }
 
-template<bool RoundingNone,
-         bool RoundingSignificantFigures,
-         bool RoundingDecimalPlaces,
+enum RoundingMode {
+  ROUNDING_NONE = 0,
+  ROUNDING_SIGNIFICANT_FIGURES = 1,
+  ROUNDING_DECIMAL_PLACES = 2
+};
+
+template<RoundingMode Mode,
          bool LeftRight,
          typename Buffer>
 inline void DoubleToASCII(Buffer* buf,
                           double dd, int ndigits,
                           bool* sign_out,
                           int* exponent_out, unsigned* precision_out) {
-  IV_STATIC_ASSERT(
-      RoundingNone + RoundingSignificantFigures + RoundingDecimalPlaces == 1);
-  IV_STATIC_ASSERT(!RoundingNone || LeftRight);
+  IV_STATIC_ASSERT(Mode == ROUNDING_NONE ||
+                   Mode == ROUNDING_SIGNIFICANT_FIGURES ||
+                   Mode == ROUNDING_DECIMAL_PLACES);
+  IV_STATIC_ASSERT(Mode != ROUNDING_NONE || LeftRight);
+
+  const bool RoundingNone = Mode == ROUNDING_NONE;
+  const bool RoundingSignificantFigures = Mode == ROUNDING_SIGNIFICANT_FIGURES;
+  const bool RoundingDecimalPlaces = Mode == ROUNDING_DECIMAL_PLACES;
   assert(!core::math::IsNaN(dd) && !core::math::IsInf(dd));
 
   U u;
@@ -1141,7 +1150,7 @@ inline void DoubleToASCII(Buffer* buf,
 template<typename Buffer>
 void dtoa(Buffer* buffer, double dd,
           bool* sign, int* exp, unsigned* precision) {
-  DoubleToASCII<true, false, false, true>(buffer, dd, 0, sign, exp, precision);
+  DoubleToASCII<ROUNDING_NONE, true>(buffer, dd, 0, sign, exp, precision);
 }
 
 // DToA not accept NaN or Infinity
@@ -1152,7 +1161,7 @@ class DToA {
   ResultType Build(double x) {
     std::array<char, kDToABufferSize> buf;
     char* begin = buf.data() + 3;
-    DoubleToASCII<true, false, false, true>(
+    DoubleToASCII<ROUNDING_NONE, true>(
         begin, x, 0, &sign_, &exponent_, &precision_);
     if (exponent_ >= -6 && exponent_ < 21) {
       return ToStringDecimal(buf.data(), begin);
@@ -1164,7 +1173,7 @@ class DToA {
   ResultType BuildStandard(double x) {
     std::array<char, kDToABufferSize> buf;
     char* begin = buf.data() + 3;
-    DoubleToASCII<true, false, false, true>(
+    DoubleToASCII<ROUNDING_NONE, true>(
         begin, x, 0, &sign_, &exponent_, &precision_);
     return ToStringDecimal(buf.data(), begin);
   }
@@ -1173,7 +1182,7 @@ class DToA {
     std::array<char, kDToABufferSize> buf;
     const int number_digits = frac + offset;
     char* begin = buf.data() + 3;
-    DoubleToASCII<false, true, false, false>(
+    DoubleToASCII<ROUNDING_SIGNIFICANT_FIGURES, false>(
         begin, x, number_digits, &sign_, &exponent_, &precision_);
     // Precision
     const unsigned figures = number_digits;
@@ -1187,7 +1196,7 @@ class DToA {
     std::array<char, kDToABufferSize> buf;
     const int number_digits = frac + offset;
     char* begin = buf.data() + 3;
-    DoubleToASCII<false, true, false, false>(
+    DoubleToASCII<ROUNDING_SIGNIFICANT_FIGURES, false>(
         begin, x, number_digits, &sign_, &exponent_, &precision_);
     // Precision
     const unsigned figures = number_digits;
@@ -1200,7 +1209,7 @@ class DToA {
   ResultType BuildStandardExponential(double x) {
     std::array<char, kDToABufferSize> buf;
     char* begin = buf.data() + 3;
-    DoubleToASCII<true, false, false, true>(
+    DoubleToASCII<ROUNDING_NONE, true>(
         begin, x, 0, &sign_, &exponent_, &precision_);
     return ToStringExponential(buf.data(), begin);
   }
@@ -1212,7 +1221,7 @@ class DToA {
     std::array<char, kDToABufferSize> buf;
     const int number_digits = frac + offset;
     char* begin = buf.data() + 3;
-    DoubleToASCII<false, false, true, false>(
+    DoubleToASCII<ROUNDING_DECIMAL_PLACES, false>(
         begin, x, number_digits, &sign_, &exponent_, &precision_);
 
     // Fixed
