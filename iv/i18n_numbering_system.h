@@ -38,15 +38,45 @@ static const NumberingSystemDataArray kNumberingSystemData = { {
 
 class NumberingSystem {
  public:
+  enum Type {
+    NONE = -1,
+    ARAB = 0,
+    ARABEXT,
+    BENG,
+    DEVA,
+    FULLWIDE,
+    GUJR,
+    GURU,
+    HANIDEC,
+    KHMR,
+    KNDA,
+    LAOO,
+    LATN,
+    MLYM,
+    MONG,
+    MYMR,
+    ORYA,
+    TAMLDEC,
+    TELU,
+    THAI,
+    TIBT,
+    NUM_OF_NUMBERING_SYSTEM
+  };
+
   typedef NumberingSystemData Data;
   typedef std::unordered_map<std::string, const Data*> NumberingSystemMap;  // NOLINT
 
-  static const Data* Find(StringPiece name) {
+  static const Data* Lookup(StringPiece name) {
     const NumberingSystemMap::const_iterator it = Map().find(name);
     if (it != Map().end()) {
       return it->second;
     }
     return NULL;
+  }
+
+  static const Data* Lookup(Type type) {
+    assert(type < kNumberingSystemData.size());
+    return kNumberingSystemData[type];
   }
 
  private:
