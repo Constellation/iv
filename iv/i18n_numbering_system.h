@@ -39,8 +39,7 @@ static const NumberingSystemDataArray kNumberingSystemData = { {
 class NumberingSystem {
  public:
   enum Type {
-    NONE = -1,
-    ARAB = 0,
+    ARAB,
     ARABEXT,
     BENG,
     DEVA,
@@ -75,8 +74,8 @@ class NumberingSystem {
   }
 
   static const Data* Lookup(Type type) {
-    assert(type < kNumberingSystemData.size());
-    return kNumberingSystemData[type];
+    assert(type < NUM_OF_NUMBERING_SYSTEM);
+    return kNumberingSystemData.data() + type;
   }
 
  private:

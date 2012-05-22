@@ -5,7 +5,11 @@
 #include <iv/detail/array.h>
 #include <iv/platform_math.h>
 #include <iv/dtoa.h>
+#include <iv/character.h>
 #include <iv/i18n_numbering_system.h>
+#include <iv/i18n_currency.h>
+#include <iv/conversions_digit.h>
+#include <iv/ustring.h>
 namespace iv {
 namespace core {
 namespace i18n {
@@ -64,14 +68,18 @@ class NumberFormat {
                int maximum_significant_digits = kUnspecified,
                int minimum_integer_digits = kUnspecified,
                int minimum_fraction_digits = kUnspecified,
-               int maximum_fraction_digits = kUnspecified)
+               int maximum_fraction_digits = kUnspecified,
+               const NumberingSystem::Data* numbering_system = NULL,
+               const Currency::Data* currency = NULL)
     : data_(data),
       style_(style),
       minimum_significant_digits_(minimum_significant_digits),
       maximum_significant_digits_(maximum_significant_digits),
       minimum_integer_digits_(minimum_integer_digits),
       minimum_fraction_digits_(minimum_fraction_digits),
-      maximum_fraction_digits_(maximum_fraction_digits) {
+      maximum_fraction_digits_(maximum_fraction_digits),
+      numbering_system_(numbering_system),
+      currency_(currency) {
   }
 
   static std::string ToPrecision(double x, int max_precision) {
@@ -196,17 +204,15 @@ class NumberFormat {
   }
 
   // section 12.3.2 Intl.NumberFormat.prototype.format(value)
-  std::string Format(double x) const {
+  UString Format(double x) const {
     bool negative = false;
-    std::string n;
+    UString n;
     if (!math::IsFinite(x)) {
       if (math::IsNaN(x)) {
-        n = "NaN";
+        n = ToUString("NaN");
       } else {
         // infinity mark
-        n.push_back(0xe2);
-        n.push_back(0x88);
-        n.push_back(0x9e);
+        n = ToUString(0x221e);
         if (x < 0) {
           negative = true;
         }
@@ -223,18 +229,35 @@ class NumberFormat {
 
       if (minimum_significant_digits_ != kUnspecified &&
           maximum_significant_digits_ != kUnspecified) {
-        n = ToRawPrecision(x,
+        n = ToUString(
+            ToRawPrecision(x,
                            minimum_significant_digits_,
-                           maximum_significant_digits_);
+                           maximum_significant_digits_));
       } else {
-        n = ToRawFixed(x,
+        n = ToUString(
+            ToRawFixed(x,
                        minimum_integer_digits_,
                        minimum_fraction_digits_,
-                       maximum_fraction_digits_);
+                       maximum_fraction_digits_));
       }
 
-      // TODO(Constellation) implement numbering system
-      // section 12.3.2-5-e and f
+      // Conversion of numbers by Numbering System
+      // This is ILND
+      // section 12.3.2-5-e
+      if (numbering_system()) {
+        for (UString::iterator it = n.begin(), last = n.end();
+             it != last; ++it) {
+          const uint16_t ch = *it;
+          if (core::character::IsDecimalDigit(ch)) {
+            *it = numbering_system()->mapping[DecimalValue(ch)];
+          }
+        }
+      }
+
+      // TODO(Constellation)
+      // Implement period conversion
+      // This is ILND. So we can use simple '.'.
+      // section 12.3.2-5-f
     }
 
     std::string pattern;
@@ -244,24 +267,27 @@ class NumberFormat {
       pattern = data_->patterns[style_].positive_pattern;
     }
 
-
     const std::size_t i = pattern.find("{number}");
     assert(i != std::string::npos);
-    std::string result(pattern.begin(), pattern.begin() + i);
+    core::UString result(pattern.begin(), pattern.begin() + i);
     result.append(n);
     result.append(pattern.begin() + i + std::strlen("{number}"), pattern.end());
 
-    if (style_ == CURRENCY) {
+    if (style_ == CURRENCY && currency()) {
       // TODO(Constellation) implement currency pattern
     }
     return result;
   }
 
-  int minimum_significant_digits() { return minimum_significant_digits_; }
-  int maximum_significant_digits() { return maximum_significant_digits_; }
-  int minimum_integer_digits() { return minimum_integer_digits_; }
-  int minimum_fraction_digits() { return minimum_fraction_digits_; }
-  int maximum_fraction_digits() { return maximum_fraction_digits_; }
+  int minimum_significant_digits() const { return minimum_significant_digits_; }
+  int maximum_significant_digits() const { return maximum_significant_digits_; }
+  int minimum_integer_digits() const { return minimum_integer_digits_; }
+  int minimum_fraction_digits() const { return minimum_fraction_digits_; }
+  int maximum_fraction_digits() const { return maximum_fraction_digits_; }
+  const NumberingSystem::Data* numbering_system() const {
+    return numbering_system_;
+  }
+  const Currency::Data* currency() const { return currency_; }
 
  private:
   const Data* data_;
@@ -271,6 +297,8 @@ class NumberFormat {
   int minimum_integer_digits_;
   int minimum_fraction_digits_;
   int maximum_fraction_digits_;
+  const NumberingSystem::Data* numbering_system_;
+  const Currency::Data* currency_;
 };
 
 } } }  // namespace iv::core::i18n
