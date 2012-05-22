@@ -265,7 +265,8 @@ class NumberFormat {
       // Conversion of numbers by Numbering System
       // This is ILND
       // section 12.3.2-5-e
-      if (numbering_system()) {
+      if (numbering_system() &&
+          numbering_system() != NumberingSystem::Lookup(NumberingSystem::LATN)) {
         for (UString::iterator it = n.begin(), last = n.end();
              it != last; ++it) {
           const uint16_t ch = *it;
