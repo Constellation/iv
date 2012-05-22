@@ -30,6 +30,7 @@ static const char* kPassFileNames[] = {
   "test/lv5/suite/pass008.js",
   "test/lv5/suite/pass009.js",
   "test/lv5/suite/pass010.js",
+  "test/lv5/suite/regexp000.js",
   "test/lv5/suite/date-parse.js",
   "test/lv5/suite/lhs-assignment.js",
   "test/lv5/suite/iterator.js",

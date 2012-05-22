@@ -530,4 +530,18 @@ TEST(AeroVMCase, CaptureTest2) {
     EXPECT_EQ(18, vec[14]);
     EXPECT_EQ(31, vec[15]);
   }
+  {
+    space.Clear();
+    iv::core::UString reg = iv::core::ToUString("\\B(?=(?:\\d{3})+$)");
+    iv::core::UString str1 = iv::core::ToUString("10000");
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
+    int error = 0;
+    iv::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    iv::aero::Compiler compiler(iv::aero::NONE);
+    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    disasm.DisAssemble(*code);
+    EXPECT_EQ(1, code->captures());
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
+  }
 }

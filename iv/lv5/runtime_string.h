@@ -155,8 +155,14 @@ class Replacer : private core::Noncopyable<> {
         break;
       }
       builder->AppendJSString(*str_, not_matched_index, vec_[0]);
-      const int this_index = vec_[1];
-      not_matched_index = this_index;
+
+      int last_index = vec_[1];
+      if (vec_[0] == vec_[1]) {
+        ++last_index;
+      }
+
+      const int this_index = last_index;
+      not_matched_index = vec_[1];
       if (previous_index == this_index) {
         ++previous_index;
       } else {
