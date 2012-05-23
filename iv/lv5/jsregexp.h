@@ -250,7 +250,13 @@ class JSRegExp : public JSObject {
       if (res != aero::AERO_SUCCESS) {
         break;
       }
-      const int this_index = offset_vector[1];
+
+      int last_index = offset_vector[1];
+      if (offset_vector[0] == offset_vector[1]) {
+        ++last_index;
+      }
+
+      const int this_index = last_index;
       if (previous_index == this_index) {
         ++previous_index;
       } else {

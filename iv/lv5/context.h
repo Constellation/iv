@@ -5,6 +5,7 @@
 #include <iv/ustringpiece.h>
 #include <iv/noncopyable.h>
 #include <iv/space.h>
+#include <iv/i18n.h>
 #include <iv/aero/aero.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/jsval_fwd.h>
@@ -102,6 +103,8 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
 
   void RegisterStack(Stack* stack) { stack_ = stack; }
 
+  core::i18n::I18N* i18n() { return &i18n_; }
+
  private:
   void InitGlobal(const ClassSlot& func_cls,
                   JSObject* obj_proto, JSFunction* eval_function,
@@ -141,10 +144,8 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
   void InitSet(const ClassSlot& func_cls,
                JSObject* obj_proto, bind::Object* global_binder);
 
-#ifdef IV_ENABLE_I18N
   void InitIntl(const ClassSlot& func_cls,
                 JSObject* obj_proto, bind::Object* global_binder);
-#endif  // IV_ENABLE_I18N
 
   GlobalData global_data_;
   JSInlinedFunction<&runtime::ThrowTypeError, 0>* throw_type_error_;
@@ -154,6 +155,7 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
   Stack* stack_;
   JSAPI function_constructor_;
   JSAPI global_eval_;
+  core::i18n::I18N i18n_;
 };
 
 } }  // namespace iv::lv5

@@ -1,6 +1,5 @@
 #ifndef IV_LV5_RUNTIME_I18N_H_
 #define IV_LV5_RUNTIME_I18N_H_
-#ifdef IV_ENABLE_I18N
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/constructor_check.h>
 #include <iv/lv5/arguments.h>
@@ -14,9 +13,10 @@ namespace runtime {
 
 
 inline JSVal LocaleListConstructor(const Arguments& args, Error* e) {
-  return lv5::detail_i18n::CreateLocaleList(args.ctx(), args.At(0), e);
+  return JSLocaleList::CreateLocaleList(args.ctx(), args.At(0), e);
 }
 
+#ifdef IV_ENABLE_I18N
 inline JSVal CollatorConstructor(const Arguments& args, Error* e) {
   Context* ctx = args.ctx();
   JSCollator* obj = JSCollator::New(ctx);
@@ -86,6 +86,7 @@ inline JSVal CollatorSupportedLocalesOf(const Arguments& args, Error* e) {
       ICUStringIteration(),
       args.At(0), args.At(1), e);
 }
+#endif  // IV_ENABLE_I18N
 
 inline JSVal NumberFormatConstructor(const Arguments& args, Error* e) {
   Context* ctx = args.ctx();
@@ -157,12 +158,10 @@ inline JSVal NumberFormatResolvedOptionsGetter(
 }
 
 inline JSVal NumberFormatSupportedLocalesOf(const Arguments& args, Error* e) {
-  return detail_i18n::SupportedLocales(
-      args.ctx(),
-      ICUStringIteration(icu::NumberFormat::getAvailableLocales()),
-      ICUStringIteration(),
-      args.At(0), args.At(1), e);
+  return JSNumberFormat::SupportedLocalesOf(args.ctx(), args.At(0), args.At(1), e);
 }
+
+#ifdef IV_ENABLE_I18N
 
 inline JSVal DateTimeFormatConstructor(const Arguments& args, Error* e) {
   Context* ctx = args.ctx();
@@ -259,7 +258,7 @@ inline JSVal DateTimeFormatSupportedLocalesOf(const Arguments& args, Error* e) {
       vec.end(),
       args.At(0), args.At(1), e);
 }
+#endif  // IV_ENABLE_I18N_H_
 
 } } }  // namespace iv::lv5::runtime
-#endif  // IV_ENABLE_I18N_H_
 #endif  // IV_LV5_RUNTIME_I18N_H_

@@ -130,6 +130,10 @@ core::Space* GetRegExpAllocator(Context* ctx) {
   return ctx->regexp_allocator();
 }
 
+core::i18n::I18N* I18N(Context* ctx) {
+  return ctx->i18n();
+}
+
 }  // namespace context
 
 Context::Context(JSAPI fc, JSAPI ge)
@@ -142,7 +146,8 @@ Context::Context(JSAPI fc, JSAPI ge)
     regexp_vm_(),
     stack_(NULL),
     function_constructor_(fc),
-    global_eval_(ge) {
+    global_eval_(ge),
+    i18n_() {
   Initialize();
 }
 
@@ -286,9 +291,7 @@ void Context::Initialize() {
   InitJSON(func_cls, obj_proto, &global_binder);
 
   // ES.next
-#ifdef IV_ENABLE_I18N
   InitIntl(func_cls, obj_proto, &global_binder);
-#endif  // IV_ENABLE_I18N
   InitMap(func_cls, obj_proto, &global_binder);
   InitSet(func_cls, obj_proto, &global_binder);
 
@@ -1240,7 +1243,6 @@ void Context::InitSet(const ClassSlot& func_cls,
       .def<&runtime::SetDelete, 1>("delete");
 }
 
-#ifdef IV_ENABLE_I18N
 void Context::InitIntl(const ClassSlot& func_cls,
                        JSObject* obj_proto, bind::Object* global_binder) {
   struct ClassSlot cls = {
@@ -1289,6 +1291,8 @@ void Context::InitIntl(const ClassSlot& func_cls,
         .def(symbol::constructor(), constructor, ATTR::W | ATTR::C);
   }
 
+#ifdef IV_ENABLE_I18N
+  // Currently, Collator, NumberFormat, DateTimeFormat need ICU
   {
     // Collator
     JSObject* const proto =
@@ -1322,6 +1326,7 @@ void Context::InitIntl(const ClassSlot& func_cls,
         .def_getter<
           &runtime::CollatorResolvedOptionsGetter, 0>("resolvedOptions");
   }
+#endif  // IV_ENABLE_I18N
 
   {
     // NumberFormat
@@ -1346,7 +1351,7 @@ void Context::InitIntl(const ClassSlot& func_cls,
         .cls(func_cls.cls)
         .prototype(func_cls.prototype)
         .def(symbol::prototype(), proto, ATTR::NONE)
-        .def<&runtime::CollatorSupportedLocalesOf, 1>("supportedLocalesOf");
+        .def<&runtime::NumberFormatSupportedLocalesOf, 1>("supportedLocalesOf");
 
     bind::Object(this, proto)
         .cls(cls.cls)
@@ -1357,6 +1362,7 @@ void Context::InitIntl(const ClassSlot& func_cls,
           &runtime::NumberFormatResolvedOptionsGetter, 0>("resolvedOptions");
   }
 
+#ifdef IV_ENABLE_I18N
   {
     // DateTimeFormat
     JSObject* const proto =
@@ -1390,7 +1396,7 @@ void Context::InitIntl(const ClassSlot& func_cls,
         .def_getter<
           &runtime::DateTimeFormatResolvedOptionsGetter, 0>("resolvedOptions");
   }
-}
 #endif  // IV_ENABLE_I18N
+}
 
 } }  // namespace iv::lv5

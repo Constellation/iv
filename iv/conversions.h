@@ -269,7 +269,7 @@ inline bool ConvertToUInt32(Iter it, const Iter last, uint32_t* value) {
     }
   }
   if (it != last && character::IsDecimalDigit(*it)) {
-    ch = *it - '0';
+    ch = DecimalValue(*it);
     *value = ch;
   } else {
     return false;
@@ -279,7 +279,7 @@ inline bool ConvertToUInt32(Iter it, const Iter last, uint32_t* value) {
   for (;it != last; ++it) {
     prev = *value;
     if (character::IsDecimalDigit(*it)) {
-      ch = *it - '0';
+      ch = DecimalValue(*it);
       *value = ch + (prev * 10);
     } else {
       return false;
@@ -623,7 +623,7 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
       if (exponent > 9999) {
         exponent = 9999;
       } else {
-        exponent = exponent * 10 + (*it - '0');
+        exponent = exponent * 10 + (DecimalValue(*it));
       }
       ++it;
     } while (it != last && character::IsDecimalDigit(*it));

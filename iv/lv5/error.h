@@ -1,7 +1,9 @@
 #ifndef IV_LV5_ERROR_H_
 #define IV_LV5_ERROR_H_
 #include <algorithm>
+#include <iv/detail/unique_ptr.h>
 #include <iv/ustring.h>
+#include <iv/noncopyable.h>
 #include <iv/static_assert.h>
 #include <iv/stringpiece.h>
 #include <iv/lv5/jsval_fwd.h>
@@ -28,13 +30,7 @@ class Error {
     : code_(Normal),
       value_(),
       detail_(),
-      next_(NULL) {
-  }
-
-  Error(const Error& rhs)
-    : code_(rhs.code_),
-      value_(rhs.value_),
-      detail_(rhs.detail_) {
+      stack_() {
   }
 
   void Report(Code code, const core::StringPiece& str) {
@@ -73,28 +69,13 @@ class Error {
         &Error::this_type_does_not_support_comparisons : 0;
   }
 
-  inline void swap(this_type& rhs) {
-    using std::swap;
-    swap(code_, rhs.code_);
-    swap(value_, rhs.value_);
-    swap(detail_, rhs.detail_);
-  }
-
-  inline friend void swap(this_type& lhs, this_type& rhs) {
-    return lhs.swap(rhs);
-  }
-
-  Error* next() const { return next_; }
-
-  void set_next(Error* error) { next_ = error; }
-
  private:
   void this_type_does_not_support_comparisons() const { }
 
   Code code_;
   JSVal value_;
   core::UString detail_;
-  Error* next_;
+  std::shared_ptr<std::vector<core::UString> > stack_;
 };
 
 } }  // namespace iv::lv5

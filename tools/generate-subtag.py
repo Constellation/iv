@@ -17,8 +17,7 @@ HEADER = """
 namespace iv {
 namespace core {
 namespace i18n {
-namespace i18n_detail {
-}  // namespace i18n_detail
+namespace data {
 
 // Irregular / regular grandfathered language tags and Preferred-Value.
 // Following tags don't provide Preferred-Value in registry.
@@ -53,6 +52,18 @@ static const RegionArray kRegion = { {
 %s
 } };
 
+// Variant tags with Preferred-Value.
+typedef std::array<std::pair<StringPiece, StringPiece>, %d> VariantArray;
+static const VariantArray kVariant = { {
+%s
+} };
+
+// Extlang tags with Preferred-Value and Prefix.
+typedef std::array<std::pair<StringPiece, std::pair<StringPiece, StringPiece> >, %d> ExtlangArray;  // NOLINT
+static const ExtlangArray kExtlang = { {
+%s
+} };
+
 typedef std::unordered_map<std::string, std::string> TagMap;
 
 inline const TagMap& Grandfathered() {
@@ -75,7 +86,19 @@ inline const TagMap& Region() {
   return map;
 }
 
-} } }  // namespace iv::core::i18n
+inline const TagMap& Variant() {
+  static const TagMap map(kVariant.begin(), kVariant.end());
+  return map;
+}
+
+typedef std::unordered_map<std::string, std::pair<std::string, std::string> > ExtlangMap;  // NOLINT
+
+inline const ExtlangMap& Extlang() {
+  static const ExtlangMap map(kExtlang.begin(), kExtlang.end());
+  return map;
+}
+
+} } } }  // namespace iv::core::i18n::data
 #endif  // IV_I18N_LANGUAGE_TAG_H_
 """
 
@@ -181,8 +204,12 @@ def main(source):
           '  std::make_pair("%s", "%s")' % (item['Subtag'].lower(), item['Preferred-Value']))
 
   # all extlang tag should be lower case
+  extlang = []
   for item in filter(lambda i: i['Type'] == 'extlang', db.registry()):
     assert is_lower(item['Subtag']), item['Subtag']
+    if item.has_key('Preferred-Value') and item.has_key('Prefix'):
+      extlang.append(
+          '  std::make_pair("%s", std::make_pair("%s", "%s"))' % (item['Subtag'].lower(), item['Preferred-Value'].lower(), item['Prefix'].lower()))
 
   # all script tag should be title case
   script = []
@@ -202,20 +229,22 @@ def main(source):
       region.append(
           '  std::make_pair("%s", "%s")' % (item['Subtag'].upper(), item['Preferred-Value']))
 
-
   # all variant tag should be title case
+  variant = []
   for item in filter(lambda i: i['Type'] == 'variant', db.registry()):
     assert is_lower(item['Subtag']), item['Subtag']
     if item.has_key('Preferred-Value'):
-      pass
-      # print item
+      variant.append(
+          '  std::make_pair("%s", "%s")' % (item['Subtag'].lower(), item['Preferred-Value']))
 
   print (HEADER %
       (
         len(grandfathered), ',\n'.join(grandfathered),
         len(redundant), ',\n'.join(redundant),
         len(language), ',\n'.join(language),
-        len(region), ',\n'.join(region)
+        len(region), ',\n'.join(region),
+        len(variant), ',\n'.join(variant),
+        len(extlang), ',\n'.join(extlang)
        )
       ).strip()
 

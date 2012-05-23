@@ -56,6 +56,7 @@ def Build():
   var = GetVariables()
   var.AddVariables(
     BoolVariable('debug', '', 0),
+    BoolVariable('debug_iterator', '', 0),
     BoolVariable('prof', '', 0),
     BoolVariable('gcov', '', 0),
     BoolVariable('clang', '', 0),
@@ -126,9 +127,10 @@ def Build():
     env.Append(CCFLAGS=["-g3"])
     # env.Append(CCFLAGS=["-Werror"])
   else:
-    env.Append(
-        CCFLAGS=["-O3", "-fomit-frame-pointer"],
-        CPPDEFINES=["NDEBUG"])
+    env.Append(CCFLAGS=["-O3", "-fomit-frame-pointer"], CPPDEFINES=["NDEBUG"])
+
+  if env['debug_iterator']:
+    env.Append(CPPDEFINES=['_GLIBCXX_DEBUG'])
 
   if env['direct_threading']:
     env.Append(CPPDEFINES="IV_USE_DIRECT_THREADED_CODE")

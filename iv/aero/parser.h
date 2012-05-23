@@ -444,7 +444,7 @@ class Parser {
       return 0;
     } else {
       Seek(pos);
-      return ch - '0';
+      return core::DecimalValue(ch);
     }
   }
 
