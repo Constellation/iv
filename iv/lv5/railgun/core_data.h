@@ -95,7 +95,7 @@ inline void CoreData::MarkChildren(radio::Core* core) {
         core->MarkCell(data_[n + 3].map);
       } else if (VM::IsOP<OP::LOAD_PROP_CHAIN>(instr)) {
         // opcode | (dst | base | name) | chain | map | offset
-        // core->MarkCell(data_[n + 2].chain);
+        core->MarkCell(data_[n + 2].chain);
         core->MarkCell(data_[n + 3].map);
       }
       n += instr.GetLength();
