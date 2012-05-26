@@ -398,7 +398,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx,
 
   if (need_default && date) {
     typedef std::array<const char*, 3> DatePropertiesOnlyNumeric;
-    static const DateProperties kDatePropertiesOnlyNumeric = { {
+    static const DatePropertiesOnlyNumeric kDatePropertiesOnlyNumeric = { {
       "year", "month", "day"
     } };
     for (DatePropertiesOnlyNumeric::const_iterator

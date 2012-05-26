@@ -1,9 +1,16 @@
 #ifndef IV_LV5_RAILGUN_CORE_DATA_H_
 #define IV_LV5_RAILGUN_CORE_DATA_H_
+#include <iv/platform.h>
 #include <iv/lv5/railgun/vm_fwd.h>
 #include <iv/lv5/railgun/core_data_fwd.h>
 #include <iv/lv5/railgun/instruction.h>
-#include <iv/lv5/breaker/assembler.h>  // This is special for unique_ptr
+
+#if defined(IV_ENABLE_JIT)
+#include <iv/lv5/breaker/assembler.h>
+#else
+class iv::lv5::breaker::Assembler { };
+#endif
+
 namespace iv {
 namespace lv5 {
 namespace railgun {

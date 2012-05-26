@@ -361,7 +361,7 @@ class NumberFormat {
 
   static NumberFormatDataMap InitMap() {
     NumberFormatDataMap map;
-    for (NumberFormatDataValues::const_iterator it = kNumberFormatDataValues.data(),  // NOLINT
+    for (NumberFormatDataValues::const_iterator it = kNumberFormatDataValues.begin(),  // NOLINT
          last = kNumberFormatDataValues.end();
          it != last; ++it) {
       map.insert(std::make_pair((*it)->name, *it));

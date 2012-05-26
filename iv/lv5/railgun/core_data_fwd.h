@@ -98,7 +98,7 @@ class CoreData : public GCKind<CoreData> {
     : data_(),
       lines_(),
       compiled_(false),
-      asm_(NULL) {
+      asm_() {
   }
 
   void set_asm(breaker::Assembler* assembler) {
