@@ -1,7 +1,8 @@
 #ifndef IV_LV5_ERROR_H_
 #define IV_LV5_ERROR_H_
 #include <algorithm>
-#include <iv/detail/unique_ptr.h>
+#include <cstdio>
+#include <iv/detail/memory.h>
 #include <iv/ustring.h>
 #include <iv/noncopyable.h>
 #include <iv/static_assert.h>
@@ -15,6 +16,8 @@ class Error {
  public:
   typedef Error this_type;
   typedef void (Error::*bool_type)() const;
+  typedef std::vector<core::UString> Stack;
+
   enum Code {
     Normal = 0,
     Eval,
@@ -50,6 +53,7 @@ class Error {
 
   void Clear() {
     code_ = Normal;
+    stack_.reset();
   }
 
   Code code() const {
@@ -69,13 +73,28 @@ class Error {
         &Error::this_type_does_not_support_comparisons : 0;
   }
 
+  void set_stack(std::shared_ptr<Stack> stack) {
+    stack_ = stack;
+  }
+
+  std::shared_ptr<Stack> stack() const { return stack_; }
+
+  // This function is implemented at jserror.h
+  bool RequireMaterialize(Context* ctx) const;
+
+  // This function is implemented at jserror.h
+  JSVal Detail(Context* ctx);
+
+  // This function is implemented at jserror.h
+  void Dump(Context* ctx, FILE* out);
+
  private:
   void this_type_does_not_support_comparisons() const { }
 
   Code code_;
   JSVal value_;
   core::UString detail_;
-  std::shared_ptr<std::vector<core::UString> > stack_;
+  std::shared_ptr<Stack> stack_;
 };
 
 } }  // namespace iv::lv5

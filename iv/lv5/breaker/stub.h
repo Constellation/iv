@@ -35,9 +35,6 @@ namespace stub {
 #define DUMMY )  // to make indentation work
 #undef DUMMY
 
-static railgun::Instruction* const kDummyInstruction =
-    reinterpret_cast<railgun::Instruction*>(0x1000);
-
 inline void BUILD_ENV(Context* ctx,
                       railgun::Frame* frame,
                       uint32_t size, uint32_t mutable_start) {
@@ -537,7 +534,8 @@ inline Rep CALL(Frame* stack,
                 JSVal callee,
                 JSVal* offset,
                 uint64_t argc_with_this,
-                railgun::Frame** out_frame) {
+                railgun::Frame** out_frame,
+                railgun::Instruction* instr) {
   Context* ctx = stack->ctx;
   if (!callee.IsCallable()) {
     stack->error->Report(Error::Type, "not callable object");
@@ -557,7 +555,7 @@ inline Rep CALL(Frame* stack,
         code,
         vm_func->scope(),
         func,
-        kDummyInstruction,
+        instr,
         argc_with_this, false);
     if (!new_frame) {
       stack->error->Report(Error::Range, "maximum call stack size exceeded");
@@ -582,7 +580,8 @@ inline Rep EVAL(Frame* stack,
                 JSVal callee,
                 JSVal* offset,
                 uint64_t argc_with_this,
-                railgun::Frame** out_frame) {
+                railgun::Frame** out_frame,
+                railgun::Instruction* instr) {
   Context* ctx = stack->ctx;
   if (!callee.IsCallable()) {
     stack->error->Report(Error::Type, "not callable object");
@@ -602,7 +601,7 @@ inline Rep EVAL(Frame* stack,
         code,
         vm_func->scope(),
         func,
-        kDummyInstruction,
+        instr,
         argc_with_this, false);
     if (!new_frame) {
       stack->error->Report(Error::Range, "maximum call stack size exceeded");
@@ -634,7 +633,8 @@ inline Rep CONSTRUCT(Frame* stack,
                      JSVal callee,
                      JSVal* offset,
                      uint64_t argc_with_this,
-                     railgun::Frame** out_frame) {
+                     railgun::Frame** out_frame,
+                     railgun::Instruction* instr) {
   Context* ctx = stack->ctx;
   if (!callee.IsCallable()) {
     stack->error->Report(Error::Type, "not callable object");
@@ -651,7 +651,7 @@ inline Rep CONSTRUCT(Frame* stack,
         code,
         vm_func->scope(),
         func,
-        kDummyInstruction,
+        instr,
         argc_with_this, false);
     if (!new_frame) {
       stack->error->Report(Error::Range, "maximum call stack size exceeded");

@@ -72,8 +72,13 @@ class Assembler : public Xbyak::CodeGenerator {
     std::size_t offset_;
   };
 
+  typedef std::pair<std::size_t, std::size_t> PCOffsetAndBytecodeOffset;
+  typedef core::SortedVector<PCOffsetAndBytecodeOffset> BytecodeOffsets;
+
   Assembler()
-    : Xbyak::CodeGenerator(4096, Xbyak::AutoGrow) {
+    : Xbyak::CodeGenerator(4096, Xbyak::AutoGrow),
+      bytecode_offsets_() {
+    bytecode_offsets_.reserve(1024);
   }
 
   // implementation of INT $3 and INT imm8
@@ -149,7 +154,53 @@ class Assembler : public Xbyak::CodeGenerator {
     Call(f, t1, t2, t3, t4, t5);
   }
 
+  struct Comparator {
+    bool operator()(const PCOffsetAndBytecodeOffset& offset,
+                    std::size_t pc_offset) const {
+      return offset.first < pc_offset;
+    }
+
+    bool operator()(std::size_t pc_offset,
+                    const PCOffsetAndBytecodeOffset& offset) const {
+      return pc_offset < offset.first;
+    }
+  };
+
+  void AttachBytecodeOffset(std::size_t pc_offset,
+                            std::size_t bytecode_offset) {
+    if (bytecode_offsets_.empty()) {
+      bytecode_offsets_.push_back(std::make_pair(pc_offset, bytecode_offset));
+      return;
+    }
+
+    PCOffsetAndBytecodeOffset& offset = bytecode_offsets_.back();
+    if (offset.first == pc_offset) {
+      offset.second = bytecode_offset;
+      return;
+    }
+
+    if (offset.second != bytecode_offset) {
+      bytecode_offsets_.push_back(std::make_pair(pc_offset, bytecode_offset));
+    }
+  }
+
+  std::size_t PCToBytecodeOffset(void* pc) const {
+    const BytecodeOffsets::const_iterator it =
+        std::upper_bound(
+            bytecode_offsets_.begin(),
+            bytecode_offsets_.end(),
+            core::BitCast<uint64_t>(pc) - core::BitCast<uint64_t>(getCode()),
+            Comparator());
+    if (it != bytecode_offsets_.begin()) {
+      return (it - 1)->second;
+    }
+    return 0;
+  }
+
   std::size_t size() const { return getSize(); }
+
+ private:
+  BytecodeOffsets bytecode_offsets_;
 };
 
 } } }  // namespace iv::lv5::breaker

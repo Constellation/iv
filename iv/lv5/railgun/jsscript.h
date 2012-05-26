@@ -22,6 +22,8 @@ class JSScript : public lv5::JSScript {
 
   virtual Type type() const = 0;
 
+  virtual core::UString filename() const = 0;
+
   void MarkChildren(radio::Core* core) { }
 
   virtual core::UStringPiece SubString(std::size_t start,
@@ -42,6 +44,10 @@ class JSEvalScript : public JSScript {
 
   inline std::shared_ptr<Source> source() const {
     return source_;
+  }
+
+  virtual core::UString filename() const {
+    return core::ToUString("[eval]");
   }
 
   core::UStringPiece SubString(std::size_t start,
@@ -73,6 +79,11 @@ class JSGlobalScript : public JSScript {
 
   inline const core::FileSource* source() const {
     return source_;
+  }
+
+  virtual core::UString filename() const {
+    return core::ToUString(
+        core::SourceTraits<core::FileSource>::GetFileName(*source_));
   }
 
   core::UStringPiece SubString(std::size_t start,

@@ -1,6 +1,8 @@
 #ifndef IV_LV5_JSEXCEPTION_H_
 #define IV_LV5_JSEXCEPTION_H_
 #include <cassert>
+#include <iv/ustring.h>
+#include <iv/unicode.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsval.h>
@@ -23,8 +25,6 @@ class JSURIError;
 class JSError : public JSObject {
  public:
   IV_LV5_DEFINE_JSCLASS(Error)
-
-  static JSVal Detail(Context* ctx, const Error* e);
 
   static JSError* New(Context* ctx, Error::Code code, JSString* str) {
     JSError* const err = new JSError(ctx, code, str);
@@ -156,33 +156,116 @@ class JSURIError : public JSError {
   }
 };
 
-inline JSVal JSError::Detail(Context* ctx, const Error* e) {
-  assert(e&& (e->code() != Error::Normal));
-  switch (e->code()) {
-    case Error::Eval:
-      return JSEvalError::New(
-          ctx, JSString::New(ctx, e->detail()));
-    case Error::Range:
-      return JSRangeError::New(
-          ctx, JSString::New(ctx, e->detail()));
-    case Error::Reference:
-      return JSReferenceError::New(
-          ctx, JSString::New(ctx, e->detail()));
-    case Error::Syntax:
-      return JSSyntaxError::New(
-          ctx, JSString::New(ctx, e->detail()));
-    case Error::Type:
-      return JSTypeError::New(
-          ctx, JSString::New(ctx, e->detail()));
-    case Error::URI:
-      return JSURIError::New(
-          ctx, JSString::New(ctx, e->detail()));
-    case Error::User:
-      return e->value();
+// Error function implementations (error.h)
+
+inline bool Error::RequireMaterialize(Context* ctx) const {
+  if (code() == Error::User) {
+    if (value().IsObject() && value().object()->IsClass<Class::Error>()) {
+      JSError* error = static_cast<JSError*>(value().object());
+      if (error->HasProperty(ctx, symbol::stack())) {
+        return false;
+      }
+      return !stack();
+    }
+    return false;
+  }
+  return !stack();
+}
+
+inline JSVal Error::Detail(Context* ctx) {
+  assert(code() != Error::Normal);
+  JSError* error = NULL;
+  switch (code()) {
+    case Error::Eval: {
+      error = JSEvalError::New(ctx, JSString::New(ctx, detail()));
+      break;
+    }
+
+    case Error::Range: {
+      error = JSRangeError::New(ctx, JSString::New(ctx, detail()));
+      break;
+    }
+
+    case Error::Reference: {
+      error = JSReferenceError::New(ctx, JSString::New(ctx, detail()));
+      break;
+    }
+
+    case Error::Syntax: {
+      error = JSSyntaxError::New(ctx, JSString::New(ctx, detail()));
+      break;
+    }
+
+    case Error::Type: {
+      error = JSTypeError::New(ctx, JSString::New(ctx, detail()));
+      break;
+    }
+
+    case Error::URI: {
+      error = JSURIError::New(ctx, JSString::New(ctx, detail()));
+      break;
+    }
+
+    case Error::User: {
+      if (!value().IsObject() || !value().object()->IsClass<Class::Error>()) {
+        Clear();
+        return value();
+      }
+      error = static_cast<JSError*>(value().object());
+      break;
+    }
+
     default:
       UNREACHABLE();
       return JSUndefined;  // make compiler happy
   };
+  assert(error);
+  if (!error->HasProperty(ctx, symbol::stack())) {
+    core::UString dump;
+    if (stack()) {
+      for (Stack::const_iterator it = stack()->begin(),
+           last = stack()->end(); it != last; ++it) {
+        dump.append(*it);
+        dump.push_back('\n');
+      }
+    }
+    Clear();
+    if (!dump.empty()) {
+      error->DefineOwnProperty(
+          ctx, symbol::stack(),
+          DataDescriptor(JSString::New(ctx, dump), ATTR::NONE),
+          false, this);
+    }
+    if (*this) {
+      Clear();
+    }
+  } else {
+    Clear();
+  }
+  return error;
+}
+
+inline void Error::Dump(Context* ctx, FILE* out) {
+  assert(*this);
+  core::UString dump;
+  if (stack()) {
+    for (Stack::const_iterator it = stack()->begin(),
+         last = stack()->end(); it != last; ++it) {
+      dump.append(*it);
+      dump.push_back('\n');
+    }
+  }
+  const JSVal result = Detail(ctx);
+  const iv::lv5::JSString* const str = result.ToString(ctx, this);
+  if (!*this) {
+    std::fprintf(out, "%s\n", str->GetUTF8().c_str());
+    core::unicode::FPutsUTF16(out, dump);
+  } else {
+    Clear();
+    std::fprintf(out, "%s\n", "ToString failed");
+    core::unicode::FPutsUTF16(out, dump);
+  }
+  assert(!*this);
 }
 
 } }  // namespace iv::lv5

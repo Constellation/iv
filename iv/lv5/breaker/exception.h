@@ -3,6 +3,7 @@
 #include <iv/debug.h>
 #include <iv/lv5/breaker/fwd.h>
 #include <iv/lv5/breaker/templates.h>
+#include <iv/lv5/breaker/assembler.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {
@@ -15,6 +16,10 @@ inline void* SearchExceptionHandler(void* pc, void** rsp,
   Context* ctx = stack->ctx;
   Error* e = stack->error;
   assert(*e);
+  const std::size_t bytecode_offset =
+      frame->code()->core_data()->assembler()->PCToBytecodeOffset(pc);
+  frame->MaterializeErrorStack(
+      ctx, e, frame->code()->core_data()->data()->data() + bytecode_offset);
   while (true) {
     bool in_range = false;
     const railgun::ExceptionTable& table = frame->code()->exception_table();
@@ -48,8 +53,7 @@ inline void* SearchExceptionHandler(void* pc, void** rsp,
 
           default: {
             // catch or finally
-            const JSVal error = JSError::Detail(ctx, e);
-            e->Clear();
+            const JSVal error = e->Detail(ctx);
             JSVal* reg = frame->RegisterFile();
             if (handler.type() == railgun::Handler::FINALLY) {
               reg[handler.flag()] = railgun::VM::kJumpFromFinally;

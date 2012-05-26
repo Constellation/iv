@@ -2,6 +2,7 @@
 #define IV_LV5_RAILGUN_FRAME_H_
 #include <cstddef>
 #include <iterator>
+#include <iv/detail/memory.h>
 #include <iv/detail/type_traits.h>
 #include <iv/utils.h>
 #include <iv/static_assert.h>
@@ -54,6 +55,26 @@ struct Frame {
 
   typedef std::iterator_traits<iterator>::difference_type difference_type;
   typedef std::size_t size_type;
+
+  void MaterializeErrorStack(Context* ctx,
+                             Error* e, const Instruction* instr) const {
+    if (!e->RequireMaterialize(ctx)) {
+      return;
+    }
+
+    std::shared_ptr<Error::Stack> stack(new Error::Stack());
+    const Frame* current = this;
+    stack->push_back(current->code()->GenerateErrorLine(instr - 1));
+
+    for (const Frame* prev = current->prev_;
+         prev; prev = prev->prev_, current = current->prev_) {
+      const Code* code = prev->code();
+      if (current->prev_pc_) {
+        stack->push_back(code->GenerateErrorLine(current->prev_pc_ - 1));
+      }
+    }
+    e->set_stack(stack);
+  }
 
   void InitThisBinding(Context* ctx, Error* e) {
     const JSVal this_value = GetThis();

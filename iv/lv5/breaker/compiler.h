@@ -199,12 +199,15 @@ class Compiler {
     asm_->sub(asm_->qword[asm_->r14 + offsetof(Frame, ret)], k64Size * kStackPayload);
     asm_->mov(asm_->rcx, asm_->qword[asm_->r14 + offsetof(Frame, ret)]);
 
+
+    const Instruction* total_first_instr = code_->core_data()->data()->data();
     for (const Instruction* instr = code_->begin(),
          *last = code_->end(); instr != last;) {
       const uint32_t opcode = instr->GetOP();
       const uint32_t length = r::kOPLength[opcode];
 
       CheckBlock(instr);
+      asm_->AttachBytecodeOffset(asm_->size(), instr - total_first_instr);
 
       switch (opcode) {
         case r::OP::NOP:
@@ -2075,6 +2078,7 @@ class Compiler {
       asm_->mov(asm_->ecx, argc_with_this);
       asm_->mov(asm_->r8, asm_->rsp);
       asm_->mov(asm_->qword[asm_->rsp], asm_->r13);
+      asm_->mov(asm_->r9, core::BitCast<uint64_t>(instr));
       asm_->Call(&stub::CALL);
       asm_->mov(asm_->rcx, asm_->qword[asm_->rsp]);
       asm_->cmp(asm_->rcx, asm_->r13);
@@ -2116,6 +2120,7 @@ class Compiler {
       asm_->mov(asm_->ecx, argc_with_this);
       asm_->mov(asm_->r8, asm_->rsp);
       asm_->mov(asm_->qword[asm_->rsp], asm_->r13);
+      asm_->mov(asm_->r9, core::BitCast<uint64_t>(instr));
       asm_->Call(&stub::CONSTRUCT);
       asm_->mov(asm_->rcx, asm_->qword[asm_->rsp]);
       asm_->cmp(asm_->rcx, asm_->r13);
@@ -2174,6 +2179,7 @@ class Compiler {
       asm_->mov(asm_->ecx, argc_with_this);
       asm_->mov(asm_->r8, asm_->rsp);
       asm_->mov(asm_->qword[asm_->rsp], asm_->r13);
+      asm_->mov(asm_->r9, core::BitCast<uint64_t>(instr));
       asm_->Call(&stub::EVAL);
       asm_->mov(asm_->rcx, asm_->qword[asm_->rsp]);
       asm_->cmp(asm_->rcx, asm_->r13);

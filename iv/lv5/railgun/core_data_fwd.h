@@ -22,7 +22,7 @@ class CoreData : public GCKind<CoreData> {
   // This offset is counted from Total Bytecode (that is, CoreData unit),
   // not Code unit.
   typedef std::pair<std::size_t, std::size_t> BytecodeOffsetAndLine;
-  typedef core::SortedVector<BytecodeOffsetAndLine> Lines;
+  typedef std::vector<BytecodeOffsetAndLine> Lines;
 
   static CoreData* New() {
     return new CoreData();
@@ -60,26 +60,20 @@ class CoreData : public GCKind<CoreData> {
   };
 
   void AttachLine(std::size_t bytecode_offset, std::size_t line_number) {
-    // This code is valid because Lines is vector.
-    const Lines::iterator it =
-        std::lower_bound(lines_.begin(), lines_.end(),
-                         bytecode_offset, Comparator());
-    if (it != lines_.end()) {
-      if (it->first == bytecode_offset) {
-        if (it->second > line_number) {
-          *it = std::make_pair(it->first, line_number);
-        }
-        return;
-      }
+    if (lines_.empty()) {
+      lines_.push_back(std::make_pair(bytecode_offset, line_number));
+      return;
     }
 
-    if (it != lines_.begin()) {
-      const Lines::iterator prev = it - 1;
-      if (prev->second == line_number) {
-        return;
-      }
+    BytecodeOffsetAndLine& line = lines_.back();
+    if (line.first == bytecode_offset) {
+      line.second = line_number;
+      return;
     }
-    lines_.insert(std::make_pair(bytecode_offset, line_number));
+
+    if (line.second != line_number) {
+      lines_.push_back(std::make_pair(bytecode_offset, line_number));
+    }
   }
 
   std::size_t LookupLineNumber(std::size_t bytecode_offset) const {
@@ -93,12 +87,15 @@ class CoreData : public GCKind<CoreData> {
     return 1;
   }
 
+  const breaker::Assembler* assembler() const { return asm_.get(); }
+
  private:
   explicit CoreData()
     : data_(),
       lines_(),
       compiled_(false),
       asm_() {
+    lines_.reserve(1024);
   }
 
   void set_asm(breaker::Assembler* assembler) {

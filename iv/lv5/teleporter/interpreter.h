@@ -660,7 +660,6 @@ void Interpreter::Visit(const TryStatement* stmt) {
     if (const core::Maybe<const Block> block = stmt->catch_block()) {
       const JSVal ex = ctx_->ErrorVal();
       ctx_->set_mode(Context::NORMAL);
-      ctx_->error()->Clear();
       JSEnv* const old_env = ctx_->lexical_env();
       const Symbol name = stmt->catch_name().Address()->symbol();
       JSStaticEnv* const catch_env = JSStaticEnv::New(ctx_, old_env, name, ex);
@@ -680,7 +679,6 @@ void Interpreter::Visit(const TryStatement* stmt) {
     }
     const BreakableStatement* const target = ctx_->target();
 
-    ctx_->error()->Clear();
     ctx_->SetStatement(Context::NORMAL, JSEmpty, NULL);
     (*block).Accept(this);
     if (ctx_->IsMode<Context::NORMAL>()) {

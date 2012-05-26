@@ -56,7 +56,6 @@ class Interactive {
         JSVal val;
         if (ctx_.Run(script)) {
           val = ctx_.ErrorVal();
-          ctx_.error()->Clear();
           ctx_.SetStatement(Context::NORMAL, JSEmpty, NULL);
         } else {
           val = ctx_.ret();
@@ -66,17 +65,8 @@ class Interactive {
           if (!ctx_.IsError()) {
             std::printf("%s\n", str->GetUTF8().c_str());
           } else {
-            val = ctx_.ErrorVal();
-            ctx_.error()->Clear();
-            ctx_.SetStatement(Context::NORMAL, JSEmpty, NULL);
-            const JSString* const str = val.ToString(&ctx_, ctx_.error());
-            if (!ctx_.IsError()) {
-              std::printf("%s\n", str->GetUTF8().c_str());
-            } else {
-              ctx_.error()->Clear();
-              ctx_.SetStatement(Context::NORMAL, JSEmpty, NULL);
-              std::puts("<STRING CONVERSION FAILED>\n");
-            }
+            val = JSUndefined;
+            ctx_.error()->Dump(&ctx_, stderr);
           }
         }
       } else if (!recover) {

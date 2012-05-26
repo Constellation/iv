@@ -25,6 +25,7 @@ namespace symbol {
     V(null)\
     V(name)\
     V(message)\
+    V(stack)\
     V(get)\
     V(set)\
     V(value)\

@@ -66,23 +66,14 @@ class Interactive {
         }
         JSVal ret = ctx_.vm()->Run(code, &e);
         if (e) {
-          ret = iv::lv5::JSError::Detail(&ctx_, &e);
-          e.Clear();
-        }
-        if (!ret.IsUndefined()) {
+          ret = JSUndefined;
+          e.Dump(&ctx_, stderr);
+        } else {
           const JSString* const str = ret.ToString(&ctx_, &e);
           if (!e) {
             std::printf("%s\n", str->GetUTF8().c_str());
           } else {
-            ret = iv::lv5::JSError::Detail(&ctx_, &e);
-            e.Clear();
-            const JSString* const str = ret.ToString(&ctx_, &e);
-            if (!e) {
-              std::printf("%s\n", str->GetUTF8().c_str());
-            } else {
-              e.Clear();
-              std::puts("<STRING CONVERSION FAILED>\n");
-            }
+            e.Dump(&ctx_, stderr);
           }
         }
       } else if (!recover) {

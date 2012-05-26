@@ -2,6 +2,7 @@
 #define IV_LV5_RAILGUN_CODE_H_
 #include <algorithm>
 #include <iv/detail/tuple.h>
+#include <iv/ustring.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/gc_template.h>
@@ -67,6 +68,31 @@ class Code : public radio::HeapObject<radio::POINTER> {
          last = func.params().end(); it != last; ++it, ++target) {
       *target = (*it)->symbol();
     }
+  }
+
+  core::UString GenerateErrorLine(const Instruction* instr) const {
+    const std::size_t line_number =
+        core_->LookupLineNumber(instr - core_->data()->data());
+    core::UString result;
+    if (has_name_) {
+      result.append(symbol::GetSymbolString(name()));
+    } else {
+      static const char* anonymous = "(anonymous)";
+      static const char* eval = "(eval)";
+      static const char* global = "(global)";
+      if (code_type() == EVAL) {
+        result.append(eval, eval + std::strlen(eval));
+      } else if (code_type() == GLOBAL) {
+        result.append(global, global + std::strlen(global));
+      } else {
+        result.append(anonymous, anonymous + std::strlen(anonymous));
+      }
+    }
+    result.push_back('@');
+    result.append(script_->filename());
+    result.push_back(':');
+    core::UInt64ToString(line_number, std::back_inserter(result));
+    return result;
   }
 
   const Instruction* data() const {
@@ -182,6 +208,8 @@ class Code : public radio::HeapObject<radio::POINTER> {
     executable_ = executable;
   }
 
+  CoreData* core_data() { return core_; }
+
   void* executable() const { return executable_; }
 
  private:
@@ -201,8 +229,6 @@ class Code : public radio::HeapObject<radio::POINTER> {
   void set_needs_declarative_environment(bool val) {
     needs_declarative_environment_ = val;
   }
-
-  CoreData* core_data() { return core_; }
 
   CodeType code_type_;
   bool strict_;

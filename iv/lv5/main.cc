@@ -55,12 +55,7 @@ int BreakerExecute(const iv::core::StringPiece& data,
   iv::lv5::breaker::Run(&ctx, code, &e);
 
   if (e) {
-    const iv::lv5::JSVal res = iv::lv5::JSError::Detail(&ctx, &e);
-    e.Clear();
-    const iv::lv5::JSString* const str = res.ToString(&ctx, &e);
-    if (!e) {
-      std::fprintf(stderr, "%s\n", str->GetUTF8().c_str());
-    }
+    e.Dump(&ctx, stderr);
     return EXIT_FAILURE;
   }
   ctx.Validate();
@@ -88,12 +83,7 @@ int RailgunExecute(const iv::core::StringPiece& data,
   ctx.vm()->Run(code, &e);
 
   if (e) {
-    const iv::lv5::JSVal res = iv::lv5::JSError::Detail(&ctx, &e);
-    e.Clear();
-    const iv::lv5::JSString* const str = res.ToString(&ctx, &e);
-    if (!e) {
-      std::fprintf(stderr, "%s\n", str->GetUTF8().c_str());
-    }
+    e.Dump(&ctx, stderr);
     return EXIT_FAILURE;
   }
   if (statistics) {
@@ -135,15 +125,8 @@ int Interpret(const iv::core::StringPiece& data, const std::string& filename) {
   iv::lv5::teleporter::JSScript* const script =
       iv::lv5::teleporter::JSGlobalScript::New(&ctx, global, &factory, &src);
   if (ctx.Run(script)) {
-    const iv::lv5::JSVal e = ctx.ErrorVal();
-    ctx.error()->Clear();
-    ctx.SetStatement(iv::lv5::teleporter::Context::NORMAL,
-                     iv::lv5::JSEmpty, NULL);
-    const iv::lv5::JSString* const str = e.ToString(&ctx, ctx.error());
-    if (!*ctx.error()) {
-      std::fprintf(stderr, "%s\n", str->GetUTF8().c_str());
-      return EXIT_FAILURE;
-    }
+    ctx.error()->Dump(&ctx, stderr);
+    return EXIT_FAILURE;
   }
   return EXIT_SUCCESS;
 }

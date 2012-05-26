@@ -503,5 +503,13 @@ inline std::ostream& OutputUTF16(std::ostream& os,  // NOLINT
   return os << str;
 }
 
+inline std::ostream& OutputUTF16(std::ostream& os,  // NOLINT
+                                 const UStringPiece& piece) {
+  std::string str;
+  str.reserve(piece.size());
+  UTF16ToUTF8(piece.begin(), piece.end(), std::back_inserter(str));
+  return os << str;
+}
+
 } } }  // namespace iv::core::unicode
 #endif  // IV_UNICODE_H_

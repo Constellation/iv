@@ -103,7 +103,7 @@ class Context : public iv::lv5::Context {
   }
 
   JSVal ErrorVal() {
-    return JSError::Detail(this, &error_);
+    return error_.Detail(this);
   }
 
 

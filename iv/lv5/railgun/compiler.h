@@ -273,6 +273,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   void EmitStatement(const Statement* stmt) {
     // Add bytecode offset to line number information
+    // If FunctionDeclaration, this is no bytecode, so purge it.
     core_->AttachLine(data_->size(), stmt->line_number());
     stmt->Accept(this);
   }

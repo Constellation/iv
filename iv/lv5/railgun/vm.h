@@ -1893,6 +1893,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
     // if finally handler found, set value to notify that RETURN_SUBROUTINE
     // should rethrow exception.
     assert(*e);
+    frame->MaterializeErrorStack(ctx(), e, instr + 1);
     while (true) {
       bool in_range = false;
       const ExceptionTable& table = frame->code()->exception_table();
@@ -1925,8 +1926,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
 
             default: {
               // catch or finally
-              const JSVal error = JSError::Detail(ctx(), e);
-              e->Clear();
+              const JSVal error = e->Detail(ctx());
               if (handler.type() == Handler::FINALLY) {
                 REG(handler.flag()) = kJumpFromFinally;
                 REG(handler.jmp()) = error;
