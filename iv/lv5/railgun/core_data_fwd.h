@@ -1,5 +1,6 @@
 #ifndef IV_LV5_RAILGUN_CORE_DATA_FWD_H_
 #define IV_LV5_RAILGUN_CORE_DATA_FWD_H_
+#include <iv/detail/unique_ptr.h>
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/gc_kind.h>
 #include <iv/lv5/railgun/op.h>
@@ -13,15 +14,16 @@ class CoreData : public GCKind<CoreData> {
  public:
   friend class breaker::Compiler;
 
-  typedef GCVector<Instruction>::type Data;
+  typedef std::vector<Instruction> Data;
 
   // Vector of pairs of bytecode offset and line number.
   // This offset is counted from Total Bytecode (that is, CoreData unit),
   // not Code unit.
-  typedef GCVector<std::pair<std::size_t, std::size_t> > Lines;
+  typedef std::pair<std::size_t, std::size_t> BytecodeOffsetAndLine;
+  typedef core::SortedVector<BytecodeOffsetAndLine> Lines;
 
   static CoreData* New() {
-    return new CoreData(new (GC) Data());
+    return new CoreData();
   }
 
   GC_ms_entry* MarkChildren(GC_word* top,
@@ -32,33 +34,36 @@ class CoreData : public GCKind<CoreData> {
   void MarkChildren(radio::Core* core);
 
   Data* data() {
-    return data_;
+    return &data_;
   }
 
   const Data* data() const {
-    return data_;
+    return &data_;
   }
 
   void SetCompiled() {
     compiled_ = true;
   }
 
+  void AttachLine(std::size_t bytecode_offset, std::size_t line_number) {
+  }
+
  private:
-  explicit CoreData(Data* data)
-    : data_(data),
+  explicit CoreData()
+    : data_(),
       lines_(),
       compiled_(false),
       asm_(NULL) {
   }
 
   void set_asm(breaker::Assembler* assembler) {
-    asm_ = assembler;
+    asm_.reset(assembler);
   }
 
-  Data* data_;
+  Data data_;
   Lines lines_;
   bool compiled_;
-  breaker::Assembler* asm_;
+  core::unique_ptr<breaker::Assembler> asm_;
 };
 
 } } }  // namespace iv::lv5::railgun

@@ -14,6 +14,7 @@ namespace lv5 {
 template<typename Target>
 class GCKind {
  public:
+  typedef GCKind<Target> this_type;
   class GCKindProvider : public core::Singleton<GCKindProvider> {
    public:
     friend class core::Singleton<GCKindProvider>;
@@ -26,15 +27,15 @@ class GCKind {
       void* mem = GC_generic_malloc(
           size, GCKindProvider::Instance()->GetKind());
       allocated_.insert(mem);
-      GC_REGISTER_FINALIZER_NO_ORDER(mem,
-                                     RemoveSet,
-                                     NULL,
-                                     NULL, NULL);
+      GC_REGISTER_FINALIZER_IGNORE_SELF(mem,
+                                        &DestructorCall,
+                                        NULL, NULL, NULL);
       return mem;
     }
 
-    static void RemoveSet(void* obj, void* client_data) {
-      GCKindProvider::Instance()->Remove(reinterpret_cast<void*>(obj));
+    static void DestructorCall(void* obj, void* client_data) {
+      static_cast<this_type*>(obj)->~this_type();
+      GCKindProvider::Instance()->Remove(obj);
     }
 
     void Remove(void* ptr) {
@@ -65,9 +66,11 @@ class GCKind {
   }
 
   void operator delete(void* obj) {
-    GC_REGISTER_FINALIZER_NO_ORDER(obj, NULL, NULL, NULL, NULL);
     GC_FREE(obj);
+    GC_REGISTER_FINALIZER_IGNORE_SELF(obj, NULL, NULL, NULL, NULL);
   }
+
+  virtual ~GCKind() { }
 
   static GC_ms_entry* Mark(GC_word* top, GC_ms_entry* entry,
                            GC_ms_entry* mark_sp_limit, GC_word env) {

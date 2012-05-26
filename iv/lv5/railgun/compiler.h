@@ -272,6 +272,8 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   class TryTarget;
 
   void EmitStatement(const Statement* stmt) {
+    // Add bytecode offset to line number information
+    core_->AttachLine(data_->size(), stmt->line_number());
     stmt->Accept(this);
   }
 
@@ -383,6 +385,8 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
                                     RegisterID dst,
                                     bool ignore_result) {
     EmitExpressionContext context(this, dst, ignore_result);
+    // Add bytecode offset to line number information
+    core_->AttachLine(data_->size(), expr->line_number());
     expr->Accept(this);
     assert(!dst || dst == dst_);
     return dst_;
@@ -604,16 +608,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     data_->push_back(arg3);
   }
 
-  void EmitUnsafe(OP::Type op,
-                  Instruction arg1, Instruction arg2,
-                  Instruction arg3, Instruction arg4) {
-    data_->push_back(op);
-    data_->push_back(arg1);
-    data_->push_back(arg2);
-    data_->push_back(arg3);
-    data_->push_back(arg4);
-  }
-
   void EmitOPAt(OP::Type op, std::size_t index) {
     (*data_)[code_->start() + index] = op;
   }
@@ -777,7 +771,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     const Statements& stmts = lit.body();
     for (Statements::const_iterator it = stmts.begin(),
          last = stmts.end(); it != last; ++it) {
-      (*it)->Accept(this);
+      EmitStatement(*it);
       if (continuation_status_.IsDeadStatement()) {
         break;
       }

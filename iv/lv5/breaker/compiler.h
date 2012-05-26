@@ -54,7 +54,7 @@ class Compiler {
   explicit Compiler(railgun::Code* top)
     : top_(top),
       code_(NULL),
-      asm_(new(PointerFreeGC)Assembler),
+      asm_(new Assembler),
       jump_map_(),
       entry_points_(),
       unresolved_address_map_(),

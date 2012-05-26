@@ -32,6 +32,7 @@ class Interactive {
       disassemble_(disassemble) {
     ctx_.DefineFunction<&Print, 1>("print");
     ctx_.DefineFunction<&Quit, 1>("quit");
+    ctx_.DefineFunction<&CollectGarbage, 0>("gc");
     ctx_.DefineFunction<&HiResTime, 0>("HiResTime");
     ctx_.DefineFunction<&railgun::Run, 0>("run");
     ctx_.DefineFunction<&railgun::StackDepth, 0>("StackDepth");
