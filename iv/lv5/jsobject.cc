@@ -226,23 +226,26 @@ bool JSObject::HasProperty(Context* ctx, Symbol name) const {
 }
 
 bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* e) {
-  const std::size_t offset = map_->Get(ctx, name);
-  if (offset == core::kNotFound) {
-    return true;  // not found
+  Slot slot;
+  if (!GetOwnPropertySlot(ctx, name, &slot)) {
+    return true;
   }
-  if (!GetSlot(offset).IsConfigurable()) {
+
+  assert(!slot.desc().IsEmpty());
+  if (!slot.desc().IsConfigurable()) {
     if (th) {
       e->Report(Error::Type, "delete failed");
     }
     return false;
   }
 
+  assert(slot.IsCacheable());
   // delete property transition
   // if previous map is avaiable shape, move to this.
   // and if that is not avaiable, create new map and move to it.
   // newly created slots size is always smaller than before
   map_ = map_->DeletePropertyTransition(ctx, name);
-  GetSlot(offset) = JSEmpty;
+  GetSlot(slot.offset()) = JSEmpty;
   return true;
 }
 
