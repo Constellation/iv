@@ -933,14 +933,8 @@ class Lexer: private Noncopyable<> {
 
 
     if (type == DECIMAL) {
-      if (is_decimal_integer) {
-        numeric_ = ParseIntegerOverflow(buffer8_.data(),
-                                        buffer8_.data() + buffer8_.size(),
-                                        10);
-      } else {
-        const std::string buf(buffer8_.begin(), buffer8_.end());
-        numeric_ = std::atof(buf.c_str());
-      }
+      const std::string buf(buffer8_.begin(), buffer8_.end());
+      numeric_ = std::atof(buf.c_str());
     } else if (type == HEX) {
       assert(buffer8_.size() > 2);  // first 0x
       numeric_ = ParseIntegerOverflow(buffer8_.data() + 2,
