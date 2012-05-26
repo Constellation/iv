@@ -89,7 +89,7 @@ class Escape : core::Noncopyable<> {
 
 template<typename URITraits, typename FiberType>
 JSVal Encode(Context* ctx, const FiberType* fiber, Error* e) {
-  static const char kHexDigits[17] = "0123456789abcdef";
+  static const char kHexDigits[17] = "0123456789ABCDEF";
   std::array<uint8_t, 4> uc8buf;
   std::array<uint16_t, 3> hexbuf;
   JSStringBuilder builder;
@@ -375,7 +375,7 @@ inline JSVal ThrowTypeError(const Arguments& args, Error* e) {
 
 template<typename FiberType>
 inline JSVal detail::EscapeHelper(Context* ctx, const FiberType* fiber) {
-  const char kHexDigits[17] = "0123456789abcdef";
+  const char kHexDigits[17] = "0123456789ABCDEF";
   std::array<uint16_t, 3> hexbuf;
   hexbuf[0] = '%';
   JSStringBuilder builder;
