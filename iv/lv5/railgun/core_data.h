@@ -3,6 +3,7 @@
 #include <iv/lv5/railgun/vm_fwd.h>
 #include <iv/lv5/railgun/core_data_fwd.h>
 #include <iv/lv5/railgun/instruction.h>
+#include <iv/lv5/breaker/assembler.h>  // This is special for unique_ptr
 namespace iv {
 namespace lv5 {
 namespace railgun {
