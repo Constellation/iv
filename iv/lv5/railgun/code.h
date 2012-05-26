@@ -29,7 +29,7 @@ class Code : public radio::HeapObject<radio::POINTER> {
   friend class Compiler;
   friend class breaker::Compiler;
   typedef GCVector<Symbol>::type Names;
-  typedef GCVector<Instruction>::type Data;
+  typedef CoreData::Data Data;
   typedef GCVector<Code*>::type Codes;
 
   Code(Context* ctx,

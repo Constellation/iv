@@ -35,13 +35,14 @@ class AstFactory
       const std::vector<uint16_t>& content,
       const std::vector<uint16_t>& flags,
       std::size_t begin,
-      std::size_t end) {
+      std::size_t end,
+      std::size_t line_number) {
     RegExpLiteral* expr =
         new(this)RegExpLiteral(NewString(content), NewString(flags));
     expr->Initialize(ctx_);
     if (expr->IsValid()) {
       regexps_.push_back(expr);
-      return expr;
+      return Location(expr, begin, end, line_number);
     } else {
       return NULL;
     }

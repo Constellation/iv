@@ -284,10 +284,12 @@ class SymbolHolder {
 
   SymbolHolder(Symbol symbol,
                std::size_t begin_position,
-               std::size_t end_position)
+               std::size_t end_position,
+               std::size_t line_number)
     : symbol_(symbol),
       begin_position_(begin_position),
-      end_position_(end_position) {
+      end_position_(end_position),
+      line_number_(line_number) {
   }
 
   operator Symbol() const {
@@ -296,11 +298,13 @@ class SymbolHolder {
 
   std::size_t begin_position() const { return begin_position_; }
   std::size_t end_position() const { return end_position_; }
+  std::size_t line_number() const { return line_number_; }
 
  private:
   Symbol symbol_;
   std::size_t begin_position_;
   std::size_t end_position_;
+  std::size_t line_number_;
 };
 
 template<typename Factory>
@@ -339,14 +343,21 @@ class AstNode : public AstNodeBase<Factory> {
 
   std::size_t end_position() const { return end_position_; }
 
+  std::size_t line_number() const { return line_number_; }
+
   void set_position(std::size_t begin, std::size_t end) {
     begin_position_ = begin;
     end_position_ = end;
   }
 
+  void set_line_number(std::size_t line_number) {
+    line_number_ = line_number;
+  }
+
  private:
   std::size_t begin_position_;
   std::size_t end_position_;
+  std::size_t line_number_;
 };
 
 template<typename Factory>

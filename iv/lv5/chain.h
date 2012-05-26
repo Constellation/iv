@@ -17,7 +17,7 @@ namespace lv5 {
 
 class Map;
 
-class Chain : private core::Noncopyable<Chain> {
+class Chain : public radio::HeapObject<radio::POINTER> {
  public:
   typedef Chain this_type;
   typedef Map* value_type;
