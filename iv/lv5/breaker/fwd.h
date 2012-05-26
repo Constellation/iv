@@ -47,6 +47,11 @@ namespace breaker {
 
 static const int k64Size = sizeof(uint64_t);  // NOLINT
 
+class Context;
+class Compiler;
+class Assembler;
+class JSFunction;
+
 // JIT Frame layout. This frame layout is constructed on breaker prologue
 struct Frame {
   void* r12;
@@ -54,16 +59,11 @@ struct Frame {
   void* r14;
   void* r15;
   void** rsp;
-  railgun::Context* ctx;
+  Context* ctx;
   railgun::Frame* frame;
   Error* error;
   void** ret;
 };
-
-class Context;
-class Compiler;
-class Assembler;
-class JSFunction;
 
 // Representation of JSVal, it is uint64_t in 64bit system
 typedef uint64_t Rep;
@@ -71,16 +71,16 @@ typedef uint64_t Rep;
 Rep Extract(JSVal val);
 void* SearchExceptionHandler(void* pc, void** rsp,
                              Frame* stack, railgun::Frame* frame);
-JSVal breaker_prologue(railgun::Context* ctx,
+JSVal breaker_prologue(Context* ctx,
                        railgun::Frame* frame, void* ptr, Error* e);
-JSVal RunEval(railgun::Context* ctx,
+JSVal RunEval(Context* ctx,
               railgun::Code* code,
               JSEnv* variable_env,
               JSEnv* lexical_env,
               JSVal this_binding,
               Error* e);
-JSVal Run(railgun::Context* ctx, railgun::Code* code, Error* e);
-JSVal Execute(railgun::Context* ctx, Arguments* args,
+JSVal Run(Context* ctx, railgun::Code* code, Error* e);
+JSVal Execute(Context* ctx, Arguments* args,
               JSFunction* func, Error* e);
 void Compile(railgun::Code* code);
 

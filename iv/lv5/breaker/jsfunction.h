@@ -8,6 +8,7 @@
 #include <iv/lv5/jsarguments.h>
 #include <iv/lv5/railgun/railgun.h>
 #include <iv/lv5/breaker/fwd.h>
+#include <iv/lv5/breaker/context.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {
@@ -16,11 +17,11 @@ class JSFunction : public railgun::JSVMFunction {
  public:
   virtual JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
     args->set_this_binding(this_binding);
-    return breaker::Execute(static_cast<railgun::Context*>(args->ctx()), args, this, e);
+    return breaker::Execute(static_cast<Context*>(args->ctx()), args, this, e);
   }
 
   virtual JSVal Construct(Arguments* args, Error* e) {
-    railgun::Context* const ctx = static_cast<railgun::Context*>(args->ctx());
+    Context* const ctx = static_cast<Context*>(args->ctx());
     JSObject* const obj = JSObject::New(ctx, code()->ConstructMap(ctx));
     const JSVal proto = Get(ctx, symbol::prototype(), IV_LV5_ERROR(e));
     if (proto.IsObject()) {
@@ -34,13 +35,13 @@ class JSFunction : public railgun::JSVMFunction {
     return val;
   }
 
-  static JSFunction* New(railgun::Context* ctx,
+  static JSFunction* New(Context* ctx,
                          railgun::Code* code, JSEnv* env) {
     return new JSFunction(ctx, code, env);
   }
 
  private:
-  JSFunction(railgun::Context* ctx,
+  JSFunction(Context* ctx,
              railgun::Code* code, JSEnv* env)
     : railgun::JSVMFunction(ctx, code, env) { }
 };

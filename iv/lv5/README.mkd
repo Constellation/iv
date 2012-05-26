@@ -4,13 +4,17 @@
 lv5 (Lv5: level five) is Experimental ECMA262 5th (ES5, or JS) Engine written in C++.
 
 ## MILESTONE
-+ parser - done
-+ interpreter - done
-+ statements - done
-+ expressions - done
-+ builtin objects - done
-+ vm - done
-+ vm tuning - working
+
++ Parser - done
++ Interpreter - done
++ Statements - done
++ Expressions - done
++ Builtin Objects - done
++ Stack VM - done
++ Register VM - done
++ Register VM tuning - done
++ Context Threading JIT - done
++ Context Threading JIT tuning - working
 
 ## TARGET
 Aims at the most precise engine of The ECMA262 5th Specification.

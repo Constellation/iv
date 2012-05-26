@@ -6,7 +6,7 @@ namespace iv {
 namespace lv5 {
 namespace breaker {
 
-inline JSVal RunEval(railgun::Context* ctx,
+inline JSVal RunEval(Context* ctx,
                      railgun::Code* code,
                      JSEnv* variable_env,
                      JSEnv* lexical_env,
@@ -41,7 +41,7 @@ inline JSVal RunEval(railgun::Context* ctx,
   return res;
 }
 
-inline JSVal Run(railgun::Context* ctx, railgun::Code* code, Error* e) {
+inline JSVal Run(Context* ctx, railgun::Code* code, Error* e) {
   return RunEval(ctx,
                  code,
                  ctx->global_env(),
@@ -49,7 +49,7 @@ inline JSVal Run(railgun::Context* ctx, railgun::Code* code, Error* e) {
                  ctx->global_obj(), e);
 }
 
-inline JSVal Execute(railgun::Context* ctx,
+inline JSVal Execute(Context* ctx,
                      Arguments* args,
                      JSFunction* func, Error* e) {
   railgun::Code* code = func->code();

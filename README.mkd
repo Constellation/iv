@@ -17,11 +17,17 @@ for more information, see [lv5 README](https://github.com/Constellation/iv/tree/
 
 ### iv / lv5 / railgun
 
-iv / lv5 / railgun is register VM and Compiler.
+iv / lv5 / railgun is Register VM and Compiler.
 
 Their basic design is a lot of inspired Lua and JSC.
 
 for more information, see [railgun README](https://github.com/Constellation/iv/tree/master/iv/lv5/railgun)
+
+### iv / lv5 / breaker
+
+iv / lv5 / breaker is Context Threading JIT Compiler.
+
+for more information, see [breaker README](https://github.com/Constellation/iv/tree/master/iv/lv5/breaker)
 
 ## iv / phonic
 

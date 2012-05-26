@@ -24,7 +24,7 @@ inline int32_t ThunkPool::CalculateOffset(int16_t register_offset) {
   }
 
   // parameter
-  return FrameConstant<>::FromRegisterToArg(register_offset);
+  return FrameConstant<>::ConvertRegisterToArg(register_offset);
 }
 
 inline Thunk* ThunkPool::Lookup(int16_t register_offset) {

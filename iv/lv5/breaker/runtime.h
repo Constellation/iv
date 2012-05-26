@@ -9,7 +9,7 @@ namespace breaker {
 // TODO(Constellation) this is almost copy of railgun/runtime.h
 
 inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
-  railgun::Context* const ctx = static_cast<railgun::Context*>(args.ctx());
+  Context* const ctx = static_cast<Context*>(args.ctx());
   JSStringBuilder builder;
   internal::BuildFunctionSource(&builder, args, IV_LV5_ERROR(e));
   const JSString* str = builder.Build(ctx);
@@ -40,7 +40,7 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
     return first;
   }
   JSString* str = first.string();
-  railgun::Context* const ctx = static_cast<railgun::Context*>(args.ctx());
+  Context* const ctx = static_cast<Context*>(args.ctx());
   // if str is (...) expression,
   // parse as JSON (RejectLineTerminator Pattern) at first
   if (str->size() > 2) {
@@ -83,7 +83,7 @@ inline JSVal DirectCallToEval(const Arguments& args, railgun::Frame* frame, Erro
     return first;
   }
   JSString* str = first.string();
-  railgun::Context* const ctx = static_cast<railgun::Context*>(args.ctx());
+  Context* const ctx = static_cast<Context*>(args.ctx());
   const bool strict = frame->code()->strict();
   // if str is (...) expression,
   // parse as JSON (RejectLineTerminator Pattern) at first

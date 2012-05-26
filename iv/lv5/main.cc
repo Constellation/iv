@@ -34,14 +34,11 @@ iv::lv5::railgun::Code* Compile(iv::lv5::railgun::Context* ctx,
   return iv::lv5::railgun::Compile(ctx, *global, script);
 }
 
-int Execute(const iv::core::StringPiece& data,
-            const std::string& filename, bool statistics) {
-  iv::lv5::Error e;
 #if defined(IV_ENABLE_JIT)
+int BreakerExecute(const iv::core::StringPiece& data,
+                   const std::string& filename, bool statistics) {
+  iv::lv5::Error e;
   iv::lv5::breaker::Context ctx;
-#else
-  iv::lv5::railgun::Context ctx;
-#endif
   iv::core::FileSource src(data, filename);
   iv::lv5::railgun::Code* code = Compile(&ctx, src);
   if (!code) {
@@ -53,15 +50,42 @@ int Execute(const iv::core::StringPiece& data,
   ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
   ctx.DefineFunction<&iv::lv5::railgun::Dis, 1>("dis");
 
-#if defined(IV_ENABLE_JIT)
   ctx.DefineFunction<&iv::lv5::breaker::Run, 0>("run");
   iv::lv5::breaker::Compile(code);
   iv::lv5::breaker::Run(&ctx, code, &e);
-#else
+
+  if (e) {
+    const iv::lv5::JSVal res = iv::lv5::JSError::Detail(&ctx, &e);
+    e.Clear();
+    const iv::lv5::JSString* const str = res.ToString(&ctx, &e);
+    if (!e) {
+      std::fprintf(stderr, "%s\n", str->GetUTF8().c_str());
+    }
+    return EXIT_FAILURE;
+  }
+  ctx.Validate();
+  return EXIT_SUCCESS;
+}
+#endif
+
+int RailgunExecute(const iv::core::StringPiece& data,
+                   const std::string& filename, bool statistics) {
+  iv::lv5::Error e;
+  iv::lv5::railgun::Context ctx;
+  iv::core::FileSource src(data, filename);
+  iv::lv5::railgun::Code* code = Compile(&ctx, src);
+  if (!code) {
+    return EXIT_FAILURE;
+  }
+  ctx.DefineFunction<&iv::lv5::Print, 1>("print");
+  ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
+  ctx.DefineFunction<&iv::lv5::CollectGarbage, 0>("gc");
+  ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
+  ctx.DefineFunction<&iv::lv5::railgun::Dis, 1>("dis");
+
   ctx.DefineFunction<&iv::lv5::railgun::Run, 0>("run");
   ctx.DefineFunction<&iv::lv5::railgun::StackDepth, 0>("StackDepth");
   ctx.vm()->Run(code, &e);
-#endif
 
   if (e) {
     const iv::lv5::JSVal res = iv::lv5::JSError::Detail(&ctx, &e);
@@ -73,9 +97,7 @@ int Execute(const iv::core::StringPiece& data,
     return EXIT_FAILURE;
   }
   if (statistics) {
-#if !defined(IV_ENABLE_JIT)
     ctx.vm()->DumpStatistics();
-#endif
   }
   ctx.Validate();
   return EXIT_SUCCESS;
@@ -178,6 +200,9 @@ int main(int argc, char **argv) {
   cmd.Add("interp",
           "interp",
           0, "use interpreter");
+  cmd.Add("railgun",
+          "railgun",
+          0, "force railgun VM");
   cmd.Add("dis",
           "dis",
           0, "print bytecode");
@@ -210,7 +235,7 @@ int main(int argc, char **argv) {
     std::printf("lv5 - Copyright (C) 2010 %s\n", IV_DEVELOPER);
     return EXIT_SUCCESS;
   }
-  
+
   if (cmd.Exist("signal")) {
 #if defined(IV_OS_MACOSX) || defined(IV_OS_LINUX) || defined(IV_OS_BSD)
     signal(SIGILL, _exit);
@@ -250,12 +275,18 @@ int main(int argc, char **argv) {
       return DisAssemble(src, filename);
     } else if (cmd.Exist("interp")) {
       return Interpret(src, filename);
+    } else if (cmd.Exist("railgun")) {
+      return RailgunExecute(src, filename, cmd.Exist("statistics"));
     } else {
-      return Execute(src, filename, cmd.Exist("statistics"));
+#if defined(IV_ENABLE_JIT)
+      return BreakerExecute(src, filename, cmd.Exist("statistics"));
+#else
+      return RailgunExecute(src, filename, cmd.Exist("statistics"));
+#endif
     }
   } else {
     // Interactive Shell Mode
-    if (cmd.Exist("interp")) {
+    if(cmd.Exist("interp")) {
       iv::lv5::teleporter::Interactive shell;
       return shell.Run();
     } else {

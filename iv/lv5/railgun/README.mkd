@@ -6,6 +6,8 @@ railgun is ECMAScript Register VM / Compiler
 
 VM and Inline Cache operations design is a lot of inspired from Lua VM & JSC VM.
 
+Initial opcode design is based on Python VM.
+
 [The Implementation of Lua5.0](http://www.tecgraf.puc-rio.br/~lhf/ftp/doc/jucs05.pdf)
 
 [Announcing SquirrelFish](http://www.webkit.org/blog/189/announcing-squirrelfish/)
