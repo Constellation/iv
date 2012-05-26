@@ -1299,6 +1299,7 @@ class Compiler {
   // opcode | (dst | src)
   void EmitUNARY_NEGATIVE(const Instruction* instr) {
     static const uint64_t layout = Extract(JSVal(-0.0));
+    static const uint64_t layout2 = Extract(JSVal(-static_cast<double>(INT32_MIN)));
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t src = Reg(instr[1].i16[1]);
     {
@@ -1310,12 +1311,17 @@ class Compiler {
       asm_->test(asm_->esi, asm_->esi);
       asm_->jz(".UNARY_NEGATIVE_MINUS_ZERO");
       asm_->neg(asm_->esi);
+      asm_->jo(".UNARY_NEGATIVE_INT32_MIN");
       asm_->mov(asm_->rax, asm_->r15);
       asm_->or(asm_->rax, asm_->esi);
       asm_->jmp(".UNARY_NEGATIVE_EXIT");
 
       asm_->L(".UNARY_NEGATIVE_MINUS_ZERO");
       asm_->mov(asm_->rax, layout);
+      asm_->jmp(".UNARY_NEGATIVE_EXIT");
+
+      asm_->L(".UNARY_NEGATIVE_INT32_MIN");
+      asm_->mov(asm_->rax, layout2);
       asm_->jmp(".UNARY_NEGATIVE_EXIT");
 
       asm_->L(".UNARY_NEGATIVE_SLOW");
