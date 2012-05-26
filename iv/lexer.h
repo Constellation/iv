@@ -865,7 +865,6 @@ class Lexer: private Noncopyable<> {
   Token::Type ScanNumber() {
     buffer8_.clear();
     State type = DECIMAL;
-    bool is_decimal_integer = !period;
     if (period) {
       Record8('0');
       Record8('.');
@@ -900,7 +899,6 @@ class Lexer: private Noncopyable<> {
         ScanDecimalDigits();
       }
       if (type == DECIMAL && c_ == '.') {
-        is_decimal_integer = false;
         Record8Advance();
         ScanDecimalDigits();
       }
@@ -908,7 +906,6 @@ class Lexer: private Noncopyable<> {
 
     // exponent part
     if (c_ == 'e' || c_ == 'E') {
-      is_decimal_integer = false;
       if (type != DECIMAL) {
         return Token::TK_ILLEGAL;
       }
