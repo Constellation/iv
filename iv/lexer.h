@@ -45,6 +45,7 @@ class Lexer: private Noncopyable<> {
         end_(),
         has_line_terminator_before_next_(false),
         c_(-1),
+        previous_line_number_(1),
         line_number_(1),
         previous_location_(),
         location_() {
@@ -61,6 +62,7 @@ class Lexer: private Noncopyable<> {
         end_(),
         has_line_terminator_before_next_(false),
         c_(-1),
+        previous_line_number_(1),
         line_number_(1),
         previous_location_(),
         location_() {
@@ -426,6 +428,8 @@ class Lexer: private Noncopyable<> {
     return line_number_;
   }
 
+  std::size_t previous_line_number() const { return previous_line_number_; }
+
   std::string filename() const {
     return SourceTraits<Source>::GetFileName(*source_);
   }
@@ -525,6 +529,7 @@ class Lexer: private Noncopyable<> {
   static const std::size_t kInitialReadBufferCapacity = 32;
 
   inline void StorePreviousLocation() {
+    previous_line_number_ = line_number_;
     previous_location_ = location_;
   }
 
@@ -1011,6 +1016,7 @@ class Lexer: private Noncopyable<> {
   std::size_t end_;
   bool has_line_terminator_before_next_;
   int c_;
+  std::size_t previous_line_number_;
   std::size_t line_number_;
   Location previous_location_;
   Location location_;

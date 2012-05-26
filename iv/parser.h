@@ -239,7 +239,8 @@ class Parser : private Noncopyable<> {
                                      0,
                                      end_position,
                                      0,
-                                     end_position) : NULL;
+                                     end_position,
+                                     1) : NULL;
   }
 
 // SourceElements
@@ -295,8 +296,8 @@ class Parser : private Noncopyable<> {
               // and one token lexed is not in strict
               // so rescan
               if (token_ == Token::TK_IDENTIFIER) {
-                token_ =
-                    Keyword<IdentifyReservedWords>::Detect(lexer_.Buffer(), true);
+                token_ = Keyword<IdentifyReservedWords>::Detect(
+                    lexer_.Buffer(), true);
                 break;
               }
             } else {
@@ -462,6 +463,7 @@ class Parser : private Noncopyable<> {
   Block* ParseBlock(bool *res) {
     assert(token_ == Token::TK_LBRACE);
     const std::size_t begin = lexer_.begin_position();
+    const std::size_t line_number = lexer_.line_number();
     Statements* const body = factory_->template NewVector<Statement*>();
     Target target(this, Target::kNamedOnlyStatement);
 
@@ -474,7 +476,8 @@ class Parser : private Noncopyable<> {
     assert(body);
     Block* const block = factory_->NewBlock(body,
                                             begin,
-                                            lexer_.previous_end_position());
+                                            lexer_.previous_end_position(),
+                                            line_number);
     target.set_node(block);
     return block;
   }
@@ -486,6 +489,7 @@ class Parser : private Noncopyable<> {
     assert(token_ == Token::TK_VAR || token_ == Token::TK_CONST);
     const Token::Type op = token_;
     const std::size_t begin = lexer_.begin_position();
+    const std::size_t line_number = lexer_.line_number();
     Declarations* const decls = factory_->template NewVector<Declaration*>();
     ParseVariableDeclarations(decls, token_ == Token::TK_CONST, true, CHECK);
     ExpectSemicolon(CHECK);
@@ -493,7 +497,8 @@ class Parser : private Noncopyable<> {
     return factory_->NewVariableStatement(op,
                                           decls,
                                           begin,
-                                          lexer_.previous_end_position());
+                                          lexer_.previous_end_position(),
+                                          line_number);
   }
 
 //  VariableDeclarationList
@@ -551,7 +556,8 @@ class Parser : private Noncopyable<> {
     assert(token_ == Token::TK_SEMICOLON);
     Next();
     return factory_->NewEmptyStatement(lexer_.previous_begin_position(),
-                                       lexer_.previous_end_position());
+                                       lexer_.previous_end_position(),
+                                       lexer_.previous_line_number());
   }
 
 //  IfStatement
@@ -560,6 +566,7 @@ class Parser : private Noncopyable<> {
   Statement* ParseIfStatement(bool *res) {
     assert(token_ == Token::TK_IF);
     const std::size_t begin = lexer_.begin_position();
+    const std::size_t line_number = lexer_.line_number();
     Statement* else_statement = NULL;
     Next();
 
@@ -578,7 +585,8 @@ class Parser : private Noncopyable<> {
     return factory_->NewIfStatement(expr,
                                     then_statement,
                                     else_statement,
-                                    begin);
+                                    begin,
+                                    line_number);
   }
 
 //  IterationStatement
@@ -596,6 +604,7 @@ class Parser : private Noncopyable<> {
     //  DO Statement WHILE '(' Expression ')' ';'
     assert(token_ == Token::TK_DO);
     const std::size_t begin = lexer_.begin_position();
+    const std::size_t line_number = lexer_.line_number();
     Target target(this, Target::kIterationStatement);
     Next();
 
@@ -618,8 +627,13 @@ class Parser : private Noncopyable<> {
       Next();
     }
     assert(stmt && expr);
-    DoWhileStatement* const dowhile = factory_->NewDoWhileStatement(
-        stmt, expr, begin, lexer_.previous_end_position());
+    DoWhileStatement* const dowhile =
+        factory_->NewDoWhileStatement(
+            stmt,
+            expr,
+            begin,
+            lexer_.previous_end_position(),
+            line_number);
     target.set_node(dowhile);
     return dowhile;
   }
@@ -628,6 +642,7 @@ class Parser : private Noncopyable<> {
   Statement* ParseWhileStatement(bool *res) {
     assert(token_ == Token::TK_WHILE);
     const std::size_t begin = lexer_.begin_position();
+    const std::size_t line_number = lexer_.line_number();
     Next();
 
     EXPECT(Token::TK_LPAREN);
@@ -639,8 +654,8 @@ class Parser : private Noncopyable<> {
 
     Statement* const stmt = ParseStatement(CHECK);
     assert(stmt);
-    WhileStatement* const whilestmt = factory_->NewWhileStatement(stmt,
-                                                                  expr, begin);
+    WhileStatement* const whilestmt =
+        factory_->NewWhileStatement(stmt, expr, begin, line_number);
 
     target.set_node(whilestmt);
     return whilestmt;
@@ -657,6 +672,7 @@ class Parser : private Noncopyable<> {
   Statement* ParseForStatement(bool *res) {
     assert(token_ == Token::TK_FOR);
     const std::size_t for_stmt_begin = lexer_.begin_position();
+    const std::size_t for_stmt_line_number = lexer_.line_number();
     Next();
 
     EXPECT(Token::TK_LPAREN);
@@ -666,6 +682,7 @@ class Parser : private Noncopyable<> {
     if (token_ != Token::TK_SEMICOLON) {
       if (token_ == Token::TK_VAR || token_ == Token::TK_CONST) {
         const std::size_t begin = lexer_.begin_position();
+        const std::size_t line_number = lexer_.line_number();
         const Token::Type op = token_;
         Declarations* const decls =
             factory_->template NewVector<Declaration*>();
@@ -677,7 +694,8 @@ class Parser : private Noncopyable<> {
               factory_->NewVariableStatement(op,
                                              decls,
                                              begin,
-                                             lexer_.previous_end_position());
+                                             lexer_.previous_end_position(),
+                                             line_number);
           init = var;
           // for in loop
           Next();
@@ -693,15 +711,19 @@ class Parser : private Noncopyable<> {
           Statement* const body = ParseStatement(CHECK);
           assert(body && init && enumerable);
           ForInStatement* const forstmt =
-              factory_->NewForInStatement(body, init, enumerable,
-                                          for_stmt_begin);
+              factory_->NewForInStatement(body,
+                                          init,
+                                          enumerable,
+                                          for_stmt_begin,
+                                          for_stmt_line_number);
           target.set_node(forstmt);
           return forstmt;
         } else {
           assert(decls);
           init = factory_->NewVariableStatement(op, decls,
                                                 begin,
-                                                lexer_.end_position());
+                                                lexer_.end_position(),
+                                                line_number);
         }
       } else {
         Expression* const init_expr = ParseExpression(false, CHECK);
@@ -711,7 +733,8 @@ class Parser : private Noncopyable<> {
           init = factory_->NewExpressionStatement(
               init_expr, lexer_.previous_end_position());
           // LHS Guard
-          if (init_expr != last_parenthesized_ && !init_expr->IsLeftHandSide()) {
+          if (init_expr != last_parenthesized_ &&
+              !init_expr->IsLeftHandSide()) {
             RAISE("invalid for-in left-hand-side");
           }
           Next();
@@ -722,7 +745,7 @@ class Parser : private Noncopyable<> {
           assert(body && init && enumerable);
           ForInStatement* const forstmt =
               factory_->NewForInStatement(body, init, enumerable,
-                                          for_stmt_begin);
+                                          for_stmt_begin, for_stmt_line_number);
           target.set_node(forstmt);
           return forstmt;
         } else {
@@ -758,7 +781,7 @@ class Parser : private Noncopyable<> {
     Statement* const body = ParseStatement(CHECK);
     assert(body);
     ForStatement* const forstmt =
-        factory_->NewForStatement(body, init, cond, next, for_stmt_begin);
+        factory_->NewForStatement(body, init, cond, next, for_stmt_begin, for_stmt_line_number);
     target.set_node(forstmt);
     return forstmt;
   }
@@ -768,6 +791,7 @@ class Parser : private Noncopyable<> {
   Statement* ParseContinueStatement(bool *res) {
     assert(token_ == Token::TK_CONTINUE);
     const std::size_t begin = lexer_.begin_position();
+    const std::size_t line_number = lexer_.line_number();
     ast::SymbolHolder label;
     IterationStatement** target;
     Next();
@@ -785,8 +809,10 @@ class Parser : private Noncopyable<> {
       }
     }
     ExpectSemicolon(CHECK);
-    return factory_->NewContinueStatement(label, target, begin,
-                                          lexer_.previous_end_position());
+    return factory_->NewContinueStatement(label, target,
+                                          begin,
+                                          lexer_.previous_end_position(),
+                                          line_number);
   }
 
 //  BreakStatement
@@ -794,6 +820,7 @@ class Parser : private Noncopyable<> {
   Statement* ParseBreakStatement(bool *res) {
     assert(token_ == Token::TK_BREAK);
     const std::size_t begin = lexer_.begin_position();
+    const std::size_t line_number = lexer_.line_number();
     ast::SymbolHolder label;
     BreakableStatement** target = NULL;
     Next();
@@ -825,8 +852,11 @@ class Parser : private Noncopyable<> {
       }
     }
     ExpectSemicolon(CHECK);
-    return factory_->NewBreakStatement(label, target, begin,
-                                       lexer_.previous_end_position());
+    return factory_->NewBreakStatement(label,
+                                       target,
+                                       begin,
+                                       lexer_.previous_end_position(),
+                                       line_number);
   }
 
 //  ReturnStatement
@@ -834,6 +864,7 @@ class Parser : private Noncopyable<> {
   Statement* ParseReturnStatement(bool *res) {
     assert(token_ == Token::TK_RETURN);
     const std::size_t begin = lexer_.begin_position();
+    const std::size_t line_number = lexer_.line_number();
     Next();
 
     if (scope_->IsGlobal()) {
@@ -847,8 +878,10 @@ class Parser : private Noncopyable<> {
       expr = ParseExpression(true, CHECK);
     }
     ExpectSemicolon(CHECK);
-    return factory_->NewReturnStatement(expr, begin,
-                                        lexer_.previous_end_position());
+    return factory_->NewReturnStatement(expr,
+                                        begin,
+                                        lexer_.previous_end_position(),
+                                        line_number);
   }
 
 //  WithStatement
@@ -856,6 +889,7 @@ class Parser : private Noncopyable<> {
   Statement* ParseWithStatement(bool *res) {
     assert(token_ == Token::TK_WITH);
     const std::size_t begin = lexer_.begin_position();
+    const std::size_t line_number = lexer_.line_number();
     Next();
 
     // section 12.10.1
@@ -876,7 +910,7 @@ class Parser : private Noncopyable<> {
       stmt = ParseStatement(CHECK);
     }
     assert(expr && stmt);
-    return factory_->NewWithStatement(expr, stmt, begin);
+    return factory_->NewWithStatement(expr, stmt, begin, line_number);
   }
 
 //  SwitchStatement
@@ -888,6 +922,7 @@ class Parser : private Noncopyable<> {
   Statement* ParseSwitchStatement(bool *res) {
     assert(token_ == Token::TK_SWITCH);
     const std::size_t begin = lexer_.begin_position();
+    const std::size_t line_number = lexer_.line_number();
     CaseClause* case_clause;
     Next();
 
@@ -921,8 +956,11 @@ class Parser : private Noncopyable<> {
     Next();
     assert(expr && clauses);
     SwitchStatement* const switch_stmt =
-        factory_->NewSwitchStatement(expr, clauses,
-                                     begin, lexer_.previous_end_position());
+        factory_->NewSwitchStatement(expr,
+                                     clauses,
+                                     begin,
+                                     lexer_.previous_end_position(),
+                                     line_number);
     target.set_node(switch_stmt);
     return switch_stmt;
   }
@@ -939,6 +977,7 @@ class Parser : private Noncopyable<> {
   CaseClause* ParseCaseClause(bool *res) {
     assert(token_ == Token::TK_CASE || token_ == Token::TK_DEFAULT);
     const std::size_t begin = lexer_.begin_position();
+    const std::size_t line_number = lexer_.line_number();
     Expression* expr = NULL;
     Statements* const body = factory_->template NewVector<Statement*>();
 
@@ -960,8 +999,11 @@ class Parser : private Noncopyable<> {
 
     assert(body);
     return factory_->NewCaseClause(expr == NULL,
-                                   expr, body,
-                                   begin, lexer_.previous_end_position());
+                                   expr,
+                                   body,
+                                   begin,
+                                   lexer_.previous_end_position(),
+                                   line_number);
   }
 
 //  ThrowStatement
@@ -969,6 +1011,7 @@ class Parser : private Noncopyable<> {
   Statement* ParseThrowStatement(bool *res) {
     assert(token_ == Token::TK_THROW);
     const std::size_t begin = lexer_.begin_position();
+    const std::size_t line_number = lexer_.line_number();
     Next();
     // Throw requires Expression and no LineTerminator is allowed between them.
     if (lexer_.has_line_terminator_before_next()) {
@@ -977,8 +1020,11 @@ class Parser : private Noncopyable<> {
     Expression* const expr = ParseExpression(true, CHECK);
     ExpectSemicolon(CHECK);
     assert(expr);
-    return factory_->NewThrowStatement(expr,
-                                       begin, lexer_.previous_end_position());
+    return factory_->NewThrowStatement(
+        expr,
+        begin,
+        lexer_.previous_end_position(),
+        line_number);
   }
 
 // TryStatement
@@ -994,6 +1040,7 @@ class Parser : private Noncopyable<> {
   Statement* ParseTryStatement(bool *res) {
     assert(token_ == Token::TK_TRY);
     const std::size_t begin = lexer_.begin_position();
+    const std::size_t line_number = lexer_.line_number();
     Block* catch_block = NULL;
     Block* finally_block = NULL;
     Assigned* name = NULL;
@@ -1043,8 +1090,11 @@ class Parser : private Noncopyable<> {
 
     assert(try_block);
     return factory_->NewTryStatement(try_block,
-                                     name, catch_block,
-                                     finally_block, begin);
+                                     name,
+                                     catch_block,
+                                     finally_block,
+                                     begin,
+                                     line_number);
   }
 
 //  DebuggerStatement
@@ -1052,10 +1102,12 @@ class Parser : private Noncopyable<> {
   Statement* ParseDebuggerStatement(bool *res) {
     assert(token_ == Token::TK_DEBUGGER);
     const std::size_t begin = lexer_.begin_position();
+    const std::size_t line_number = lexer_.line_number();
     Next();
     ExpectSemicolon(CHECK);
     return factory_->NewDebuggerStatement(begin,
-                                          lexer_.previous_end_position());
+                                          lexer_.previous_end_position(),
+                                          line_number);
   }
 
   Statement* ParseExpressionStatement(bool *res) {
@@ -1113,7 +1165,8 @@ class Parser : private Noncopyable<> {
     Assigned* target = factory_->NewAssigned(
         ast::SymbolHolder(assigned->symbol(),
                           assigned->begin_position(),
-                          assigned->end_position()), false);
+                          assigned->end_position(),
+                          assigned->line_number()), false);
     scope_->AddUnresolved(target, false);
     return factory_->NewFunctionStatement(expr);
   }
@@ -1362,55 +1415,58 @@ class Parser : private Noncopyable<> {
       Expression* res;
       switch (op) {
         case Token::TK_ADD:
-          res = factory_->NewReducedNumberLiteral(l_val + r_val);
+          res = factory_->NewReducedNumberLiteral(l_val + r_val, left, right);
           break;
 
         case Token::TK_SUB:
-          res = factory_->NewReducedNumberLiteral(l_val - r_val);
+          res = factory_->NewReducedNumberLiteral(l_val - r_val, left, right);
           break;
 
         case Token::TK_MUL:
-          res = factory_->NewReducedNumberLiteral(l_val * r_val);
+          res = factory_->NewReducedNumberLiteral(l_val * r_val, left, right);
           break;
 
         case Token::TK_DIV:
-          res = factory_->NewReducedNumberLiteral(l_val / r_val);
+          res = factory_->NewReducedNumberLiteral(l_val / r_val, left, right);
           break;
 
         case Token::TK_BIT_OR:
           res = factory_->NewReducedNumberLiteral(
-              DoubleToInt32(l_val) | DoubleToInt32(r_val));
+              DoubleToInt32(l_val) | DoubleToInt32(r_val),
+              left, right);
           break;
 
         case Token::TK_BIT_AND:
           res = factory_->NewReducedNumberLiteral(
-              DoubleToInt32(l_val) & DoubleToInt32(r_val));
+              DoubleToInt32(l_val) & DoubleToInt32(r_val),
+              left, right);
           break;
 
         case Token::TK_BIT_XOR:
           res = factory_->NewReducedNumberLiteral(
-              DoubleToInt32(l_val) ^ DoubleToInt32(r_val));
+              DoubleToInt32(l_val) ^ DoubleToInt32(r_val),
+              left, right);
           break;
 
         // section 11.7 Bitwise Shift Operators
         case Token::TK_SHL: {
           const int32_t value = DoubleToInt32(l_val)
               << (DoubleToInt32(r_val) & 0x1f);
-          res = factory_->NewReducedNumberLiteral(value);
+          res = factory_->NewReducedNumberLiteral(value, left, right);
           break;
         }
 
         case Token::TK_SHR: {
           const uint32_t shift = DoubleToInt32(r_val) & 0x1f;
           const uint32_t value = DoubleToUInt32(l_val) >> shift;
-          res = factory_->NewReducedNumberLiteral(value);
+          res = factory_->NewReducedNumberLiteral(value, left, right);
           break;
         }
 
         case Token::TK_SAR: {
           uint32_t shift = DoubleToInt32(r_val) & 0x1f;
           int32_t value = DoubleToInt32(l_val) >> shift;
-          res = factory_->NewReducedNumberLiteral(value);
+          res = factory_->NewReducedNumberLiteral(value, left, right);
           break;
         }
 
@@ -1453,6 +1509,7 @@ class Parser : private Noncopyable<> {
     Expression *result, *expr;
     const Token::Type op = token_;
     const std::size_t begin = lexer_.begin_position();
+    const std::size_t line_number = lexer_.line_number();
     switch (token_) {
       case Token::TK_VOID:
       case Token::TK_NOT:
@@ -1460,7 +1517,7 @@ class Parser : private Noncopyable<> {
         Next();
         expr = ParseUnaryExpression(CHECK);
         assert(expr);
-        result = factory_->NewUnaryOperation(op, expr, begin);
+        result = factory_->NewUnaryOperation(op, expr, begin, line_number);
         break;
 
       case Token::TK_DELETE:
@@ -1473,7 +1530,7 @@ class Parser : private Noncopyable<> {
           RAISE("delete to direct identifier not allowed in strict code");
         }
         assert(expr);
-        result = factory_->NewUnaryOperation(op, expr, begin);
+        result = factory_->NewUnaryOperation(op, expr, begin, line_number);
         break;
 
       case Token::TK_BIT_NOT:
@@ -1481,10 +1538,12 @@ class Parser : private Noncopyable<> {
         expr = ParseUnaryExpression(CHECK);
         if (ReduceExpressions && expr->AsNumberLiteral()) {
           result = factory_->NewReducedNumberLiteral(
-              ~DoubleToInt32(expr->AsNumberLiteral()->value()));
+              ~DoubleToInt32(expr->AsNumberLiteral()->value()),
+              expr,
+              expr);
         } else {
           assert(expr);
-          result = factory_->NewUnaryOperation(op, expr, begin);
+          result = factory_->NewUnaryOperation(op, expr, begin, line_number);
         }
         break;
 
@@ -1495,7 +1554,7 @@ class Parser : private Noncopyable<> {
           result = expr;
         } else {
           assert(expr);
-          result = factory_->NewUnaryOperation(op, expr, begin);
+          result = factory_->NewUnaryOperation(op, expr, begin, line_number);
         }
         break;
 
@@ -1504,10 +1563,10 @@ class Parser : private Noncopyable<> {
         expr = ParseUnaryExpression(CHECK);
         if (ReduceExpressions && expr->AsNumberLiteral()) {
           result = factory_->NewReducedNumberLiteral(
-              -(expr->AsNumberLiteral()->value()));
+              -(expr->AsNumberLiteral()->value()), expr, expr);
         } else {
           assert(expr);
-          result = factory_->NewUnaryOperation(op, expr, begin);
+          result = factory_->NewUnaryOperation(op, expr, begin, line_number);
         }
         break;
 
@@ -1527,7 +1586,7 @@ class Parser : private Noncopyable<> {
           }
         }
         assert(expr);
-        result = factory_->NewUnaryOperation(op, expr, begin);
+        result = factory_->NewUnaryOperation(op, expr, begin, line_number);
         break;
 
       default:
@@ -1662,7 +1721,8 @@ class Parser : private Noncopyable<> {
 
       case Token::TK_THIS:
         result = factory_->NewThisLiteral(lexer_.begin_position(),
-                                          lexer_.end_position());
+                                          lexer_.end_position(),
+                                          lexer_.line_number());
         Next();
         break;
 
@@ -1671,20 +1731,24 @@ class Parser : private Noncopyable<> {
         break;
 
       case Token::TK_NULL_LITERAL:
-        result = factory_->NewNullLiteral(lexer_.begin_position(),
-                                          lexer_.end_position());
+        result =
+            factory_->NewNullLiteral(lexer_.begin_position(),
+                                     lexer_.end_position(),
+                                     lexer_.line_number());
         Next();
         break;
 
       case Token::TK_TRUE_LITERAL:
         result = factory_->NewTrueLiteral(lexer_.begin_position(),
-                                          lexer_.end_position());
+                                          lexer_.end_position(),
+                                          lexer_.line_number());
         Next();
         break;
 
       case Token::TK_FALSE_LITERAL:
         result = factory_->NewFalseLiteral(lexer_.begin_position(),
-                                           lexer_.end_position());
+                                           lexer_.end_position(),
+                                           lexer_.line_number());
         Next();
         break;
 
@@ -1696,7 +1760,8 @@ class Parser : private Noncopyable<> {
         }
         result = factory_->NewNumberLiteral(lexer_.Numeric(),
                                             lexer_.begin_position(),
-                                            lexer_.end_position());
+                                            lexer_.end_position(),
+                                            lexer_.line_number());
         Next();
         break;
 
@@ -1707,7 +1772,8 @@ class Parser : private Noncopyable<> {
         }
         result = factory_->NewStringLiteral(lexer_.Buffer(),
                                             lexer_.begin_position(),
-                                            lexer_.end_position());
+                                            lexer_.end_position(),
+                                            lexer_.line_number());
         Next();
         break;
       }
@@ -1770,9 +1836,11 @@ class Parser : private Noncopyable<> {
         RAISE("invalid regular expression flag");
       }
       RegExpLiteral* const expr = factory_->NewRegExpLiteral(
-          content, lexer_.Buffer(),
+          content,
+          lexer_.Buffer(),
           lexer_.begin_position(),
-          lexer_.end_position());
+          lexer_.end_position(),
+          lexer_.line_number());
       if (!expr) {
         RAISE("invalid regular expression");
       }
@@ -1798,6 +1866,7 @@ class Parser : private Noncopyable<> {
   Expression* ParseArrayLiteral(bool *res) {
     assert(token_ == Token::TK_LBRACK);
     const std::size_t begin = lexer_.begin_position();
+    const std::size_t line_number = lexer_.line_number();
     MaybeExpressions* const items =
         factory_->template NewVector<Maybe<Expression> >();
     Next();
@@ -1815,8 +1884,11 @@ class Parser : private Noncopyable<> {
     }
     Next();
     assert(items);
-    return factory_->NewArrayLiteral(items,
-                                     begin, lexer_.previous_end_position());
+    return factory_->NewArrayLiteral(
+        items,
+        begin,
+        lexer_.previous_end_position(),
+        line_number);
   }
 
 
@@ -1849,6 +1921,7 @@ class Parser : private Noncopyable<> {
     typedef typename ObjectLiteral::Property Property;
     typedef typename ObjectLiteral::Properties Properties;
     const std::size_t begin = lexer_.begin_position();
+    const std::size_t line_number = lexer_.line_number();
     Properties* const prop = factory_->template NewVector<Property>();
     ObjectMap map;
 
@@ -1864,7 +1937,8 @@ class Parser : private Noncopyable<> {
           const ast::SymbolHolder ident(
               (is_get) ? symbol::get() : symbol::set(),
               lexer_.previous_begin_position(),
-              lexer_.previous_end_position());
+              lexer_.previous_end_position(),
+              lexer_.previous_line_number());
           Next();
           Expression* expr = ParseAssignmentExpression(true, CHECK);
           ObjectLiteral::AddDataProperty(prop, ident, expr);
@@ -1943,7 +2017,7 @@ class Parser : private Noncopyable<> {
     const std::size_t end = lexer_.begin_position();
     Next();
     assert(prop);
-    return factory_->NewObjectLiteral(prop, begin, end);
+    return factory_->NewObjectLiteral(prop, begin, end, line_number);
   }
 
   FunctionLiteral* ParseFunctionLiteral(
@@ -1954,6 +2028,7 @@ class Parser : private Noncopyable<> {
     // IDENTIFIER_opt
     std::size_t throw_error_if_strict_code_line = 0;
     const std::size_t begin_position = lexer_.begin_position();
+    const std::size_t line_number = lexer_.line_number();
     enum {
       kDetectNone = 0,
       kDetectEvalName,
@@ -2136,7 +2211,8 @@ class Parser : private Noncopyable<> {
                                         begin_block_position,
                                         end_block_position,
                                         begin_position,
-                                        end_block_position);
+                                        end_block_position,
+                                        line_number);
   }
 
   ast::SymbolHolder ParsePropertyName(bool* res) {
@@ -2155,7 +2231,8 @@ class Parser : private Noncopyable<> {
       return ast::SymbolHolder(
           name,
           lexer_.previous_begin_position(),
-          lexer_.previous_end_position());
+          lexer_.previous_end_position(),
+          lexer_.previous_line_number());
     } else if (token_ == Token::TK_STRING) {
       if (strict_ && lexer_.StringEscapeType() == lexer_type::OCTAL) {
         RAISE_WITH(
@@ -2168,7 +2245,8 @@ class Parser : private Noncopyable<> {
       return ast::SymbolHolder(
           name,
           lexer_.previous_begin_position(),
-          lexer_.previous_end_position());
+          lexer_.previous_end_position(),
+          lexer_.previous_line_number());
     } else {
       return ParseSymbol();
     }
@@ -2181,7 +2259,8 @@ class Parser : private Noncopyable<> {
     return ast::SymbolHolder(
         sym,
         lexer_.previous_begin_position(),
-        lexer_.previous_end_position());
+        lexer_.previous_end_position(),
+        lexer_.previous_line_number());
   }
 
   Identifier* ParseIdentifier() {
@@ -2192,7 +2271,8 @@ class Parser : private Noncopyable<> {
         Token::TK_IDENTIFIER,
         symbol,
         lexer_.begin_position(),
-        lexer_.end_position());
+        lexer_.end_position(),
+        lexer_.line_number());
     if (symbol == symbol::arguments()) {
       scope_->RecordArguments();
     }
@@ -2309,7 +2389,7 @@ class Parser : private Noncopyable<> {
       Next();
       return true;
     }
-    if (token_ == Token::TK_RBRACE || token_ == Token::TK_EOS ) {
+    if (token_ == Token::TK_RBRACE || token_ == Token::TK_EOS) {
       return true;
     }
     UNEXPECT(token_);

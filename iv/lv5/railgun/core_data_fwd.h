@@ -14,7 +14,11 @@ class CoreData : public GCKind<CoreData> {
   friend class breaker::Compiler;
 
   typedef GCVector<Instruction>::type Data;
-  typedef GCVector<Instruction*>::type InstTargets;
+
+  // Vector of pairs of bytecode offset and line number.
+  // This offset is counted from Total Bytecode (that is, CoreData unit),
+  // not Code unit.
+  typedef GCVector<std::pair<std::size_t, std::size_t> > Lines;
 
   static CoreData* New() {
     return new CoreData(new (GC) Data());
@@ -42,6 +46,7 @@ class CoreData : public GCKind<CoreData> {
  private:
   explicit CoreData(Data* data)
     : data_(data),
+      lines_(),
       compiled_(false),
       asm_(NULL) {
   }
@@ -51,6 +56,7 @@ class CoreData : public GCKind<CoreData> {
   }
 
   Data* data_;
+  Lines lines_;
   bool compiled_;
   breaker::Assembler* asm_;
 };
