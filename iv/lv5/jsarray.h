@@ -115,7 +115,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
     return new JSArray(ctx, map, 0);
   }
 
-  inline bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
+  virtual bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
     if (symbol::IsArrayIndexSymbol(name)) {
       slot->MakeUnCacheable();
       const uint32_t index = symbol::GetIndexFromSymbol(name);
@@ -202,7 +202,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
           return true;
         }
       }
-      return JSObject::Delete(ctx, name, th, e);
+      return JSObject::DeleteDirect(ctx, name, th, e);
     }
     if (symbol::length() == name) {
       if (th) {
@@ -210,7 +210,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
       }
       return false;
     }
-    return JSObject::Delete(ctx, name, th, e);
+    return JSObject::DeleteDirect(ctx, name, th, e);
   }
 
   void GetOwnPropertyNames(Context* ctx,

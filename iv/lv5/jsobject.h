@@ -56,6 +56,8 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
 
   virtual bool Delete(Context* ctx, Symbol name, bool th, Error* e);
 
+  bool DeleteDirect(Context* ctx, Symbol name, bool th, Error* e);
+
   virtual bool DefineOwnProperty(Context* ctx,
                                  Symbol name,
                                  const PropertyDescriptor& desc,

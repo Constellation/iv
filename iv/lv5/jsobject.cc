@@ -225,6 +225,30 @@ bool JSObject::HasProperty(Context* ctx, Symbol name) const {
   return !GetProperty(ctx, name).IsEmpty();
 }
 
+// Delete direct doesn't lookup by GetOwnPropertySlot.
+// Simple, lookup from map and delete it
+bool JSObject::DeleteDirect(Context* ctx, Symbol name, bool th, Error* e) {
+  const std::size_t offset = map_->Get(ctx, name);
+  if (offset == core::kNotFound) {
+    return true;  // not found
+  }
+  if (!GetSlot(offset).IsConfigurable()) {
+    if (th) {
+      e->Report(Error::Type, "delete failed");
+    }
+    return false;
+  }
+
+  // delete property transition
+  // if previous map is avaiable shape, move to this.
+  // and if that is not avaiable, create new map and move to it.
+  // newly created slots size is always smaller than before
+  map_ = map_->DeletePropertyTransition(ctx, name);
+  GetSlot(offset) = JSEmpty;
+  return true;
+}
+
+
 bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* e) {
   Slot slot;
   if (!GetOwnPropertySlot(ctx, name, &slot)) {
@@ -239,13 +263,24 @@ bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* e) {
     return false;
   }
 
-  assert(slot.IsCacheable());
+  // If target is JSNormalArguments,
+  // Descriptor maybe configurable but not cacheable.
+  std::size_t offset;
+  if (slot.IsCacheable()) {
+    offset = slot.offset();
+  } else {
+    offset = map_->Get(ctx, name);
+    if (offset == core::kNotFound) {
+      return true;
+    }
+  }
+
   // delete property transition
   // if previous map is avaiable shape, move to this.
   // and if that is not avaiable, create new map and move to it.
   // newly created slots size is always smaller than before
   map_ = map_->DeletePropertyTransition(ctx, name);
-  GetSlot(slot.offset()) = JSEmpty;
+  GetSlot(offset) = JSEmpty;
   return true;
 }
 
