@@ -653,15 +653,11 @@ class Parser {
           Seek(pos);
           return target;
         }
-        if (numeric1 > kRegExpInfinity) {
-          min = kRegExpInfinity;
-        } else {
-          min = static_cast<int32_t>(numeric1);
-          if (min != numeric1) {
-            // not recovery pattern
-            Seek(pos);
-            RAISE(NUMBER_TOO_BIG);
-          }
+        min = static_cast<int32_t>(numeric1);
+        if (min != numeric1) {
+          // not recovery pattern
+          Seek(pos);
+          RAISE(NUMBER_TOO_BIG);
         }
         if (c_ == ',') {
           Advance();
@@ -680,15 +676,11 @@ class Parser {
               Seek(pos);
               return target;
             }
-            if (numeric2 > kRegExpInfinity) {
-              max = kRegExpInfinity;
-            } else {
-              max = static_cast<int32_t>(numeric2);
-              if (max != numeric2) {
-                // not recovery pattern
-                Seek(pos);
-                RAISE(NUMBER_TOO_BIG);
-              }
+            max = static_cast<int32_t>(numeric2);
+            if (max != numeric2) {
+              // not recovery pattern
+              Seek(pos);
+              RAISE(NUMBER_TOO_BIG);
             }
           }
         } else if (c_ == '}') {
