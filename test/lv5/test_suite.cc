@@ -1,18 +1,23 @@
 #include <gtest/gtest.h>
+#include <iv/platform.h>
 #include <iv/lv5/lv5.h>
 #include <iv/lv5/railgun/command.h>
+#include <iv/lv5/railgun/railgun.h>
+#include <iv/lv5/breaker/breaker.h>
+#include <iv/lv5/breaker/command.h>
 using namespace iv;
 namespace {
 
-template<typename Source>
-lv5::railgun::Code* Compile(lv5::railgun::Context* ctx, const Source& src) {
+lv5::railgun::Code* Compile(lv5::railgun::Context* ctx,
+                            std::shared_ptr<iv::core::FileSource> src) {
   lv5::AstFactory factory(ctx);
-  core::Parser<lv5::AstFactory, Source> parser(
-      &factory, src, ctx->symbol_table());
+  core::Parser<
+      lv5::AstFactory,
+      iv::core::FileSource> parser(&factory, *src.get(), ctx->symbol_table());
   const lv5::FunctionLiteral* const global = parser.ParseProgram();
   if (global) {
     lv5::railgun::JSScript* script =
-        lv5::railgun::JSGlobalScript::New(ctx, &src);
+        lv5::railgun::JSSourceScript<iv::core::FileSource>::New(ctx, src);
     return lv5::railgun::CompileIndirectEval(ctx, *global, script);
   } else {
     return NULL;
@@ -65,6 +70,13 @@ static const char* kPassFileNames[] = {
 static const std::size_t kPassFileNamesSize =
   sizeof(kPassFileNames) / sizeof(const char*);
 
+static const char* kSpecFileNames[] = {
+  "test/lv5/suite/spec/string-object-length.js",
+  "test/lv5/suite/spec/date-parse.js"
+};
+static const std::size_t kSpecFileNamesSize =
+  sizeof(kSpecFileNames) / sizeof(const char*);
+
 }  // namespace anonymous
 
 TEST(SuiteCase, PassTest) {
@@ -81,7 +93,8 @@ TEST(SuiteCase, PassTest) {
     ctx.DefineFunction<&lv5::railgun::Run, 0>("run");
     ctx.DefineFunction<&lv5::railgun::StackDepth, 0>("StackDepth");
     ctx.DefineFunction<&lv5::railgun::Dis, 1>("dis");
-    core::FileSource src(core::StringPiece(res.data(), res.size()), filename);
+    std::shared_ptr<core::FileSource> src(
+        new core::FileSource(core::StringPiece(res.data(), res.size()), filename));
     lv5::railgun::Code* code = Compile(&ctx, src);
     ASSERT_TRUE(code) << filename;
     lv5::JSVal ret = ctx.vm()->Run(code, &e);
@@ -91,3 +104,42 @@ TEST(SuiteCase, PassTest) {
   }
 }
 
+#if defined(IV_ENABLE_JIT)
+// Jasmine Test
+
+static void ExecuteInContext(lv5::breaker::Context* ctx,
+                             const std::string& filename,
+                             lv5::Error* e) {
+  std::vector<char> res;
+  ASSERT_TRUE(core::ReadFile(filename, &res));
+  std::shared_ptr<core::FileSource> src(
+      new core::FileSource(core::StringPiece(res.data(), res.size()), filename));
+  lv5::railgun::Code* code = Compile(ctx, src);
+  iv::lv5::breaker::Compile(code);
+  iv::lv5::breaker::Run(ctx, code, e);
+}
+
+TEST(SuiteCase, JasmineTest) {
+  lv5::Init();
+  lv5::Error e;
+  lv5::breaker::Context ctx;
+  ctx.DefineFunction<&lv5::Print, 1>("print");
+  ctx.DefineFunction<&lv5::Log, 1>("log");
+  ctx.DefineFunction<&lv5::Quit, 1>("quit");
+  ctx.DefineFunction<&lv5::HiResTime, 0>("HiResTime");
+  ctx.DefineFunction<&lv5::breaker::Run, 0>("run");
+  ctx.DefineFunction<&lv5::railgun::Dis, 1>("dis");
+
+  ExecuteInContext(&ctx, "test/lv5/suite/resources/jasmine.js", &e);
+  ASSERT_FALSE(e);
+  ExecuteInContext(&ctx, "test/lv5/suite/resources/ConsoleReporter.js", &e);
+  ASSERT_FALSE(e);
+  for (std::size_t i = 0; i < kSpecFileNamesSize; ++i) {
+    const std::string filename(kSpecFileNames[i]);
+    ExecuteInContext(&ctx, filename, &e);
+    ASSERT_FALSE(e);
+  }
+  ExecuteInContext(&ctx, "test/lv5/suite/resources/driver.js", &e);
+  EXPECT_FALSE(e);
+}
+#endif

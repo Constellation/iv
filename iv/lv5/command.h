@@ -36,7 +36,7 @@ inline JSVal Print(const Arguments& args, Error* e) {
 inline JSVal Log(const Arguments& args, Error* e) {
   if (!args.empty()) {
     Context* const ctx = args.ctx();
-    JSString* const str = it->ToString(ctx, IV_LV5_ERROR(e));
+    JSString* const str = args.front().ToString(ctx, IV_LV5_ERROR(e));
     std::cout << *str;
     std::fflush(stdout);
   }
