@@ -33,6 +33,17 @@ inline JSVal Print(const Arguments& args, Error* e) {
   return JSUndefined;
 }
 
+inline JSVal Log(const Arguments& args, Error* e) {
+  if (!args.empty()) {
+    Context* const ctx = args.ctx();
+    JSString* const str = it->ToString(ctx, IV_LV5_ERROR(e));
+    std::cout << *str;
+    std::fflush(stdout);
+  }
+  return JSUndefined;
+}
+
+
 inline JSVal Quit(const Arguments& args, Error* e) {
   const int32_t code = (args.empty()) ?
       0 : args.front().ToInt32(args.ctx(), IV_LV5_ERROR(e));

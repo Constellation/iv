@@ -46,6 +46,7 @@ int BreakerExecute(const iv::core::StringPiece& data,
     return EXIT_FAILURE;
   }
   ctx.DefineFunction<&iv::lv5::Print, 1>("print");
+  ctx.DefineFunction<&iv::lv5::Log, 1>("log");  // this is simply output log function
   ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
   ctx.DefineFunction<&iv::lv5::CollectGarbage, 0>("gc");
   ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
@@ -67,6 +68,7 @@ int BreakerExecuteFiles(const std::vector<std::string>& filenames) {
   iv::lv5::Error e;
   iv::lv5::breaker::Context ctx;
   ctx.DefineFunction<&iv::lv5::Print, 1>("print");
+  ctx.DefineFunction<&iv::lv5::Log, 1>("log");
   ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
   ctx.DefineFunction<&iv::lv5::CollectGarbage, 0>("gc");
   ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
