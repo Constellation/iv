@@ -125,6 +125,8 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
     return JSEmpty;
   }
 
+  const core::i18n::NumberingSystem* nu = NULL;
+
   core::i18n::NumberFormat::Style style = core::i18n::NumberFormat::DECIMAL;
   core::i18n::Currency::Display display = core::i18n::Currency::SYMBOL;
   const core::i18n::Currency::Data* currency_data = NULL;

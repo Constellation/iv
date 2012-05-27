@@ -22,7 +22,8 @@ struct NumberFormatPatternSet {
 
 struct NumberFormatData {
   const char* name;
-  NumberingSystem::Type numbering_system;
+  NumberingSystem::Candidates numbering_systems;
+
   // 0 => DECIMAL
   // 1 => PRECENT
   // 2 => CURRENCY
@@ -33,7 +34,7 @@ namespace number_format_data {
 
 static const NumberFormatData EN = {
   "en",
-  NumberingSystem::LATN,
+  { NumberingSystem::LATN },
   {
     {
       "{number}",

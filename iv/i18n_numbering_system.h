@@ -38,7 +38,8 @@ static const NumberingSystemDataArray kNumberingSystemData = { {
 
 class NumberingSystem {
  public:
-  enum Type {
+  enum {
+    SENTINEL = 0,  // this is sentinel value
     ARAB,
     ARABEXT,
     BENG,
@@ -62,6 +63,12 @@ class NumberingSystem {
     NUM_OF_NUMBERING_SYSTEM
   };
 
+  typedef uint8_t Type;
+
+  typedef Type Candidates[NUM_OF_NUMBERING_SYSTEM];
+
+  IV_STATIC_ASSERT(NUM_OF_NUMBERING_SYSTEM < UINT8_MAX);
+
   typedef NumberingSystemData Data;
   typedef std::unordered_map<std::string, const Data*> NumberingSystemMap;  // NOLINT
 
@@ -75,7 +82,8 @@ class NumberingSystem {
 
   static const Data* Lookup(Type type) {
     assert(type < NUM_OF_NUMBERING_SYSTEM);
-    return kNumberingSystemData.data() + type;
+    assert(type != SENTINEL);
+    return kNumberingSystemData.data() + (type - 1);
   }
 
  private:
