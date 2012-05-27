@@ -125,7 +125,28 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
     return JSEmpty;
   }
 
-  const core::i18n::NumberingSystem* nu = NULL;
+  // relevantExtensionKeys are ['nu']
+  const core::i18n::NumberingSystem::Data* nu = NULL;
+  {
+    const core::i18n::LookupResult::UnicodeExtensions::const_iterator key =
+        std::find(result.extensions().begin(),
+                  result.extensions().end(), "nu");
+    if (key != result.extensions().end()) {
+      const core::i18n::LookupResult::UnicodeExtensions::const_iterator val =
+          key + 1;
+      if (val != result.extensions().end() && val->size() > 2) {
+        const core::i18n::NumberingSystem::Data* data =
+            core::i18n::NumberingSystem::Lookup(*val);
+        if (data && locale->AcceptedNumberingSystem(data->type)) {
+          nu = data;
+        }
+      }
+    }
+  }
+
+  if (nu) {
+    obj->SetField(JSNumberFormat::NUMBERING_SYSTEM, JSString::NewAsciiString(ctx, nu->name));
+  }
 
   core::i18n::NumberFormat::Style style = core::i18n::NumberFormat::DECIMAL;
   core::i18n::Currency::Display display = core::i18n::Currency::SYMBOL;
@@ -291,7 +312,7 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
           minimum_integer_digits,
           minimum_fraction_digits,
           maximum_fraction_digits,
-          NULL,
+          nu,
           currency_data,
           display,
           use_grouping));

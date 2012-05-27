@@ -79,18 +79,30 @@ inline bool IsWellFormedCurrencyCode(Iter it, Iter last) {
 // 10.2.2 LookupMatch(availableLocales, requestedLocales)
 class LookupResult {
  public:
-  typedef Locale::Map Extensions;
+  typedef std::vector<std::string> UnicodeExtensions;
+
   LookupResult() : locale_(), extensions_() { }
+
   explicit LookupResult(const std::string& l)
-    : locale_(l), extensions_() { }
+    : locale_(l), extensions_() {
+  }
+
   LookupResult(const std::string& l, Locale loc)
-    : locale_(l), extensions_(loc.extensions()) { }
+    : locale_(l), extensions_() {
+    Locale::Map::const_iterator it = loc.extensions().find('u');
+    if (it != loc.extensions().end()) {
+      for (Locale::Map::const_iterator last = loc.extensions().end();
+           it != last && it->first == 'u'; ++it) {
+        extensions_.push_back(it->second);
+      }
+    }
+  }
 
   const std::string& locale() const { return locale_; }
-  const Extensions& extensions() const { return extensions_; }
+  const UnicodeExtensions& extensions() const { return extensions_; }
  private:
   std::string locale_;
-  Extensions extensions_;
+  UnicodeExtensions extensions_;
 };
 
 class I18N {

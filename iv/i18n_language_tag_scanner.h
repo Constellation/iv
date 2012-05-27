@@ -266,7 +266,7 @@ class LanguageTagScanner {
 
     if (!remove_extensions) {
       for (Locale::Map::const_iterator it = locale.extensions_.begin(),
-           last = locale.extensions_.end(); it != last; ++it) {
+           last = locale.extensions_.end(); it != last;) {
         const char first = it->first;
         lang.push_back('-');
         lang.push_back(first);

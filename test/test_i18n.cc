@@ -61,6 +61,7 @@ TEST(I18NCase, IsStructurallyValidLanguageTagTest) {
   EXPECT_TRUE(IsStructurallyValidLanguageTag("en-US-u-islamcal"));
   EXPECT_TRUE(IsStructurallyValidLanguageTag("zh-CN-a-myext-x-private"));
   EXPECT_TRUE(IsStructurallyValidLanguageTag("en-a-myext-b-another"));
+  EXPECT_TRUE(IsStructurallyValidLanguageTag("en-US-u-nu-fullwide"));
 
   // Some Invalid Tags:
   EXPECT_FALSE(IsStructurallyValidLanguageTag("de-419-DE")) << "(two region tags)";
@@ -105,5 +106,10 @@ TEST(I18NCase, CanonicalizeTest) {
     const std::string str("SR-CYRL-rS");
     LanguageTagScanner scanner(str.begin(), str.end());
     EXPECT_EQ(scanner.Canonicalize(), "sr-Cyrl-RS");
+  }
+  {
+    const std::string str("en-us-u-nu-fullwide");
+    LanguageTagScanner scanner(str.begin(), str.end());
+    EXPECT_EQ(scanner.Canonicalize(), "en-US-u-nu-fullwide");
   }
 }

@@ -28,27 +28,37 @@ struct NumberFormatData {
   // 1 => PRECENT
   // 2 => CURRENCY
   NumberFormatPatternSet patterns[3];
+
+  bool AcceptedNumberingSystem(NumberingSystem::Type type) const {
+    for (NumberingSystem::Candidates::const_iterator
+         it = numbering_systems.begin(),
+         last = numbering_systems.end();
+         it != last && *it; ++it) {
+      if (*it == type) {
+        return true;
+      }
+    }
+    return false;
+  }
 };
 
 namespace number_format_data {
 
 static const NumberFormatData EN = {
   "en",
-  { NumberingSystem::LATN },
-  {
-    {
+  { {
+      NumberingSystem::LATN
+  } },
+  { {
       "{number}",
       "-{number}"
-    },
-    {
+    }, {
       "{number}%",
       "-{number}%"
-    },
-    {
+    }, {
       "{currency} {number}",
       "-{currency} {number}"
-    }
-  }
+  } }
 };
 
 }  // namespace number_format_data
@@ -210,7 +220,8 @@ class NumberFormat {
       m.append(std::string(maximum_fraction_digits, '0'));
     }
 
-    assert(static_cast<int>(m.size() - m.find('.') - 1) == maximum_fraction_digits);
+    assert(static_cast<int>(m.size() - m.find('.') - 1)
+           == maximum_fraction_digits);
 
     const int i = m.find('.');
     int cut = maximum_fraction_digits - minimum_fraction_digits;
@@ -270,7 +281,8 @@ class NumberFormat {
       // This is ILND
       // section 12.3.2-5-e
       if (numbering_system() &&
-          numbering_system() != NumberingSystem::Lookup(NumberingSystem::LATN)) {
+          numbering_system() !=
+            NumberingSystem::Lookup(NumberingSystem::LATN)) {
         for (UString::iterator it = n.begin(), last = n.end();
              it != last; ++it) {
           const uint16_t ch = *it;
@@ -330,14 +342,22 @@ class NumberFormat {
       const std::size_t i = result.find(ToUString("{currency}"));
       assert(i != UString::npos);
       UString currency_result(result.begin(), result.begin() + i);
-      if (currency_display() == Currency::SYMBOL && currency()->symbol.size != 0) {
-        currency_result.append(currency()->symbol.data, currency()->symbol.size);
-      } else if (currency_display() == Currency::NAME && currency()->name) {
-        currency_result.append(currency()->name, currency()->name + std::strlen(currency()->name));
+      if (currency_display() == Currency::SYMBOL &&
+          currency()->symbol.size != 0) {
+        currency_result.append(currency()->symbol.data,
+                               currency()->symbol.size);
+      } else if (currency_display() == Currency::NAME &&
+                 currency()->name) {
+        currency_result.append(
+            currency()->name,
+            currency()->name + std::strlen(currency()->name));
       } else {
-        currency_result.append(currency()->code, currency()->code + std::strlen(currency()->code));
+        currency_result.append(
+            currency()->code,
+            currency()->code + std::strlen(currency()->code));
       }
-      currency_result.append(result.begin() + i + std::strlen("{currency}"), result.end());
+      currency_result.append(
+          result.begin() + i + std::strlen("{currency}"), result.end());
       return currency_result;
     } else {
       return result;
