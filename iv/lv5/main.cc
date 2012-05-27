@@ -18,15 +18,15 @@
 
 namespace {
 
-template<typename Source>
 iv::lv5::railgun::Code* Compile(iv::lv5::railgun::Context* ctx,
-                                const Source& src) {
+                                std::shared_ptr<iv::core::FileSource> src) {
   iv::lv5::AstFactory factory(ctx);
-  iv::core::Parser<iv::lv5::AstFactory, Source> parser(
-      &factory, src, ctx->symbol_table());
+  iv::core::Parser<
+      iv::lv5::AstFactory,
+      iv::core::FileSource> parser(&factory, *src.get(), ctx->symbol_table());
   const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
   iv::lv5::railgun::JSScript* script =
-      iv::lv5::railgun::JSGlobalScript::New(ctx, &src);
+      iv::lv5::railgun::JSSourceScript<iv::core::FileSource>::New(ctx, src);
   if (!global) {
     std::fprintf(stderr, "%s\n", parser.error().c_str());
     return NULL;
@@ -39,7 +39,8 @@ int BreakerExecute(const iv::core::StringPiece& data,
                    const std::string& filename, bool statistics) {
   iv::lv5::Error e;
   iv::lv5::breaker::Context ctx;
-  iv::core::FileSource src(data, filename);
+  std::shared_ptr<iv::core::FileSource>
+      src(new iv::core::FileSource(data, filename));
   iv::lv5::railgun::Code* code = Compile(&ctx, src);
   if (!code) {
     return EXIT_FAILURE;
@@ -67,7 +68,8 @@ int RailgunExecute(const iv::core::StringPiece& data,
                    const std::string& filename, bool statistics) {
   iv::lv5::Error e;
   iv::lv5::railgun::Context ctx;
-  iv::core::FileSource src(data, filename);
+  std::shared_ptr<iv::core::FileSource>
+      src(new iv::core::FileSource(data, filename));
   iv::lv5::railgun::Code* code = Compile(&ctx, src);
   if (!code) {
     return EXIT_FAILURE;
@@ -96,7 +98,8 @@ int RailgunExecute(const iv::core::StringPiece& data,
 int DisAssemble(const iv::core::StringPiece& data,
                 const std::string& filename) {
   iv::lv5::railgun::Context ctx;
-  iv::core::FileSource src(data, filename);
+  std::shared_ptr<iv::core::FileSource>
+      src(new iv::core::FileSource(data, filename));
   iv::lv5::railgun::Code* code = Compile(&ctx, src);
   if (!code) {
     return EXIT_FAILURE;
@@ -269,7 +272,7 @@ int main(int argc, char **argv) {
     }
   } else {
     // Interactive Shell Mode
-    if(cmd.Exist("interp")) {
+    if (cmd.Exist("interp")) {
       iv::lv5::teleporter::Interactive shell;
       return shell.Run();
     } else {

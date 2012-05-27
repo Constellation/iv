@@ -30,7 +30,7 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
   }
   const FunctionLiteral* const func =
       internal::IsOneFunctionExpression(*eval, IV_LV5_ERROR(e));
-  JSScript* script = JSEvalScript<EvalSource>::New(ctx, src);
+  JSScript* script = JSSourceScript<EvalSource>::New(ctx, src);
   Code* code = CompileFunction(ctx, *func, script);
   return JSVMFunction::New(ctx, code, ctx->global_env());
 }
@@ -68,7 +68,7 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
     e->Report(Error::Syntax, parser.error());
     return JSUndefined;
   }
-  JSScript* script = JSEvalScript<EvalSource>::New(ctx, src);
+  JSScript* script = JSSourceScript<EvalSource>::New(ctx, src);
   Code* code = CompileIndirectEval(ctx, *eval, script);
   return ctx->vm()->RunEval(
       code,
@@ -114,7 +114,7 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
       e->Report(Error::Syntax, parser.error());
       return JSUndefined;
     }
-    JSScript* script = JSEvalScript<EvalSource>::New(ctx, src);
+    JSScript* script = JSSourceScript<EvalSource>::New(ctx, src);
     code = CompileEval(ctx, *eval, script);
     if (!code->strict()) {
       ctx->direct_eval_map()->Insert(str, code);

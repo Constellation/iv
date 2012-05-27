@@ -31,13 +31,7 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e);
 
 class JSScript;
 
-template<typename Source>
-class JSEvalScript;
-
-class JSGlobalScript;
-
 class JSVMFunction;
-
 
 Code* CompileFunction(Context* ctx, const JSString* str, Error* e);
 

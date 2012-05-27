@@ -99,7 +99,7 @@ class Interactive {
       }
       return NULL;
     }
-    JSScript* script = JSEvalScript<core::FileSource>::New(&ctx_, src);
+    JSScript* script = JSSourceScript<core::FileSource>::New(&ctx_, src);
     return CompileIndirectEval(&ctx_, *eval, script);
   }
 

@@ -24,7 +24,8 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
   }
   const FunctionLiteral* const func =
       internal::IsOneFunctionExpression(*eval, IV_LV5_ERROR(e));
-  railgun::JSScript* script = railgun::JSEvalScript<EvalSource>::New(ctx, src);
+  railgun::JSScript* script =
+      railgun::JSSourceScript<EvalSource>::New(ctx, src);
   railgun::Code* code = railgun::CompileFunction(ctx, *func, script);
   Compile(code);
   return JSFunction::New(ctx, code, ctx->global_env());
@@ -63,7 +64,8 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
     e->Report(Error::Syntax, parser.error());
     return JSUndefined;
   }
-  railgun::JSScript* script = railgun::JSEvalScript<EvalSource>::New(ctx, src);
+  railgun::JSScript* script =
+      railgun::JSSourceScript<EvalSource>::New(ctx, src);
   railgun::Code* code = railgun::CompileIndirectEval(ctx, *eval, script);
   Compile(code);
   return breaker::RunEval(
@@ -111,7 +113,8 @@ inline JSVal DirectCallToEval(const Arguments& args, railgun::Frame* frame, Erro
       e->Report(Error::Syntax, parser.error());
       return JSUndefined;
     }
-    railgun::JSScript* script = railgun::JSEvalScript<EvalSource>::New(ctx, src);
+    railgun::JSScript* script =
+        railgun::JSSourceScript<EvalSource>::New(ctx, src);
     code = railgun::CompileEval(ctx, *eval, script);
     breaker::Compile(code);
     if (!code->strict()) {

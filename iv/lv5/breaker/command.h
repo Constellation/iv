@@ -14,13 +14,15 @@ namespace lv5 {
 namespace breaker {
 namespace detail {
 
-template<typename Source>
-railgun::Code* Compile(Context* ctx, const Source& src) {
+railgun::Code* Compile(Context* ctx,
+                       std::shared_ptr<core::FileSource> src) {
   AstFactory factory(ctx);
-  core::Parser<iv::lv5::AstFactory, Source> parser(&factory,
-                                                   src, ctx->symbol_table());
+  core::Parser<
+      iv::lv5::AstFactory,
+      core::FileSource> parser(&factory, *src.get(), ctx->symbol_table());
   const FunctionLiteral* const global = parser.ParseProgram();
-  railgun::JSScript* script = railgun::JSGlobalScript::New(ctx, &src);
+  railgun::JSScript* script =
+      railgun::JSSourceScript<core::FileSource>::New(ctx, src);
   if (!global) {
     std::fprintf(stderr, "%s\n", parser.error().c_str());
     return NULL;
@@ -34,7 +36,7 @@ static void Execute(const core::StringPiece& data,
   ctx.DefineFunction<&Print, 1>("print");
   ctx.DefineFunction<&Quit, 1>("quit");
 
-  core::FileSource src(data, filename);
+  std::shared_ptr<core::FileSource> src(new core::FileSource(data, filename));
   railgun::Code* code = Compile(&ctx, src);
   if (!code) {
     return;

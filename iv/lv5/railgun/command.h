@@ -13,13 +13,14 @@ namespace lv5 {
 namespace railgun {
 namespace detail {
 
-template<typename Source>
-Code* Compile(Context* ctx, const Source& src) {
+Code* Compile(Context* ctx,
+              std::shared_ptr<core::FileSource> src) {
   AstFactory factory(ctx);
-  core::Parser<iv::lv5::AstFactory, Source> parser(&factory,
-                                                   src, ctx->symbol_table());
+  core::Parser<
+      iv::lv5::AstFactory,
+      iv::core::FileSource> parser(&factory, *src.get(), ctx->symbol_table());
   const FunctionLiteral* const global = parser.ParseProgram();
-  JSScript* script = JSGlobalScript::New(ctx, &src);
+  JSScript* script = JSSourceScript<core::FileSource>::New(ctx, src);
   if (!global) {
     std::fprintf(stderr, "%s\n", parser.error().c_str());
     return NULL;
@@ -30,7 +31,7 @@ Code* Compile(Context* ctx, const Source& src) {
 static void Execute(const core::StringPiece& data,
                     const std::string& filename, Error* e) {
   Context ctx;
-  core::FileSource src(data, filename);
+  std::shared_ptr<core::FileSource> src(new core::FileSource(data, filename));
   Code* code = Compile(&ctx, src);
   if (!code) {
     return;
