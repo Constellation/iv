@@ -46,7 +46,7 @@ class JSNormalArguments : public JSObject {
     binder
         .def(symbol::length(),
              JSVal::UInt32(len), ATTR::W | ATTR::C);
-    SetArguments(ctx, obj, &binder, names, it, last, len);
+    obj->SetArguments(ctx, &binder, names, it, last, len);
     binder.def(symbol::callee(), func, ATTR::W | ATTR::C);
     return obj;
   }
@@ -208,20 +208,23 @@ class JSNormalArguments : public JSObject {
       mapping_() { }
 
   template<typename Idents, typename ArgsReverseIter>
-  static void SetArguments(Context* ctx,
-                           JSNormalArguments* obj,
-                           bind::Object* binder,
-                           const Idents& names,
-                           ArgsReverseIter it, ArgsReverseIter last,
-                           uint32_t len) {
+  void SetArguments(Context* ctx,
+                    bind::Object* binder,
+                    const Idents& names,
+                    ArgsReverseIter it, ArgsReverseIter last,
+                    uint32_t len) {
     uint32_t index = len - 1;
     const uint32_t names_len = static_cast<uint32_t>(names.size());
-    obj->mapping_.resize((std::min)(len, names_len), symbol::kDummySymbol);
+    mapping_.resize((std::min)(len, names_len), symbol::kDummySymbol);
     for (; it != last; ++it) {
       binder->def(symbol::MakeSymbolFromIndex(index),
                   *it, ATTR::W | ATTR::E | ATTR::C);
       if (index < names_len) {
-        obj->mapping_[index] = GetSymbol(names, index);
+        const Symbol name = GetSymbol(names, index);
+        if (std::find(mapping_.begin() + index + 1,
+                      mapping_.end(), name) == mapping_.end()) {
+          mapping_[index] = name;
+        }
       }
       index -= 1;
     }
