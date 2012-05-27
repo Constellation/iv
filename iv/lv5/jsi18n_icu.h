@@ -657,47 +657,34 @@ inline JSVal JSCollator::Initialize(Context* ctx,
   }
 
   {
-    const detail_i18n::ExtensionMap map =
-        detail_i18n::CreateExtensionMap(result.extensions());
-    {
-      const detail_i18n::ExtensionMap::const_iterator it = map.find("co");
-      if (it != map.end()) {
-        if (it->second.empty()) {
-          obj->SetField(JSCollator::COLLATION,
-                        JSString::NewAsciiString(ctx, "default"));
-        } else {
-          obj->SetField(JSCollator::COLLATION,
-                        JSString::NewAsciiString(ctx, it->second));
-        }
-      }
-    }
-    for (detail_i18n::CollatorOptionTable::const_iterator
-         it = detail_i18n::kCollatorOptionTable.begin(),
-         last = detail_i18n::kCollatorOptionTable.end();
-         it != last; ++it) {
-      const JSVal option_value = obj->GetField(it->field);
-      if (option_value.IsUndefined()) {
-        const detail_i18n::ExtensionMap::const_iterator
-            target = map.find(it->key);
-        if (target != map.end()) {
-          JSVal value;
-          if (it->type == detail_i18n::Options::BOOLEAN) {
-            obj->SetField(it->field,
-                          JSVal::Bool(target->second == "true"));
-          } else if (it->type == detail_i18n::Options::STRING) {
-            if (it->values[0]) {
-              for (const char* const * ptr = it->values.data(); *ptr; ++ptr) {
-                if (*ptr == target->second) {
-                  obj->SetField(
-                      it->field,
-                      JSString::NewAsciiString(ctx, target->second));
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+    // TODO(Constellation) lookup co from UnicodeExtensions
+//    for (detail_i18n::CollatorOptionTable::const_iterator
+//         it = detail_i18n::kCollatorOptionTable.begin(),
+//         last = detail_i18n::kCollatorOptionTable.end();
+//         it != last; ++it) {
+//      const JSVal option_value = obj->GetField(it->field);
+//      if (option_value.IsUndefined()) {
+//        const detail_i18n::ExtensionMap::const_iterator
+//            target = map.find(it->key);
+//        if (target != map.end()) {
+//          JSVal value;
+//          if (it->type == detail_i18n::Options::BOOLEAN) {
+//            obj->SetField(it->field,
+//                          JSVal::Bool(target->second == "true"));
+//          } else if (it->type == detail_i18n::Options::STRING) {
+//            if (it->values[0]) {
+//              for (const char* const * ptr = it->values.data(); *ptr; ++ptr) {
+//                if (*ptr == target->second) {
+//                  obj->SetField(
+//                      it->field,
+//                      JSString::NewAsciiString(ctx, target->second));
+//                }
+//              }
+//            }
+//          }
+//        }
+//      }
+//    }
   }
 
   UErrorCode status = U_ZERO_ERROR;
