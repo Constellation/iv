@@ -25,16 +25,6 @@ lv5::railgun::Code* Compile(lv5::railgun::Context* ctx,
 }
 
 static const char* kPassFileNames[] = {
-  "test/lv5/suite/ex/log10.js",
-  "test/lv5/suite/ex/log2.js",
-  "test/lv5/suite/ex/log1p.js",
-  "test/lv5/suite/ex/expm1.js",
-  "test/lv5/suite/ex/cosh.js",
-  "test/lv5/suite/ex/sinh.js",
-  "test/lv5/suite/ex/tanh.js",
-  "test/lv5/suite/ex/acosh.js",
-  "test/lv5/suite/ex/asinh.js",
-  "test/lv5/suite/ex/atanh.js",
   "test/lv5/suite/ex/hypot.js",
   "test/lv5/suite/ex/trunc.js",
   "test/lv5/suite/ex/sign.js",
@@ -63,6 +53,16 @@ static const char* kSpecFileNames[] = {
   "test/lv5/suite/spec/iterator.js",
   "test/lv5/suite/spec/regexp.js",
   "test/lv5/suite/spec/math-trunc.js",
+  "test/lv5/suite/spec/math-log10.js",
+  "test/lv5/suite/spec/math-log2.js",
+  "test/lv5/suite/spec/math-log1p.js",
+  "test/lv5/suite/spec/math-expm1.js",
+  "test/lv5/suite/spec/math-cosh.js",
+  "test/lv5/suite/spec/math-sinh.js",
+  "test/lv5/suite/spec/math-tanh.js",
+  "test/lv5/suite/spec/math-acosh.js",
+  "test/lv5/suite/spec/math-asinh.js",
+  "test/lv5/suite/spec/math-atanh.js",
   "test/lv5/suite/spec/lhs-assignment.js",
   "test/lv5/suite/spec/rhs-assignment.js"
 };
@@ -103,10 +103,11 @@ static void ExecuteInContext(lv5::breaker::Context* ctx,
                              const std::string& filename,
                              lv5::Error* e) {
   std::vector<char> res;
-  ASSERT_TRUE(core::ReadFile(filename, &res));
+  ASSERT_TRUE(core::ReadFile(filename, &res)) << filename;
   std::shared_ptr<core::FileSource> src(
       new core::FileSource(core::StringPiece(res.data(), res.size()), filename));
   lv5::railgun::Code* code = Compile(ctx, src);
+  ASSERT_TRUE(code) << filename;
   iv::lv5::breaker::Compile(code);
   iv::lv5::breaker::Run(ctx, code, e);
 }
