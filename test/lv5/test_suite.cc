@@ -25,23 +25,6 @@ lv5::railgun::Code* Compile(lv5::railgun::Context* ctx,
 }
 
 static const char* kPassFileNames[] = {
-  "test/lv5/suite/pass000.js",
-  "test/lv5/suite/pass001.js",
-  "test/lv5/suite/pass002.js",
-  "test/lv5/suite/pass004.js",
-  "test/lv5/suite/pass005.js",
-  "test/lv5/suite/pass006.js",
-  "test/lv5/suite/pass007.js",
-  "test/lv5/suite/pass008.js",
-  "test/lv5/suite/pass009.js",
-  "test/lv5/suite/pass010.js",
-  "test/lv5/suite/regexp000.js",
-  "test/lv5/suite/date-parse.js",
-  "test/lv5/suite/lhs-assignment.js",
-  "test/lv5/suite/iterator.js",
-  "test/lv5/suite/int32_min.js",
-  "test/lv5/suite/string-object-length.js",
-  "test/lv5/suite/arguments.js",
   "test/lv5/suite/ex/log10.js",
   "test/lv5/suite/ex/log2.js",
   "test/lv5/suite/ex/log1p.js",
@@ -72,7 +55,16 @@ static const std::size_t kPassFileNamesSize =
 
 static const char* kSpecFileNames[] = {
   "test/lv5/suite/spec/string-object-length.js",
-  "test/lv5/suite/spec/date-parse.js"
+  "test/lv5/suite/spec/error-constructing.js",
+  "test/lv5/suite/spec/function-expression-name.js",
+  "test/lv5/suite/spec/date-parse.js",
+  "test/lv5/suite/spec/int32-min.js",
+  "test/lv5/suite/spec/arguments.js",
+  "test/lv5/suite/spec/iterator.js",
+  "test/lv5/suite/spec/regexp.js",
+  "test/lv5/suite/spec/math-trunc.js",
+  "test/lv5/suite/spec/lhs-assignment.js",
+  "test/lv5/suite/spec/rhs-assignment.js"
 };
 static const std::size_t kSpecFileNamesSize =
   sizeof(kSpecFileNames) / sizeof(const char*);
