@@ -62,6 +62,41 @@ int BreakerExecute(const iv::core::StringPiece& data,
   ctx.Validate();
   return EXIT_SUCCESS;
 }
+
+int BreakerExecuteFiles(const std::vector<std::string>& filenames) {
+  iv::lv5::Error e;
+  iv::lv5::breaker::Context ctx;
+  ctx.DefineFunction<&iv::lv5::Print, 1>("print");
+  ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
+  ctx.DefineFunction<&iv::lv5::CollectGarbage, 0>("gc");
+  ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
+  ctx.DefineFunction<&iv::lv5::railgun::Dis, 1>("dis");
+  ctx.DefineFunction<&iv::lv5::breaker::Run, 0>("run");
+
+  std::vector<char> res;
+  for (std::vector<std::string>::const_iterator it = filenames.begin(),
+       last = filenames.end(); it != last; ++it) {
+    if (!iv::core::ReadFile(*it, &res)) {
+      return EXIT_FAILURE;
+    }
+    std::shared_ptr<iv::core::FileSource>
+        src(new iv::core::FileSource(
+                iv::core::StringPiece(res.data(), res.size()), *it));
+    res.clear();
+    iv::lv5::railgun::Code* code = Compile(&ctx, src);
+    if (!code) {
+      return EXIT_FAILURE;
+    }
+    iv::lv5::breaker::Compile(code);
+    iv::lv5::breaker::Run(&ctx, code, &e);
+    if (e) {
+      e.Dump(&ctx, stderr);
+      return EXIT_FAILURE;
+    }
+  }
+  ctx.Validate();
+  return EXIT_SUCCESS;
+}
 #endif
 
 int RailgunExecute(const iv::core::StringPiece& data,
@@ -79,7 +114,6 @@ int RailgunExecute(const iv::core::StringPiece& data,
   ctx.DefineFunction<&iv::lv5::CollectGarbage, 0>("gc");
   ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
   ctx.DefineFunction<&iv::lv5::railgun::Dis, 1>("dis");
-
   ctx.DefineFunction<&iv::lv5::railgun::Run, 0>("run");
   ctx.DefineFunction<&iv::lv5::railgun::StackDepth, 0>("StackDepth");
   ctx.vm()->Run(code, &e);
@@ -90,6 +124,41 @@ int RailgunExecute(const iv::core::StringPiece& data,
   }
   if (statistics) {
     ctx.vm()->DumpStatistics();
+  }
+  ctx.Validate();
+  return EXIT_SUCCESS;
+}
+
+int RailgunExecuteFiles(const std::vector<std::string>& filenames) {
+  iv::lv5::Error e;
+  iv::lv5::railgun::Context ctx;
+  ctx.DefineFunction<&iv::lv5::Print, 1>("print");
+  ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
+  ctx.DefineFunction<&iv::lv5::CollectGarbage, 0>("gc");
+  ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
+  ctx.DefineFunction<&iv::lv5::railgun::Dis, 1>("dis");
+  ctx.DefineFunction<&iv::lv5::railgun::Run, 0>("run");
+  ctx.DefineFunction<&iv::lv5::railgun::StackDepth, 0>("StackDepth");
+
+  std::vector<char> res;
+  for (std::vector<std::string>::const_iterator it = filenames.begin(),
+       last = filenames.end(); it != last; ++it) {
+    if (!iv::core::ReadFile(*it, &res)) {
+      return EXIT_FAILURE;
+    }
+    std::shared_ptr<iv::core::FileSource>
+        src(new iv::core::FileSource(
+                iv::core::StringPiece(res.data(), res.size()), *it));
+    res.clear();
+    iv::lv5::railgun::Code* code = Compile(&ctx, src);
+    if (!code) {
+      return EXIT_FAILURE;
+    }
+    ctx.vm()->Run(code, &e);
+    if (e) {
+      e.Dump(&ctx, stderr);
+      return EXIT_FAILURE;
+    }
   }
   ctx.Validate();
   return EXIT_SUCCESS;
@@ -237,6 +306,16 @@ int main(int argc, char **argv) {
     std::string filename;
     if (cmd.Exist("file")) {
       const std::vector<std::string>& vec = cmd.GetList<std::string>("file");
+      if (!cmd.Exist("ast") && !cmd.Exist("dis") && !cmd.Exist("interp")) {
+        if (cmd.Exist("railgun")) {
+          return RailgunExecuteFiles(vec);
+        }
+#if defined(IV_ENABLE_JIT)
+        return BreakerExecuteFiles(vec);
+#else
+        return RailgunExecuteFiles(vec);
+#endif
+      }
       for (std::vector<std::string>::const_iterator it = vec.begin(),
            last = vec.end(); it != last; ++it, filename.push_back(' ')) {
         filename.append(*it);
