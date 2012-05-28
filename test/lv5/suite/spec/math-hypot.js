@@ -1,0 +1,30 @@
+describe("Math", function() {
+  it('sign', function() {
+    expect(isNaN(Math.hypot(NaN, 2))).toBe(true);
+    expect(isNaN(Math.hypot(2, NaN))).toBe(true);
+    expect(isNaN(Math.hypot(NaN, 2, 2))).toBe(true);
+    expect(isNaN(Math.hypot(2, NaN, 2))).toBe(true);
+    expect(isNaN(Math.hypot(2, 2, NaN))).toBe(true);
+    expect(Math.hypot(0, -0)).toBe(0);
+    expect(1 / Math.hypot(0, -0)).toBe(Infinity);
+    expect(Math.hypot(0, 3)).toBe(3);
+    expect(Math.hypot(-0, -0)).toBe(0);
+    expect(1 / Math.hypot(-0, -0)).toBe(Infinity);
+    expect(Math.hypot(-0, 3)).toBe(3);
+    expect(Math.hypot(-0, -0, -0)).toBe(0);
+    expect(1 / Math.hypot(-0, -0, -0)).toBe(Infinity);
+    expect(Math.hypot(0, 0, 0)).toBe(0);
+    expect(1 / Math.hypot(0, 0, 0)).toBe(Infinity);
+    expect(Math.hypot(0, 0, -0)).toBe(0);
+    expect(1 / Math.hypot(0, 0, -0)).toBe(Infinity);
+    expect(Math.hypot(Infinity, 1)).toBe(Infinity);
+    expect(Math.hypot(-Infinity, 1)).toBe(Infinity);
+    expect(Math.hypot(1, Infinity)).toBe(Infinity);
+    expect(Math.hypot(1, -Infinity)).toBe(Infinity);
+    expect(Math.hypot(1, 1, Infinity)).toBe(Infinity);
+    expect(Math.hypot(1, 1, -Infinity)).toBe(Infinity);
+    expect(Math.hypot(NaN, NaN, Infinity)).toBe(Infinity);
+    expect(Math.hypot(NaN, Infinity, NaN)).toBe(Infinity);
+    expect(Math.hypot(Infinity, NaN, NaN)).toBe(Infinity);
+  });
+});
