@@ -61,17 +61,36 @@ static const NumberFormatData EN = {
   } }
 };
 
+static const NumberFormatData JA = {
+  "ja",
+  { {
+      NumberingSystem::LATN, NumberingSystem::FULLWIDE
+  } },
+  { {
+      "{number}",
+      "-{number}"
+    }, {
+      "{number}%",
+      "-{number}%"
+    }, {
+      "{currency} {number}",
+      "-{currency} {number}"
+  } }
+};
+
 }  // namespace number_format_data
 
-typedef std::array<const char*, 1> NumberFormatDataNames;
-typedef std::array<const NumberFormatData*, 1> NumberFormatDataValues;
+typedef std::array<const char*, 2> NumberFormatDataNames;
+typedef std::array<const NumberFormatData*, 2> NumberFormatDataValues;
 
 static const NumberFormatDataNames kNumberFormatDataNames = { {
-  number_format_data::EN.name
+  number_format_data::EN.name,
+  number_format_data::JA.name
 } };
 
 static const NumberFormatDataValues kNumberFormatDataValues = { {
-  &number_format_data::EN
+  &number_format_data::EN,
+  &number_format_data::JA
 } };
 
 class NumberFormat {
