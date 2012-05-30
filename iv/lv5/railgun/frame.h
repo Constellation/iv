@@ -76,19 +76,16 @@ struct Frame {
     e->set_stack(stack);
   }
 
-  void InitThisBinding(Context* ctx, Error* e) {
-    const JSVal this_value = GetThis();
+  void InitThisBinding(Context* ctx) {
     if (!code()->strict()) {
+      const JSVal this_value = GetThis();
       if (this_value.IsNullOrUndefined()) {
         set_this_binding(ctx->global_obj());
-        return;
       } else if (!this_value.IsObject()) {
-        JSObject* const obj = this_value.ToObject(ctx, IV_LV5_ERROR_VOID(e));
-        set_this_binding(obj);
-        return;
+        assert(!this_value.IsNullOrUndefined());
+        set_this_binding(this_value.ToObject(ctx));
       }
     }
-    set_this_binding(this_value);
   }
 
   JSVal* GetFrameEnd() {

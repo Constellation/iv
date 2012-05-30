@@ -561,7 +561,7 @@ inline Rep CALL(Frame* stack,
       stack->error->Report(Error::Range, "maximum call stack size exceeded");
       RAISE();
     }
-    new_frame->InitThisBinding(ctx, ERR);
+    new_frame->InitThisBinding(ctx);
     *out_frame = new_frame;
     return reinterpret_cast<Rep>(code->executable());
   }
@@ -607,7 +607,7 @@ inline Rep EVAL(Frame* stack,
       stack->error->Report(Error::Range, "maximum call stack size exceeded");
       RAISE();
     }
-    new_frame->InitThisBinding(ctx, ERR);
+    new_frame->InitThisBinding(ctx);
     *out_frame = new_frame;
     return reinterpret_cast<Rep>(code->executable());
   }
@@ -663,7 +663,7 @@ inline Rep CONSTRUCT(Frame* stack,
     if (proto.IsObject()) {
       obj->set_prototype(proto.object());
     }
-    new_frame->InitThisBinding(ctx, ERR);
+    new_frame->InitThisBinding(ctx);
     *out_frame = new_frame;
     return reinterpret_cast<Rep>(code->executable());
   }

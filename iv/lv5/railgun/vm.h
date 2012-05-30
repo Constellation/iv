@@ -61,11 +61,7 @@ JSVal VM::RunEval(Code* code,
     e->Report(Error::Range, "maximum call stack size exceeded");
     return JSEmpty;
   }
-  frame->InitThisBinding(ctx(), e);
-  if (*e) {
-    stack_.Unwind(frame);
-    return JSEmpty;
-  }
+  frame->InitThisBinding(ctx());
   const JSVal res = Execute(frame, e);
 #ifdef DEBUG
   if (code->needs_declarative_environment()) {
@@ -91,11 +87,7 @@ JSVal VM::Execute(Arguments* args, JSVMFunction* func, Error* e) {
     e->Report(Error::Range, "maximum call stack size exceeded");
     return JSEmpty;
   }
-  frame->InitThisBinding(ctx(), e);
-  if (*e) {
-    stack_.Unwind(frame);
-    return JSEmpty;
-  }
+  frame->InitThisBinding(ctx());
   const JSVal res = Execute(frame, e);
 #ifdef DEBUG
   if (func->code()->needs_declarative_environment()) {
@@ -1760,7 +1752,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
           frame = new_frame;
           instr = frame->data();
           strict = frame->code()->strict();
-          frame->InitThisBinding(ctx(), ERR);
+          frame->InitThisBinding(ctx());
           DISPATCH_WITH_NO_INCREMENT();
         }
         // Native Function, so use Invoke
@@ -1803,7 +1795,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
           if (proto.IsObject()) {
             obj->set_prototype(proto.object());
           }
-          frame->InitThisBinding(ctx(), ERR);
+          frame->InitThisBinding(ctx());
           DISPATCH_WITH_NO_INCREMENT();
         }
 
@@ -1846,7 +1838,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
           frame = new_frame;
           instr = frame->data();
           strict = frame->code()->strict();
-          frame->InitThisBinding(ctx(), ERR);
+          frame->InitThisBinding(ctx());
           DISPATCH_WITH_NO_INCREMENT();
         }
 

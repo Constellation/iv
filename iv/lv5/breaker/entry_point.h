@@ -24,11 +24,7 @@ inline JSVal RunEval(Context* ctx,
     e->Report(Error::Range, "maximum call stack size exceeded");
     return JSEmpty;
   }
-  frame->InitThisBinding(ctx, e);
-  if (*e) {
-    ctx->vm()->stack()->Unwind(frame);
-    return JSEmpty;
-  }
+  frame->InitThisBinding(ctx);
   const JSVal res = breaker_prologue(ctx, frame, code->executable(), e);
 #ifdef DEBUG
   if (code->needs_declarative_environment()) {
@@ -65,11 +61,7 @@ inline JSVal Execute(Context* ctx,
     e->Report(Error::Range, "maximum call stack size exceeded");
     return JSEmpty;
   }
-  frame->InitThisBinding(ctx, e);
-  if (*e) {
-    ctx->vm()->stack()->Unwind(frame);
-    return JSEmpty;
-  }
+  frame->InitThisBinding(ctx);
   const JSVal res = breaker_prologue(ctx, frame, code->executable(), e);
 #ifdef DEBUG
   if (code->needs_declarative_environment()) {

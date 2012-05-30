@@ -177,6 +177,9 @@ class JSLayout {
 
   inline JSObject* ToObject(Context* ctx, Error* e) const;
 
+  // Assertion failed when this is null or undefined
+  JSObject* ToObject(Context* ctx) const;
+
   inline JSString* ToString(Context* ctx, Error* e) const;
 
   inline Symbol ToSymbol(Context* ctx, Error* e) const;

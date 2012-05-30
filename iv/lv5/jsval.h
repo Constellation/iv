@@ -640,21 +640,25 @@ JSObject* JSLayout::GetPrimitiveProto(Context* ctx) const {
 }
 
 JSObject* JSLayout::ToObject(Context* ctx, Error* e) const {
+  if (IsNullOrUndefined()) {
+    e->Report(Error::Type, "ToObject to null or undefined");
+    return NULL;
+  } else {
+    return ToObject(ctx);
+  }
+}
+
+inline JSObject* JSLayout::ToObject(Context* ctx) const {
+  assert(!IsNullOrUndefined());
   if (IsObject()) {
     return object();
   } else if (IsNumber()) {
     return JSNumberObject::New(ctx, number());
   } else if (IsString()) {
     return JSStringObject::New(ctx, string());
-  } else if (IsBoolean()) {
-    return JSBooleanObject::New(ctx, boolean());
-  } else if (IsNull()) {
-    e->Report(Error::Type, "null has no properties");
-    return NULL;
   } else {
-    assert(IsUndefined());
-    e->Report(Error::Type, "undefined has no properties");
-    return NULL;
+    assert(IsBoolean());
+    return JSBooleanObject::New(ctx, boolean());
   }
 }
 
