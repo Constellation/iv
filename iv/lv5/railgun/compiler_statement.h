@@ -98,56 +98,65 @@ inline void Compiler::Visit(const EmptyStatement* stmt) {
 
 inline void Compiler::Visit(const IfStatement* stmt) {
   const Condition::Type cond = Condition::Analyze(stmt->cond());
-  std::size_t label = 0;
-  if (cond == Condition::COND_INDETERMINATE) {
-    RegisterID cond = EmitExpression(stmt->cond());
-    label = CurrentSize();
-    Emit<OP::IF_FALSE>(Instruction::Jump(0, cond));
-  }
 
-  if (const core::Maybe<const Statement> else_stmt = stmt->else_statement()) {
-    if (cond != Condition::COND_FALSE) {
+  switch (cond) {
+    case Condition::COND_INDETERMINATE: {
+      const JumpSite then_jump = EmitConditional(OP::IF_FALSE, stmt->cond());
       // then statement block
       EmitStatement(stmt->then_statement());
-    }
 
-    if (continuation_status_.IsDeadStatement()) {
-      continuation_status_.Next();
-    } else {
-      continuation_status_.Insert(stmt);
-    }
+      // else statement check
+      if (!stmt->else_statement()) {
+        if (continuation_status_.IsDeadStatement()) {
+          // recover if this IfStatement is not dead code
+          continuation_status_.Next();
+        }
+        then_jump.JumpTo(this, CurrentSize());
+        break;
+      }
 
-    const std::size_t second = CurrentSize();
-    if (cond == Condition::COND_INDETERMINATE) {
-      Emit<OP::JUMP_BY>(Instruction::Jump(0));  // dummy index
-      EmitJump(CurrentSize(), label);
-    }
-
-    if (cond != Condition::COND_TRUE) {
-      EmitStatement(else_stmt.Address());
-    }
-    if (continuation_status_.Has(stmt)) {
-      continuation_status_.Erase(stmt);
       if (continuation_status_.IsDeadStatement()) {
         continuation_status_.Next();
+      } else {
+        continuation_status_.Insert(stmt);
       }
+
+      const JumpSite second_jump(CurrentSize());
+      Emit<OP::JUMP_BY>(Instruction::Jump(0));
+      then_jump.JumpTo(this, CurrentSize());
+
+      EmitStatement(stmt->else_statement().Address());
+      if (continuation_status_.Has(stmt)) {
+        continuation_status_.Erase(stmt);
+        if (continuation_status_.IsDeadStatement()) {
+          continuation_status_.Next();
+        }
+      }
+
+      second_jump.JumpTo(this, CurrentSize());
+      break;
     }
 
-    if (cond == Condition::COND_INDETERMINATE) {
-      EmitJump(CurrentSize(), second);
+    case Condition::COND_FALSE: {
+      if (!stmt->else_statement()) {
+        return;
+      }
+      EmitStatement(stmt->else_statement().Address());
+      if (continuation_status_.IsDeadStatement()) {
+        // recover if this IfStatement is not dead code
+        continuation_status_.Next();
+      }
+      break;
     }
-  } else {
-    if (cond == Condition::COND_FALSE) {
-      return;
-    }
-    // then statement block
-    EmitStatement(stmt->then_statement());
-    if (continuation_status_.IsDeadStatement()) {
-      // recover if this IfStatement is not dead code
-      continuation_status_.Next();
-    }
-    if (cond == Condition::COND_INDETERMINATE) {
-      EmitJump(CurrentSize(), label);
+
+    case Condition::COND_TRUE: {
+      // then statement block
+      EmitStatement(stmt->then_statement());
+      if (continuation_status_.IsDeadStatement()) {
+        // recover if this IfStatement is not dead code
+        continuation_status_.Next();
+      }
+      break;
     }
   }
 }
@@ -176,19 +185,17 @@ class Compiler::ContinueTarget : protected BreakTarget {
 };
 
 inline void Compiler::Visit(const DoWhileStatement* stmt) {
-  ContinueTarget jump(this, stmt);
+  ContinueTarget continue_target(this, stmt);
   const std::size_t start_index = CurrentSize();
 
   EmitStatement(stmt->body());
 
   const std::size_t cond_index = CurrentSize();
 
-  {
-    RegisterID cond = EmitExpression(stmt->cond());
-    Emit<OP::IF_TRUE>(Instruction::Jump(start_index - CurrentSize(), cond));
-  }
+  const JumpSite jump = EmitConditional(OP::IF_TRUE, stmt->cond());
+  jump.JumpTo(this, start_index);
 
-  jump.EmitJumps(CurrentSize(), cond_index);
+  continue_target.EmitJumps(CurrentSize(), cond_index);
 
   continuation_status_.ResolveJump(stmt);
   if (continuation_status_.IsDeadStatement()) {
@@ -197,57 +204,58 @@ inline void Compiler::Visit(const DoWhileStatement* stmt) {
 }
 
 inline void Compiler::Visit(const WhileStatement* stmt) {
-  ContinueTarget jump(this, stmt);
+  ContinueTarget continue_target(this, stmt);
   const std::size_t start_index = CurrentSize();
-
   const Condition::Type cond = Condition::Analyze(stmt->cond());
-  if (cond == Condition::COND_FALSE) {
-    // like:
-    //  while (false) {
-    //  }
-    return;
-  }
+  switch (cond) {
+    case Condition::COND_INDETERMINATE: {
+      if (current_variable_scope_->UseExpressionReturn() ||
+          stmt->body()->IsEffectiveStatement()) {
+        const JumpSite jump = EmitConditional(OP::IF_FALSE, stmt->cond());
 
-  RegisterID dst;
-  if (cond == Condition::COND_INDETERMINATE) {
-    dst = EmitExpression(stmt->cond());
-  }
+        EmitStatement(stmt->body());
 
-  if (stmt->body()->IsEffectiveStatement() || current_variable_scope_->UseExpressionReturn()) {
-    if (cond == Condition::COND_INDETERMINATE) {
-      const std::size_t label = CurrentSize();
-      Emit<OP::IF_FALSE>(Instruction::Jump(0, dst));
-      dst.reset();
-
-      EmitStatement(stmt->body());
-
-      Emit<OP::JUMP_BY>(Instruction::Jump(start_index - CurrentSize()));
-      EmitJump(CurrentSize(), label);
-    } else {
-      assert(cond == Condition::COND_TRUE);
-
-      EmitStatement(stmt->body());
-
-      Emit<OP::JUMP_BY>(Instruction::Jump(start_index - CurrentSize()));
+        Emit<OP::JUMP_BY>(Instruction::Jump(start_index - CurrentSize()));
+        jump.JumpTo(this, CurrentSize());
+        continue_target.EmitJumps(CurrentSize(), start_index);
+        continuation_status_.ResolveJump(stmt);
+        if (continuation_status_.IsDeadStatement()) {
+          continuation_status_.Next();
+        }
+      } else {
+        const JumpSite jump = EmitConditional(OP::IF_TRUE, stmt->cond());
+        jump.JumpTo(this, start_index);
+      }
+      break;
     }
-    jump.EmitJumps(CurrentSize(), start_index);
-    continuation_status_.ResolveJump(stmt);
-  } else {
-    if (cond == Condition::COND_INDETERMINATE) {
-      Emit<OP::IF_TRUE>(Instruction::Jump(start_index - CurrentSize(), dst));
-    } else {
-      assert(cond == Condition::COND_TRUE);
-      Emit<OP::JUMP_BY>(Instruction::Jump(start_index - CurrentSize()));
-    }
-  }
 
-  if (continuation_status_.IsDeadStatement()) {
-    continuation_status_.Next();
+    case Condition::COND_FALSE: {
+      // like:
+      //  while (false) {
+      //  }
+      break;
+    }
+
+    case Condition::COND_TRUE: {
+      if (current_variable_scope_->UseExpressionReturn() ||
+          stmt->body()->IsEffectiveStatement()) {
+        EmitStatement(stmt->body());
+        Emit<OP::JUMP_BY>(Instruction::Jump(start_index - CurrentSize()));
+        continue_target.EmitJumps(CurrentSize(), start_index);
+        continuation_status_.ResolveJump(stmt);
+        if (continuation_status_.IsDeadStatement()) {
+          continuation_status_.Next();
+        }
+      } else {
+        Emit<OP::JUMP_BY>(Instruction::Jump(start_index - CurrentSize()));
+      }
+      break;
+    }
   }
 }
 
 inline void Compiler::Visit(const ForStatement* stmt) {
-  ContinueTarget jump(this, stmt);
+  ContinueTarget continue_target(this, stmt);
 
   if (const core::Maybe<const Statement> maybe = stmt->init()) {
     const Statement* init = maybe.Address();
@@ -263,12 +271,10 @@ inline void Compiler::Visit(const ForStatement* stmt) {
 
   const std::size_t start_index = CurrentSize();
   const core::Maybe<const Expression> cond = stmt->cond();
-  std::size_t label = 0;
+  JumpSite jump;
 
   if (cond) {
-    RegisterID dst = EmitExpression(cond.Address());
-    label = CurrentSize();
-    Emit<OP::IF_FALSE>(Instruction::Jump(0, dst));
+    jump = EmitConditional(OP::IF_FALSE, cond.Address());
   }
 
   EmitStatement(stmt->body());
@@ -281,10 +287,10 @@ inline void Compiler::Visit(const ForStatement* stmt) {
   Emit<OP::JUMP_BY>(Instruction::Jump(start_index - CurrentSize()));
 
   if (cond) {
-    EmitJump(CurrentSize(), label);
+    jump.JumpTo(this, CurrentSize());
   }
 
-  jump.EmitJumps(CurrentSize(), prev_next);
+  continue_target.EmitJumps(CurrentSize(), prev_next);
 
   continuation_status_.ResolveJump(stmt);
   if (continuation_status_.IsDeadStatement()) {

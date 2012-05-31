@@ -406,6 +406,36 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     EmitExpressionInternal(expr, RegisterID(), true);
   }
 
+  class JumpSite {
+   public:
+    explicit JumpSite(std::size_t from) : from_(from) { }
+    JumpSite() : from_(std::numeric_limits<std::size_t>::max()) { }
+
+    void JumpTo(Compiler* compiler, std::size_t to) const {
+      compiler->EmitJump(to, from_);
+    }
+   private:
+    std::size_t from_;
+  };
+
+  // Emit fused or not condition variable and return jump target label offset
+  JumpSite EmitConditional(OP::Type op, const Expression* expr) {
+    // extract UNARY_NOT operation
+    while (true) {
+      const UnaryOperation* unary = expr->AsUnaryOperation();
+      const bool unary_not_extracted = unary && unary->op() == Token::TK_NOT;
+      if (!unary_not_extracted) {
+        break;
+      }
+      expr = unary->expr();
+      op = (op == OP::IF_TRUE) ? OP::IF_FALSE : OP::IF_TRUE;
+    }
+    RegisterID cond = EmitExpression(expr);
+    const std::size_t point = CurrentSize();
+    EmitUnsafe(op, Instruction::Jump(0, cond));
+    return JumpSite(point);
+  }
+
   LookupInfo Lookup(const Symbol sym) {
     return current_variable_scope_->Lookup(sym);
   }
