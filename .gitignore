@@ -41,3 +41,6 @@ build/*
 xcuserdata
 profile
 *.moved-aside
+
+.waf-*
+.lock-*
