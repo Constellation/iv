@@ -24,6 +24,7 @@ class Compiler {
  public:
   // introducing railgun to this scope
   typedef railgun::Instruction Instruction;
+  typedef railgun::OP OP;
 
   class JumpInfo {
    public:
@@ -146,18 +147,10 @@ class Compiler {
       const uint32_t opcode = instr->GetOP();
       const uint32_t length = r::kOPLength[opcode];
       const int32_t index = instr - first_instr;
-      switch (opcode) {
-        case r::OP::IF_FALSE:
-        case r::OP::IF_TRUE:
-        case r::OP::JUMP_SUBROUTINE:
-        case r::OP::JUMP_BY:
-        case r::OP::FORIN_SETUP:
-        case r::OP::FORIN_ENUMERATE: {
-          const int32_t jump = instr[1].jump.to;
-          const uint32_t to = index + jump;
-          jump_map_.insert(std::make_pair(to, JumpInfo(counter_++)));
-          break;
-        }
+      if (r::OP::IsJump(opcode)) {
+        const int32_t jump = instr[1].jump.to;
+        const uint32_t to = index + jump;
+        jump_map_.insert(std::make_pair(to, JumpInfo(counter_++)));
       }
       std::advance(instr, length);
     }
@@ -423,6 +416,72 @@ class Compiler {
           break;
         case r::OP::IF_TRUE:
           EmitIF_TRUE(instr);
+          break;
+        case r::OP::IF_FALSE_BINARY_LT:
+          EmitBINARY_LT(instr, OP::IF_FALSE);
+          break;
+        case r::OP::IF_TRUE_BINARY_LT:
+          EmitBINARY_LT(instr, OP::IF_TRUE);
+          break;
+        case r::OP::IF_FALSE_BINARY_LTE:
+          EmitBINARY_LTE(instr, OP::IF_FALSE);
+          break;
+        case r::OP::IF_TRUE_BINARY_LTE:
+          EmitBINARY_LTE(instr, OP::IF_TRUE);
+          break;
+        case r::OP::IF_FALSE_BINARY_GT:
+          EmitBINARY_GT(instr, OP::IF_FALSE);
+          break;
+        case r::OP::IF_TRUE_BINARY_GT:
+          EmitBINARY_GT(instr, OP::IF_TRUE);
+          break;
+        case r::OP::IF_FALSE_BINARY_GTE:
+          EmitBINARY_GTE(instr, OP::IF_FALSE);
+          break;
+        case r::OP::IF_TRUE_BINARY_GTE:
+          EmitBINARY_GTE(instr, OP::IF_TRUE);
+          break;
+        case r::OP::IF_FALSE_BINARY_INSTANCEOF:
+          EmitBINARY_INSTANCEOF(instr, OP::IF_FALSE);
+          break;
+        case r::OP::IF_TRUE_BINARY_INSTANCEOF:
+          EmitBINARY_INSTANCEOF(instr, OP::IF_TRUE);
+          break;
+        case r::OP::IF_FALSE_BINARY_IN:
+          EmitBINARY_IN(instr, OP::IF_FALSE);
+          break;
+        case r::OP::IF_TRUE_BINARY_IN:
+          EmitBINARY_IN(instr, OP::IF_TRUE);
+          break;
+        case r::OP::IF_FALSE_BINARY_EQ:
+          EmitBINARY_EQ(instr, OP::IF_FALSE);
+          break;
+        case r::OP::IF_TRUE_BINARY_EQ:
+          EmitBINARY_EQ(instr, OP::IF_TRUE);
+          break;
+        case r::OP::IF_FALSE_BINARY_NE:
+          EmitBINARY_NE(instr, OP::IF_FALSE);
+          break;
+        case r::OP::IF_TRUE_BINARY_NE:
+          EmitBINARY_NE(instr, OP::IF_TRUE);
+          break;
+        case r::OP::IF_FALSE_BINARY_STRICT_EQ:
+          EmitBINARY_STRICT_EQ(instr, OP::IF_FALSE);
+          break;
+        case r::OP::IF_TRUE_BINARY_STRICT_EQ:
+          EmitBINARY_STRICT_EQ(instr, OP::IF_TRUE);
+          break;
+        case r::OP::IF_FALSE_BINARY_STRICT_NE:
+          EmitBINARY_STRICT_NE(instr, OP::IF_FALSE);
+          break;
+        case r::OP::IF_TRUE_BINARY_STRICT_NE:
+          EmitBINARY_STRICT_NE(instr, OP::IF_TRUE);
+          break;
+        case r::OP::IF_FALSE_BINARY_BIT_AND:
+          EmitBINARY_BIT_AND(instr, OP::IF_FALSE);
+          break;
+        case r::OP::IF_TRUE_BINARY_BIT_AND:
+          EmitBINARY_BIT_AND(instr, OP::IF_TRUE);
           break;
         case r::OP::FORIN_SETUP:
           EmitFORIN_SETUP(instr);
@@ -914,13 +973,10 @@ class Compiler {
     }
   }
 
-  // TODO(Constellation) refactoring emitter for binary lt / lte / gt / gte
-  // fusion opcode (IF_FALSE / IF_TRUE)
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_LT(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t lhs = Reg(instr[1].i16[1]);
-    const int16_t rhs = Reg(instr[1].i16[2]);
+  void EmitBINARY_LT(const Instruction* instr, OP::Type fused = OP::NOP) {
+    const int16_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
+    const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
@@ -928,27 +984,48 @@ class Compiler {
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_LT_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_LT_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
-      // TODO(Constellation)
-      // we should introduce fusion opcode, like BINARY_LT and IF_FALSE
-      asm_->setl(asm_->cl);
-      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
-      asm_->jmp(".BINARY_LT_EXIT");
 
-      asm_->L(".BINARY_LT_SLOW");
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->Call(&stub::BINARY_LT);
+      if (fused != OP::NOP) {
+        // fused jump opcode
+        const std::string label = MakeLabel(instr);
+        if (fused == OP::IF_TRUE) {
+          asm_->jl(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        } else {
+          asm_->jge(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        }
+        asm_->jmp(".BINARY_LT_EXIT");
 
-      asm_->L(".BINARY_LT_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+        asm_->L(".BINARY_LT_SLOW");
+        asm_->mov(asm_->rdi, asm_->r14);
+        asm_->Call(&stub::BINARY_LT);
+        asm_->cmp(asm_->rax, Extract(JSTrue));
+        if (fused == OP::IF_TRUE) {
+          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        } else {
+          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        }
+
+        asm_->L(".BINARY_LT_EXIT");
+      } else {
+        const int16_t dst = Reg(instr[1].i16[0]);
+        asm_->setl(asm_->cl);
+        ConvertBooleanToJSVal(asm_->cl, asm_->rax);
+        asm_->jmp(".BINARY_LT_EXIT");
+
+        asm_->L(".BINARY_LT_SLOW");
+        asm_->mov(asm_->rdi, asm_->r14);
+        asm_->Call(&stub::BINARY_LT);
+
+        asm_->L(".BINARY_LT_EXIT");
+        asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      }
     }
   }
 
-  // fusion opcode (IF_FALSE / IF_TRUE)
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_LTE(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t lhs = Reg(instr[1].i16[1]);
-    const int16_t rhs = Reg(instr[1].i16[2]);
+  void EmitBINARY_LTE(const Instruction* instr, OP::Type fused = OP::NOP) {
+    const int16_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
+    const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
@@ -956,27 +1033,48 @@ class Compiler {
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_LTE_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_LTE_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
-      // TODO(Constellation)
-      // we should introduce fusion opcode, like BINARY_LTE and IF_FALSE
-      asm_->setle(asm_->cl);
-      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
-      asm_->jmp(".BINARY_LTE_EXIT");
 
-      asm_->L(".BINARY_LTE_SLOW");
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->Call(&stub::BINARY_LTE);
+      if (fused != OP::NOP) {
+        // fused jump opcode
+        const std::string label = MakeLabel(instr);
+        if (fused == OP::IF_TRUE) {
+          asm_->jle(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        } else {
+          asm_->jg(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        }
+        asm_->jmp(".BINARY_LTE_EXIT");
 
-      asm_->L(".BINARY_LTE_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+        asm_->L(".BINARY_LTE_SLOW");
+        asm_->mov(asm_->rdi, asm_->r14);
+        asm_->Call(&stub::BINARY_LTE);
+        asm_->cmp(asm_->rax, Extract(JSTrue));
+        if (fused == OP::IF_TRUE) {
+          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        } else {
+          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        }
+
+        asm_->L(".BINARY_LTE_EXIT");
+      } else {
+        const int16_t dst = Reg(instr[1].i16[0]);
+        asm_->setle(asm_->cl);
+        ConvertBooleanToJSVal(asm_->cl, asm_->rax);
+        asm_->jmp(".BINARY_LTE_EXIT");
+
+        asm_->L(".BINARY_LTE_SLOW");
+        asm_->mov(asm_->rdi, asm_->r14);
+        asm_->Call(&stub::BINARY_LTE);
+
+        asm_->L(".BINARY_LTE_EXIT");
+        asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      }
     }
   }
 
-  // fusion opcode (IF_FALSE / IF_TRUE)
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_GT(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t lhs = Reg(instr[1].i16[1]);
-    const int16_t rhs = Reg(instr[1].i16[2]);
+  void EmitBINARY_GT(const Instruction* instr, OP::Type fused = OP::NOP) {
+    const int16_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
+    const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
@@ -984,27 +1082,47 @@ class Compiler {
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_GT_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_GT_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
-      // TODO(Constellation)
-      // we should introduce fusion opcode, like BINARY_GT and IF_FALSE
-      asm_->setg(asm_->cl);
-      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
-      asm_->jmp(".BINARY_GT_EXIT");
 
-      asm_->L(".BINARY_GT_SLOW");
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->Call(&stub::BINARY_GT);
+      if (fused != OP::NOP) {
+        // fused jump opcode
+        const std::string label = MakeLabel(instr);
+        if (fused == OP::IF_TRUE) {
+          asm_->jg(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        } else {
+          asm_->jle(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        }
+        asm_->jmp(".BINARY_GT_EXIT");
 
-      asm_->L(".BINARY_GT_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+        asm_->L(".BINARY_GT_SLOW");
+        asm_->mov(asm_->rdi, asm_->r14);
+        asm_->Call(&stub::BINARY_GT);
+        asm_->cmp(asm_->rax, Extract(JSTrue));
+        if (fused == OP::IF_TRUE) {
+          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        } else {
+          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        }
+        asm_->L(".BINARY_GT_EXIT");
+      } else {
+        const int16_t dst = Reg(instr[1].i16[0]);
+        asm_->setg(asm_->cl);
+        ConvertBooleanToJSVal(asm_->cl, asm_->rax);
+        asm_->jmp(".BINARY_GT_EXIT");
+
+        asm_->L(".BINARY_GT_SLOW");
+        asm_->mov(asm_->rdi, asm_->r14);
+        asm_->Call(&stub::BINARY_GT);
+
+        asm_->L(".BINARY_GT_EXIT");
+        asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      }
     }
   }
 
-  // fusion opcode (IF_FALSE / IF_TRUE)
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_GTE(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t lhs = Reg(instr[1].i16[1]);
-    const int16_t rhs = Reg(instr[1].i16[2]);
+  void EmitBINARY_GTE(const Instruction* instr, OP::Type fused = OP::NOP) {
+    const int16_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
+    const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
@@ -1012,56 +1130,99 @@ class Compiler {
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_GTE_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_GTE_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
-      // TODO(Constellation)
-      // we should introduce fusion opcode, like BINARY_GTE and IF_FALSE
-      asm_->setge(asm_->cl);
-      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
-      asm_->jmp(".BINARY_GTE_EXIT");
 
-      asm_->L(".BINARY_GTE_SLOW");
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->Call(&stub::BINARY_GTE);
+      if (fused != OP::NOP) {
+        // fused jump opcode
+        const std::string label = MakeLabel(instr);
+        if (fused == OP::IF_TRUE) {
+          asm_->jge(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        } else {
+          asm_->jl(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        }
+        asm_->jmp(".BINARY_GTE_EXIT");
 
-      asm_->L(".BINARY_GTE_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+        asm_->L(".BINARY_GTE_SLOW");
+        asm_->mov(asm_->rdi, asm_->r14);
+        asm_->Call(&stub::BINARY_GTE);
+        asm_->cmp(asm_->rax, Extract(JSTrue));
+        if (fused == OP::IF_TRUE) {
+          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        } else {
+          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        }
+        asm_->L(".BINARY_GTE_EXIT");
+      } else {
+        const int16_t dst = Reg(instr[1].i16[0]);
+        asm_->setge(asm_->cl);
+        ConvertBooleanToJSVal(asm_->cl, asm_->rax);
+        asm_->jmp(".BINARY_GTE_EXIT");
+
+        asm_->L(".BINARY_GTE_SLOW");
+        asm_->mov(asm_->rdi, asm_->r14);
+        asm_->Call(&stub::BINARY_GTE);
+
+        asm_->L(".BINARY_GTE_EXIT");
+        asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      }
     }
   }
 
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_INSTANCEOF(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t lhs = Reg(instr[1].i16[1]);
-    const int16_t rhs = Reg(instr[1].i16[2]);
+  void EmitBINARY_INSTANCEOF(const Instruction* instr, OP::Type fused = OP::NOP) {
+    const int16_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
+    const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
       asm_->Call(&stub::BINARY_INSTANCEOF);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      if (fused != OP::NOP) {
+        // fused jump opcode
+        const std::string label = MakeLabel(instr);
+        asm_->cmp(asm_->rax, Extract(JSTrue));
+        if (fused == OP::IF_TRUE) {
+          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        } else {
+          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        }
+      } else {
+        const int16_t dst = Reg(instr[1].i16[0]);
+        asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      }
     }
   }
 
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_IN(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t lhs = Reg(instr[1].i16[1]);
-    const int16_t rhs = Reg(instr[1].i16[2]);
+  void EmitBINARY_IN(const Instruction* instr, OP::Type fused = OP::NOP) {
+    const int16_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
+    const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
       asm_->Call(&stub::BINARY_IN);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      if (fused != OP::NOP) {
+        // fused jump opcode
+        const std::string label = MakeLabel(instr);
+        asm_->cmp(asm_->rax, Extract(JSTrue));
+        if (fused == OP::IF_TRUE) {
+          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        } else {
+          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        }
+      } else {
+        const int16_t dst = Reg(instr[1].i16[0]);
+        asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      }
     }
   }
 
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_EQ(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t lhs = Reg(instr[1].i16[1]);
-    const int16_t rhs = Reg(instr[1].i16[2]);
+  void EmitBINARY_EQ(const Instruction* instr, OP::Type fused = OP::NOP) {
+    const int16_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
+    const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
@@ -1069,26 +1230,51 @@ class Compiler {
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_EQ_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_EQ_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
-      // TODO(Constellation)
-      // we should introduce fusion opcode, like BINARY_EQ and IF_FALSE
-      asm_->sete(asm_->cl);
-      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
-      asm_->jmp(".BINARY_EQ_EXIT");
 
-      asm_->L(".BINARY_EQ_SLOW");
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->Call(&stub::BINARY_EQ);
+      if (fused != OP::NOP) {
+        // fused jump opcode
+        const std::string label = MakeLabel(instr);
+        if (fused == OP::IF_TRUE) {
+          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        } else {
+          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        }
+        asm_->jmp(".BINARY_EQ_EXIT");
 
-      asm_->L(".BINARY_EQ_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+        asm_->L(".BINARY_EQ_SLOW");
+        asm_->mov(asm_->rdi, asm_->r14);
+        asm_->Call(&stub::BINARY_EQ);
+        asm_->cmp(asm_->rax, Extract(JSTrue));
+        if (fused == OP::IF_TRUE) {
+          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        } else {
+          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        }
+        asm_->L(".BINARY_EQ_EXIT");
+      } else {
+        const int16_t dst = Reg(instr[1].i16[0]);
+        asm_->sete(asm_->cl);
+        ConvertBooleanToJSVal(asm_->cl, asm_->rax);
+        asm_->jmp(".BINARY_EQ_EXIT");
+
+        asm_->L(".BINARY_EQ_SLOW");
+        asm_->mov(asm_->rdi, asm_->r14);
+        asm_->Call(&stub::BINARY_EQ);
+
+        asm_->L(".BINARY_EQ_EXIT");
+        asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      }
     }
   }
 
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_STRICT_EQ(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t lhs = Reg(instr[1].i16[1]);
-    const int16_t rhs = Reg(instr[1].i16[2]);
+  void EmitBINARY_STRICT_EQ(const Instruction* instr, OP::Type fused = OP::NOP) {
+    // CAUTION:(Constellation)
+    // Because stub::BINARY_STRICT_EQ is not require Frame as first argument,
+    // so register layout is different from BINARY_ other ops.
+    // BINARY_STRICT_NE too.
+    const int16_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
+    const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
@@ -1096,25 +1282,45 @@ class Compiler {
       Int32Guard(asm_->rdi, asm_->rax, ".BINARY_STRICT_EQ_SLOW");
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_STRICT_EQ_SLOW");
       asm_->cmp(asm_->esi, asm_->edi);
-      // TODO(Constellation)
-      // we should introduce fusion opcode, like BINARY_STRICT_EQ and IF_FALSE
-      asm_->sete(asm_->cl);
-      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
-      asm_->jmp(".BINARY_STRICT_EQ_EXIT");
 
-      asm_->L(".BINARY_STRICT_EQ_SLOW");
-      asm_->Call(&stub::BINARY_STRICT_EQ);
+      if (fused != OP::NOP) {
+        // fused jump opcode
+        const std::string label = MakeLabel(instr);
+        if (fused == OP::IF_TRUE) {
+          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        } else {
+          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        }
+        asm_->jmp(".BINARY_STRICT_EQ_EXIT");
 
-      asm_->L(".BINARY_STRICT_EQ_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+        asm_->L(".BINARY_STRICT_EQ_SLOW");
+        asm_->Call(&stub::BINARY_STRICT_EQ);
+        asm_->cmp(asm_->rax, Extract(JSTrue));
+        if (fused == OP::IF_TRUE) {
+          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        } else {
+          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        }
+        asm_->L(".BINARY_STRICT_EQ_EXIT");
+      } else {
+        const int16_t dst = Reg(instr[1].i16[0]);
+        asm_->sete(asm_->cl);
+        ConvertBooleanToJSVal(asm_->cl, asm_->rax);
+        asm_->jmp(".BINARY_STRICT_EQ_EXIT");
+
+        asm_->L(".BINARY_STRICT_EQ_SLOW");
+        asm_->Call(&stub::BINARY_STRICT_EQ);
+
+        asm_->L(".BINARY_STRICT_EQ_EXIT");
+        asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      }
     }
   }
 
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_NE(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t lhs = Reg(instr[1].i16[1]);
-    const int16_t rhs = Reg(instr[1].i16[2]);
+  void EmitBINARY_NE(const Instruction* instr, OP::Type fused = OP::NOP) {
+    const int16_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
+    const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
@@ -1122,26 +1328,51 @@ class Compiler {
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_NE_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_NE_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
-      // TODO(Constellation)
-      // we should introduce fusion opcode, like BINARY_NE and IF_FALSE
-      asm_->setne(asm_->cl);
-      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
-      asm_->jmp(".BINARY_NE_EXIT");
 
-      asm_->L(".BINARY_NE_SLOW");
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->Call(&stub::BINARY_NE);
+      if (fused != OP::NOP) {
+        // fused jump opcode
+        const std::string label = MakeLabel(instr);
+        if (fused == OP::IF_TRUE) {
+          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        } else {
+          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        }
+        asm_->jmp(".BINARY_NE_EXIT");
 
-      asm_->L(".BINARY_NE_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+        asm_->L(".BINARY_NE_SLOW");
+        asm_->mov(asm_->rdi, asm_->r14);
+        asm_->Call(&stub::BINARY_NE);
+        asm_->cmp(asm_->rax, Extract(JSTrue));
+        if (fused == OP::IF_TRUE) {
+          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        } else {
+          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        }
+        asm_->L(".BINARY_NE_EXIT");
+      } else {
+        const int16_t dst = Reg(instr[1].i16[0]);
+        asm_->setne(asm_->cl);
+        ConvertBooleanToJSVal(asm_->cl, asm_->rax);
+        asm_->jmp(".BINARY_NE_EXIT");
+
+        asm_->L(".BINARY_NE_SLOW");
+        asm_->mov(asm_->rdi, asm_->r14);
+        asm_->Call(&stub::BINARY_NE);
+
+        asm_->L(".BINARY_NE_EXIT");
+        asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      }
     }
   }
 
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_STRICT_NE(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t lhs = Reg(instr[1].i16[1]);
-    const int16_t rhs = Reg(instr[1].i16[2]);
+  void EmitBINARY_STRICT_NE(const Instruction* instr, OP::Type fused = OP::NOP) {
+    // CAUTION:(Constellation)
+    // Because stub::BINARY_STRICT_EQ is not require Frame as first argument,
+    // so register layout is different from BINARY_ other ops.
+    // BINARY_STRICT_NE too.
+    const int16_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
+    const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
@@ -1149,25 +1380,45 @@ class Compiler {
       Int32Guard(asm_->rdi, asm_->rax, ".BINARY_STRICT_NE_SLOW");
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_STRICT_NE_SLOW");
       asm_->cmp(asm_->esi, asm_->edi);
-      // TODO(Constellation)
-      // we should introduce fusion opcode, like BINARY_STRICT_NE and IF_FALSE
-      asm_->setne(asm_->cl);
-      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
-      asm_->jmp(".BINARY_STRICT_NE_EXIT");
 
-      asm_->L(".BINARY_STRICT_NE_SLOW");
-      asm_->Call(&stub::BINARY_STRICT_NE);
+      if (fused != OP::NOP) {
+        // fused jump opcode
+        const std::string label = MakeLabel(instr);
+        if (fused == OP::IF_TRUE) {
+          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        } else {
+          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        }
+        asm_->jmp(".BINARY_STRICT_NE_EXIT");
 
-      asm_->L(".BINARY_STRICT_NE_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+        asm_->L(".BINARY_STRICT_NE_SLOW");
+        asm_->Call(&stub::BINARY_STRICT_NE);
+        asm_->cmp(asm_->rax, Extract(JSTrue));
+        if (fused == OP::IF_TRUE) {
+          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        } else {
+          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        }
+        asm_->L(".BINARY_STRICT_NE_EXIT");
+      } else {
+        const int16_t dst = Reg(instr[1].i16[0]);
+        asm_->setne(asm_->cl);
+        ConvertBooleanToJSVal(asm_->cl, asm_->rax);
+        asm_->jmp(".BINARY_STRICT_NE_EXIT");
+
+        asm_->L(".BINARY_STRICT_NE_SLOW");
+        asm_->Call(&stub::BINARY_STRICT_NE);
+
+        asm_->L(".BINARY_STRICT_NE_EXIT");
+        asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      }
     }
   }
 
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_BIT_AND(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t lhs = Reg(instr[1].i16[1]);
-    const int16_t rhs = Reg(instr[1].i16[2]);
+  void EmitBINARY_BIT_AND(const Instruction* instr, OP::Type fused = OP::NOP) {
+    const int16_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
+    const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
@@ -1175,16 +1426,40 @@ class Compiler {
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_BIT_AND_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_BIT_AND_SLOW");
       asm_->and(asm_->esi, asm_->edx);
-      asm_->mov(asm_->rax, asm_->r15);
-      asm_->add(asm_->rax, asm_->rsi);
-      asm_->jmp(".BINARY_BIT_AND_EXIT");
 
-      asm_->L(".BINARY_BIT_AND_SLOW");
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->Call(&stub::BINARY_BIT_AND);
+      if (fused != OP::NOP) {
+        // fused jump opcode
+        const std::string label = MakeLabel(instr);
+        if (fused == OP::IF_TRUE) {
+          asm_->jnz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        } else {
+          asm_->jz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        }
+        asm_->jmp(".BINARY_BIT_AND_EXIT");
 
-      asm_->L(".BINARY_BIT_AND_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+        asm_->L(".BINARY_BIT_AND_SLOW");
+        asm_->mov(asm_->rdi, asm_->r14);
+        asm_->Call(&stub::BINARY_BIT_AND);
+        asm_->test(asm_->eax, asm_->eax);
+        if (fused == OP::IF_TRUE) {
+          asm_->jnz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        } else {
+          asm_->jz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        }
+        asm_->L(".BINARY_BIT_AND_EXIT");
+      } else {
+        const int16_t dst = Reg(instr[1].i16[0]);
+        asm_->mov(asm_->rax, asm_->r15);
+        asm_->add(asm_->rax, asm_->rsi);
+        asm_->jmp(".BINARY_BIT_AND_EXIT");
+
+        asm_->L(".BINARY_BIT_AND_SLOW");
+        asm_->mov(asm_->rdi, asm_->r14);
+        asm_->Call(&stub::BINARY_BIT_AND);
+
+        asm_->L(".BINARY_BIT_AND_EXIT");
+        asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      }
     }
   }
 
@@ -2395,10 +2670,7 @@ class Compiler {
   void EmitIF_FALSE(const Instruction* instr) {
     // TODO(Constelation) inlining this
     const int16_t cond = Reg(instr[1].jump.i16[0]);
-    const int32_t jump = instr[1].jump.to;
-    const uint32_t to = (instr - code_->begin()) + jump;
-    const std::size_t num = jump_map_.find(to)->second.counter;
-    const std::string label = MakeLabel(num);
+    const std::string label = MakeLabel(instr);
     {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + cond * kJSValSize]);
@@ -2425,10 +2697,7 @@ class Compiler {
   void EmitIF_TRUE(const Instruction* instr) {
     // TODO(Constelation) inlining this
     const int16_t cond = Reg(instr[1].jump.i16[0]);
-    const int32_t jump = instr[1].jump.to;
-    const uint32_t to = (instr - code_->begin()) + jump;
-    const std::size_t num = jump_map_.find(to)->second.counter;
-    const std::string label = MakeLabel(num);
+    const std::string label = MakeLabel(instr);
     {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + cond * kJSValSize]);
@@ -2456,10 +2725,7 @@ class Compiler {
     static const uint64_t layout = Extract(JSVal::Int32(railgun::VM::kJumpFromSubroutine));
     const int16_t addr = Reg(instr[1].jump.i16[0]);
     const int16_t flag = Reg(instr[1].jump.i16[1]);
-    const int32_t jump = instr[1].jump.to;
-    const uint32_t to = (instr - code_->begin()) + jump;
-    const std::size_t num = jump_map_.find(to)->second.counter;
-    const std::string label = MakeLabel(num);
+    const std::string label = MakeLabel(instr);
 
     // register position and repatch afterward
     Assembler::RepatchSite site;
@@ -2481,10 +2747,7 @@ class Compiler {
   void EmitFORIN_SETUP(const Instruction* instr) {
     const int16_t iterator = Reg(instr[1].jump.i16[0]);
     const int16_t enumerable = Reg(instr[1].jump.i16[1]);
-    const int32_t jump = instr[1].jump.to;
-    const uint32_t to = (instr - code_->begin()) + jump;
-    const std::size_t num = jump_map_.find(to)->second.counter;
-    const std::string label = MakeLabel(num);
+    const std::string label = MakeLabel(instr);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + enumerable * kJSValSize]);
     NullOrUndefinedGuard(asm_->rsi, asm_->rdi, label.c_str(), Xbyak::CodeGenerator::T_NEAR);
     asm_->mov(asm_->rdi, asm_->r14);
@@ -2496,10 +2759,7 @@ class Compiler {
   void EmitFORIN_ENUMERATE(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].jump.i16[0]);
     const int16_t iterator = Reg(instr[1].jump.i16[1]);
-    const int32_t jump = instr[1].jump.to;
-    const uint32_t to = (instr - code_->begin()) + jump;
-    const std::size_t num = jump_map_.find(to)->second.counter;
-    const std::string label = MakeLabel(num);
+    const std::string label = MakeLabel(instr);
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + iterator * kJSValSize]);
     asm_->Call(&stub::FORIN_ENUMERATE);
@@ -2650,11 +2910,7 @@ class Compiler {
 
   // opcode | jmp
   void EmitJUMP_BY(const Instruction* instr) {
-    const int32_t jump = instr[1].jump.to;
-    const uint32_t to = (instr - code_->begin()) + jump;
-    const std::size_t num = jump_map_.find(to)->second.counter;
-    const std::string label = MakeLabel(num);
-    asm_->jmp(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+    Jump(instr);
   }
 
   // opcode | dst
@@ -2760,12 +3016,25 @@ class Compiler {
     asm_->jo(label, type);
   }
 
+  std::string MakeLabel(const Instruction* op_instr) const {
+    const int32_t jump = op_instr[1].jump.to;
+    const uint32_t to = (op_instr - code_->begin()) + jump;
+    const std::size_t num = jump_map_.find(to)->second.counter;
+    return MakeLabel(num);
+  }
+
   static std::string MakeLabel(std::size_t num) {
     std::string str("IV_LV5_BREAKER_JT_");
     str.reserve(str.size() + 10);
     core::detail::UIntToStringWithRadix<uint64_t>(num,
                                                   std::back_inserter(str), 32);
     return str;
+  }
+
+  void Jump(const Instruction* instr) {
+    assert(OP::IsJump(instr->GetOP()));
+    const std::string label = MakeLabel(instr);
+    asm_->jmp(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
   }
 
   railgun::Code* top_;

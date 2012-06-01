@@ -294,6 +294,28 @@ class DisAssembler : private core::Noncopyable<> {
                        op, jump, r0, to);
         break;
       }
+      case OP::IF_TRUE_BINARY_LT:
+      case OP::IF_FALSE_BINARY_LT:
+      case OP::IF_TRUE_BINARY_LTE:
+      case OP::IF_FALSE_BINARY_LTE:
+      case OP::IF_TRUE_BINARY_GT:
+      case OP::IF_FALSE_BINARY_GT:
+      case OP::IF_TRUE_BINARY_GTE:
+      case OP::IF_FALSE_BINARY_GTE:
+      case OP::IF_TRUE_BINARY_INSTANCEOF:
+      case OP::IF_FALSE_BINARY_INSTANCEOF:
+      case OP::IF_TRUE_BINARY_IN:
+      case OP::IF_FALSE_BINARY_IN:
+      case OP::IF_TRUE_BINARY_EQ:
+      case OP::IF_FALSE_BINARY_EQ:
+      case OP::IF_TRUE_BINARY_NE:
+      case OP::IF_FALSE_BINARY_NE:
+      case OP::IF_TRUE_BINARY_STRICT_EQ:
+      case OP::IF_FALSE_BINARY_STRICT_EQ:
+      case OP::IF_TRUE_BINARY_STRICT_NE:
+      case OP::IF_FALSE_BINARY_STRICT_NE:
+      case OP::IF_TRUE_BINARY_BIT_AND:
+      case OP::IF_FALSE_BINARY_BIT_AND:
       case OP::FORIN_ENUMERATE:
       case OP::FORIN_SETUP:
       case OP::JUMP_SUBROUTINE: {

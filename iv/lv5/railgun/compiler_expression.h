@@ -402,9 +402,19 @@ inline void Compiler::Visit(const BinaryOperation* binary) {
       } else {
         Thunk lv(&thunkpool_, EmitExpression(binary->left()));
         RegisterID rv = EmitExpression(binary->right());
-        dst_ = Dest(dst_, lv.Release(), rv);
-        thunkpool_.Spill(dst_);
-        EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(dst_, lv.reg(), rv));
+
+        const OP::Type fused_op =
+            OP::BinaryOPFused(token, fused_target_op() == OP::IF_TRUE);
+        if (fused_target_op() != OP::NOP && fused_op != OP::NOP) {
+          // fused opcode
+          set_ignore_result(true);  // FIXME(Constellation) more clean way
+          set_fused_site(JumpSite(CurrentSize()));
+          EmitUnsafe(fused_op, Instruction::Jump(0, lv.reg(), rv));
+        } else {
+          dst_ = Dest(dst_, lv.Release(), rv);
+          thunkpool_.Spill(dst_);
+          EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(dst_, lv.reg(), rv));
+        }
       }
       break;
     }

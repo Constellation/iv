@@ -430,86 +430,86 @@ class Operation {
     return JSVal::UInt32(left >> (rhs.ToInt32(ctx_, e) & 0x1f));
   }
 
-  JSVal BinaryCompareLT(const JSVal& lhs,
+  bool BinaryCompareLT(const JSVal& lhs,
+                       const JSVal& rhs, Error* e) const {
+    return JSVal::Compare<true>(ctx_, lhs, rhs, e) == CMP_TRUE;
+  }
+
+  bool BinaryCompareLTE(const JSVal& lhs,
                         const JSVal& rhs, Error* e) const {
-    return JSVal::Bool(JSVal::Compare<true>(ctx_, lhs, rhs, e) == CMP_TRUE);
+    return JSVal::Compare<false>(ctx_, rhs, lhs, e) == CMP_FALSE;
   }
 
-  JSVal BinaryCompareLTE(const JSVal& lhs,
-                         const JSVal& rhs, Error* e) const {
-    return JSVal::Bool(JSVal::Compare<false>(ctx_, rhs, lhs, e) == CMP_FALSE);
+  bool BinaryCompareGT(const JSVal& lhs,
+                       const JSVal& rhs, Error* e) const {
+    return JSVal::Compare<false>(ctx_, rhs, lhs, e) == CMP_TRUE;
   }
 
-  JSVal BinaryCompareGT(const JSVal& lhs,
+  bool BinaryCompareGTE(const JSVal& lhs,
                         const JSVal& rhs, Error* e) const {
-    return JSVal::Bool(JSVal::Compare<false>(ctx_, rhs, lhs, e) == CMP_TRUE);
+    return JSVal::Compare<true>(ctx_, lhs, rhs, e) == CMP_FALSE;
   }
 
-  JSVal BinaryCompareGTE(const JSVal& lhs,
-                         const JSVal& rhs, Error* e) const {
-    return JSVal::Bool(JSVal::Compare<true>(ctx_, lhs, rhs, e) == CMP_FALSE);
-  }
-
-  JSVal BinaryInstanceof(const JSVal& lhs,
-                         const JSVal& rhs, Error* e) const {
+  bool BinaryInstanceof(const JSVal& lhs,
+                        const JSVal& rhs, Error* e) const {
     if (!rhs.IsObject()) {
       e->Report(Error::Type, "instanceof requires object");
-      return JSEmpty;
+      return false;
     }
     JSObject* const robj = rhs.object();
     if (!robj->IsCallable()) {
       e->Report(Error::Type, "instanceof requires constructor");
-      return JSEmpty;
+      return false;
     }
-    return JSVal::Bool(robj->AsCallable()->HasInstance(ctx_, lhs, e));
+    return robj->AsCallable()->HasInstance(ctx_, lhs, e);
   }
 
-  JSVal BinaryIn(const JSVal& lhs,
-                 const JSVal& rhs, Error* e) const {
+  bool BinaryIn(const JSVal& lhs,
+                const JSVal& rhs, Error* e) const {
     if (!rhs.IsObject()) {
       e->Report(Error::Type, "in requires object");
-      return JSEmpty;
+      return false;
     }
-    const Symbol s = lhs.ToSymbol(ctx_, CHECK);
-    return JSVal::Bool(rhs.object()->HasProperty(ctx_, s));
+    const Symbol s = lhs.ToSymbol(ctx_, IV_LV5_ERROR_WITH(e, false));
+    return rhs.object()->HasProperty(ctx_, s);
   }
 
-  JSVal BinaryEqual(const JSVal& lhs,
-                    const JSVal& rhs, Error* e) const {
-    return JSVal::Bool(JSVal::AbstractEqual(ctx_, lhs, rhs, e));
+  bool BinaryEqual(const JSVal& lhs,
+                   const JSVal& rhs, Error* e) const {
+    return JSVal::AbstractEqual(ctx_, lhs, rhs, e);
   }
 
-  JSVal BinaryStrictEqual(const JSVal& lhs,
-                          const JSVal& rhs) const {
-    return JSVal::Bool(JSVal::StrictEqual(lhs, rhs));
+  bool BinaryStrictEqual(const JSVal& lhs,
+                         const JSVal& rhs) const {
+    return JSVal::StrictEqual(lhs, rhs);
   }
 
-  JSVal BinaryNotEqual(const JSVal& lhs,
+  bool BinaryNotEqual(const JSVal& lhs,
+                      const JSVal& rhs, Error* e) const {
+    return !JSVal::AbstractEqual(ctx_, lhs, rhs, e);
+  }
+
+  bool BinaryStrictNotEqual(const JSVal& lhs,
+                            const JSVal& rhs) const {
+    return !JSVal::StrictEqual(lhs, rhs);
+  }
+
+  int32_t BinaryBitAnd(const JSVal& lhs,
                        const JSVal& rhs, Error* e) const {
-    return JSVal::Bool(!JSVal::AbstractEqual(ctx_, lhs, rhs, e));
+    const int32_t left = lhs.ToInt32(ctx_, IV_LV5_ERROR_WITH(e, 0));
+    return left & rhs.ToInt32(ctx_, e);
   }
 
-  JSVal BinaryStrictNotEqual(const JSVal& lhs,
-                             const JSVal& rhs) const {
-    return JSVal::Bool(!JSVal::StrictEqual(lhs, rhs));
+  int32_t BinaryBitXor(const JSVal& lhs,
+                       const JSVal& rhs, Error* e) const {
+    const int32_t left = lhs.ToInt32(ctx_, IV_LV5_ERROR_WITH(e, 0));
+    return left ^ rhs.ToInt32(ctx_, e);
   }
 
-  JSVal BinaryBitAnd(const JSVal& lhs,
-                     const JSVal& rhs, Error* e) const {
-    const int32_t left = lhs.ToInt32(ctx_, CHECK);
-    return JSVal::Int32(left & rhs.ToInt32(ctx_, e));
-  }
-
-  JSVal BinaryBitXor(const JSVal& lhs,
-                     const JSVal& rhs, Error* e) const {
-    const int32_t left = lhs.ToInt32(ctx_, CHECK);
-    return JSVal::Int32(left ^ rhs.ToInt32(ctx_, e));
-  }
-
-  JSVal BinaryBitOr(const JSVal& lhs,
-                    const JSVal& rhs, Error* e) const {
-    const int32_t left = lhs.ToInt32(ctx_, CHECK);
-    return JSVal::Int32(left | rhs.ToInt32(ctx_, e));
+  int32_t BinaryBitOr(const JSVal& lhs,
+                      const JSVal& rhs, Error* e) const {
+    const int32_t left = lhs.ToInt32(ctx_, IV_LV5_ERROR_WITH(e, 0));
+    return left | rhs.ToInt32(ctx_, e);
   }
 
   template<int Target, std::size_t Returned>

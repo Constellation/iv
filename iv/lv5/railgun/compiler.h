@@ -118,6 +118,18 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   class ArraySite;
 
+  class JumpSite {
+   public:
+    explicit JumpSite(std::size_t from) : from_(from) { }
+    JumpSite() : from_(std::numeric_limits<std::size_t>::max()) { }
+
+    void JumpTo(Compiler* compiler, std::size_t to) const {
+      compiler->EmitJump(to, from_);
+    }
+   private:
+    std::size_t from_;
+  };
+
   friend class ThunkPool;
   friend class ArraySite;
   friend class CallSite;
@@ -134,6 +146,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       registers_(),
       thunkpool_(this),
       ignore_result_(false),
+      fused_target_op_(OP::NOP),
       dst_(),
       eval_result_(),
       symbol_to_index_map_(),
@@ -361,17 +374,21 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
    public:
     EmitExpressionContext(Compiler* compiler,
                           RegisterID dst,
-                          bool ignore_result)
+                          bool ignore_result,
+                          OP::Type fused_target_op)
       : compiler_(compiler),
         dst_(compiler->dst()),
-        ignore_result_(compiler->ignore_result()) {
+        ignore_result_(compiler->ignore_result()),
+        fused_target_op_(compiler->fused_target_op()) {
       compiler->set_dst(dst);
       compiler->set_ignore_result(ignore_result);
+      compiler_->set_fused_target_op(fused_target_op);
     }
 
     ~EmitExpressionContext() {
       compiler_->set_dst(dst_);
       compiler_->set_ignore_result(ignore_result_);
+      compiler_->set_fused_target_op(fused_target_op_);
     }
 
     RegisterID dst() const { return dst_; }
@@ -380,12 +397,14 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     Compiler* compiler_;
     RegisterID dst_;
     bool ignore_result_;
+    OP::Type fused_target_op_;
   };
 
   RegisterID EmitExpressionInternal(const Expression* expr,
                                     RegisterID dst,
-                                    bool ignore_result) {
-    EmitExpressionContext context(this, dst, ignore_result);
+                                    bool ignore_result,
+                                    OP::Type fused_target_op) {
+    EmitExpressionContext context(this, dst, ignore_result, fused_target_op);
     // Add bytecode offset to line number information
     core_->AttachLine(data_->size(), expr->line_number());
     expr->Accept(this);
@@ -394,29 +413,21 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   }
 
   RegisterID EmitExpression(const Expression* expr) {
-    return EmitExpressionInternal(expr, RegisterID(), false);
+    return EmitExpressionInternal(expr, RegisterID(), false, OP::NOP);
   }
 
   // force write
   RegisterID EmitExpressionToDest(const Expression* expr, RegisterID dst) {
-    return EmitExpressionInternal(expr, dst, false);
+    return EmitExpressionInternal(expr, dst, false, OP::NOP);
   }
 
   void EmitExpressionIgnoreResult(const Expression* expr) {
-    EmitExpressionInternal(expr, RegisterID(), true);
+    EmitExpressionInternal(expr, RegisterID(), true, OP::NOP);
   }
 
-  class JumpSite {
-   public:
-    explicit JumpSite(std::size_t from) : from_(from) { }
-    JumpSite() : from_(std::numeric_limits<std::size_t>::max()) { }
-
-    void JumpTo(Compiler* compiler, std::size_t to) const {
-      compiler->EmitJump(to, from_);
-    }
-   private:
-    std::size_t from_;
-  };
+  RegisterID EmitExpressionFused(OP::Type op, const Expression* expr) {
+    return EmitExpressionInternal(expr, RegisterID(), false, op);
+  }
 
   // Emit fused or not condition variable and return jump target label offset
   JumpSite EmitConditional(OP::Type op, const Expression* expr) {
@@ -430,10 +441,15 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       expr = unary->expr();
       op = (op == OP::IF_TRUE) ? OP::IF_FALSE : OP::IF_TRUE;
     }
-    RegisterID cond = EmitExpression(expr);
-    const std::size_t point = CurrentSize();
-    EmitUnsafe(op, Instruction::Jump(0, cond));
-    return JumpSite(point);
+
+    RegisterID cond = EmitExpressionFused(op, expr);
+    if (cond) {
+      const std::size_t point = CurrentSize();
+      EmitUnsafe(op, Instruction::Jump(0, cond));
+      return JumpSite(point);
+    } else {
+      return fused_site();
+    }
   }
 
   LookupInfo Lookup(const Symbol sym) {
@@ -954,6 +970,14 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   void set_ignore_result(bool val) { ignore_result_ = val; }
 
+  OP::Type fused_target_op() const { return fused_target_op_; }
+
+  void set_fused_target_op(OP::Type val) { fused_target_op_ = val; }
+
+  JumpSite fused_site() const { return fused_site_; }
+
+  void set_fused_site(JumpSite val) { fused_site_ = val; }
+
   RegisterID dst() const { return dst_; }
 
   void set_dst(RegisterID dst) { dst_ = dst; }
@@ -970,6 +994,8 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   Registers registers_;
   ThunkPool thunkpool_;
   bool ignore_result_;
+  OP::Type fused_target_op_;
+  JumpSite fused_site_;
   RegisterID dst_;
   RegisterID eval_result_;
   std::unordered_map<Symbol, uint32_t> symbol_to_index_map_;

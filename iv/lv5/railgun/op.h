@@ -99,15 +99,38 @@ V(POSTFIX_DECREMENT_PROP, 5)\
 \
 V(LOAD_CONST, 2)\
 \
-/* jump opcodes. first arg layout is always JUMP-SSW and W is jump width*/\
+/* jump opcodes. first arg layout is always JUMP-SSW and W is jump width */\
 V(JUMP_BY, 2)\
 V(JUMP_SUBROUTINE, 2)\
 V(IF_FALSE, 2)\
 V(IF_TRUE, 2)\
+V(IF_FALSE_BINARY_LT, 2)\
+V(IF_TRUE_BINARY_LT, 2)\
+V(IF_FALSE_BINARY_LTE, 2)\
+V(IF_TRUE_BINARY_LTE, 2)\
+V(IF_FALSE_BINARY_GT, 2)\
+V(IF_TRUE_BINARY_GT, 2)\
+V(IF_FALSE_BINARY_GTE, 2)\
+V(IF_TRUE_BINARY_GTE, 2)\
+V(IF_FALSE_BINARY_INSTANCEOF, 2)\
+V(IF_TRUE_BINARY_INSTANCEOF, 2)\
+V(IF_FALSE_BINARY_IN, 2)\
+V(IF_TRUE_BINARY_IN, 2)\
+V(IF_FALSE_BINARY_EQ, 2)\
+V(IF_TRUE_BINARY_EQ, 2)\
+V(IF_FALSE_BINARY_NE, 2)\
+V(IF_TRUE_BINARY_NE, 2)\
+V(IF_FALSE_BINARY_STRICT_EQ, 2)\
+V(IF_TRUE_BINARY_STRICT_EQ, 2)\
+V(IF_FALSE_BINARY_STRICT_NE, 2)\
+V(IF_TRUE_BINARY_STRICT_NE, 2)\
+V(IF_FALSE_BINARY_BIT_AND, 2)\
+V(IF_TRUE_BINARY_BIT_AND, 2)\
 V(FORIN_SETUP, 2)\
 V(FORIN_ENUMERATE, 2)\
-V(FORIN_LEAVE, 2)\
+/* jump opcodes end. */\
 \
+V(FORIN_LEAVE, 2)\
 V(TRY_CATCH_SETUP, 2)\
 \
 /* name lookup opcodes */\
@@ -193,6 +216,9 @@ struct OP {
 
 #undef IS_NAME_LOOKUP_OP
 
+  static const int kJumpOPStart = JUMP_BY;
+  static const int kJumpOPEnd = FORIN_ENUMERATE;
+
   static OP::Type ToGlobal(uint8_t op) {
     assert(IsNameLookup(static_cast<OP::Type>(op)));
     return static_cast<OP::Type>(op + (OP::LOAD_GLOBAL - OP::LOAD_NAME));
@@ -201,6 +227,50 @@ struct OP {
   static OP::Type ToHeap(uint8_t op) {
     assert(IsNameLookup(static_cast<OP::Type>(op)));
     return static_cast<OP::Type>(op + (OP::LOAD_HEAP - OP::LOAD_NAME));
+  }
+
+  static bool IsJump(uint8_t op) {
+    return kJumpOPStart <= op && op <= kJumpOPEnd;
+  }
+
+  static Type BinaryOPFused(core::Token::Type token, bool if_true) {
+    switch (token) {
+      case core::Token::TK_LT:
+        return (if_true) ?
+            IF_TRUE_BINARY_LT : IF_FALSE_BINARY_LT;
+      case core::Token::TK_GT:
+        return (if_true) ?
+            IF_TRUE_BINARY_GT : IF_FALSE_BINARY_GT;
+      case core::Token::TK_LTE:
+        return (if_true) ?
+            IF_TRUE_BINARY_LTE : IF_FALSE_BINARY_LTE;
+      case core::Token::TK_GTE:
+        return (if_true) ?
+            IF_TRUE_BINARY_GTE : IF_FALSE_BINARY_GTE;
+      case core::Token::TK_INSTANCEOF:
+        return (if_true) ?
+            IF_TRUE_BINARY_INSTANCEOF : IF_FALSE_BINARY_INSTANCEOF;
+      case core::Token::TK_IN:
+        return (if_true) ?
+            IF_TRUE_BINARY_IN : IF_FALSE_BINARY_IN;
+      case core::Token::TK_EQ:
+        return (if_true) ?
+            IF_TRUE_BINARY_EQ : IF_FALSE_BINARY_EQ;
+      case core::Token::TK_NE:
+        return (if_true) ?
+            IF_TRUE_BINARY_NE : IF_FALSE_BINARY_NE;
+      case core::Token::TK_EQ_STRICT:
+        return (if_true) ?
+            IF_TRUE_BINARY_STRICT_EQ : IF_FALSE_BINARY_STRICT_EQ;
+      case core::Token::TK_NE_STRICT:
+        return (if_true) ?
+            IF_TRUE_BINARY_STRICT_NE : IF_FALSE_BINARY_STRICT_NE;
+      case core::Token::TK_BIT_AND:
+        return (if_true) ?
+            IF_TRUE_BINARY_BIT_AND : IF_FALSE_BINARY_BIT_AND;
+      default:
+        return OP::NOP;
+    }
   }
 
   static OP::Type BinaryOP(core::Token::Type token) {
@@ -259,6 +329,8 @@ struct OP {
 
   static inline const char* String(int op);
 };
+
+IV_STATIC_ASSERT(OP::NOP == 0);
 
 #define IV_LV5_RAILGUN_DEFINE_STRINGS(V, N) #V,
 static const std::array<const char*, OP::NUM_OF_OP + 1> kOPString = { {
