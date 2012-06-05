@@ -693,8 +693,8 @@ class Compiler {
   void EmitMV(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t src = Reg(instr[1].i16[1]);
-    LoadVR(asm_->r10, src);
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->r10);
+    LoadVR(asm_->rax, src);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
   // opcode | (size | mutable_start)
@@ -723,15 +723,15 @@ class Compiler {
     const int16_t flag = Reg(instr[1].i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rax, flag);
-      asm_->cmp(asm_->eax, railgun::VM::kJumpFromSubroutine);
+      LoadVR(asm_->rcx, flag);
+      asm_->cmp(asm_->ecx, railgun::VM::kJumpFromSubroutine);
       asm_->jne(".RETURN_TO_HANDLING");
 
       // encoded address value
-      LoadVR(asm_->rax, jump);
-      asm_->ror(asm_->rax, kEncodeRotateN);
-      asm_->sub(asm_->rax, 1);
-      asm_->jmp(asm_->rax);
+      LoadVR(asm_->rcx, jump);
+      asm_->ror(asm_->rcx, kEncodeRotateN);
+      asm_->sub(asm_->rcx, 1);
+      asm_->jmp(asm_->rcx);
 
       asm_->L(".RETURN_TO_HANDLING");
       asm_->mov(asm_->rdi, asm_->r14);
@@ -747,13 +747,8 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[1].ssw.u32;
     const uint64_t bytes = Extract(code_->constants()[offset]);
-    if (bytes <= UINT32_MAX) {
-      // only mov m64, imm32 is allowed
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], bytes);
-    } else {
-      asm_->mov(asm_->rax, bytes);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-    }
+    asm_->mov(asm_->rax, bytes);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
 
   // opcode | (dst | lhs | rhs)
@@ -2631,9 +2626,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(asm_->rsi, src);
-      asm_->mov(asm_->rdx, asm_->rsi);
       Int32Guard(asm_->rsi, asm_->rax, ".INCREMENT_SLOW");
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rdx);
+      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rsi);
       asm_->inc(asm_->esi);
       asm_->jo(".INCREMENT_OVERFLOW");
 
@@ -2664,9 +2658,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(asm_->rsi, src);
-      asm_->mov(asm_->rdx, asm_->rsi);
       Int32Guard(asm_->rsi, asm_->rax, ".DECREMENT_SLOW");
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rdx);
+      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rsi);
       asm_->sub(asm_->esi, 1);
       asm_->jo(".DECREMENT_OVERFLOW");
 
