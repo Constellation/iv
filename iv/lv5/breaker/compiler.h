@@ -179,7 +179,8 @@ class Compiler {
   bool SplitBasicBlock(const Instruction* previous, const Instruction* instr) {
     bool in_basic_block = true;
 
-    if (previous && OP::IsJump(previous->GetOP())) {
+    const uint32_t opcode = previous->GetOP();
+    if (previous && (OP::IsJump(opcode) || OP::IsReturn(opcode))) {
       // previous opcode is jump
       // split basic block
       in_basic_block = false;
@@ -679,6 +680,11 @@ class Compiler {
     return railgun::FrameConstant<>::kFrameSize + reg;
   }
 
+  // Load virtual register
+  void LoadVR(const Xbyak::Reg64& out, int16_t offset) {
+      asm_->mov(out, asm_->ptr[asm_->r13 + offset * kJSValSize]);
+  }
+
   // opcode
   void EmitNOP(const Instruction* instr) {
   }
@@ -687,7 +693,7 @@ class Compiler {
   void EmitMV(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t src = Reg(instr[1].i16[1]);
-    asm_->mov(asm_->r10, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    LoadVR(asm_->r10, src);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->r10);
   }
 
@@ -707,7 +713,7 @@ class Compiler {
     const int16_t src = Reg(instr[1].i32[0]);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->r13);
-    asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    LoadVR(asm_->rdx, src);
     asm_->Call(&stub::WITH_SETUP);
   }
 
@@ -717,12 +723,12 @@ class Compiler {
     const int16_t flag = Reg(instr[1].i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rax, asm_->ptr[asm_->r13 + flag * kJSValSize]);
+      LoadVR(asm_->rax, flag);
       asm_->cmp(asm_->eax, railgun::VM::kJumpFromSubroutine);
       asm_->jne(".RETURN_TO_HANDLING");
 
       // encoded address value
-      asm_->mov(asm_->rax, asm_->qword[asm_->r13 + jump * kJSValSize]);
+      LoadVR(asm_->rax, jump);
       asm_->ror(asm_->rax, kEncodeRotateN);
       asm_->sub(asm_->rax, 1);
       asm_->jmp(asm_->rax);
@@ -757,8 +763,8 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      LoadVR(asm_->rsi, lhs);
+      LoadVR(asm_->rdx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_ADD_SLOW_GENERIC");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_ADD_SLOW_GENERIC");
       AddingInt32OverflowGuard(asm_->esi,
@@ -798,8 +804,8 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      LoadVR(asm_->rsi, lhs);
+      LoadVR(asm_->rdx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_SUBTRACT_SLOW_GENERIC");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_SUBTRACT_SLOW_GENERIC");
       SubtractingInt32OverflowGuard(asm_->esi,
@@ -839,8 +845,8 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      LoadVR(asm_->rsi, lhs);
+      LoadVR(asm_->rdx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_MULTIPLY_SLOW_GENERIC");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_MULTIPLY_SLOW_GENERIC");
       MultiplyingInt32OverflowGuard(asm_->esi,
@@ -873,8 +879,8 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       asm_->mov(asm_->rdi, asm_->r14);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      LoadVR(asm_->rsi, lhs);
+      LoadVR(asm_->rdx, rhs);
       asm_->Call(&stub::BINARY_DIVIDE);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     }
@@ -887,8 +893,8 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      LoadVR(asm_->rsi, lhs);
+      LoadVR(asm_->rdx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_MODULO_SLOW_GENERIC");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_MODULO_SLOW_GENERIC");
       // check rhs is more than 0 (n % 0 == NaN)
@@ -925,8 +931,8 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rcx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      LoadVR(asm_->rsi, lhs);
+      LoadVR(asm_->rcx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_LSHIFT_SLOW_GENERIC");
       Int32Guard(asm_->rcx, asm_->rax, ".BINARY_LSHIFT_SLOW_GENERIC");
       asm_->sal(asm_->esi, asm_->cl);
@@ -951,8 +957,8 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rcx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      LoadVR(asm_->rsi, lhs);
+      LoadVR(asm_->rcx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_RSHIFT_SLOW_GENERIC");
       Int32Guard(asm_->rcx, asm_->rax, ".BINARY_RSHIFT_SLOW_GENERIC");
       asm_->sar(asm_->esi, asm_->cl);
@@ -977,8 +983,8 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rcx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      LoadVR(asm_->rsi, lhs);
+      LoadVR(asm_->rcx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_RSHIFT_LOGICAL_SLOW_GENERIC");
       Int32Guard(asm_->rcx, asm_->rax, ".BINARY_RSHIFT_LOGICAL_SLOW_GENERIC");
       asm_->shr(asm_->esi, asm_->cl);
@@ -1010,8 +1016,8 @@ class Compiler {
     const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      LoadVR(asm_->rsi, lhs);
+      LoadVR(asm_->rdx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_LT_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_LT_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
@@ -1059,8 +1065,8 @@ class Compiler {
     const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      LoadVR(asm_->rsi, lhs);
+      LoadVR(asm_->rdx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_LTE_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_LTE_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
@@ -1108,8 +1114,8 @@ class Compiler {
     const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      LoadVR(asm_->rsi, lhs);
+      LoadVR(asm_->rdx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_GT_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_GT_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
@@ -1156,8 +1162,8 @@ class Compiler {
     const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      LoadVR(asm_->rsi, lhs);
+      LoadVR(asm_->rdx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_GTE_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_GTE_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
@@ -1204,9 +1210,9 @@ class Compiler {
     const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
+      LoadVR(asm_->rsi, lhs);
+      LoadVR(asm_->rdx, rhs);
       asm_->mov(asm_->rdi, asm_->r14);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
       asm_->Call(&stub::BINARY_INSTANCEOF);
       if (fused != OP::NOP) {
         // fused jump opcode
@@ -1230,9 +1236,9 @@ class Compiler {
     const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
+      LoadVR(asm_->rsi, lhs);
+      LoadVR(asm_->rdx, rhs);
       asm_->mov(asm_->rdi, asm_->r14);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
       asm_->Call(&stub::BINARY_IN);
       if (fused != OP::NOP) {
         // fused jump opcode
@@ -1256,8 +1262,8 @@ class Compiler {
     const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      LoadVR(asm_->rsi, lhs);
+      LoadVR(asm_->rdx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_EQ_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_EQ_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
@@ -1308,8 +1314,8 @@ class Compiler {
     const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      LoadVR(asm_->rdi, lhs);
+      LoadVR(asm_->rsi, rhs);
       Int32Guard(asm_->rdi, asm_->rax, ".BINARY_STRICT_EQ_SLOW");
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_STRICT_EQ_SLOW");
       asm_->cmp(asm_->esi, asm_->edi);
@@ -1354,8 +1360,8 @@ class Compiler {
     const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      LoadVR(asm_->rsi, lhs);
+      LoadVR(asm_->rdx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_NE_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_NE_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
@@ -1406,8 +1412,8 @@ class Compiler {
     const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      LoadVR(asm_->rdi, lhs);
+      LoadVR(asm_->rsi, rhs);
       Int32Guard(asm_->rdi, asm_->rax, ".BINARY_STRICT_NE_SLOW");
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_STRICT_NE_SLOW");
       asm_->cmp(asm_->esi, asm_->edi);
@@ -1452,8 +1458,8 @@ class Compiler {
     const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      LoadVR(asm_->rsi, lhs);
+      LoadVR(asm_->rdx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_BIT_AND_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_BIT_AND_SLOW");
       asm_->and(asm_->esi, asm_->edx);
@@ -1501,8 +1507,8 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      LoadVR(asm_->rsi, lhs);
+      LoadVR(asm_->rdx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_BIT_XOR_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_BIT_XOR_SLOW");
       asm_->xor(asm_->esi, asm_->edx);
@@ -1526,8 +1532,8 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + lhs * kJSValSize]);
-      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + rhs * kJSValSize]);
+      LoadVR(asm_->rsi, lhs);
+      LoadVR(asm_->rdx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_BIT_OR_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_BIT_OR_SLOW");
       asm_->or(asm_->esi, asm_->edx);
@@ -1590,7 +1596,7 @@ class Compiler {
     const int16_t src = Reg(instr[1].i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+      LoadVR(asm_->rsi, src);
       IsNumber(asm_->rsi, asm_->rax);
       asm_->jnz(".UNARY_POSITIVE_FAST");
       asm_->mov(asm_->rdi, asm_->r14);
@@ -1615,7 +1621,7 @@ class Compiler {
       // Because ECMA262 number value is defined as double,
       // -0 should be double -0.0.
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+      LoadVR(asm_->rsi, src);
       Int32Guard(asm_->rsi, asm_->rax, ".UNARY_NEGATIVE_SLOW");
       asm_->test(asm_->esi, asm_->esi);
       asm_->jz(".UNARY_NEGATIVE_MINUS_ZERO");
@@ -1642,12 +1648,11 @@ class Compiler {
     }
   }
 
-  // TODO(Constellation) fusion opcode
   // opcode | (dst | src)
   void EmitUNARY_NOT(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t src = Reg(instr[1].i16[1]);
-    asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    LoadVR(asm_->rdi, src);
     asm_->Call(&stub::UNARY_NOT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
@@ -1658,7 +1663,7 @@ class Compiler {
     const int16_t src = Reg(instr[1].i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+      LoadVR(asm_->rsi, src);
       Int32Guard(asm_->rsi, asm_->rax, ".UNARY_BIT_NOT_SLOW");
       asm_->not(asm_->esi);
       asm_->mov(asm_->rax, asm_->r15);
@@ -1677,8 +1682,8 @@ class Compiler {
   // opcode | src
   void EmitTHROW(const Instruction* instr) {
     const int16_t src = Reg(instr[1].i32[0]);
+    LoadVR(asm_->rsi, src);
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
     asm_->Call(&stub::THROW);
   }
 
@@ -1693,16 +1698,16 @@ class Compiler {
   // opcode | src
   void EmitTO_NUMBER(const Instruction* instr) {
     const int16_t src = Reg(instr[1].i32[0]);
+    LoadVR(asm_->rsi, src);
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
     asm_->Call(&stub::TO_NUMBER);
   }
 
   // opcode | src
   void EmitTO_PRIMITIVE_AND_TO_STRING(const Instruction* instr) {
     const int16_t src = Reg(instr[1].i32[0]);
+    LoadVR(asm_->rsi, src);
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
     asm_->Call(&stub::TO_PRIMITIVE_AND_TO_STRING);
     asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], asm_->rax);
   }
@@ -1712,8 +1717,8 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const int16_t start = Reg(instr[1].ssw.i16[1]);
     const uint32_t count = instr[1].ssw.u32;
-    asm_->mov(asm_->rdi, asm_->r12);
     asm_->lea(asm_->rsi, asm_->ptr[asm_->r13 + start * kJSValSize]);
+    asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->edx, count);
     asm_->Call(&stub::CONCAT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
@@ -1737,8 +1742,8 @@ class Compiler {
   void EmitTYPEOF(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t src = Reg(instr[1].i16[1]);
+    LoadVR(asm_->rsi, src);
     asm_->mov(asm_->rdi, asm_->r12);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
     asm_->Call(&stub::TYPEOF);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
@@ -1749,8 +1754,8 @@ class Compiler {
     const int16_t item = Reg(instr[1].i16[1]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t merged = instr[2].u32[1];
-    asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + obj * kJSValSize]);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + item * kJSValSize]);
+    LoadVR(asm_->rdi, obj);
+    LoadVR(asm_->rsi, item);
     asm_->mov(asm_->edx, offset);
     if (merged) {
       asm_->Call(&stub::STORE_OBJECT_DATA<true>);
@@ -1765,8 +1770,8 @@ class Compiler {
     const int16_t item = Reg(instr[1].i16[1]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t merged = instr[2].u32[1];
-    asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + obj * kJSValSize]);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + item * kJSValSize]);
+    LoadVR(asm_->rdi, obj);
+    LoadVR(asm_->rsi, item);
     asm_->mov(asm_->edx, offset);
     if (merged) {
       asm_->Call(&stub::STORE_OBJECT_GET<true>);
@@ -1781,8 +1786,8 @@ class Compiler {
     const int16_t item = Reg(instr[1].i16[1]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t merged = instr[2].u32[1];
-    asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + obj * kJSValSize]);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + item * kJSValSize]);
+    LoadVR(asm_->rdi, obj);
+    LoadVR(asm_->rsi, item);
     asm_->mov(asm_->edx, offset);
     if (merged) {
       asm_->Call(&stub::STORE_OBJECT_SET<true>);
@@ -1796,8 +1801,8 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const int16_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
+    LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     asm_->mov(asm_->rcx, core::BitCast<uint64_t>(instr));
@@ -1819,8 +1824,8 @@ class Compiler {
     const int16_t base = Reg(instr[1].ssw.i16[0]);
     const int16_t src = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
+    LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     asm_->mov(asm_->rcx, asm_->ptr[asm_->r13 + src * kJSValSize]);
@@ -1841,8 +1846,8 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const int16_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
+    LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
@@ -1858,8 +1863,8 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const int16_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
+    LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
@@ -1875,8 +1880,8 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const int16_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
+    LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
@@ -1892,8 +1897,8 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const int16_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
+    LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
@@ -1909,8 +1914,8 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const int16_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
+    LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + base * kJSValSize]);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
@@ -1934,7 +1939,7 @@ class Compiler {
     const int16_t reg = Reg(instr[1].i16[1]);
     const uint32_t index = instr[2].u32[0];
     const uint32_t size = instr[2].u32[1];
-    asm_->mov(asm_->rdi, asm_->qword[asm_->r13 + ary * kJSValSize]);
+    LoadVR(asm_->rdi, ary);
     asm_->lea(asm_->rsi, asm_->ptr[asm_->r13 + reg * kJSValSize]);
     asm_->mov(asm_->edx, index);
     asm_->mov(asm_->ecx, size);
@@ -1947,7 +1952,7 @@ class Compiler {
     const int16_t reg = Reg(instr[1].i16[1]);
     const uint32_t index = instr[2].u32[0];
     const uint32_t size = instr[2].u32[1];
-    asm_->mov(asm_->rdi, asm_->qword[asm_->r13 + ary * kJSValSize]);
+    LoadVR(asm_->rdi, ary);
     asm_->lea(asm_->rsi, asm_->ptr[asm_->r13 + reg * kJSValSize]);
     asm_->mov(asm_->edx, index);
     asm_->mov(asm_->ecx, size);
@@ -2000,10 +2005,10 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t base = Reg(instr[1].i16[1]);
     const int16_t element = Reg(instr[1].i16[2]);
+    LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
-    asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
+    LoadVR(asm_->rdx, element);
     asm_->Call(&stub::LOAD_ELEMENT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   }
@@ -2013,11 +2018,11 @@ class Compiler {
     const int16_t base = Reg(instr[1].i16[0]);
     const int16_t element = Reg(instr[1].i16[1]);
     const int16_t src = Reg(instr[1].i16[2]);
+    LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
-    asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
-    asm_->mov(asm_->rcx, asm_->qword[asm_->r13 + src * kJSValSize]);
+    LoadVR(asm_->rdx, element);
+    LoadVR(asm_->rcx, src);
     if (code_->strict()) {
       asm_->Call(&stub::STORE_ELEMENT<true>);
     } else {
@@ -2030,10 +2035,10 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t base = Reg(instr[1].i16[1]);
     const int16_t element = Reg(instr[1].i16[2]);
+    LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
-    asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
+    LoadVR(asm_->rdx, element);
     if (code_->strict()) {
       asm_->Call(&stub::DELETE_ELEMENT<true>);
     } else {
@@ -2047,10 +2052,10 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t base = Reg(instr[1].i16[1]);
     const int16_t element = Reg(instr[1].i16[2]);
+    LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
-    asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
+    LoadVR(asm_->rdx, element);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_ELEMENT<1, 1, true>);
     } else {
@@ -2064,10 +2069,10 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t base = Reg(instr[1].i16[1]);
     const int16_t element = Reg(instr[1].i16[2]);
+    LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
-    asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
+    LoadVR(asm_->rdx, element);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_ELEMENT<-1, 1, true>);
     } else {
@@ -2081,10 +2086,10 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t base = Reg(instr[1].i16[1]);
     const int16_t element = Reg(instr[1].i16[2]);
+    LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
-    asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
+    LoadVR(asm_->rdx, element);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_ELEMENT<1, 0, true>);
     } else {
@@ -2098,10 +2103,10 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t base = Reg(instr[1].i16[1]);
     const int16_t element = Reg(instr[1].i16[2]);
+    LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->qword[asm_->r13 + base * kJSValSize]);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
-    asm_->mov(asm_->rdx, asm_->qword[asm_->r13 + element * kJSValSize]);
+    LoadVR(asm_->rdx, element);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_ELEMENT<-1, 0, true>);
     } else {
@@ -2122,7 +2127,7 @@ class Compiler {
     // Constructor checks value is object in call site, not callee site.
     // So r13 is still callee Frame.
     const int16_t src = Reg(instr[1].i32[0]);
-    asm_->mov(asm_->rax, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    LoadVR(asm_->rax, src);
     asm_->add(asm_->rsp, k64Size);
     asm_->add(asm_->qword[asm_->r14 + offsetof(Frame, ret)], k64Size * kStackPayload);
     asm_->ret();
@@ -2148,7 +2153,7 @@ class Compiler {
     const int16_t src = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    LoadVR(asm_->rsi, src);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     asm_->mov(asm_->rcx, core::BitCast<uint64_t>(instr));
     if (code_->strict()) {
@@ -2266,11 +2271,11 @@ class Compiler {
     const int16_t src = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
+    LoadVR(asm_->r8, src);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->edx, offset);
     asm_->mov(asm_->ecx, nest);
-    asm_->mov(asm_->r8, asm_->qword[asm_->r13 + src * kJSValSize]);
     if (code_->strict()) {
       asm_->Call(&stub::STORE_HEAP<true>);
     } else {
@@ -2379,7 +2384,7 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rdi, asm_->r14);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + callee * kJSValSize]);
+      LoadVR(asm_->rsi, callee);
       asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + offset * kJSValSize]);
       asm_->mov(asm_->ecx, argc_with_this);
       asm_->mov(asm_->r8, asm_->rsp);
@@ -2421,7 +2426,7 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rdi, asm_->r14);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + callee * kJSValSize]);
+      LoadVR(asm_->rsi, callee);
       asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + offset * kJSValSize]);
       asm_->mov(asm_->ecx, argc_with_this);
       asm_->mov(asm_->r8, asm_->rsp);
@@ -2480,7 +2485,7 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rdi, asm_->r14);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + callee * kJSValSize]);
+      LoadVR(asm_->rsi, callee);
       asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + offset * kJSValSize]);
       asm_->mov(asm_->ecx, argc_with_this);
       asm_->mov(asm_->r8, asm_->rsp);
@@ -2555,7 +2560,7 @@ class Compiler {
     const int16_t src = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[1].ssw.u32;
     asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, variable_env_)]);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    LoadVR(asm_->rsi, src);
     asm_->mov(asm_->edx, offset);
     asm_->Call(&stub::INITIALIZE_HEAP_IMMUTABLE);
   }
@@ -2566,7 +2571,7 @@ class Compiler {
     static const uint64_t overflow = Extract(JSVal(static_cast<double>(INT32_MAX) + 1));
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+      LoadVR(asm_->rsi, src);
       Int32Guard(asm_->rsi, asm_->rax, ".INCREMENT_SLOW");
       asm_->inc(asm_->esi);
       asm_->jo(".INCREMENT_OVERFLOW");
@@ -2595,7 +2600,7 @@ class Compiler {
     static const uint64_t overflow = Extract(JSVal(static_cast<double>(INT32_MIN) - 1));
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+      LoadVR(asm_->rsi, src);
       Int32Guard(asm_->rsi, asm_->rax, ".DECREMENT_SLOW");
       asm_->sub(asm_->esi, 1);
       asm_->jo(".DECREMENT_OVERFLOW");
@@ -2625,7 +2630,7 @@ class Compiler {
     static const uint64_t overflow = Extract(JSVal(static_cast<double>(INT32_MAX) + 1));
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+      LoadVR(asm_->rsi, src);
       asm_->mov(asm_->rdx, asm_->rsi);
       Int32Guard(asm_->rsi, asm_->rax, ".INCREMENT_SLOW");
       asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rdx);
@@ -2658,7 +2663,7 @@ class Compiler {
     static const uint64_t overflow = Extract(JSVal(static_cast<double>(INT32_MIN) - 1));
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + src * kJSValSize]);
+      LoadVR(asm_->rsi, src);
       asm_->mov(asm_->rdx, asm_->rsi);
       Int32Guard(asm_->rsi, asm_->rax, ".DECREMENT_SLOW");
       asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rdx);
@@ -2704,7 +2709,7 @@ class Compiler {
     const std::string label = MakeLabel(instr);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + cond * kJSValSize]);
+      LoadVR(asm_->rdi, cond);
 
       // boolean and int32_t zero fast cases
       asm_->cmp(asm_->rdi, asm_->r15);
@@ -2731,7 +2736,7 @@ class Compiler {
     const std::string label = MakeLabel(instr);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + cond * kJSValSize]);
+      LoadVR(asm_->rdi, cond);
 
       // boolean and int32_t zero fast cases
       asm_->cmp(asm_->rdi, asm_->r15);
@@ -2779,7 +2784,7 @@ class Compiler {
     const int16_t iterator = Reg(instr[1].jump.i16[0]);
     const int16_t enumerable = Reg(instr[1].jump.i16[1]);
     const std::string label = MakeLabel(instr);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + enumerable * kJSValSize]);
+    LoadVR(asm_->rsi, enumerable);
     NullOrUndefinedGuard(asm_->rsi, asm_->rdi, label.c_str(), Xbyak::CodeGenerator::T_NEAR);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->Call(&stub::FORIN_SETUP);
@@ -2792,7 +2797,7 @@ class Compiler {
     const int16_t iterator = Reg(instr[1].jump.i16[1]);
     const std::string label = MakeLabel(instr);
     asm_->mov(asm_->rdi, asm_->r12);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + iterator * kJSValSize]);
+    LoadVR(asm_->rsi, iterator);
     asm_->Call(&stub::FORIN_ENUMERATE);
     asm_->cmp(asm_->rax, 0);
     asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
@@ -2803,7 +2808,7 @@ class Compiler {
   void EmitFORIN_LEAVE(const Instruction* instr) {
     const int16_t iterator = Reg(instr[1].i32[0]);
     asm_->mov(asm_->rdi, asm_->r12);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + iterator * kJSValSize]);
+    LoadVR(asm_->rsi, iterator);
     asm_->Call(&stub::FORIN_LEAVE);
   }
 
@@ -2814,7 +2819,7 @@ class Compiler {
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
-    asm_->mov(asm_->rcx, asm_->ptr[asm_->r13 + error * kJSValSize]);
+    LoadVR(asm_->rcx, error);
     asm_->Call(&stub::TRY_CATCH_SETUP);
     asm_->mov(asm_->qword[asm_->r13 + offsetof(railgun::Frame, lexical_env_)], asm_->rax);
   }
@@ -2841,7 +2846,7 @@ class Compiler {
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
-    asm_->mov(asm_->rcx, asm_->ptr[asm_->r13 + src * kJSValSize]);
+    LoadVR(asm_->rcx, src);
     if (code_->strict()) {
       asm_->Call(&stub::STORE_NAME<true>);
     } else {

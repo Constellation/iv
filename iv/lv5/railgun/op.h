@@ -233,6 +233,10 @@ struct OP {
     return kJumpOPStart <= op && op <= kJumpOPEnd;
   }
 
+  static bool IsReturn(uint8_t op) {
+    return op == RETURN || op == RETURN_SUBROUTINE;
+  }
+
   static Type BinaryOPFused(core::Token::Type token, bool if_true) {
     switch (token) {
       case core::Token::TK_LT:
