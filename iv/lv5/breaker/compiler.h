@@ -56,6 +56,35 @@ class Compiler {
 
   static const int kJSValSize = sizeof(JSVal);
 
+  static const int32_t kInvalidUsedOffset = INT32_MIN;
+
+  class ScopedUsedControl : private core::Noncopyable<> {
+   public:
+    ScopedUsedControl(Compiler* compiler)
+      : compiler_(compiler),
+        used_(kInvalidUsedOffset) {
+      compiler_->set_scoped_used_control(this);
+    }
+
+    void Dest(int16_t offset) {
+      used_ = offset;
+    }
+
+    void Invalidate() {
+      compiler_->set_last_used(kInvalidUsedOffset);
+    }
+
+    ~ScopedUsedControl() {
+      compiler_->set_last_used(used_);
+      compiler_->set_scoped_used_control(NULL);
+    }
+   private:
+    Compiler* compiler_;
+    int32_t used_;
+  };
+
+  friend class ScopedUsedControl;
+
   explicit Compiler(railgun::Code* top)
     : top_(top),
       code_(NULL),
@@ -66,7 +95,8 @@ class Compiler {
       handler_links_(),
       codes_(),
       counter_(0),
-      previous_instr_(NULL) {
+      previous_instr_(NULL),
+      last_used_(kInvalidUsedOffset) {
     top_->core_data()->set_asm(asm_);
   }
 
@@ -131,6 +161,8 @@ class Compiler {
     codes_.push_back(code);
     jump_map_.clear();
     entry_points_.insert(std::make_pair(code, asm_->size()));
+    previous_instr_ = NULL;
+    last_used_ = kInvalidUsedOffset;
   }
 
   void Compile(railgun::Code* code) {
@@ -180,7 +212,7 @@ class Compiler {
     bool in_basic_block = true;
 
     const uint32_t opcode = previous->GetOP();
-    if (previous && (OP::IsJump(opcode) || OP::IsReturn(opcode))) {
+    if (previous && (OP::IsJump(opcode) || OP::IsReturn(opcode) || OP::IsThrow(opcode))) {
       // previous opcode is jump
       // split basic block
       in_basic_block = false;
@@ -216,19 +248,20 @@ class Compiler {
     asm_->sub(asm_->qword[asm_->r14 + offsetof(Frame, ret)], k64Size * kStackPayload);
     asm_->mov(asm_->rcx, asm_->qword[asm_->r14 + offsetof(Frame, ret)]);
 
-
     const Instruction* total_first_instr = code_->core_data()->data()->data();
     const Instruction* previous = NULL;
     const Instruction* instr = code_->begin();
     for (const Instruction* last = code_->end(); instr != last;) {
       const uint32_t opcode = instr->GetOP();
       const uint32_t length = r::kOPLength[opcode];
+      ScopedUsedControl scoped_used_control_in_local(this);
 
       const bool in_basic_block = SplitBasicBlock(previous, instr);
       if (!in_basic_block) {
-        previous_instr_ = NULL;
+        set_previous_instr(NULL);
+        scoped_used_control()->Invalidate();
       } else {
-        previous_instr_ = previous;
+        set_previous_instr(previous);
       }
 
       asm_->AttachBytecodeOffset(asm_->size(), instr - total_first_instr);
@@ -682,11 +715,19 @@ class Compiler {
 
   // Load virtual register
   void LoadVR(const Xbyak::Reg64& out, int16_t offset) {
+    if (last_used() == offset) {
+      if (out.getIdx() != asm_->rax.getIdx()) {
+        asm_->mov(out, asm_->rax);
+      }
+    } else {
       asm_->mov(out, asm_->ptr[asm_->r13 + offset * kJSValSize]);
+    }
   }
 
   // opcode
   void EmitNOP(const Instruction* instr) {
+    // save previous register because NOP does nothing
+    scoped_used_control()->Dest(last_used());
   }
 
   // opcode | (dst | src)
@@ -695,6 +736,7 @@ class Compiler {
     const int16_t src = Reg(instr[1].i16[1]);
     LoadVR(asm_->rax, src);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (size | mutable_start)
@@ -749,6 +791,7 @@ class Compiler {
     const uint64_t bytes = Extract(code_->constants()[offset]);
     asm_->mov(asm_->rax, bytes);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | lhs | rhs)
@@ -764,9 +807,7 @@ class Compiler {
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_ADD_SLOW_GENERIC");
       AddingInt32OverflowGuard(asm_->esi,
                                asm_->edx, asm_->eax, ".BINARY_ADD_SLOW_NUMBER");
-      asm_->mov(asm_->esi, asm_->eax);
-      asm_->add(asm_->rsi, asm_->r15);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->add(asm_->rax, asm_->r15);
       asm_->jmp(".BINARY_ADD_EXIT");
 
       // rdi and rsi is always int32 (but overflow)
@@ -778,17 +819,17 @@ class Compiler {
       asm_->movsxd(asm_->rdx, asm_->edx);
       asm_->add(asm_->rsi, asm_->rdx);
       asm_->cvtsi2sd(asm_->xmm0, asm_->rsi);
-      asm_->movq(asm_->rsi, asm_->xmm0);
-      ConvertNotNaNDoubleToJSVal(asm_->rsi, asm_->rcx);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->movq(asm_->rax, asm_->xmm0);
+      ConvertNotNaNDoubleToJSVal(asm_->rax, asm_->rcx);
       asm_->jmp(".BINARY_ADD_EXIT");
 
       asm_->L(".BINARY_ADD_SLOW_GENERIC");
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_ADD);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
 
       asm_->L(".BINARY_ADD_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      scoped_used_control()->Dest(dst);
     }
   }
 
@@ -805,9 +846,7 @@ class Compiler {
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_SUBTRACT_SLOW_GENERIC");
       SubtractingInt32OverflowGuard(asm_->esi,
                                     asm_->edx, asm_->eax, ".BINARY_SUBTRACT_SLOW_NUMBER");
-      asm_->mov(asm_->esi, asm_->eax);
-      asm_->add(asm_->rsi, asm_->r15);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->add(asm_->rax, asm_->r15);
       asm_->jmp(".BINARY_SUBTRACT_EXIT");
 
       // rdi and rsi is always int32 (but overflow)
@@ -819,17 +858,17 @@ class Compiler {
       asm_->movsxd(asm_->rdx, asm_->edx);
       asm_->sub(asm_->rsi, asm_->rdx);
       asm_->cvtsi2sd(asm_->xmm0, asm_->rsi);
-      asm_->movq(asm_->rsi, asm_->xmm0);
-      ConvertNotNaNDoubleToJSVal(asm_->rsi, asm_->rcx);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->movq(asm_->rax, asm_->xmm0);
+      ConvertNotNaNDoubleToJSVal(asm_->rax, asm_->rcx);
       asm_->jmp(".BINARY_SUBTRACT_EXIT");
 
       asm_->L(".BINARY_SUBTRACT_SLOW_GENERIC");
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_SUBTRACT);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
 
       asm_->L(".BINARY_SUBTRACT_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      scoped_used_control()->Dest(dst);
     }
   }
 
@@ -864,6 +903,7 @@ class Compiler {
 
       asm_->L(".BINARY_MULTIPLY_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      scoped_used_control()->Dest(dst);
     }
   }
 
@@ -878,6 +918,7 @@ class Compiler {
       LoadVR(asm_->rdx, rhs);
       asm_->Call(&stub::BINARY_DIVIDE);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      scoped_used_control()->Dest(dst);
     }
   }
 
@@ -916,6 +957,7 @@ class Compiler {
 
       asm_->L(".BINARY_MODULO_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      scoped_used_control()->Dest(dst);
     }
   }
 
@@ -942,6 +984,7 @@ class Compiler {
 
       asm_->L(".BINARY_LSHIFT_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      scoped_used_control()->Dest(dst);
     }
   }
 
@@ -968,6 +1011,7 @@ class Compiler {
 
       asm_->L(".BINARY_RSHIFT_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      scoped_used_control()->Dest(dst);
     }
   }
 
@@ -1002,6 +1046,7 @@ class Compiler {
 
       asm_->L(".BINARY_RSHIFT_LOGICAL_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      scoped_used_control()->Dest(dst);
     }
   }
 
@@ -1050,6 +1095,7 @@ class Compiler {
 
         asm_->L(".BINARY_LT_EXIT");
         asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+        scoped_used_control()->Dest(dst);
       }
     }
   }
@@ -1099,6 +1145,7 @@ class Compiler {
 
         asm_->L(".BINARY_LTE_EXIT");
         asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+        scoped_used_control()->Dest(dst);
       }
     }
   }
@@ -1147,6 +1194,7 @@ class Compiler {
 
         asm_->L(".BINARY_GT_EXIT");
         asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+        scoped_used_control()->Dest(dst);
       }
     }
   }
@@ -1195,6 +1243,7 @@ class Compiler {
 
         asm_->L(".BINARY_GTE_EXIT");
         asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+        scoped_used_control()->Dest(dst);
       }
     }
   }
@@ -1221,6 +1270,7 @@ class Compiler {
       } else {
         const int16_t dst = Reg(instr[1].i16[0]);
         asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+        scoped_used_control()->Dest(dst);
       }
     }
   }
@@ -1247,6 +1297,7 @@ class Compiler {
       } else {
         const int16_t dst = Reg(instr[1].i16[0]);
         asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+        scoped_used_control()->Dest(dst);
       }
     }
   }
@@ -1295,6 +1346,7 @@ class Compiler {
 
         asm_->L(".BINARY_EQ_EXIT");
         asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+        scoped_used_control()->Dest(dst);
       }
     }
   }
@@ -1345,6 +1397,7 @@ class Compiler {
 
         asm_->L(".BINARY_STRICT_EQ_EXIT");
         asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+        scoped_used_control()->Dest(dst);
       }
     }
   }
@@ -1393,6 +1446,7 @@ class Compiler {
 
         asm_->L(".BINARY_NE_EXIT");
         asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+        scoped_used_control()->Dest(dst);
       }
     }
   }
@@ -1443,6 +1497,7 @@ class Compiler {
 
         asm_->L(".BINARY_STRICT_NE_EXIT");
         asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+        scoped_used_control()->Dest(dst);
       }
     }
   }
@@ -1491,6 +1546,7 @@ class Compiler {
 
         asm_->L(".BINARY_BIT_AND_EXIT");
         asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+        scoped_used_control()->Dest(dst);
       }
     }
   }
@@ -1517,6 +1573,7 @@ class Compiler {
 
       asm_->L(".BINARY_BIT_XOR_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      scoped_used_control()->Dest(dst);
     }
   }
 
@@ -1542,6 +1599,7 @@ class Compiler {
 
       asm_->L(".BINARY_BIT_OR_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      scoped_used_control()->Dest(dst);
     }
   }
 
@@ -1591,18 +1649,17 @@ class Compiler {
     const int16_t src = Reg(instr[1].i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, src);
-      IsNumber(asm_->rsi, asm_->rax);
-      asm_->jnz(".UNARY_POSITIVE_FAST");
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->Call(&stub::TO_NUMBER);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      asm_->jmp(".UNARY_POSITIVE_EXIT");
+      LoadVR(asm_->rax, src);
+      IsNumber(asm_->rax, asm_->rsi);
+      asm_->jnz(".UNARY_POSITIVE_EXIT");
 
-      asm_->L(".UNARY_POSITIVE_FAST");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rsi);
+      asm_->mov(asm_->rdi, asm_->r14);
+      asm_->mov(asm_->rax, asm_->rsi);
+      asm_->Call(&stub::TO_NUMBER);
 
       asm_->L(".UNARY_POSITIVE_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      scoped_used_control()->Dest(dst);
     }
   }
 
@@ -1640,6 +1697,7 @@ class Compiler {
 
       asm_->L(".UNARY_NEGATIVE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      scoped_used_control()->Dest(dst);
     }
   }
 
@@ -1650,6 +1708,7 @@ class Compiler {
     LoadVR(asm_->rdi, src);
     asm_->Call(&stub::UNARY_NOT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | src)
@@ -1671,6 +1730,7 @@ class Compiler {
 
       asm_->L(".UNARY_BIT_NOT_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      scoped_used_control()->Dest(dst);
     }
   }
 
@@ -1705,6 +1765,7 @@ class Compiler {
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->Call(&stub::TO_PRIMITIVE_AND_TO_STRING);
     asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(src);
   }
 
   // opcode | (dst | start | count)
@@ -1717,6 +1778,7 @@ class Compiler {
     asm_->mov(asm_->edx, count);
     asm_->Call(&stub::CONCAT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode
@@ -1741,6 +1803,7 @@ class Compiler {
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->Call(&stub::TYPEOF);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (obj | item) | (offset | merged)
@@ -1811,6 +1874,7 @@ class Compiler {
     }
     asm_->call(asm_->rax);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (base | src | index) | nop | nop
@@ -1834,6 +1898,7 @@ class Compiler {
       site.Repatch(asm_, core::BitCast<uint64_t>(&stub::STORE_PROP<false>));
     }
     asm_->call(asm_->rax);
+    scoped_used_control()->Dest(src);
   }
 
   // opcode | (dst | base | name) | nop | nop | nop
@@ -1851,6 +1916,7 @@ class Compiler {
       asm_->Call(&stub::DELETE_PROP<false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | base | name) | nop | nop | nop
@@ -1868,6 +1934,7 @@ class Compiler {
       asm_->Call(&stub::INCREMENT_PROP<1, 1, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | base | name) | nop | nop | nop
@@ -1885,6 +1952,7 @@ class Compiler {
       asm_->Call(&stub::INCREMENT_PROP<-1, 1, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | base | name) | nop | nop | nop
@@ -1902,6 +1970,7 @@ class Compiler {
       asm_->Call(&stub::INCREMENT_PROP<1, 0, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | base | name) | nop | nop | nop
@@ -1919,6 +1988,7 @@ class Compiler {
       asm_->Call(&stub::INCREMENT_PROP<-1, 0, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode
@@ -1926,6 +1996,8 @@ class Compiler {
     asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdi, asm_->ptr[asm_->rdi + IV_OFFSETOF(JSEnv, outer_)]);
     asm_->mov(asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)], asm_->rdi);
+    // save previous register because NOP does nothing
+    scoped_used_control()->Dest(last_used());
   }
 
   // opcode | (ary | reg) | (index | size)
@@ -1962,6 +2034,7 @@ class Compiler {
     asm_->mov(asm_->esi, size);
     asm_->Call(&stub::LOAD_ARRAY);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | code)
@@ -1973,6 +2046,7 @@ class Compiler {
     asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->Call(&breaker::JSFunction::New);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | offset)
@@ -1984,6 +2058,7 @@ class Compiler {
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(regexp));
     asm_->Call(&stub::LOAD_REGEXP);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | dst | map
@@ -1993,6 +2068,7 @@ class Compiler {
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(instr[2].map));
     asm_->Call(&stub::LOAD_OBJECT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | base | element)
@@ -2006,6 +2082,7 @@ class Compiler {
     LoadVR(asm_->rdx, element);
     asm_->Call(&stub::LOAD_ELEMENT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (base | element | src)
@@ -2023,6 +2100,7 @@ class Compiler {
     } else {
       asm_->Call(&stub::STORE_ELEMENT<false>);
     }
+    scoped_used_control()->Dest(src);
   }
 
   // opcode | (dst | base | element)
@@ -2040,6 +2118,7 @@ class Compiler {
       asm_->Call(&stub::DELETE_ELEMENT<false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | base | element)
@@ -2057,6 +2136,7 @@ class Compiler {
       asm_->Call(&stub::INCREMENT_ELEMENT<1, 1, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | base | element)
@@ -2074,6 +2154,7 @@ class Compiler {
       asm_->Call(&stub::INCREMENT_ELEMENT<-1, 1, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | base | element)
@@ -2091,6 +2172,7 @@ class Compiler {
       asm_->Call(&stub::INCREMENT_ELEMENT<1, 0, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | base | element)
@@ -2108,12 +2190,14 @@ class Compiler {
       asm_->Call(&stub::INCREMENT_ELEMENT<-1, 0, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | dst
   void EmitRESULT(const Instruction* instr) {
     const int16_t dst = Reg(instr[1].i32[0]);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | src
@@ -2141,6 +2225,7 @@ class Compiler {
       asm_->Call(&stub::LOAD_GLOBAL<false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (src | name) | nop | nop
@@ -2156,6 +2241,7 @@ class Compiler {
     } else {
       asm_->Call(&stub::STORE_GLOBAL<false>);
     }
+    scoped_used_control()->Dest(src);
   }
 
   // opcode | (dst | name) | nop | nop
@@ -2166,6 +2252,7 @@ class Compiler {
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(name));
     asm_->Call(&stub::DELETE_GLOBAL);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | name) | nop | nop
@@ -2181,6 +2268,7 @@ class Compiler {
       asm_->Call(&stub::INCREMENT_GLOBAL<1, 1, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | name) | nop | nop
@@ -2196,6 +2284,7 @@ class Compiler {
       asm_->Call(&stub::INCREMENT_GLOBAL<-1, 1, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | name) | nop | nop
@@ -2211,6 +2300,7 @@ class Compiler {
       asm_->Call(&stub::INCREMENT_GLOBAL<1, 0, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | name) | nop | nop
@@ -2226,6 +2316,7 @@ class Compiler {
       asm_->Call(&stub::INCREMENT_GLOBAL<-1, 0, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | name) | nop | nop
@@ -2240,6 +2331,7 @@ class Compiler {
       asm_->Call(&stub::TYPEOF_GLOBAL<false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | index) | (offset | nest)
@@ -2258,6 +2350,7 @@ class Compiler {
       asm_->Call(&stub::LOAD_HEAP<false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (src | name) | (offset | nest)
@@ -2276,6 +2369,7 @@ class Compiler {
     } else {
       asm_->Call(&stub::STORE_HEAP<false>);
     }
+    scoped_used_control()->Dest(src);
   }
 
   // opcode | (dst | name) | (offset | nest)
@@ -2300,6 +2394,7 @@ class Compiler {
       asm_->Call(&stub::INCREMENT_HEAP<1, 1, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | name) | (offset | nest)
@@ -2317,6 +2412,7 @@ class Compiler {
       asm_->Call(&stub::INCREMENT_HEAP<-1, 1, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | name) | (offset | nest)
@@ -2334,6 +2430,7 @@ class Compiler {
       asm_->Call(&stub::INCREMENT_HEAP<1, 0, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | name) | (offset | nest)
@@ -2351,6 +2448,7 @@ class Compiler {
       asm_->Call(&stub::INCREMENT_HEAP<-1, 0, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | name) | (offset | nest)
@@ -2369,6 +2467,7 @@ class Compiler {
       asm_->Call(&stub::TYPEOF_HEAP<false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (callee | offset | argc_with_this)
@@ -2586,6 +2685,7 @@ class Compiler {
 
       asm_->L(".INCREMENT_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], asm_->rax);
+      scoped_used_control()->Dest(src);
     }
   }
 
@@ -2615,6 +2715,7 @@ class Compiler {
 
       asm_->L(".DECREMENT_EXIT");
       asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
+      scoped_used_control()->Dest(src);
     }
   }
 
@@ -2647,6 +2748,7 @@ class Compiler {
 
       asm_->L(".INCREMENT_EXIT");
       asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
+      scoped_used_control()->Dest(src);
     }
   }
 
@@ -2679,6 +2781,7 @@ class Compiler {
 
       asm_->L(".DECREMENT_EXIT");
       asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
+      scoped_used_control()->Dest(src);
     }
   }
 
@@ -2693,6 +2796,7 @@ class Compiler {
     asm_->lea(asm_->rcx, asm_->ptr[asm_->r13 + base * kJSValSize]);
     asm_->Call(&stub::PREPARE_DYNAMIC_CALL);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (jmp | cond)
@@ -2782,6 +2886,7 @@ class Compiler {
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->Call(&stub::FORIN_SETUP);
     asm_->mov(asm_->ptr[asm_->r13 + iterator * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(iterator);
   }
 
   // opcode | (jmp : dst | iterator)
@@ -2795,6 +2900,7 @@ class Compiler {
     asm_->cmp(asm_->rax, 0);
     asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
     asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | iterator
@@ -2830,6 +2936,7 @@ class Compiler {
       asm_->Call(&stub::LOAD_NAME<false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (src | name)
@@ -2845,6 +2952,7 @@ class Compiler {
     } else {
       asm_->Call(&stub::STORE_NAME<false>);
     }
+    scoped_used_control()->Dest(src);
   }
 
   // opcode | (dst | name)
@@ -2860,6 +2968,7 @@ class Compiler {
       asm_->Call(&stub::DELETE_NAME<false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | name)
@@ -2875,6 +2984,7 @@ class Compiler {
       asm_->Call(&stub::INCREMENT_NAME<1, 1, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | name)
@@ -2890,6 +3000,7 @@ class Compiler {
       asm_->Call(&stub::INCREMENT_NAME<-1, 1, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | name)
@@ -2905,6 +3016,7 @@ class Compiler {
       asm_->Call(&stub::INCREMENT_NAME<1, 0, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | name)
@@ -2920,6 +3032,7 @@ class Compiler {
       asm_->Call(&stub::INCREMENT_NAME<-1, 0, false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | (dst | name)
@@ -2935,6 +3048,7 @@ class Compiler {
       asm_->Call(&stub::TYPEOF_NAME<false>);
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // opcode | jmp
@@ -2953,6 +3067,7 @@ class Compiler {
       asm_->Call(&stub::LOAD_ARGUMENTS<false>);
     }
     asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+    scoped_used_control()->Dest(dst);
   }
 
   // leave flags
@@ -3066,9 +3181,23 @@ class Compiler {
     asm_->jmp(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
   }
 
-  const Instruction* previous_instr() const {
-    return previous_instr_;
+  const Instruction* previous_instr() const { return previous_instr_; }
+
+  void set_previous_instr(const Instruction* instr) {
+    previous_instr_ = instr;
   }
+
+  int32_t last_used() const { return last_used_; }
+
+  void set_last_used(int32_t reg) {
+    last_used_ = reg;
+  }
+
+  void set_scoped_used_control(ScopedUsedControl* scoped_used_control) {
+    scoped_used_control_ = scoped_used_control;
+  }
+
+  ScopedUsedControl* scoped_used_control() const { return scoped_used_control_; }
 
   railgun::Code* top_;
   railgun::Code* code_;
@@ -3080,6 +3209,8 @@ class Compiler {
   Codes codes_;
   std::size_t counter_;
   const Instruction* previous_instr_;
+  int32_t last_used_;
+  ScopedUsedControl* scoped_used_control_;
 };
 
 inline void CompileInternal(Compiler* compiler, railgun::Code* code) {

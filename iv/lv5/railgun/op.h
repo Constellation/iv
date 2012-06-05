@@ -237,6 +237,10 @@ struct OP {
     return op == RETURN || op == RETURN_SUBROUTINE;
   }
 
+  static bool IsThrow(uint8_t op) {
+    return op == THROW || op == RAISE_IMMUTABLE || op == RAISE_REFERENCE;
+  }
+
   static Type BinaryOPFused(core::Token::Type token, bool if_true) {
     switch (token) {
       case core::Token::TK_LT:
