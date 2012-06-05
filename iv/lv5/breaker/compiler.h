@@ -1898,7 +1898,6 @@ class Compiler {
       site.Repatch(asm_, core::BitCast<uint64_t>(&stub::STORE_PROP<false>));
     }
     asm_->call(asm_->rax);
-    scoped_used_control()->Dest(src);
   }
 
   // opcode | (dst | base | name) | nop | nop | nop
@@ -2100,7 +2099,6 @@ class Compiler {
     } else {
       asm_->Call(&stub::STORE_ELEMENT<false>);
     }
-    scoped_used_control()->Dest(src);
   }
 
   // opcode | (dst | base | element)
@@ -2241,7 +2239,6 @@ class Compiler {
     } else {
       asm_->Call(&stub::STORE_GLOBAL<false>);
     }
-    scoped_used_control()->Dest(src);
   }
 
   // opcode | (dst | name) | nop | nop
@@ -2369,7 +2366,6 @@ class Compiler {
     } else {
       asm_->Call(&stub::STORE_HEAP<false>);
     }
-    scoped_used_control()->Dest(src);
   }
 
   // opcode | (dst | name) | (offset | nest)
