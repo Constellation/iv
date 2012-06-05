@@ -361,7 +361,7 @@ inline Rep STORE_GLOBAL(Frame* stack,
       }
     }
   }
-  return 0;
+  return Extract(src);
 }
 
 inline Rep DELETE_GLOBAL(Frame* stack, Symbol name) {
@@ -409,7 +409,7 @@ template<bool STRICT>
 inline Rep STORE_HEAP(Frame* stack, JSEnv* env,
                       uint32_t offset, uint32_t nest, JSVal src) {
   GetHeapEnv(env, nest)->SetByOffset(offset, src, STRICT, ERR);
-  return 0;
+  return Extract(src);
 }
 
 template<int Target, std::size_t Returned, bool STRICT>
@@ -907,7 +907,7 @@ inline Rep STORE_NAME(Frame* stack, JSEnv* env, Symbol name, JSVal src) {
       ctx->global_obj()->Put(ctx, name, src, STRICT, ERR);
     }
   }
-  return 0;
+  return Extract(src);
 }
 
 template<bool STRICT>
@@ -1056,12 +1056,12 @@ inline Rep STORE_ELEMENT(Frame* stack, JSVal base, JSVal element, JSVal src) {
             symbol::MakeSymbolFromIndex(index),
             src, STRICT, ERR);
       }
-      return 0;
+      return Extract(src);
     }
   }
   const Symbol name = element.ToSymbol(ctx, ERR);
   StorePropImpl<STRICT>(ctx, base, name, src, ERR);
-  return 0;
+  return Extract(src);
 }
 
 template<bool STRICT>
@@ -1125,7 +1125,7 @@ inline Rep STORE_PROP_GENERIC(Frame* stack,
                               JSVal base, Symbol name, JSVal src,
                               railgun::Instruction* instr) {
   StorePropImpl<STRICT>(stack->ctx, base, name, src, ERR);
-  return 0;
+  return Extract(src);
 }
 
 template<bool STRICT>
@@ -1444,7 +1444,7 @@ inline Rep STORE_PROP(Frame* stack,
       }
     }
   }
-  return 0;
+  return Extract(src);
 }
 
 template<bool STRICT>
