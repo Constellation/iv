@@ -1,7 +1,8 @@
 // breaker::Compiler
 //
 // This compiler parses railgun::opcodes and emits native code.
-// Some primitive operations and branch operations are emitted as raw native code,
+// Some primitive operations and branch operations are
+// emitted as raw native code,
 // and basic complex opcodes are emitted as call to stub function, that is,
 // Context Threading JIT.
 //
@@ -18,7 +19,8 @@ namespace iv {
 namespace lv5 {
 namespace breaker {
 
-static const std::size_t kEncodeRotateN = core::math::CTZ64(lv5::detail::jsval64::kDoubleOffset);
+static const std::size_t kEncodeRotateN =
+    core::math::CTZ64(lv5::detail::jsval64::kDoubleOffset);
 
 class Compiler {
  public:
@@ -45,8 +47,10 @@ class Compiler {
 
   typedef std::unordered_map<railgun::Code*, std::size_t> EntryPointMap;
   typedef std::unordered_map<uint32_t, JumpInfo> JumpMap;
-  typedef std::unordered_map<std::size_t, Assembler::RepatchSite> UnresolvedAddressMap;
-  typedef std::vector<std::pair<Assembler::RepatchSite, std::size_t> > RepatchSites;
+  typedef std::unordered_map<std::size_t,
+                             Assembler::RepatchSite> UnresolvedAddressMap;
+  typedef std::vector<
+      std::pair<Assembler::RepatchSite, std::size_t> > RepatchSites;
   typedef std::vector<railgun::Code*> Codes;
   typedef std::unordered_map<const Instruction*, std::size_t> HandlerLinks;
 
@@ -61,7 +65,8 @@ class Compiler {
       unresolved_address_map_(),
       handler_links_(),
       codes_(),
-      counter_(0) {
+      counter_(0),
+      previous_instr_(NULL) {
     top_->core_data()->set_asm(asm_);
   }
 
@@ -83,12 +88,16 @@ class Compiler {
     // Repatch phase
     // link jump subroutine
     {
-      for (UnresolvedAddressMap::const_iterator it = unresolved_address_map_.begin(),
-           last = unresolved_address_map_.end(); it != last; ++it) {
-        uint64_t ptr = core::BitCast<uint64_t>(asm_->GainExecutableByOffset(it->first));
+      for (UnresolvedAddressMap::const_iterator
+           it = unresolved_address_map_.begin(),
+           last = unresolved_address_map_.end();
+           it != last; ++it) {
+        uint64_t ptr =
+            core::BitCast<uint64_t>(asm_->GainExecutableByOffset(it->first));
         assert(ptr % 2 == 0);
         // encode ptr value to JSVal invalid number
-        // double offset value is 1000000000000000000000000000000000000000000000000
+        // double offset value is
+        // 1000000000000000000000000000000000000000000000000
         ptr += 0x1;
         const uint64_t result = RotateLeft64(ptr, kEncodeRotateN);
         it->second.Repatch(asm_, result);
@@ -166,16 +175,30 @@ class Compiler {
     }
   }
 
-  void CheckBlock(const Instruction* instr) {
+  // Returns previous and instr are in basic block
+  bool SplitBasicBlock(const Instruction* previous, const Instruction* instr) {
+    bool in_basic_block = true;
+
+    if (previous && OP::IsJump(previous->GetOP())) {
+      // previous opcode is jump
+      // split basic block
+      in_basic_block = false;
+    }
+
     const int32_t index = instr - code_->begin();
     const JumpMap::iterator it = jump_map_.find(index);
     if (it != jump_map_.end()) {
+      // this opcode is jump target
+      // split basic block
+      in_basic_block = false;
       asm_->L(MakeLabel(it->second.counter).c_str());
       if (it->second.exception_handled) {
         // store handler range
         handler_links_.insert(std::make_pair(instr, asm_->size()));
       }
     }
+
+    return in_basic_block;
   }
 
   void Main() {
@@ -194,12 +217,19 @@ class Compiler {
 
 
     const Instruction* total_first_instr = code_->core_data()->data()->data();
-    for (const Instruction* instr = code_->begin(),
-         *last = code_->end(); instr != last;) {
+    const Instruction* previous = NULL;
+    const Instruction* instr = code_->begin();
+    for (const Instruction* last = code_->end(); instr != last;) {
       const uint32_t opcode = instr->GetOP();
       const uint32_t length = r::kOPLength[opcode];
 
-      CheckBlock(instr);
+      const bool in_basic_block = SplitBasicBlock(previous, instr);
+      if (!in_basic_block) {
+        previous_instr_ = NULL;
+      } else {
+        previous_instr_ = previous;
+      }
+
       asm_->AttachBytecodeOffset(asm_->size(), instr - total_first_instr);
 
       switch (opcode) {
@@ -622,10 +652,11 @@ class Compiler {
           EmitLOAD_ARGUMENTS(instr);
           break;
       }
+      previous = instr;
       std::advance(instr, length);
     }
     // because handler makes range label to end.
-    CheckBlock(code_->end());
+    SplitBasicBlock(instr, code_->end());
   }
 
   // Emitters
@@ -3037,6 +3068,10 @@ class Compiler {
     asm_->jmp(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
   }
 
+  const Instruction* previous_instr() const {
+    return previous_instr_;
+  }
+
   railgun::Code* top_;
   railgun::Code* code_;
   Assembler* asm_;
@@ -3046,6 +3081,7 @@ class Compiler {
   HandlerLinks handler_links_;
   Codes codes_;
   std::size_t counter_;
+  const Instruction* previous_instr_;
 };
 
 inline void CompileInternal(Compiler* compiler, railgun::Code* code) {
