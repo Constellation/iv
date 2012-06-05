@@ -679,12 +679,28 @@ class Compiler {
 
   // Load virtual register
   void LoadVR(const Xbyak::Reg64& out, int16_t offset) {
+    const bool break_result = out.getIdx() == asm_->rax.getIdx();
     if (last_used() == offset) {
-      if (out.getIdx() != asm_->rax.getIdx()) {
+      asm_->mov(out, asm_->rax);
+      if (!break_result) {
         asm_->mov(out, asm_->rax);
       }
     } else {
       asm_->mov(out, asm_->ptr[asm_->r13 + offset * kJSValSize]);
+      if (break_result) {
+        set_last_used(kInvalidUsedOffset);
+      }
+    }
+  }
+
+  void LoadVRs(const Xbyak::Reg64& out1, int16_t offset1,
+               const Xbyak::Reg64& out2, int16_t offset2) {
+    if (last_used() == offset1) {
+      LoadVR(out1, offset1);
+      LoadVR(out2, offset2);
+    } else {
+      LoadVR(out2, offset2);
+      LoadVR(out1, offset1);
     }
   }
 
@@ -932,8 +948,7 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, lhs);
-      LoadVR(asm_->rcx, rhs);
+      LoadVRs(asm_->rsi, lhs, asm_->rcx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_LSHIFT_SLOW_GENERIC");
       Int32Guard(asm_->rcx, asm_->rax, ".BINARY_LSHIFT_SLOW_GENERIC");
       asm_->sal(asm_->esi, asm_->cl);
@@ -959,8 +974,7 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, lhs);
-      LoadVR(asm_->rcx, rhs);
+      LoadVRs(asm_->rsi, lhs, asm_->rcx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_RSHIFT_SLOW_GENERIC");
       Int32Guard(asm_->rcx, asm_->rax, ".BINARY_RSHIFT_SLOW_GENERIC");
       asm_->sar(asm_->esi, asm_->cl);
@@ -986,8 +1000,7 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, lhs);
-      LoadVR(asm_->rcx, rhs);
+      LoadVRs(asm_->rsi, lhs, asm_->rcx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_RSHIFT_LOGICAL_SLOW_GENERIC");
       Int32Guard(asm_->rcx, asm_->rax, ".BINARY_RSHIFT_LOGICAL_SLOW_GENERIC");
       asm_->shr(asm_->esi, asm_->cl);
@@ -1020,8 +1033,7 @@ class Compiler {
     const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, lhs);
-      LoadVR(asm_->rdx, rhs);
+      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_LT_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_LT_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
@@ -1070,8 +1082,7 @@ class Compiler {
     const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, lhs);
-      LoadVR(asm_->rdx, rhs);
+      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_LTE_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_LTE_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
@@ -1120,8 +1131,7 @@ class Compiler {
     const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, lhs);
-      LoadVR(asm_->rdx, rhs);
+      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_GT_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_GT_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
@@ -1169,8 +1179,7 @@ class Compiler {
     const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, lhs);
-      LoadVR(asm_->rdx, rhs);
+      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_GTE_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_GTE_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
@@ -1218,8 +1227,7 @@ class Compiler {
     const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, lhs);
-      LoadVR(asm_->rdx, rhs);
+      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_INSTANCEOF);
       if (fused != OP::NOP) {
@@ -1245,8 +1253,7 @@ class Compiler {
     const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, lhs);
-      LoadVR(asm_->rdx, rhs);
+      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::BINARY_IN);
       if (fused != OP::NOP) {
@@ -1272,8 +1279,7 @@ class Compiler {
     const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, lhs);
-      LoadVR(asm_->rdx, rhs);
+      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_EQ_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_EQ_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
@@ -1325,8 +1331,7 @@ class Compiler {
     const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rdi, lhs);
-      LoadVR(asm_->rsi, rhs);
+      LoadVRs(asm_->rdi, lhs, asm_->rsi, rhs);
       Int32Guard(asm_->rdi, asm_->rax, ".BINARY_STRICT_EQ_SLOW");
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_STRICT_EQ_SLOW");
       asm_->cmp(asm_->esi, asm_->edi);
@@ -1372,8 +1377,7 @@ class Compiler {
     const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, lhs);
-      LoadVR(asm_->rdx, rhs);
+      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_NE_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_NE_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
@@ -1425,8 +1429,7 @@ class Compiler {
     const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rdi, lhs);
-      LoadVR(asm_->rsi, rhs);
+      LoadVRs(asm_->rdi, lhs, asm_->rsi, rhs);
       Int32Guard(asm_->rdi, asm_->rax, ".BINARY_STRICT_NE_SLOW");
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_STRICT_NE_SLOW");
       asm_->cmp(asm_->esi, asm_->edi);
@@ -1472,8 +1475,7 @@ class Compiler {
     const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, lhs);
-      LoadVR(asm_->rdx, rhs);
+      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_BIT_AND_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_BIT_AND_SLOW");
       asm_->and(asm_->esi, asm_->edx);
@@ -1522,8 +1524,7 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, lhs);
-      LoadVR(asm_->rdx, rhs);
+      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_BIT_XOR_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_BIT_XOR_SLOW");
       asm_->xor(asm_->esi, asm_->edx);
@@ -1548,8 +1549,7 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, lhs);
-      LoadVR(asm_->rdx, rhs);
+      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_BIT_OR_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_BIT_OR_SLOW");
       asm_->or(asm_->esi, asm_->edx);
@@ -1614,11 +1614,12 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(asm_->rax, src);
-      IsNumber(asm_->rax, asm_->rsi);
+      asm_->mov(asm_->rsi, asm_->rax);
+      asm_->and(asm_->rsi, asm_->r15);
       asm_->jnz(".UNARY_POSITIVE_EXIT");
 
       asm_->mov(asm_->rdi, asm_->r14);
-      asm_->mov(asm_->rax, asm_->rsi);
+      asm_->mov(asm_->rsi, asm_->rax);
       asm_->Call(&stub::TO_NUMBER);
 
       asm_->L(".UNARY_POSITIVE_EXIT");
@@ -1776,8 +1777,7 @@ class Compiler {
     const int16_t item = Reg(instr[1].i16[1]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t merged = instr[2].u32[1];
-    LoadVR(asm_->rdi, obj);
-    LoadVR(asm_->rsi, item);
+    LoadVRs(asm_->rdi, obj, asm_->rsi, item);
     asm_->mov(asm_->edx, offset);
     if (merged) {
       asm_->Call(&stub::STORE_OBJECT_DATA<true>);
@@ -1792,8 +1792,7 @@ class Compiler {
     const int16_t item = Reg(instr[1].i16[1]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t merged = instr[2].u32[1];
-    LoadVR(asm_->rdi, obj);
-    LoadVR(asm_->rsi, item);
+    LoadVRs(asm_->rdi, obj, asm_->rsi, item);
     asm_->mov(asm_->edx, offset);
     if (merged) {
       asm_->Call(&stub::STORE_OBJECT_GET<true>);
@@ -1808,8 +1807,7 @@ class Compiler {
     const int16_t item = Reg(instr[1].i16[1]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t merged = instr[2].u32[1];
-    LoadVR(asm_->rdi, obj);
-    LoadVR(asm_->rsi, item);
+    LoadVRs(asm_->rdi, obj, asm_->rsi, item);
     asm_->mov(asm_->edx, offset);
     if (merged) {
       asm_->Call(&stub::STORE_OBJECT_SET<true>);
@@ -2039,10 +2037,9 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t base = Reg(instr[1].i16[1]);
     const int16_t element = Reg(instr[1].i16[2]);
-    LoadVR(asm_->rsi, base);
+    LoadVRs(asm_->rsi, base, asm_->rdx, element);
     asm_->mov(asm_->rdi, asm_->r14);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
-    LoadVR(asm_->rdx, element);
     asm_->Call(&stub::LOAD_ELEMENT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
@@ -2053,10 +2050,9 @@ class Compiler {
     const int16_t base = Reg(instr[1].i16[0]);
     const int16_t element = Reg(instr[1].i16[1]);
     const int16_t src = Reg(instr[1].i16[2]);
-    LoadVR(asm_->rsi, base);
+    LoadVRs(asm_->rsi, base, asm_->rdx, element);
     asm_->mov(asm_->rdi, asm_->r14);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
-    LoadVR(asm_->rdx, element);
     LoadVR(asm_->rcx, src);
     if (code_->strict()) {
       asm_->Call(&stub::STORE_ELEMENT<true>);
@@ -2070,10 +2066,9 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t base = Reg(instr[1].i16[1]);
     const int16_t element = Reg(instr[1].i16[2]);
-    LoadVR(asm_->rsi, base);
+    LoadVRs(asm_->rsi, base, asm_->rdx, element);
     asm_->mov(asm_->rdi, asm_->r14);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
-    LoadVR(asm_->rdx, element);
     if (code_->strict()) {
       asm_->Call(&stub::DELETE_ELEMENT<true>);
     } else {
@@ -2088,10 +2083,9 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t base = Reg(instr[1].i16[1]);
     const int16_t element = Reg(instr[1].i16[2]);
-    LoadVR(asm_->rsi, base);
+    LoadVRs(asm_->rsi, base, asm_->rdx, element);
     asm_->mov(asm_->rdi, asm_->r14);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
-    LoadVR(asm_->rdx, element);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_ELEMENT<1, 1, true>);
     } else {
@@ -2106,10 +2100,9 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t base = Reg(instr[1].i16[1]);
     const int16_t element = Reg(instr[1].i16[2]);
-    LoadVR(asm_->rsi, base);
+    LoadVRs(asm_->rsi, base, asm_->rdx, element);
     asm_->mov(asm_->rdi, asm_->r14);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
-    LoadVR(asm_->rdx, element);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_ELEMENT<-1, 1, true>);
     } else {
@@ -2124,10 +2117,9 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t base = Reg(instr[1].i16[1]);
     const int16_t element = Reg(instr[1].i16[2]);
-    LoadVR(asm_->rsi, base);
+    LoadVRs(asm_->rsi, base, asm_->rdx, element);
     asm_->mov(asm_->rdi, asm_->r14);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
-    LoadVR(asm_->rdx, element);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_ELEMENT<1, 0, true>);
     } else {
@@ -2142,10 +2134,9 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i16[0]);
     const int16_t base = Reg(instr[1].i16[1]);
     const int16_t element = Reg(instr[1].i16[2]);
-    LoadVR(asm_->rsi, base);
+    LoadVRs(asm_->rsi, base, asm_->rdx, element);
     asm_->mov(asm_->rdi, asm_->r14);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
-    LoadVR(asm_->rdx, element);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_ELEMENT<-1, 0, true>);
     } else {
@@ -2912,7 +2903,6 @@ class Compiler {
     } else {
       asm_->Call(&stub::STORE_NAME<false>);
     }
-    set_last_used_candidate(src);
   }
 
   // opcode | (dst | name)
@@ -3028,12 +3018,6 @@ class Compiler {
     }
     asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-  }
-
-  // leave flags
-  void IsNumber(const Xbyak::Reg64& reg, const Xbyak::Reg64& tmp) {
-    asm_->mov(tmp, asm_->r15);
-    asm_->and(tmp, reg);
   }
 
   // NaN is not handled
