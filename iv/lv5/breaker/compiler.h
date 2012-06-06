@@ -2288,14 +2288,16 @@ class Compiler {
 
   // opcode | (dst | index) | (offset | nest)
   void EmitLOAD_HEAP(const Instruction* instr) {
-    // TODO(Constellation) inline this method
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
     asm_->mov(asm_->rdi, asm_->r14);
+
+    // inlined environment lookup
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
+    LookupHeapEnv(asm_->rsi, nest);
+
     asm_->mov(asm_->edx, offset);
-    asm_->mov(asm_->ecx, nest);
     if (code_->strict()) {
       asm_->Call(&stub::LOAD_HEAP<true>);
     } else {
@@ -2307,15 +2309,17 @@ class Compiler {
 
   // opcode | (src | name) | (offset | nest)
   void EmitSTORE_HEAP(const Instruction* instr) {
-    // TODO(Constellation) inline this method
     const int16_t src = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
-    LoadVR(asm_->r8, src);
+    LoadVR(asm_->rcx, src);
     asm_->mov(asm_->rdi, asm_->r14);
+
+    // inlined environment lookup
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
+    LookupHeapEnv(asm_->rsi, nest);
+
     asm_->mov(asm_->edx, offset);
-    asm_->mov(asm_->ecx, nest);
     if (code_->strict()) {
       asm_->Call(&stub::STORE_HEAP<true>);
     } else {
@@ -2336,9 +2340,11 @@ class Compiler {
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
     asm_->mov(asm_->rdi, asm_->r14);
+
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
+    LookupHeapEnv(asm_->rsi, nest);
+
     asm_->mov(asm_->edx, offset);
-    asm_->mov(asm_->ecx, nest);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_HEAP<1, 1, true>);
     } else {
@@ -2354,9 +2360,11 @@ class Compiler {
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
     asm_->mov(asm_->rdi, asm_->r14);
+
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
+    LookupHeapEnv(asm_->rsi, nest);
+
     asm_->mov(asm_->edx, offset);
-    asm_->mov(asm_->ecx, nest);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_HEAP<-1, 1, true>);
     } else {
@@ -2372,9 +2380,11 @@ class Compiler {
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
     asm_->mov(asm_->rdi, asm_->r14);
+
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
+    LookupHeapEnv(asm_->rsi, nest);
+
     asm_->mov(asm_->edx, offset);
-    asm_->mov(asm_->ecx, nest);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_HEAP<1, 0, true>);
     } else {
@@ -2390,9 +2400,11 @@ class Compiler {
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
     asm_->mov(asm_->rdi, asm_->r14);
+
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
+    LookupHeapEnv(asm_->rsi, nest);
+
     asm_->mov(asm_->edx, offset);
-    asm_->mov(asm_->ecx, nest);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_HEAP<-1, 0, true>);
     } else {
@@ -2404,14 +2416,15 @@ class Compiler {
 
   // opcode | (dst | name) | (offset | nest)
   void EmitTYPEOF_HEAP(const Instruction* instr) {
-    // TODO(Constellation) inline this method
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
     asm_->mov(asm_->rdi, asm_->r14);
+
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
+    LookupHeapEnv(asm_->rsi, nest);
+
     asm_->mov(asm_->edx, offset);
-    asm_->mov(asm_->ecx, nest);
     if (code_->strict()) {
       asm_->Call(&stub::TYPEOF_HEAP<true>);
     } else {
@@ -3141,6 +3154,12 @@ class Compiler {
 
   inline void set_last_used_candidate(int32_t reg) {
     last_used_candidate_ = reg;
+  }
+
+  void LookupHeapEnv(const Xbyak::Reg64& target, uint32_t nest) {
+    for (uint32_t i = 0; i < nest; ++i) {
+      asm_->mov(target, asm_->ptr[target + IV_OFFSETOF(JSEnv, outer_)]);
+    }
   }
 
   railgun::Code* top_;
