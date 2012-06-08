@@ -192,7 +192,7 @@ class TypeEntry {
       return TypeEntry(
           JSVal::Int32(
               core::DoubleToInt32(lhs.constant().number()) <<
-              (core::DoubleToInt32(lhs.constant().number()) & 0x1F)));
+              (core::DoubleToInt32(rhs.constant().number()) & 0x1F)));
     }
     return TypeEntry(Type::Int32());
   }
@@ -203,7 +203,7 @@ class TypeEntry {
       return TypeEntry(
           JSVal::Int32(
               core::DoubleToInt32(lhs.constant().number()) >>
-              (core::DoubleToInt32(lhs.constant().number()) & 0x1F)));
+              (core::DoubleToInt32(rhs.constant().number()) & 0x1F)));
     }
     return TypeEntry(Type::Int32());
   }
@@ -214,7 +214,7 @@ class TypeEntry {
       return TypeEntry(
           JSVal::UInt32(
               core::DoubleToUInt32(lhs.constant().number()) >>
-              (core::DoubleToInt32(lhs.constant().number()) & 0x1F)));
+              (core::DoubleToInt32(rhs.constant().number()) & 0x1F)));
     }
     return TypeEntry(Type::Number());
   }
@@ -273,7 +273,7 @@ class TypeEntry {
       return TypeEntry(
           JSVal::Int32(
               core::DoubleToInt32(lhs.constant().number()) &
-              core::DoubleToInt32(lhs.constant().number())));
+              core::DoubleToInt32(rhs.constant().number())));
     }
     return TypeEntry(Type::Int32());
   }
@@ -284,7 +284,7 @@ class TypeEntry {
       return TypeEntry(
           JSVal::Int32(
               core::DoubleToInt32(lhs.constant().number()) |
-              core::DoubleToInt32(lhs.constant().number())));
+              core::DoubleToInt32(rhs.constant().number())));
     }
     return TypeEntry(Type::Int32());
   }
@@ -295,7 +295,7 @@ class TypeEntry {
       return TypeEntry(
           JSVal::Int32(
               core::DoubleToInt32(lhs.constant().number()) ^
-              core::DoubleToInt32(lhs.constant().number())));
+              core::DoubleToInt32(rhs.constant().number())));
     }
     return TypeEntry(Type::Int32());
   }

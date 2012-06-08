@@ -141,6 +141,7 @@ class Compiler {
     entry_points_.insert(std::make_pair(code, asm_->size()));
     previous_instr_ = NULL;
     last_used_ = kInvalidUsedOffset;
+    type_record_.clear();
   }
 
   void Compile(railgun::Code* code) {
@@ -3159,6 +3160,28 @@ class Compiler {
     assert(cond.getIdx() != result.getIdx());
     asm_->mov(result, detail::jsval64::kBooleanRepresentation);
     asm_->or(Xbyak::Reg8(result.getIdx()), cond);
+  }
+
+  void LoadAndInt32Guard(
+      int16_t reg,
+      const Xbyak::Reg64& target,
+      const Xbyak::Reg64& tmp1,
+      const char* label,
+      Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
+    const TypeEntry entry = type_record_[reg];
+    if (entry.type().IsInt32()) {
+      // no check
+      if (entry.IsConstant()) {
+        asm_->mov(Xbyak::Reg32(target.getIdx()), entry.constant().int32());
+      } else {
+        LoadVR(target, reg);
+      }
+      return;
+    }
+    asm_->mov(tmp1, asm_->r15);
+    asm_->and(tmp1, target);
+    asm_->cmp(tmp1, asm_->r15);
+    asm_->jne(label, type);
   }
 
   void Int32Guard(int16_t reg,
