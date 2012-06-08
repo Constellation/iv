@@ -809,7 +809,7 @@ class Compiler {
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_ADD_SLOW_GENERIC");
       AddingInt32OverflowGuard(asm_->esi,
                                asm_->edx, asm_->eax, ".BINARY_ADD_SLOW_NUMBER");
-      asm_->add(asm_->rax, asm_->r15);
+      asm_->or(asm_->rax, asm_->r15);
       asm_->jmp(".BINARY_ADD_EXIT");
 
       // rdi and rsi is always int32 (but overflow)
@@ -848,7 +848,7 @@ class Compiler {
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_SUBTRACT_SLOW_GENERIC");
       SubtractingInt32OverflowGuard(asm_->esi,
                                     asm_->edx, asm_->eax, ".BINARY_SUBTRACT_SLOW_NUMBER");
-      asm_->add(asm_->rax, asm_->r15);
+      asm_->or(asm_->rax, asm_->r15);
       asm_->jmp(".BINARY_SUBTRACT_EXIT");
 
       // rdi and rsi is always int32 (but overflow)
@@ -887,7 +887,7 @@ class Compiler {
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_MULTIPLY_SLOW_GENERIC");
       MultiplyingInt32OverflowGuard(asm_->esi,
                                     asm_->edx, asm_->eax, ".BINARY_MULTIPLY_SLOW_NUMBER");
-      asm_->add(asm_->rax, asm_->r15);
+      asm_->or(asm_->rax, asm_->r15);
       asm_->jmp(".BINARY_MULTIPLY_EXIT");
 
       // rdi and rsi is always int32 (but overflow)
@@ -949,8 +949,8 @@ class Compiler {
       asm_->mov(asm_->edx, 0);
       asm_->idiv(asm_->ecx);
 
-      asm_->mov(asm_->rax, asm_->r15);
-      asm_->add(asm_->rax, asm_->rdx);
+      asm_->mov(asm_->eax, asm_->edx);
+      asm_->or(asm_->rax, asm_->r15);
       asm_->jmp(".BINARY_MODULO_EXIT");
 
       asm_->L(".BINARY_MODULO_SLOW_GENERIC");
@@ -974,8 +974,8 @@ class Compiler {
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_LSHIFT_SLOW_GENERIC");
       Int32Guard(asm_->rcx, asm_->rax, ".BINARY_LSHIFT_SLOW_GENERIC");
       asm_->sal(asm_->esi, asm_->cl);
-      asm_->mov(asm_->rax, asm_->r15);
-      asm_->add(asm_->rax, asm_->rsi);
+      asm_->mov(asm_->eax, asm_->esi);
+      asm_->or(asm_->rax, asm_->r15);
       asm_->jmp(".BINARY_LSHIFT_EXIT");
 
       asm_->L(".BINARY_LSHIFT_SLOW_GENERIC");
@@ -1000,8 +1000,8 @@ class Compiler {
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_RSHIFT_SLOW_GENERIC");
       Int32Guard(asm_->rcx, asm_->rax, ".BINARY_RSHIFT_SLOW_GENERIC");
       asm_->sar(asm_->esi, asm_->cl);
-      asm_->mov(asm_->rax, asm_->r15);
-      asm_->add(asm_->rax, asm_->rsi);
+      asm_->mov(asm_->eax, asm_->esi);
+      asm_->or(asm_->rax, asm_->r15);
       asm_->jmp(".BINARY_RSHIFT_EXIT");
 
       asm_->L(".BINARY_RSHIFT_SLOW_GENERIC");
@@ -1028,8 +1028,8 @@ class Compiler {
       asm_->shr(asm_->esi, asm_->cl);
       asm_->cmp(asm_->esi, 0);
       asm_->jl(".BINARY_RSHIFT_LOGICAL_DOUBLE");  // uint32_t
-      asm_->mov(asm_->rax, asm_->r15);
-      asm_->add(asm_->rax, asm_->rsi);
+      asm_->mov(asm_->eax, asm_->esi);
+      asm_->or(asm_->rax, asm_->r15);
       asm_->jmp(".BINARY_RSHIFT_LOGICAL_EXIT");
 
       asm_->L(".BINARY_RSHIFT_LOGICAL_DOUBLE");
@@ -1524,8 +1524,8 @@ class Compiler {
         asm_->L(".BINARY_BIT_AND_EXIT");
       } else {
         const int16_t dst = Reg(instr[1].i16[0]);
-        asm_->mov(asm_->rax, asm_->r15);
-        asm_->add(asm_->rax, asm_->rsi);
+        asm_->mov(asm_->eax, asm_->esi);
+        asm_->or(asm_->rax, asm_->r15);
         asm_->jmp(".BINARY_BIT_AND_EXIT");
 
         asm_->L(".BINARY_BIT_AND_SLOW");
@@ -1550,8 +1550,8 @@ class Compiler {
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_BIT_XOR_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_BIT_XOR_SLOW");
       asm_->xor(asm_->esi, asm_->edx);
-      asm_->mov(asm_->rax, asm_->r15);
-      asm_->add(asm_->rax, asm_->rsi);
+      asm_->mov(asm_->eax, asm_->esi);
+      asm_->or(asm_->rax, asm_->r15);
       asm_->jmp(".BINARY_BIT_XOR_EXIT");
 
       asm_->L(".BINARY_BIT_XOR_SLOW");
@@ -1575,8 +1575,8 @@ class Compiler {
       Int32Guard(asm_->rsi, asm_->rax, ".BINARY_BIT_OR_SLOW");
       Int32Guard(asm_->rdx, asm_->rax, ".BINARY_BIT_OR_SLOW");
       asm_->or(asm_->esi, asm_->edx);
-      asm_->mov(asm_->rax, asm_->r15);
-      asm_->add(asm_->rax, asm_->rsi);
+      asm_->mov(asm_->eax, asm_->esi);
+      asm_->or(asm_->rax, asm_->r15);
       asm_->jmp(".BINARY_BIT_OR_EXIT");
 
       asm_->L(".BINARY_BIT_OR_SLOW");
@@ -1666,8 +1666,8 @@ class Compiler {
       asm_->jz(".UNARY_NEGATIVE_MINUS_ZERO");
       asm_->neg(asm_->esi);
       asm_->jo(".UNARY_NEGATIVE_INT32_MIN");
-      asm_->mov(asm_->rax, asm_->r15);
-      asm_->or(asm_->rax, asm_->esi);
+      asm_->mov(asm_->eax, asm_->esi);
+      asm_->or(asm_->rax, asm_->r15);
       asm_->jmp(".UNARY_NEGATIVE_EXIT");
 
       asm_->L(".UNARY_NEGATIVE_MINUS_ZERO");
@@ -1707,8 +1707,8 @@ class Compiler {
       LoadVR(asm_->rsi, src);
       Int32Guard(asm_->rsi, asm_->rax, ".UNARY_BIT_NOT_SLOW");
       asm_->not(asm_->esi);
-      asm_->mov(asm_->rax, asm_->r15);
-      asm_->add(asm_->rax, asm_->rsi);
+      asm_->mov(asm_->eax, asm_->esi);
+      asm_->or(asm_->rax, asm_->r15);
       asm_->jmp(".UNARY_BIT_NOT_EXIT");
 
       asm_->L(".UNARY_BIT_NOT_SLOW");
@@ -2643,8 +2643,8 @@ class Compiler {
       asm_->inc(asm_->esi);
       asm_->jo(".INCREMENT_OVERFLOW");
 
-      asm_->mov(asm_->rax, asm_->r15);
-      asm_->add(asm_->rax, asm_->rsi);
+      asm_->mov(asm_->eax, asm_->esi);
+      asm_->or(asm_->rax, asm_->r15);
       asm_->jmp(".INCREMENT_EXIT");
 
       asm_->L(".INCREMENT_OVERFLOW");
@@ -2673,8 +2673,8 @@ class Compiler {
       asm_->sub(asm_->esi, 1);
       asm_->jo(".DECREMENT_OVERFLOW");
 
-      asm_->mov(asm_->rax, asm_->r15);
-      asm_->add(asm_->rax, asm_->rsi);
+      asm_->mov(asm_->eax, asm_->esi);
+      asm_->or(asm_->rax, asm_->r15);
       asm_->jmp(".DECREMENT_EXIT");
 
       // overflow ==> INT32_MIN - 1
@@ -2705,8 +2705,8 @@ class Compiler {
       asm_->inc(asm_->esi);
       asm_->jo(".INCREMENT_OVERFLOW");
 
-      asm_->mov(asm_->rax, asm_->r15);
-      asm_->add(asm_->rax, asm_->rsi);
+      asm_->mov(asm_->eax, asm_->esi);
+      asm_->or(asm_->rax, asm_->r15);
       asm_->jmp(".INCREMENT_EXIT");
 
       // overflow ==> INT32_MAX + 1
@@ -2738,8 +2738,8 @@ class Compiler {
       asm_->sub(asm_->esi, 1);
       asm_->jo(".DECREMENT_OVERFLOW");
 
-      asm_->mov(asm_->rax, asm_->r15);
-      asm_->add(asm_->rax, asm_->rsi);
+      asm_->mov(asm_->eax, asm_->esi);
+      asm_->or(asm_->rax, asm_->r15);
       asm_->jmp(".DECREMENT_EXIT");
 
       // overflow ==> INT32_MIN - 1
