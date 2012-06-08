@@ -692,6 +692,15 @@ class Compiler {
         asm_->mov(out, asm_->rax);
       }
     } else {
+      const TypeEntry entry = type_record_[offset];
+      if (entry.IsConstant()) {
+        // constant propagation in basic block level
+        asm_->mov(out, Extract(entry.constant()));
+        if (break_result) {
+          set_last_used(kInvalidUsedOffset);
+        }
+        return;
+      }
       asm_->mov(out, asm_->ptr[asm_->r13 + offset * kJSValSize]);
       if (break_result) {
         set_last_used(kInvalidUsedOffset);
@@ -794,8 +803,8 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(asm_->rsi, lhs);
       LoadVR(asm_->rdx, rhs);
-      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_ADD_SLOW_GENERIC");
-      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_ADD_SLOW_GENERIC");
+      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_ADD_SLOW_GENERIC");
+      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_ADD_SLOW_GENERIC");
       AddingInt32OverflowGuard(asm_->esi,
                                asm_->edx, asm_->eax, ".BINARY_ADD_SLOW_NUMBER");
       asm_->or(asm_->rax, asm_->r15);
@@ -835,8 +844,8 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(asm_->rsi, lhs);
       LoadVR(asm_->rdx, rhs);
-      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_SUBTRACT_SLOW_GENERIC");
-      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_SUBTRACT_SLOW_GENERIC");
+      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_SUBTRACT_SLOW_GENERIC");
+      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_SUBTRACT_SLOW_GENERIC");
       SubtractingInt32OverflowGuard(asm_->esi,
                                     asm_->edx, asm_->eax, ".BINARY_SUBTRACT_SLOW_NUMBER");
       asm_->or(asm_->rax, asm_->r15);
@@ -876,8 +885,8 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(asm_->rsi, lhs);
       LoadVR(asm_->rdx, rhs);
-      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_MULTIPLY_SLOW_GENERIC");
-      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_MULTIPLY_SLOW_GENERIC");
+      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_MULTIPLY_SLOW_GENERIC");
+      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_MULTIPLY_SLOW_GENERIC");
       MultiplyingInt32OverflowGuard(asm_->esi,
                                     asm_->edx, asm_->eax, ".BINARY_MULTIPLY_SLOW_NUMBER");
       asm_->or(asm_->rax, asm_->r15);
@@ -930,8 +939,8 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(asm_->rsi, lhs);
       LoadVR(asm_->rdx, rhs);
-      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_MODULO_SLOW_GENERIC");
-      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_MODULO_SLOW_GENERIC");
+      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_MODULO_SLOW_GENERIC");
+      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_MODULO_SLOW_GENERIC");
       // check rhs is more than 0 (n % 0 == NaN)
       // lhs is >= 0 and rhs is > 0 because example like
       //   -1 % -1
@@ -970,8 +979,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rcx, rhs);
-      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_LSHIFT_SLOW_GENERIC");
-      Int32Guard(asm_->rcx, asm_->rax, ".BINARY_LSHIFT_SLOW_GENERIC");
+      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_LSHIFT_SLOW_GENERIC");
+      Int32Guard(rhs, asm_->rcx, asm_->rax, ".BINARY_LSHIFT_SLOW_GENERIC");
       asm_->sal(asm_->esi, asm_->cl);
       asm_->mov(asm_->eax, asm_->esi);
       asm_->or(asm_->rax, asm_->r15);
@@ -998,8 +1007,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rcx, rhs);
-      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_RSHIFT_SLOW_GENERIC");
-      Int32Guard(asm_->rcx, asm_->rax, ".BINARY_RSHIFT_SLOW_GENERIC");
+      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_RSHIFT_SLOW_GENERIC");
+      Int32Guard(rhs, asm_->rcx, asm_->rax, ".BINARY_RSHIFT_SLOW_GENERIC");
       asm_->sar(asm_->esi, asm_->cl);
       asm_->mov(asm_->eax, asm_->esi);
       asm_->or(asm_->rax, asm_->r15);
@@ -1026,8 +1035,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rcx, rhs);
-      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_RSHIFT_LOGICAL_SLOW_GENERIC");
-      Int32Guard(asm_->rcx, asm_->rax, ".BINARY_RSHIFT_LOGICAL_SLOW_GENERIC");
+      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_RSHIFT_LOGICAL_SLOW_GENERIC");
+      Int32Guard(rhs, asm_->rcx, asm_->rax, ".BINARY_RSHIFT_LOGICAL_SLOW_GENERIC");
       asm_->shr(asm_->esi, asm_->cl);
       asm_->cmp(asm_->esi, 0);
       asm_->jl(".BINARY_RSHIFT_LOGICAL_DOUBLE");  // uint32_t
@@ -1061,8 +1070,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_LT_SLOW");
-      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_LT_SLOW");
+      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_LT_SLOW");
+      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_LT_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
 
       if (fused != OP::NOP) {
@@ -1112,8 +1121,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_LTE_SLOW");
-      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_LTE_SLOW");
+      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_LTE_SLOW");
+      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_LTE_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
 
       if (fused != OP::NOP) {
@@ -1163,8 +1172,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_GT_SLOW");
-      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_GT_SLOW");
+      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_GT_SLOW");
+      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_GT_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
 
       if (fused != OP::NOP) {
@@ -1213,8 +1222,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_GTE_SLOW");
-      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_GTE_SLOW");
+      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_GTE_SLOW");
+      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_GTE_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
 
       if (fused != OP::NOP) {
@@ -1319,8 +1328,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_EQ_SLOW");
-      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_EQ_SLOW");
+      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_EQ_SLOW");
+      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_EQ_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
 
       if (fused != OP::NOP) {
@@ -1373,8 +1382,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rdi, lhs, asm_->rsi, rhs);
-      Int32Guard(asm_->rdi, asm_->rax, ".BINARY_STRICT_EQ_SLOW");
-      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_STRICT_EQ_SLOW");
+      Int32Guard(lhs, asm_->rdi, asm_->rax, ".BINARY_STRICT_EQ_SLOW");
+      Int32Guard(rhs, asm_->rsi, asm_->rax, ".BINARY_STRICT_EQ_SLOW");
       asm_->cmp(asm_->esi, asm_->edi);
 
       if (fused != OP::NOP) {
@@ -1421,8 +1430,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_NE_SLOW");
-      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_NE_SLOW");
+      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_NE_SLOW");
+      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_NE_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
 
       if (fused != OP::NOP) {
@@ -1475,8 +1484,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rdi, lhs, asm_->rsi, rhs);
-      Int32Guard(asm_->rdi, asm_->rax, ".BINARY_STRICT_NE_SLOW");
-      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_STRICT_NE_SLOW");
+      Int32Guard(lhs, asm_->rdi, asm_->rax, ".BINARY_STRICT_NE_SLOW");
+      Int32Guard(rhs, asm_->rsi, asm_->rax, ".BINARY_STRICT_NE_SLOW");
       asm_->cmp(asm_->esi, asm_->edi);
 
       if (fused != OP::NOP) {
@@ -1523,8 +1532,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_BIT_AND_SLOW");
-      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_BIT_AND_SLOW");
+      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_BIT_AND_SLOW");
+      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_BIT_AND_SLOW");
       asm_->and(asm_->esi, asm_->edx);
 
       if (fused != OP::NOP) {
@@ -1574,8 +1583,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_BIT_XOR_SLOW");
-      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_BIT_XOR_SLOW");
+      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_BIT_XOR_SLOW");
+      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_BIT_XOR_SLOW");
       asm_->xor(asm_->esi, asm_->edx);
       asm_->mov(asm_->eax, asm_->esi);
       asm_->or(asm_->rax, asm_->r15);
@@ -1600,8 +1609,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      Int32Guard(asm_->rsi, asm_->rax, ".BINARY_BIT_OR_SLOW");
-      Int32Guard(asm_->rdx, asm_->rax, ".BINARY_BIT_OR_SLOW");
+      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_BIT_OR_SLOW");
+      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_BIT_OR_SLOW");
       asm_->or(asm_->esi, asm_->edx);
       asm_->mov(asm_->eax, asm_->esi);
       asm_->or(asm_->rax, asm_->r15);
@@ -1698,7 +1707,7 @@ class Compiler {
       // -0 should be double -0.0.
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(asm_->rsi, src);
-      Int32Guard(asm_->rsi, asm_->rax, ".UNARY_NEGATIVE_SLOW");
+      Int32Guard(src, asm_->rsi, asm_->rax, ".UNARY_NEGATIVE_SLOW");
       asm_->test(asm_->esi, asm_->esi);
       asm_->jz(".UNARY_NEGATIVE_MINUS_ZERO");
       asm_->neg(asm_->esi);
@@ -1744,7 +1753,7 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(asm_->rsi, src);
-      Int32Guard(asm_->rsi, asm_->rax, ".UNARY_BIT_NOT_SLOW");
+      Int32Guard(src, asm_->rsi, asm_->rax, ".UNARY_BIT_NOT_SLOW");
       asm_->not(asm_->esi);
       asm_->mov(asm_->eax, asm_->esi);
       asm_->or(asm_->rax, asm_->r15);
@@ -2712,7 +2721,7 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(asm_->rsi, src);
-      Int32Guard(asm_->rsi, asm_->rax, ".INCREMENT_SLOW");
+      Int32Guard(src, asm_->rsi, asm_->rax, ".INCREMENT_SLOW");
       asm_->inc(asm_->esi);
       asm_->jo(".INCREMENT_OVERFLOW");
 
@@ -2743,7 +2752,7 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(asm_->rsi, src);
-      Int32Guard(asm_->rsi, asm_->rax, ".DECREMENT_SLOW");
+      Int32Guard(src, asm_->rsi, asm_->rax, ".DECREMENT_SLOW");
       asm_->sub(asm_->esi, 1);
       asm_->jo(".DECREMENT_OVERFLOW");
 
@@ -2775,7 +2784,7 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(asm_->rsi, src);
-      Int32Guard(asm_->rsi, asm_->rax, ".INCREMENT_SLOW");
+      Int32Guard(src, asm_->rsi, asm_->rax, ".INCREMENT_SLOW");
       asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rsi);
       asm_->inc(asm_->esi);
       asm_->jo(".INCREMENT_OVERFLOW");
@@ -2813,7 +2822,7 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(asm_->rsi, src);
-      Int32Guard(asm_->rsi, asm_->rax, ".DECREMENT_SLOW");
+      Int32Guard(src, asm_->rsi, asm_->rax, ".DECREMENT_SLOW");
       asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rsi);
       asm_->sub(asm_->esi, 1);
       asm_->jo(".DECREMENT_OVERFLOW");
@@ -3152,10 +3161,15 @@ class Compiler {
     asm_->or(Xbyak::Reg8(result.getIdx()), cond);
   }
 
-  void Int32Guard(const Xbyak::Reg64& target,
+  void Int32Guard(int16_t reg,
+                  const Xbyak::Reg64& target,
                   const Xbyak::Reg64& tmp1,
                   const char* label,
                   Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
+    if (type_record_[reg].type().IsInt32()) {
+      // no check
+      return;
+    }
     asm_->mov(tmp1, asm_->r15);
     asm_->and(tmp1, target);
     asm_->cmp(tmp1, asm_->r15);
