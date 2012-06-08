@@ -55,25 +55,6 @@ class Compiler {
   typedef std::vector<railgun::Code*> Codes;
   typedef std::unordered_map<const Instruction*, std::size_t> HandlerLinks;
 
-  class TypeEntry {
-   public:
-    explicit TypeEntry(Type type)
-      : type_(type), constant_(JSEmpty) { }
-    explicit TypeEntry(JSVal constant)
-      : type_(Type(constant)), constant_(constant) { }
-
-    Type type() const {
-      return type_;
-    }
-
-    bool IsConstant() const {
-      return !constant_.IsEmpty();
-    }
-   private:
-    Type type_;
-    JSVal constant_;
-  };
-
   typedef std::unordered_map<int16_t, TypeEntry> TypeRecord;
 
   static const int kJSValSize = sizeof(JSVal);
@@ -91,7 +72,9 @@ class Compiler {
       codes_(),
       counter_(0),
       previous_instr_(NULL),
-      last_used_(kInvalidUsedOffset) {
+      last_used_(kInvalidUsedOffset),
+      last_used_candidate_(),
+      type_record_() {
     top_->core_data()->set_asm(asm_);
   }
 
@@ -245,6 +228,7 @@ class Compiler {
       if (!in_basic_block) {
         set_previous_instr(NULL);
         set_last_used(kInvalidUsedOffset);
+        type_record_.clear();
       } else {
         set_previous_instr(previous);
       }
@@ -739,6 +723,9 @@ class Compiler {
     LoadVR(asm_->rax, src);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+
+    // type propagation
+    type_record_[dst] = type_record_[src];
   }
 
   // opcode | (size | mutable_start)
@@ -790,10 +777,12 @@ class Compiler {
     // append immediate value to machine code
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[1].ssw.u32;
-    const uint64_t bytes = Extract(code_->constants()[offset]);
-    asm_->mov(asm_->rax, bytes);
+    const JSVal val = code_->constants()[offset];
+    asm_->mov(asm_->rax, Extract(val));
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+
+    type_record_[dst] = TypeEntry(val);
   }
 
   // opcode | (dst | lhs | rhs)
@@ -833,6 +822,8 @@ class Compiler {
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
     }
+
+    type_record_[dst] = TypeEntry::Add(type_record_[lhs], type_record_[rhs]);
   }
 
   // opcode | (dst | lhs | rhs)
@@ -872,6 +863,8 @@ class Compiler {
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
     }
+
+    type_record_[dst] = TypeEntry::Subtract(type_record_[lhs], type_record_[rhs]);
   }
 
   // opcode | (dst | lhs | rhs)
@@ -907,6 +900,8 @@ class Compiler {
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
     }
+
+    type_record_[dst] = TypeEntry::Multiply(type_record_[lhs], type_record_[rhs]);
   }
 
   // opcode | (dst | lhs | rhs)
@@ -922,6 +917,8 @@ class Compiler {
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
     }
+
+    type_record_[dst] = TypeEntry::Divide(type_record_[lhs], type_record_[rhs]);
   }
 
   // opcode | (dst | lhs | rhs)
@@ -961,6 +958,8 @@ class Compiler {
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
     }
+
+    type_record_[dst] = TypeEntry::Modulo(type_record_[lhs], type_record_[rhs]);
   }
 
   // opcode | (dst | lhs | rhs)
@@ -987,6 +986,8 @@ class Compiler {
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
     }
+
+    type_record_[dst] = TypeEntry::Lshift(type_record_[lhs], type_record_[rhs]);
   }
 
   // opcode | (dst | lhs | rhs)
@@ -1013,6 +1014,8 @@ class Compiler {
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
     }
+
+    type_record_[dst] = TypeEntry::Rshift(type_record_[lhs], type_record_[rhs]);
   }
 
   // opcode | (dst | lhs | rhs)
@@ -1047,6 +1050,8 @@ class Compiler {
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
     }
+
+    type_record_[dst] = TypeEntry::RshiftLogical(type_record_[lhs], type_record_[rhs]);
   }
 
   // opcode | (dst | lhs | rhs)
@@ -1081,20 +1086,22 @@ class Compiler {
         }
 
         asm_->L(".BINARY_LT_EXIT");
-      } else {
-        const int16_t dst = Reg(instr[1].i16[0]);
-        asm_->setl(asm_->cl);
-        ConvertBooleanToJSVal(asm_->cl, asm_->rax);
-        asm_->jmp(".BINARY_LT_EXIT");
-
-        asm_->L(".BINARY_LT_SLOW");
-        asm_->mov(asm_->rdi, asm_->r14);
-        asm_->Call(&stub::BINARY_LT);
-
-        asm_->L(".BINARY_LT_EXIT");
-        asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-        set_last_used_candidate(dst);
+        return;
       }
+
+      const int16_t dst = Reg(instr[1].i16[0]);
+      asm_->setl(asm_->cl);
+      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
+      asm_->jmp(".BINARY_LT_EXIT");
+
+      asm_->L(".BINARY_LT_SLOW");
+      asm_->mov(asm_->rdi, asm_->r14);
+      asm_->Call(&stub::BINARY_LT);
+
+      asm_->L(".BINARY_LT_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      set_last_used_candidate(dst);
+      type_record_[dst] = TypeEntry::LT(type_record_[lhs], type_record_[rhs]);
     }
   }
 
@@ -1130,20 +1137,22 @@ class Compiler {
         }
 
         asm_->L(".BINARY_LTE_EXIT");
-      } else {
-        const int16_t dst = Reg(instr[1].i16[0]);
-        asm_->setle(asm_->cl);
-        ConvertBooleanToJSVal(asm_->cl, asm_->rax);
-        asm_->jmp(".BINARY_LTE_EXIT");
-
-        asm_->L(".BINARY_LTE_SLOW");
-        asm_->mov(asm_->rdi, asm_->r14);
-        asm_->Call(&stub::BINARY_LTE);
-
-        asm_->L(".BINARY_LTE_EXIT");
-        asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-        set_last_used_candidate(dst);
+        return;
       }
+
+      const int16_t dst = Reg(instr[1].i16[0]);
+      asm_->setle(asm_->cl);
+      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
+      asm_->jmp(".BINARY_LTE_EXIT");
+
+      asm_->L(".BINARY_LTE_SLOW");
+      asm_->mov(asm_->rdi, asm_->r14);
+      asm_->Call(&stub::BINARY_LTE);
+
+      asm_->L(".BINARY_LTE_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      set_last_used_candidate(dst);
+      type_record_[dst] = TypeEntry::LTE(type_record_[lhs], type_record_[rhs]);
     }
   }
 
@@ -1178,20 +1187,22 @@ class Compiler {
           asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
         }
         asm_->L(".BINARY_GT_EXIT");
-      } else {
-        const int16_t dst = Reg(instr[1].i16[0]);
-        asm_->setg(asm_->cl);
-        ConvertBooleanToJSVal(asm_->cl, asm_->rax);
-        asm_->jmp(".BINARY_GT_EXIT");
-
-        asm_->L(".BINARY_GT_SLOW");
-        asm_->mov(asm_->rdi, asm_->r14);
-        asm_->Call(&stub::BINARY_GT);
-
-        asm_->L(".BINARY_GT_EXIT");
-        asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-        set_last_used_candidate(dst);
+        return;
       }
+
+      const int16_t dst = Reg(instr[1].i16[0]);
+      asm_->setg(asm_->cl);
+      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
+      asm_->jmp(".BINARY_GT_EXIT");
+
+      asm_->L(".BINARY_GT_SLOW");
+      asm_->mov(asm_->rdi, asm_->r14);
+      asm_->Call(&stub::BINARY_GT);
+
+      asm_->L(".BINARY_GT_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      set_last_used_candidate(dst);
+      type_record_[dst] = TypeEntry::GT(type_record_[lhs], type_record_[rhs]);
     }
   }
 
@@ -1226,20 +1237,22 @@ class Compiler {
           asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
         }
         asm_->L(".BINARY_GTE_EXIT");
-      } else {
-        const int16_t dst = Reg(instr[1].i16[0]);
-        asm_->setge(asm_->cl);
-        ConvertBooleanToJSVal(asm_->cl, asm_->rax);
-        asm_->jmp(".BINARY_GTE_EXIT");
-
-        asm_->L(".BINARY_GTE_SLOW");
-        asm_->mov(asm_->rdi, asm_->r14);
-        asm_->Call(&stub::BINARY_GTE);
-
-        asm_->L(".BINARY_GTE_EXIT");
-        asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-        set_last_used_candidate(dst);
+        return;
       }
+
+      const int16_t dst = Reg(instr[1].i16[0]);
+      asm_->setge(asm_->cl);
+      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
+      asm_->jmp(".BINARY_GTE_EXIT");
+
+      asm_->L(".BINARY_GTE_SLOW");
+      asm_->mov(asm_->rdi, asm_->r14);
+      asm_->Call(&stub::BINARY_GTE);
+
+      asm_->L(".BINARY_GTE_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      set_last_used_candidate(dst);
+      type_record_[dst] = TypeEntry::GTE(type_record_[lhs], type_record_[rhs]);
     }
   }
 
@@ -1261,11 +1274,13 @@ class Compiler {
         } else {
           asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
         }
-      } else {
-        const int16_t dst = Reg(instr[1].i16[0]);
-        asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-        set_last_used_candidate(dst);
+        return;
       }
+
+      const int16_t dst = Reg(instr[1].i16[0]);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      set_last_used_candidate(dst);
+      type_record_[dst] = TypeEntry::Instanceof(type_record_[lhs], type_record_[rhs]);
     }
   }
 
@@ -1287,11 +1302,13 @@ class Compiler {
         } else {
           asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
         }
-      } else {
-        const int16_t dst = Reg(instr[1].i16[0]);
-        asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-        set_last_used_candidate(dst);
+        return;
       }
+
+      const int16_t dst = Reg(instr[1].i16[0]);
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      set_last_used_candidate(dst);
+      type_record_[dst] = TypeEntry::In(type_record_[lhs], type_record_[rhs]);
     }
   }
 
@@ -1326,20 +1343,22 @@ class Compiler {
           asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
         }
         asm_->L(".BINARY_EQ_EXIT");
-      } else {
-        const int16_t dst = Reg(instr[1].i16[0]);
-        asm_->sete(asm_->cl);
-        ConvertBooleanToJSVal(asm_->cl, asm_->rax);
-        asm_->jmp(".BINARY_EQ_EXIT");
-
-        asm_->L(".BINARY_EQ_SLOW");
-        asm_->mov(asm_->rdi, asm_->r14);
-        asm_->Call(&stub::BINARY_EQ);
-
-        asm_->L(".BINARY_EQ_EXIT");
-        asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-        set_last_used_candidate(dst);
+        return;
       }
+
+      const int16_t dst = Reg(instr[1].i16[0]);
+      asm_->sete(asm_->cl);
+      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
+      asm_->jmp(".BINARY_EQ_EXIT");
+
+      asm_->L(".BINARY_EQ_SLOW");
+      asm_->mov(asm_->rdi, asm_->r14);
+      asm_->Call(&stub::BINARY_EQ);
+
+      asm_->L(".BINARY_EQ_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      set_last_used_candidate(dst);
+      type_record_[dst] = TypeEntry::Equal(type_record_[lhs], type_record_[rhs]);
     }
   }
 
@@ -1377,19 +1396,21 @@ class Compiler {
           asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
         }
         asm_->L(".BINARY_STRICT_EQ_EXIT");
-      } else {
-        const int16_t dst = Reg(instr[1].i16[0]);
-        asm_->sete(asm_->cl);
-        ConvertBooleanToJSVal(asm_->cl, asm_->rax);
-        asm_->jmp(".BINARY_STRICT_EQ_EXIT");
-
-        asm_->L(".BINARY_STRICT_EQ_SLOW");
-        asm_->Call(&stub::BINARY_STRICT_EQ);
-
-        asm_->L(".BINARY_STRICT_EQ_EXIT");
-        asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-        set_last_used_candidate(dst);
+        return;
       }
+
+      const int16_t dst = Reg(instr[1].i16[0]);
+      asm_->sete(asm_->cl);
+      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
+      asm_->jmp(".BINARY_STRICT_EQ_EXIT");
+
+      asm_->L(".BINARY_STRICT_EQ_SLOW");
+      asm_->Call(&stub::BINARY_STRICT_EQ);
+
+      asm_->L(".BINARY_STRICT_EQ_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      set_last_used_candidate(dst);
+      type_record_[dst] = TypeEntry::StrictEqual(type_record_[lhs], type_record_[rhs]);
     }
   }
 
@@ -1424,20 +1445,22 @@ class Compiler {
           asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
         }
         asm_->L(".BINARY_NE_EXIT");
-      } else {
-        const int16_t dst = Reg(instr[1].i16[0]);
-        asm_->setne(asm_->cl);
-        ConvertBooleanToJSVal(asm_->cl, asm_->rax);
-        asm_->jmp(".BINARY_NE_EXIT");
-
-        asm_->L(".BINARY_NE_SLOW");
-        asm_->mov(asm_->rdi, asm_->r14);
-        asm_->Call(&stub::BINARY_NE);
-
-        asm_->L(".BINARY_NE_EXIT");
-        asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-        set_last_used_candidate(dst);
+        return;
       }
+
+      const int16_t dst = Reg(instr[1].i16[0]);
+      asm_->setne(asm_->cl);
+      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
+      asm_->jmp(".BINARY_NE_EXIT");
+
+      asm_->L(".BINARY_NE_SLOW");
+      asm_->mov(asm_->rdi, asm_->r14);
+      asm_->Call(&stub::BINARY_NE);
+
+      asm_->L(".BINARY_NE_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      set_last_used_candidate(dst);
+      type_record_[dst] = TypeEntry::NotEqual(type_record_[lhs], type_record_[rhs]);
     }
   }
 
@@ -1475,19 +1498,21 @@ class Compiler {
           asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
         }
         asm_->L(".BINARY_STRICT_NE_EXIT");
-      } else {
-        const int16_t dst = Reg(instr[1].i16[0]);
-        asm_->setne(asm_->cl);
-        ConvertBooleanToJSVal(asm_->cl, asm_->rax);
-        asm_->jmp(".BINARY_STRICT_NE_EXIT");
-
-        asm_->L(".BINARY_STRICT_NE_SLOW");
-        asm_->Call(&stub::BINARY_STRICT_NE);
-
-        asm_->L(".BINARY_STRICT_NE_EXIT");
-        asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-        set_last_used_candidate(dst);
+        return;
       }
+
+      const int16_t dst = Reg(instr[1].i16[0]);
+      asm_->setne(asm_->cl);
+      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
+      asm_->jmp(".BINARY_STRICT_NE_EXIT");
+
+      asm_->L(".BINARY_STRICT_NE_SLOW");
+      asm_->Call(&stub::BINARY_STRICT_NE);
+
+      asm_->L(".BINARY_STRICT_NE_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      set_last_used_candidate(dst);
+      type_record_[dst] = TypeEntry::StrictNotEqual(type_record_[lhs], type_record_[rhs]);
     }
   }
 
@@ -1522,20 +1547,22 @@ class Compiler {
           asm_->jz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
         }
         asm_->L(".BINARY_BIT_AND_EXIT");
-      } else {
-        const int16_t dst = Reg(instr[1].i16[0]);
-        asm_->mov(asm_->eax, asm_->esi);
-        asm_->or(asm_->rax, asm_->r15);
-        asm_->jmp(".BINARY_BIT_AND_EXIT");
-
-        asm_->L(".BINARY_BIT_AND_SLOW");
-        asm_->mov(asm_->rdi, asm_->r14);
-        asm_->Call(&stub::BINARY_BIT_AND);
-
-        asm_->L(".BINARY_BIT_AND_EXIT");
-        asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-        set_last_used_candidate(dst);
+        return;
       }
+
+      const int16_t dst = Reg(instr[1].i16[0]);
+      asm_->mov(asm_->eax, asm_->esi);
+      asm_->or(asm_->rax, asm_->r15);
+      asm_->jmp(".BINARY_BIT_AND_EXIT");
+
+      asm_->L(".BINARY_BIT_AND_SLOW");
+      asm_->mov(asm_->rdi, asm_->r14);
+      asm_->Call(&stub::BINARY_BIT_AND);
+
+      asm_->L(".BINARY_BIT_AND_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      set_last_used_candidate(dst);
+      type_record_[dst] = TypeEntry::BitwiseAnd(type_record_[lhs], type_record_[rhs]);
     }
   }
 
@@ -1561,6 +1588,7 @@ class Compiler {
       asm_->L(".BINARY_BIT_XOR_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
+      type_record_[dst] = TypeEntry::BitwiseXor(type_record_[lhs], type_record_[rhs]);
     }
   }
 
@@ -1586,6 +1614,7 @@ class Compiler {
       asm_->L(".BINARY_BIT_OR_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
+      type_record_[dst] = TypeEntry::BitwiseOr(type_record_[lhs], type_record_[rhs]);
     }
   }
 
@@ -1595,6 +1624,8 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i32[0]);
     assert(layout <= UINT32_MAX);
     asm_->mov(asm_->qword[asm_->r13 + (dst * kJSValSize)], layout);
+
+    type_record_[dst] = TypeEntry(JSUndefined);
   }
 
   // opcode | dst
@@ -1603,6 +1634,8 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i32[0]);
     assert(layout <= UINT32_MAX);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
+
+    type_record_[dst] = TypeEntry(JSEmpty);
   }
 
   // opcode | dst
@@ -1611,6 +1644,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i32[0]);
     assert(layout <= UINT32_MAX);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
+    type_record_[dst] = TypeEntry(JSNull);
   }
 
   // opcode | dst
@@ -1619,6 +1653,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i32[0]);
     assert(layout <= UINT32_MAX);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
+    type_record_[dst] = TypeEntry(JSTrue);
   }
 
   // opcode | dst
@@ -1627,6 +1662,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i32[0]);
     assert(layout <= UINT32_MAX);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
+    type_record_[dst] = TypeEntry(JSFalse);
   }
 
   // opcode | (dst | src)
@@ -1647,6 +1683,7 @@ class Compiler {
       asm_->L(".UNARY_POSITIVE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
+      type_record_[dst] = TypeEntry::Positive(type_record_[src]);
     }
   }
 
@@ -1685,6 +1722,7 @@ class Compiler {
       asm_->L(".UNARY_NEGATIVE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
+      type_record_[dst] = TypeEntry::Negative(type_record_[src]);
     }
   }
 
@@ -1696,6 +1734,7 @@ class Compiler {
     asm_->Call(&stub::UNARY_NOT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry::Not(type_record_[src]);
   }
 
   // opcode | (dst | src)
@@ -1718,6 +1757,7 @@ class Compiler {
       asm_->L(".UNARY_BIT_NOT_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
+      type_record_[dst] = TypeEntry::BitwiseNot(type_record_[src]);
     }
   }
 
@@ -1753,6 +1793,7 @@ class Compiler {
     asm_->Call(&stub::TO_PRIMITIVE_AND_TO_STRING);
     asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], asm_->rax);
     set_last_used_candidate(src);
+    type_record_[src] = TypeEntry::ToPrimitiveAndToString(type_record_[src]);
   }
 
   // opcode | (dst | start | count)
@@ -1766,6 +1807,7 @@ class Compiler {
     asm_->Call(&stub::CONCAT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::String());
   }
 
   // opcode
@@ -1791,6 +1833,7 @@ class Compiler {
     asm_->Call(&stub::TYPEOF);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::String());
   }
 
   // opcode | (obj | item) | (offset | merged)
@@ -1859,11 +1902,11 @@ class Compiler {
     asm_->call(asm_->rax);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Unknown());
   }
 
   // opcode | (base | src | index) | nop | nop
   void EmitSTORE_PROP(const Instruction* instr) {
-    // TODO(Constellation) specialize length and indices
     const int16_t base = Reg(instr[1].ssw.i16[0]);
     const int16_t src = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
@@ -1900,6 +1943,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Boolean());
   }
 
   // opcode | (dst | base | name) | nop | nop | nop
@@ -1918,6 +1962,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Number());
   }
 
   // opcode | (dst | base | name) | nop | nop | nop
@@ -1936,6 +1981,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Number());
   }
 
   // opcode | (dst | base | name) | nop | nop | nop
@@ -1954,6 +2000,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Number());
   }
 
   // opcode | (dst | base | name) | nop | nop | nop
@@ -1972,6 +2019,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Number());
   }
 
   // opcode
@@ -2018,6 +2066,7 @@ class Compiler {
     asm_->Call(&stub::LOAD_ARRAY);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Array());
   }
 
   // opcode | (dst | code)
@@ -2030,6 +2079,7 @@ class Compiler {
     asm_->Call(&breaker::JSFunction::New);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Function());
   }
 
   // opcode | (dst | offset)
@@ -2042,6 +2092,7 @@ class Compiler {
     asm_->Call(&stub::LOAD_REGEXP);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Object());
   }
 
   // opcode | dst | map
@@ -2052,6 +2103,7 @@ class Compiler {
     asm_->Call(&stub::LOAD_OBJECT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Object());
   }
 
   // opcode | (dst | base | element)
@@ -2065,6 +2117,7 @@ class Compiler {
     asm_->Call(&stub::LOAD_ELEMENT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Unknown());
   }
 
   // opcode | (base | element | src)
@@ -2098,6 +2151,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Boolean());
   }
 
   // opcode | (dst | base | element)
@@ -2115,6 +2169,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Number());
   }
 
   // opcode | (dst | base | element)
@@ -2132,6 +2187,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Number());
   }
 
   // opcode | (dst | base | element)
@@ -2149,6 +2205,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Number());
   }
 
   // opcode | (dst | base | element)
@@ -2166,6 +2223,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Number());
   }
 
   // opcode | dst
@@ -2173,6 +2231,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i32[0]);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Unknown());
   }
 
   // opcode | src
@@ -2201,6 +2260,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Unknown());
   }
 
   // opcode | (src | name) | nop | nop
@@ -2227,6 +2287,7 @@ class Compiler {
     asm_->Call(&stub::DELETE_GLOBAL);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Boolean());
   }
 
   // opcode | (dst | name) | nop | nop
@@ -2243,6 +2304,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Number());
   }
 
   // opcode | (dst | name) | nop | nop
@@ -2259,6 +2321,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Number());
   }
 
   // opcode | (dst | name) | nop | nop
@@ -2275,6 +2338,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Number());
   }
 
   // opcode | (dst | name) | nop | nop
@@ -2291,6 +2355,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Number());
   }
 
   // opcode | (dst | name) | nop | nop
@@ -2306,6 +2371,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::String());
   }
 
   // opcode | (dst | index) | (offset | nest)
@@ -2325,6 +2391,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Unknown());
   }
 
   // opcode | (src | name) | (offset | nest)
@@ -2350,6 +2417,7 @@ class Compiler {
     static const uint64_t layout = Extract(JSFalse);
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
+    type_record_[dst] = TypeEntry(Type::Boolean());
   }
 
   // opcode | (dst | name) | (offset | nest)
@@ -2368,6 +2436,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Number());
   }
 
   // opcode | (dst | name) | (offset | nest)
@@ -2386,6 +2455,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Number());
   }
 
   // opcode | (dst | name) | (offset | nest)
@@ -2404,6 +2474,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Number());
   }
 
   // opcode | (dst | name) | (offset | nest)
@@ -2422,6 +2493,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Number());
   }
 
   // opcode | (dst | name) | (offset | nest)
@@ -2441,6 +2513,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::String());
   }
 
   // opcode | (callee | offset | argc_with_this)
@@ -2659,6 +2732,7 @@ class Compiler {
       asm_->L(".INCREMENT_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], asm_->rax);
       set_last_used_candidate(src);
+      type_record_[src] = TypeEntry::Increment(type_record_[src]);
     }
   }
 
@@ -2689,6 +2763,7 @@ class Compiler {
       asm_->L(".DECREMENT_EXIT");
       asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
       set_last_used_candidate(src);
+      type_record_[src] = TypeEntry::Decrement(type_record_[src]);
     }
   }
 
@@ -2722,6 +2797,11 @@ class Compiler {
       asm_->L(".INCREMENT_EXIT");
       asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
       set_last_used_candidate(src);
+      {
+        const TypeEntry from = type_record_[src];
+        type_record_[dst] = TypeEntry::ToNumber(from);
+        type_record_[src] = TypeEntry::Increment(from);
+      }
     }
   }
 
@@ -2755,6 +2835,11 @@ class Compiler {
       asm_->L(".DECREMENT_EXIT");
       asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
       set_last_used_candidate(src);
+      {
+        const TypeEntry from = type_record_[src];
+        type_record_[dst] = TypeEntry::ToNumber(from);
+        type_record_[src] = TypeEntry::Increment(from);
+      }
     }
   }
 
@@ -2770,6 +2855,8 @@ class Compiler {
     asm_->Call(&stub::PREPARE_DYNAMIC_CALL);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[base] = TypeEntry(Type::Unknown());
+    type_record_[dst] = TypeEntry(Type::Unknown());
   }
 
   // opcode | (jmp | cond)
@@ -2874,6 +2961,7 @@ class Compiler {
     asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
     asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::String());
   }
 
   // opcode | iterator
@@ -2910,6 +2998,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Unknown());
   }
 
   // opcode | (src | name)
@@ -2941,6 +3030,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Boolean());
   }
 
   // opcode | (dst | name)
@@ -2957,6 +3047,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Number());
   }
 
   // opcode | (dst | name)
@@ -2973,6 +3064,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Number());
   }
 
   // opcode | (dst | name)
@@ -2989,6 +3081,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Number());
   }
 
   // opcode | (dst | name)
@@ -3005,6 +3098,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Number());
   }
 
   // opcode | (dst | name)
@@ -3021,6 +3115,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::String());
   }
 
   // opcode | jmp
@@ -3040,6 +3135,7 @@ class Compiler {
     }
     asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_[dst] = TypeEntry(Type::Arguments());
   }
 
   // NaN is not handled
