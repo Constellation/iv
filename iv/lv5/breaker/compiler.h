@@ -15,6 +15,7 @@
 #include <iv/lv5/breaker/assembler.h>
 #include <iv/lv5/breaker/stub.h>
 #include <iv/lv5/breaker/jsfunction.h>
+#include <iv/lv5/breaker/type.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {
@@ -53,6 +54,27 @@ class Compiler {
       std::pair<Assembler::RepatchSite, std::size_t> > RepatchSites;
   typedef std::vector<railgun::Code*> Codes;
   typedef std::unordered_map<const Instruction*, std::size_t> HandlerLinks;
+
+  class TypeEntry {
+   public:
+    explicit TypeEntry(Type type)
+      : type_(type), constant_(JSEmpty) { }
+    explicit TypeEntry(JSVal constant)
+      : type_(Type(constant)), constant_(constant) { }
+
+    Type type() const {
+      return type_;
+    }
+
+    bool IsConstant() const {
+      return !constant_.IsEmpty();
+    }
+   private:
+    Type type_;
+    JSVal constant_;
+  };
+
+  typedef std::unordered_map<int16_t, TypeEntry> TypeRecord;
 
   static const int kJSValSize = sizeof(JSVal);
 
@@ -3155,6 +3177,7 @@ class Compiler {
   const Instruction* previous_instr_;
   int32_t last_used_;
   int32_t last_used_candidate_;
+  TypeRecord type_record_;
 };
 
 inline void CompileInternal(Compiler* compiler, railgun::Code* code) {
