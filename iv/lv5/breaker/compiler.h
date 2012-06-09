@@ -1912,7 +1912,12 @@ class Compiler {
     asm_->call(asm_->rax);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Unknown());
+
+    if (name == symbol::length() && type_record_[base].type().IsArray()) {
+      type_record_[dst] = TypeEntry(Type::Number());
+    } else {
+      type_record_[dst] = TypeEntry(Type::Unknown());
+    }
   }
 
   // opcode | (base | src | index) | nop | nop

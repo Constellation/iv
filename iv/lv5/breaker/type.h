@@ -84,6 +84,8 @@ class Type {
 
   bool IsUnknown() const { return type_ == TYPE_UNKNOWN; }
 
+  bool IsArray() const { return type_ == TYPE_ARRAY; }
+
   friend Type operator|(const Type& lhs, const Type& rhs) {
     return Type(lhs.type_ | rhs.type_);
   }
@@ -148,6 +150,12 @@ class TypeEntry {
   JSVal constant() const { return constant_; }
 
   static TypeEntry Add(const TypeEntry& lhs, const TypeEntry& rhs) {
+    if (lhs.IsConstant() && rhs.IsConstant()) {
+      if (lhs.constant().IsNumber() && rhs.constant().IsNumber()) {
+        return TypeEntry(lhs.constant().number() + rhs.constant().number());
+      }
+    }
+
     if (lhs.type().IsString() || rhs.type().IsString()) {
       return TypeEntry(Type::String());
     } else if (lhs.type().IsNotString() && rhs.type().IsNotString()) {
@@ -220,18 +228,46 @@ class TypeEntry {
   }
 
   static TypeEntry LT(const TypeEntry& lhs, const TypeEntry& rhs) {
+    if (lhs.IsConstant() && lhs.constant().IsNumber() &&
+        rhs.IsConstant() && rhs.constant().IsNumber()) {
+      return TypeEntry(
+          JSVal::Bool(
+              JSVal::NumberCompare(lhs.constant().number(),
+                                   rhs.constant().number()) == CMP_TRUE));
+    }
     return TypeEntry(Type::Boolean());
   }
 
   static TypeEntry LTE(const TypeEntry& lhs, const TypeEntry& rhs) {
+    if (lhs.IsConstant() && lhs.constant().IsNumber() &&
+        rhs.IsConstant() && rhs.constant().IsNumber()) {
+      return TypeEntry(
+          JSVal::Bool(
+              JSVal::NumberCompare(rhs.constant().number(),
+                                   lhs.constant().number()) == CMP_FALSE));
+    }
     return TypeEntry(Type::Boolean());
   }
 
   static TypeEntry GT(const TypeEntry& lhs, const TypeEntry& rhs) {
+    if (lhs.IsConstant() && lhs.constant().IsNumber() &&
+        rhs.IsConstant() && rhs.constant().IsNumber()) {
+      return TypeEntry(
+          JSVal::Bool(
+              JSVal::NumberCompare(rhs.constant().number(),
+                                   lhs.constant().number()) == CMP_TRUE));
+    }
     return TypeEntry(Type::Boolean());
   }
 
   static TypeEntry GTE(const TypeEntry& lhs, const TypeEntry& rhs) {
+    if (lhs.IsConstant() && lhs.constant().IsNumber() &&
+        rhs.IsConstant() && rhs.constant().IsNumber()) {
+      return TypeEntry(
+          JSVal::Bool(
+              JSVal::NumberCompare(lhs.constant().number(),
+                                   rhs.constant().number()) == CMP_FALSE));
+    }
     return TypeEntry(Type::Boolean());
   }
 
