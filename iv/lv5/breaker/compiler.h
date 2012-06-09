@@ -801,8 +801,7 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, lhs);
-      LoadVR(asm_->rdx, rhs);
+      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
       Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_ADD_SLOW_GENERIC");
       Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_ADD_SLOW_GENERIC");
       AddingInt32OverflowGuard(asm_->esi,
@@ -842,8 +841,7 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, lhs);
-      LoadVR(asm_->rdx, rhs);
+      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
       Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_SUBTRACT_SLOW_GENERIC");
       Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_SUBTRACT_SLOW_GENERIC");
       SubtractingInt32OverflowGuard(asm_->esi,
@@ -883,8 +881,7 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, lhs);
-      LoadVR(asm_->rdx, rhs);
+      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
       Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_MULTIPLY_SLOW_GENERIC");
       Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_MULTIPLY_SLOW_GENERIC");
       MultiplyingInt32OverflowGuard(asm_->esi,
@@ -937,8 +934,7 @@ class Compiler {
     const int16_t rhs = Reg(instr[1].i16[2]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, lhs);
-      LoadVR(asm_->rdx, rhs);
+      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
       Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_MODULO_SLOW_GENERIC");
       Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_MODULO_SLOW_GENERIC");
       // check rhs is more than 0 (n % 0 == NaN)
@@ -3171,28 +3167,6 @@ class Compiler {
     assert(cond.getIdx() != result.getIdx());
     asm_->mov(result, detail::jsval64::kBooleanRepresentation);
     asm_->or(Xbyak::Reg8(result.getIdx()), cond);
-  }
-
-  void LoadAndInt32Guard(
-      int16_t reg,
-      const Xbyak::Reg64& target,
-      const Xbyak::Reg64& tmp1,
-      const char* label,
-      Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
-    const TypeEntry entry = type_record_[reg];
-    if (entry.type().IsInt32()) {
-      // no check
-      if (entry.IsConstant()) {
-        asm_->mov(Xbyak::Reg32(target.getIdx()), entry.constant().int32());
-      } else {
-        LoadVR(target, reg);
-      }
-      return;
-    }
-    asm_->mov(tmp1, asm_->r15);
-    asm_->and(tmp1, target);
-    asm_->cmp(tmp1, asm_->r15);
-    asm_->jne(label, type);
   }
 
   void Int32Guard(int16_t reg,
