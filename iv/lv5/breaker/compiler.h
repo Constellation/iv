@@ -1891,6 +1891,9 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const int16_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
+
+    const TypeEntry& base_entry = type_record_[base];
+
     LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
@@ -1909,7 +1912,6 @@ class Compiler {
     set_last_used_candidate(dst);
 
     if (name == symbol::length()) {
-      const TypeEntry& base_entry = type_record_[base];
       if (base_entry.type().IsArray() ||
           base_entry.type().IsFunction() ||
           base_entry.type().IsString()) {
