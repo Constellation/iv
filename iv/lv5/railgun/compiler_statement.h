@@ -205,24 +205,30 @@ inline void Compiler::Visit(const DoWhileStatement* stmt) {
 
 inline void Compiler::Visit(const WhileStatement* stmt) {
   ContinueTarget continue_target(this, stmt);
-  const std::size_t start_index = CurrentSize();
   const Condition::Type cond = Condition::Analyze(stmt->cond());
   switch (cond) {
     case Condition::COND_INDETERMINATE: {
       if (current_variable_scope_->UseExpressionReturn() ||
           stmt->body()->IsEffectiveStatement()) {
+        // We do loop-inversion optimization on this.
+        const std::size_t start_index = CurrentSize();
         const JumpSite jump = EmitConditional(OP::IF_FALSE, stmt->cond());
 
+        const std::size_t body_start = CurrentSize();
         EmitStatement(stmt->body());
 
-        Emit<OP::JUMP_BY>(Instruction::Jump(start_index - CurrentSize()));
+        const JumpSite jump2 = EmitConditional(OP::IF_TRUE, stmt->cond());
+
+        jump2.JumpTo(this, body_start);
         jump.JumpTo(this, CurrentSize());
+
         continue_target.EmitJumps(CurrentSize(), start_index);
         continuation_status_.ResolveJump(stmt);
         if (continuation_status_.IsDeadStatement()) {
           continuation_status_.Next();
         }
       } else {
+        const std::size_t start_index = CurrentSize();
         const JumpSite jump = EmitConditional(OP::IF_TRUE, stmt->cond());
         jump.JumpTo(this, start_index);
       }
@@ -237,6 +243,7 @@ inline void Compiler::Visit(const WhileStatement* stmt) {
     }
 
     case Condition::COND_TRUE: {
+      const std::size_t start_index = CurrentSize();
       if (current_variable_scope_->UseExpressionReturn() ||
           stmt->body()->IsEffectiveStatement()) {
         EmitStatement(stmt->body());
@@ -277,20 +284,24 @@ inline void Compiler::Visit(const ForStatement* stmt) {
     jump = EmitConditional(OP::IF_FALSE, cond.Address());
   }
 
+  const std::size_t body_start = CurrentSize();
   EmitStatement(stmt->body());
+  const std::size_t body_end = CurrentSize();
 
-  const std::size_t prev_next = CurrentSize();
   if (const core::Maybe<const Expression> next = stmt->next()) {
     EmitExpressionIgnoreResult(next.Address());
   }
 
-  Emit<OP::JUMP_BY>(Instruction::Jump(start_index - CurrentSize()));
-
   if (cond) {
+    // We do loop-inversion optimization on this.
+    const JumpSite jump2 = EmitConditional(OP::IF_TRUE, cond.Address());
     jump.JumpTo(this, CurrentSize());
+    jump2.JumpTo(this, body_start);
+  } else {
+    Emit<OP::JUMP_BY>(Instruction::Jump(start_index - CurrentSize()));
   }
 
-  continue_target.EmitJumps(CurrentSize(), prev_next);
+  continue_target.EmitJumps(CurrentSize(), body_end);
 
   continuation_status_.ResolveJump(stmt);
   if (continuation_status_.IsDeadStatement()) {

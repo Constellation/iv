@@ -116,6 +116,9 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   typedef std::unordered_map<core::UString, int32_t> JSStringToIndexMap;
 
+  typedef std::unordered_map<
+      const FunctionLiteral*, uint32_t> FunctionLiteralToCodeMap;
+
   class ArraySite;
 
   class JumpSite {
@@ -152,6 +155,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       symbol_to_index_map_(),
       jsstring_to_index_map_(),
       double_to_index_map_(),
+      function_literal_to_code_map_(),
       continuation_status_(),
       current_variable_scope_(),
       temporary_() {
@@ -268,6 +272,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     symbol_to_index_map_.clear();
     jsstring_to_index_map_.clear();
     double_to_index_map_.clear();
+    function_literal_to_code_map_.clear();
     continuation_status_.Clear();
     code->set_start(data_->size());
   }
@@ -1001,6 +1006,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   std::unordered_map<Symbol, uint32_t> symbol_to_index_map_;
   JSStringToIndexMap jsstring_to_index_map_;
   JSDoubleToIndexMap double_to_index_map_;
+  FunctionLiteralToCodeMap function_literal_to_code_map_;
   ContinuationStatus continuation_status_;
   std::shared_ptr<VariableScope> current_variable_scope_;
   trace::Vector<Map*>::type temporary_;

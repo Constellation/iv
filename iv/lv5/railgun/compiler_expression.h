@@ -977,11 +977,19 @@ inline void Compiler::Visit(const ObjectLiteral* lit) {
 
 inline void Compiler::Visit(const FunctionLiteral* lit) {
   const DestGuard dest_guard(this);
-  Code* const code = new Code(ctx_, script_, *lit, core_, Code::FUNCTION);
-  const uint32_t index = code_->codes_.size();
-  code_->codes_.push_back(code);
-  code_info_stack_.push_back(
-      std::make_tuple(code, lit, current_variable_scope_));
+  uint32_t index;
+  const FunctionLiteralToCodeMap::const_iterator it =
+      function_literal_to_code_map_.find(lit);
+  if (it != function_literal_to_code_map_.end()) {
+    index = it->second;
+  } else {
+    Code* const code = new Code(ctx_, script_, *lit, core_, Code::FUNCTION);
+    index = code_->codes_.size();
+    code_->codes_.push_back(code);
+    code_info_stack_.push_back(
+        std::make_tuple(code, lit, current_variable_scope_));
+    function_literal_to_code_map_[lit] = index;
+  }
   dst_ = Dest(dst_);
   thunkpool_.Spill(dst_);
   Emit<OP::LOAD_FUNCTION>(Instruction::SW(dst_, index));
