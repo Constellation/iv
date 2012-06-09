@@ -688,7 +688,6 @@ class Compiler {
   void LoadVR(const Xbyak::Reg64& out, int16_t offset) {
     const bool break_result = out.getIdx() == asm_->rax.getIdx();
     if (last_used() == offset) {
-      asm_->mov(out, asm_->rax);
       if (!break_result) {
         asm_->mov(out, asm_->rax);
       }
