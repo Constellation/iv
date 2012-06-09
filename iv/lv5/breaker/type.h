@@ -86,6 +86,8 @@ class Type {
 
   bool IsArray() const { return type_ == TYPE_ARRAY; }
 
+  bool IsFunction() const { return type_ == TYPE_FUNCTION; }
+
   friend Type operator|(const Type& lhs, const Type& rhs) {
     return Type(lhs.type_ | rhs.type_);
   }
