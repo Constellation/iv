@@ -734,7 +734,7 @@ class Parser : private Noncopyable<> {
           init = factory_->NewExpressionStatement(
               init_expr, lexer_.previous_end_position());
           // LHS Guard
-          if (!init_expr->IsLeftHandSide()) {
+          if (!init_expr->IsValidLeftHandSide()) {
             reference_error_ = true;
             RAISE("invalid for-in left-hand-side");
           }
@@ -1206,7 +1206,7 @@ class Parser : private Noncopyable<> {
     }
 
     // LHS Guard
-    if (!result->IsLeftHandSide()) {
+    if (!result->IsValidLeftHandSide()) {
       reference_error_ = true;
       RAISE("assign to invalid left-hand-side");
     }
@@ -1587,7 +1587,7 @@ class Parser : private Noncopyable<> {
                   "not allowed in strict code");
           }
         }
-        if (!expr->IsLeftHandSide()) {
+        if (!expr->IsValidLeftHandSide()) {
           reference_error_ = true;
           RAISE("assign to invalid left-hand-side");
         }
@@ -1620,7 +1620,7 @@ class Parser : private Noncopyable<> {
                 "not allowed in strict code");
         }
       }
-      if (!expr->IsLeftHandSide()) {
+      if (!expr->IsValidLeftHandSide()) {
         reference_error_ = true;
         RAISE("assign to invalid left-hand-side");
       }
