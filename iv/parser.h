@@ -203,6 +203,7 @@ class Parser : private Noncopyable<> {
     : lexer_(&source),
       error_(),
       strict_(false),
+      reference_error_(false),
       error_state_(0),
       factory_(factory),
       scope_(NULL),
@@ -733,8 +734,8 @@ class Parser : private Noncopyable<> {
           init = factory_->NewExpressionStatement(
               init_expr, lexer_.previous_end_position());
           // LHS Guard
-          if (init_expr != last_parenthesized_ &&
-              !init_expr->IsLeftHandSide()) {
+          if (!init_expr->IsValidLeftHandSide()) {
+            reference_error_ = true;
             RAISE("invalid for-in left-hand-side");
           }
           Next();
@@ -1205,7 +1206,8 @@ class Parser : private Noncopyable<> {
     }
 
     // LHS Guard
-    if (result != last_parenthesized_ && !result->IsLeftHandSide()) {
+    if (!result->IsValidLeftHandSide()) {
+      reference_error_ = true;
       RAISE("assign to invalid left-hand-side");
     }
 
@@ -1585,6 +1587,10 @@ class Parser : private Noncopyable<> {
                   "not allowed in strict code");
           }
         }
+        if (!expr->IsValidLeftHandSide()) {
+          reference_error_ = true;
+          RAISE("assign to invalid left-hand-side");
+        }
         assert(expr);
         result = factory_->NewUnaryOperation(op, expr, begin, line_number);
         break;
@@ -1613,6 +1619,10 @@ class Parser : private Noncopyable<> {
           RAISE("postfix expression to \"arguments\" "
                 "not allowed in strict code");
         }
+      }
+      if (!expr->IsValidLeftHandSide()) {
+        reference_error_ = true;
+        RAISE("assign to invalid left-hand-side");
       }
       assert(expr);
       expr = factory_->NewPostfixExpression(token_, expr,
@@ -2438,9 +2448,12 @@ class Parser : private Noncopyable<> {
   inline bool strict() const {
     return strict_;
   }
+
   inline void set_strict(bool strict) {
     strict_ = strict;
   }
+
+  bool reference_error() const { return reference_error_; }
 
   inline bool RecoverableError() const {
     return (!(error_state_ & kNotRecoverable)) && token_ == Token::TK_EOS;
@@ -2515,6 +2528,7 @@ class Parser : private Noncopyable<> {
   Token::Type token_;
   std::string error_;
   bool strict_;
+  bool reference_error_;
   int error_state_;
   Factory* factory_;
   Scope* scope_;

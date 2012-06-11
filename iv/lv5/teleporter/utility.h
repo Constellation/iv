@@ -90,7 +90,9 @@ inline JSScript* CompileScript(Context* ctx, const JSString* str,
   const FunctionLiteral* const eval = parser.ParseProgram();
   if (!eval) {
     delete factory;
-    e->Report(Error::Syntax, parser.error());
+    e->Report(
+        parser.reference_error() ? Error::Reference : Error::Syntax,
+        parser.error());
     return NULL;
   } else {
     return JSEvalScript<EvalSource>::New(ctx, eval, factory, src);

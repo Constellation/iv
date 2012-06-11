@@ -25,7 +25,9 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
                                               *src, ctx->symbol_table());
   const FunctionLiteral* const eval = parser.ParseProgram();
   if (!eval) {
-    e->Report(Error::Syntax, parser.error());
+    e->Report(
+        parser.reference_error() ? Error::Reference : Error::Syntax,
+        parser.error());
     return JSEmpty;
   }
   const FunctionLiteral* const func =
@@ -65,7 +67,9 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
                                               ctx->symbol_table());
   const FunctionLiteral* const eval = parser.ParseProgram();
   if (!eval) {
-    e->Report(Error::Syntax, parser.error());
+    e->Report(
+        parser.reference_error() ? Error::Reference : Error::Syntax,
+        parser.error());
     return JSUndefined;
   }
   JSScript* script = JSSourceScript<EvalSource>::New(ctx, src);
@@ -111,7 +115,9 @@ inline JSVal DirectCallToEval(const Arguments& args, Frame* frame, Error* e) {
     parser.set_strict(strict);
     const FunctionLiteral* const eval = parser.ParseProgram();
     if (!eval) {
-      e->Report(Error::Syntax, parser.error());
+      e->Report(
+          parser.reference_error() ? Error::Reference : Error::Syntax,
+          parser.error());
       return JSUndefined;
     }
     JSScript* script = JSSourceScript<EvalSource>::New(ctx, src);

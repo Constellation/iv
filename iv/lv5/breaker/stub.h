@@ -389,34 +389,24 @@ inline Rep TYPEOF_GLOBAL(Frame* stack, Symbol name) {
   }
 }
 
-inline JSDeclEnv* GetHeapEnv(JSEnv* env, uint32_t nest) {
-  for (uint32_t i = 0; i < nest; ++i) {
-    env = env->outer();
-  }
-  assert(env->AsJSDeclEnv());
-  return static_cast<JSDeclEnv*>(env);
-}
-
 template<bool STRICT>
 inline Rep LOAD_HEAP(Frame* stack,
                      JSEnv* env,
-                     uint32_t offset, uint32_t nest) {
-  const JSVal res = GetHeapEnv(env, nest)->GetByOffset(offset, STRICT, ERR);
+                     uint32_t offset) {
+  const JSVal res = static_cast<JSDeclEnv*>(env)->GetByOffset(offset, STRICT, ERR);
   return Extract(res);
 }
 
 template<bool STRICT>
 inline Rep STORE_HEAP(Frame* stack, JSEnv* env,
-                      uint32_t offset, uint32_t nest, JSVal src) {
-  GetHeapEnv(env, nest)->SetByOffset(offset, src, STRICT, ERR);
+                      uint32_t offset, JSVal src) {
+  static_cast<JSDeclEnv*>(env)->SetByOffset(offset, src, STRICT, ERR);
   return 0;
 }
 
 template<int Target, std::size_t Returned, bool STRICT>
-inline Rep INCREMENT_HEAP(Frame* stack, JSEnv* env,
-                          uint32_t offset, uint32_t nest) {
-  Context* ctx = stack->ctx;
-  JSDeclEnv* decl = GetHeapEnv(env, nest);
+inline Rep INCREMENT_HEAP(Frame* stack, JSEnv* env, uint32_t offset) {
+  JSDeclEnv* decl = static_cast<JSDeclEnv*>(env);
   const JSVal w = decl->GetByOffset(offset, STRICT, ERR);
   if (w.IsInt32() &&
       railgun::detail::IsIncrementOverflowSafe<Target>(w.int32())) {
@@ -427,6 +417,7 @@ inline Rep INCREMENT_HEAP(Frame* stack, JSEnv* env,
     decl->SetByOffset(offset, std::get<1>(results), STRICT, ERR);
     return Extract(std::get<Returned>(results));
   } else {
+    Context* ctx = stack->ctx;
     std::tuple<double, double> results;
     std::get<0>(results) = w.ToNumber(ctx, ERR);
     std::get<1>(results) = std::get<0>(results) + Target;
@@ -436,9 +427,8 @@ inline Rep INCREMENT_HEAP(Frame* stack, JSEnv* env,
 }
 
 template<bool STRICT>
-inline Rep TYPEOF_HEAP(Frame* stack, JSEnv* env,
-                       uint32_t offset, uint32_t nest) {
-  const JSVal res = GetHeapEnv(env, nest)->GetByOffset(offset, STRICT, ERR);
+inline Rep TYPEOF_HEAP(Frame* stack, JSEnv* env, uint32_t offset) {
+  const JSVal res = static_cast<JSDeclEnv*>(env)->GetByOffset(offset, STRICT, ERR);
   return Extract(res.TypeOf(stack->ctx));
 }
 
