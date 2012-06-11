@@ -1702,13 +1702,12 @@ class Compiler {
       // Because ECMA262 number value is defined as double,
       // -0 should be double -0.0.
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, src);
-      Int32Guard(src, asm_->rsi, asm_->rax, ".UNARY_NEGATIVE_SLOW");
-      asm_->test(asm_->esi, asm_->esi);
+      LoadVR(asm_->rax, src);
+      Int32Guard(src, asm_->rax, asm_->rsi, ".UNARY_NEGATIVE_SLOW");
+      asm_->test(asm_->eax, asm_->eax);
       asm_->jz(".UNARY_NEGATIVE_MINUS_ZERO");
-      asm_->neg(asm_->esi);
+      asm_->neg(asm_->eax);
       asm_->jo(".UNARY_NEGATIVE_INT32_MIN");
-      asm_->mov(asm_->eax, asm_->esi);
       asm_->or(asm_->rax, asm_->r15);
       asm_->jmp(".UNARY_NEGATIVE_EXIT");
 
@@ -1722,6 +1721,7 @@ class Compiler {
 
       asm_->L(".UNARY_NEGATIVE_SLOW");
       asm_->mov(asm_->rdi, asm_->r14);
+      asm_->mov(asm_->rsi, asm_->rax);
       asm_->Call(&stub::UNARY_NEGATIVE);
 
       asm_->L(".UNARY_NEGATIVE_EXIT");
