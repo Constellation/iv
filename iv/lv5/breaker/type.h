@@ -193,6 +193,17 @@ class TypeEntry {
   }
 
   static TypeEntry Modulo(const TypeEntry& lhs, const TypeEntry& rhs) {
+    if (lhs.IsConstant() && rhs.IsConstant()) {
+      if (lhs.constant().IsInt32() && rhs.constant().IsInt32()) {
+        return TypeEntry(
+            JSVal::Int32(lhs.constant().int32() % rhs.constant().int32()));
+      }
+      if (lhs.constant().IsNumber() && rhs.constant().IsNumber()) {
+        return TypeEntry(
+            core::math::Modulo(lhs.constant().number(),
+                               rhs.constant().number()));
+      }
+    }
     return TypeEntry(Type::Number());
   }
 
@@ -225,6 +236,9 @@ class TypeEntry {
           JSVal::UInt32(
               core::DoubleToUInt32(lhs.constant().number()) >>
               (core::DoubleToInt32(rhs.constant().number()) & 0x1F)));
+    }
+    if (lhs.type().IsInt32()) {
+      return TypeEntry(Type::Int32());
     }
     return TypeEntry(Type::Number());
   }
