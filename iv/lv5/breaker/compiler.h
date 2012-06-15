@@ -3332,5 +3332,47 @@ inline void Compile(railgun::Code* code) {
   CompileInternal(&compiler, code);
 }
 
+// external interfaces
+inline railgun::Code* Compile(
+    Context* ctx,
+    const FunctionLiteral& global, railgun::JSScript* script) {
+  railgun::Code* code = railgun::Compile(ctx, global, script);
+  if (code) {
+    Compile(code);
+  }
+  return code;
+}
+
+inline railgun::Code* CompileFunction(
+    Context* ctx,
+    const FunctionLiteral& func, railgun::JSScript* script) {
+  railgun::Code* code = railgun::CompileFunction(ctx, func, script);
+  if (code) {
+    Compile(code);
+  }
+  return code;
+}
+
+inline railgun::Code* CompileEval(
+    Context* ctx,
+    const FunctionLiteral& eval, railgun::JSScript* script) {
+  railgun::Code* code = railgun::CompileEval(ctx, eval, script);
+  if (code) {
+    Compile(code);
+  }
+  return code;
+}
+
+inline railgun::Code* CompileIndirectEval(
+    Context* ctx,
+    const FunctionLiteral& eval,
+    railgun::JSScript* script) {
+  railgun::Code* code = railgun::CompileIndirectEval(ctx, eval, script);
+  if (code) {
+    Compile(code);
+  }
+  return code;
+}
+
 } } }  // namespace iv::lv5::breaker
 #endif  // IV_LV5_BREAKER_COMPILER_H_
