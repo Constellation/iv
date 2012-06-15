@@ -414,7 +414,6 @@ INHERIT(Literal);
 template<typename Factory>
 class Literal : public LiteralBase<Factory> {
  public:
-  inline bool IsLeftHandSide() const { return true; }
   DECLARE_NODE_TYPE(Literal)
 };
 
@@ -1185,7 +1184,6 @@ class ReducedStringLiteral : public StringLiteral<Factory> {
   ReducedStringLiteral(const value_type* val, bool directive)
     : StringLiteral<Factory>(val, directive) {
   }
-  inline bool IsLeftHandSide() const { return false; }
 };
 
 // NumberLiteral
@@ -1216,7 +1214,6 @@ class ReducedNumberLiteral : public NumberLiteral<Factory> {
   explicit ReducedNumberLiteral(const double & val)
     : NumberLiteral<Factory>(val) {
   }
-  inline bool IsLeftHandSide() const { return false; }
  private:
   double value_;
 };
@@ -1629,7 +1626,6 @@ class Call : public CallBase<Factory> {
  public:
   // Call is valid, but in this implementation, not return reference
   DECLARE_NODE_TYPE(Call)
-  inline bool IsLeftHandSide() const { return true; }
 };
 
 // FunctionCall
@@ -1663,6 +1659,7 @@ class FunctionCall : public FunctionCallBase<Factory> {
   inline Expression<Factory>* target() const { return target_; }
   inline const Expressions& args() const { return *args_; }
   bool SideEffect() const { return side_effect_; }
+  inline bool IsLeftHandSide() const { return true; }
   DECLARE_DERIVED_NODE_TYPE(FunctionCall)
   ACCEPT_EXPRESSION_VISITOR
  private:
