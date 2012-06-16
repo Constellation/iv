@@ -55,7 +55,6 @@ static const char* kSpecFileNames[] = {
   "test/lv5/suite/spec/string-startswith.js",
   "test/lv5/suite/spec/string-endswith.js",
   "test/lv5/suite/spec/string-contains.js",
-  "test/lv5/suite/spec/string-toarray.js",
   "test/lv5/suite/spec/string-reverse.js",
   "test/lv5/suite/spec/lhs-assignment.js",
   "test/lv5/suite/spec/rhs-assignment.js"

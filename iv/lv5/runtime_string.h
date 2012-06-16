@@ -1279,24 +1279,7 @@ inline JSVal StringContains(const Arguments& args, Error* e) {
   return JSVal::Bool(str->find(*search_string, start) != JSString::npos);
 }
 
-// section 15.5.4.25 String.prototype.toArray()
-inline JSVal StringToArray(const Arguments& args, Error* e) {
-  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toArray", args, e);
-  const JSVal& val = args.this_binding();
-  Context* ctx = args.ctx();
-  val.CheckObjectCoercible(IV_LV5_ERROR(e));
-  JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
-  const uint32_t len = str->size();
-  JSVector* vec = JSVector::New(ctx, len);
-  JSVector::iterator out = vec->begin();
-  for (JSString::const_iterator it = str->begin(),
-       last = str->end(); it != last; ++it, ++out) {
-    *out = JSString::NewSingle(ctx, *it);
-  }
-  return vec->ToJSArray();
-}
-
-// section 15.5.4.26 String.prototype.reverse()
+// section 15.5.4.25 String.prototype.reverse()
 inline JSVal StringReverse(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.reverse", args, e);
   const JSVal& val = args.this_binding();
