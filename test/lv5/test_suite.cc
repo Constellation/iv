@@ -58,7 +58,8 @@ static const char* kSpecFileNames[] = {
   "test/lv5/suite/spec/string-toarray.js",
   "test/lv5/suite/spec/string-reverse.js",
   "test/lv5/suite/spec/lhs-assignment.js",
-  "test/lv5/suite/spec/rhs-assignment.js"
+  "test/lv5/suite/spec/rhs-assignment.js",
+  "test/lv5/suite/spec/arith-mod.js"
 };
 static const std::size_t kSpecFileNamesSize =
   sizeof(kSpecFileNames) / sizeof(const char*);

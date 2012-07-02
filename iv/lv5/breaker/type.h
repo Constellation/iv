@@ -195,8 +195,11 @@ class TypeEntry {
   static TypeEntry Modulo(const TypeEntry& lhs, const TypeEntry& rhs) {
     if (lhs.IsConstant() && rhs.IsConstant()) {
       if (lhs.constant().IsInt32() && rhs.constant().IsInt32()) {
-        return TypeEntry(
-            JSVal::Int32(lhs.constant().int32() % rhs.constant().int32()));
+        const int32_t left = lhs.constant().int32();
+        const int32_t right = rhs.constant().int32();
+        if (left >= 0 && right > 0) {
+          return TypeEntry(JSVal::Int32(left % right));
+        }
       }
       if (lhs.constant().IsNumber() && rhs.constant().IsNumber()) {
         return TypeEntry(
