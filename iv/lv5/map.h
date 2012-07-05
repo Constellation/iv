@@ -24,48 +24,75 @@ class Map : public radio::HeapObject<radio::POINTER> {
 
   class Transitions {
    public:
+    enum {
+      MASK_ENABLED = 1,
+      MASK_UNIQUE_TRANSITION = 2,
+      MASK_HOLD_SINGLE = 4,
+      MASK_HOLD_TABLE = 8
+    };
+
     typedef GCHashMap<Symbol, Map*>::type Table;
+
     explicit Transitions(bool enabled)
-      : table_(NULL),
-        enabled_(enabled),
-        unique_transition_(false) { }
+      : holder_(),
+        flags_(enabled ? 1 : 0) { }
 
     bool IsEnabled() const {
-      return enabled_;
+      return flags_ & MASK_ENABLED;
     }
 
     Map* Find(Symbol name) {
       assert(IsEnabled());
-      if (table_) {
-        Table::const_iterator it = table_->find(name);
-        if (it != table_->end()) {
+      if (flags_ & MASK_HOLD_TABLE) {
+        Table::const_iterator it = holder_.table->find(name);
+        if (it != holder_.table->end()) {
           return it->second;
+        }
+      } else if (flags_ & MASK_HOLD_SINGLE) {
+        if (holder_.pair.name == name) {
+          return holder_.pair.map;
         }
       }
       return NULL;
     }
 
-    void Insert(Symbol name, Map* target) {
+    void Insert(Symbol name, Map* map) {
       assert(IsEnabled());
-      if (!table_) {
-        table_ = new(GC)Table();
+      if (flags_ & MASK_HOLD_SINGLE) {
+        Table* table = new(GC)Table();
+        table->insert(std::make_pair(holder_.pair.name, holder_.pair.map));
+        holder_.table = table;
+        flags_ &= ~MASK_HOLD_SINGLE;
+        flags_ |= MASK_HOLD_TABLE;
       }
-      table_->insert(std::make_pair(name, target));
+
+      if (flags_ & MASK_HOLD_TABLE) {
+        holder_.table->insert(std::make_pair(name, map));
+      } else {
+        holder_.pair.name = name;
+        holder_.pair.map = map;
+        flags_ |= MASK_HOLD_SINGLE;
+      }
     }
 
     void EnableUniqueTransition() {
       assert(!IsEnabled());
-      unique_transition_ = true;
+      flags_ |= MASK_UNIQUE_TRANSITION;
     }
 
     bool IsEnabledUniqueTransition() const {
-      return unique_transition_;
+      return flags_ & MASK_UNIQUE_TRANSITION;
     }
 
    private:
-    Table* table_;
-    bool enabled_;
-    bool unique_transition_;
+    union {
+      Table* table;
+      struct {
+        Symbol name;
+        Map* map;
+      } pair;
+    } holder_;
+    uint32_t flags_;
   };
 
   class DeleteEntry {
