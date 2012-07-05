@@ -115,6 +115,14 @@ class Registers {
     return variable_registers_ > reg;
   }
 
+  // implemented in frame.h
+
+  bool IsConstantID(int32_t reg);
+
+  // implemented in frame.h
+
+  bool IsTemporaryID(int32_t reg);
+
   int Type(uint32_t reg) {
     if (IsHeapID(reg)) {
       return RegisterIDImpl::HEAP;
@@ -123,12 +131,9 @@ class Registers {
     } else if (IsTemporaryID(reg)) {
       return RegisterIDImpl::TEMPORARY;
     } else {
+      // IsConstantID or this or callee
       return RegisterIDImpl::CONSTANT;
     }
-  }
-
-  bool IsTemporaryID(int32_t reg) {
-    return variable_registers_ <= reg;
   }
 
   // for debug in Compiler::EmitCall

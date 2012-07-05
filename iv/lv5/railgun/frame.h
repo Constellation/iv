@@ -258,6 +258,14 @@ inline bool Registers::RegisterIDImpl::IsThis() const {
   return reg_ == FrameConstant<>::kThisOffset;
 }
 
+inline bool Registers::IsConstantID(int32_t reg) {
+  return FrameConstant<>::kConstantOffset <= reg;
+}
+
+inline bool Registers::IsTemporaryID(int32_t reg) {
+  return variable_registers_ <= reg && reg < FrameConstant<>::kConstantOffset;
+}
+
 inline RegisterID Registers::This() {
   return RegisterID(
       new RegisterIDImpl(FrameConstant<>::kThisOffset, this), false);
