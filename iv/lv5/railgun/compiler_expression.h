@@ -732,13 +732,19 @@ inline void Compiler::Visit(const StringLiteral* lit) {
   }
   const core::UString s = core::ToUString(lit->value());
   const JSStringToIndexMap::const_iterator it = jsstring_to_index_map_.find(s);
-  dst_ = Dest(dst_);
-  thunkpool_.Spill(dst_);
+
   if (it != jsstring_to_index_map_.end()) {
     // duplicate constant
-    Emit<OP::LOAD_CONST>(Instruction::SW(dst_, it->second));
+    if (use_folded_registers()) {
+      dst_ = EmitMV(dst_, registers_.Constant(it->second));
+    } else {
+      dst_ = Dest(dst_);
+      thunkpool_.Spill(dst_);
+      Emit<OP::LOAD_CONST>(Instruction::SW(dst_, it->second));
+    }
     return;
   }
+
   // new constant value
   const uint32_t index = code_->constants_.size();
   code_->constants_.push_back(
@@ -749,7 +755,14 @@ inline void Compiler::Visit(const StringLiteral* lit) {
           core::character::IsASCII(lit->value().begin(),
                                    lit->value().end())));
   jsstring_to_index_map_.insert(std::make_pair(s, index));
-  Emit<OP::LOAD_CONST>(Instruction::SW(dst_, index));
+
+  if (use_folded_registers()) {
+    dst_ = EmitMV(dst_, registers_.Constant(index));
+  } else {
+    dst_ = Dest(dst_);
+    thunkpool_.Spill(dst_);
+    Emit<OP::LOAD_CONST>(Instruction::SW(dst_, index));
+  }
 }
 
 inline void Compiler::Visit(const NumberLiteral* lit) {
@@ -758,14 +771,18 @@ inline void Compiler::Visit(const NumberLiteral* lit) {
     // this value is not used and NumberLiteral doesn't have side effect
     return;
   }
-  dst_ = Dest(dst_);
-  thunkpool_.Spill(dst_);
   const double val = lit->value();
   const JSDoubleToIndexMap::const_iterator it =
       double_to_index_map_.find(val);
   if (it != double_to_index_map_.end()) {
     // duplicate constant pool
-    Emit<OP::LOAD_CONST>(Instruction::SW(dst_, it->second));
+    if (use_folded_registers()) {
+      dst_ = EmitMV(dst_, registers_.Constant(it->second));
+    } else {
+      dst_ = Dest(dst_);
+      thunkpool_.Spill(dst_);
+      Emit<OP::LOAD_CONST>(Instruction::SW(dst_, it->second));
+    }
     return;
   }
 
@@ -773,7 +790,13 @@ inline void Compiler::Visit(const NumberLiteral* lit) {
   const uint32_t index = code_->constants_.size();
   code_->constants_.push_back(val);
   double_to_index_map_.insert(std::make_pair(val, index));
-  Emit<OP::LOAD_CONST>(Instruction::SW(dst_, index));
+  if (use_folded_registers()) {
+    dst_ = EmitMV(dst_, registers_.Constant(index));
+  } else {
+    dst_ = Dest(dst_);
+    thunkpool_.Spill(dst_);
+    Emit<OP::LOAD_CONST>(Instruction::SW(dst_, index));
+  }
 }
 
 inline void Compiler::Visit(const Assigned* lit) {
