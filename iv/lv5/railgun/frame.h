@@ -7,6 +7,7 @@
 #include <iv/utils.h>
 #include <iv/static_assert.h>
 #include <iv/lv5/jsval.h>
+#include <iv/lv5/stack.h>
 #include <iv/lv5/railgun/fwd.h>
 #include <iv/lv5/railgun/code.h>
 #include <iv/lv5/railgun/instruction_fwd.h>
@@ -21,7 +22,7 @@ struct FrameConstant {
   // These are register offset from register baseline
   static const int kThisOffset;
   static const int kCalleeOffset;
-  static const int kMaxNormalRegisterOffset;
+  static const int kConstantOffset = lv5::Stack::kStackCapacity;
 
   // offset from register start to args. i is arguments index.
   static int ConvertArgToRegister(int i) {
@@ -265,6 +266,11 @@ inline RegisterID Registers::This() {
 inline RegisterID Registers::Callee() {
   return RegisterID(
       new RegisterIDImpl(FrameConstant<>::kCalleeOffset, this), false);
+}
+
+inline RegisterID Registers::Constant(uint32_t offset) {
+  return RegisterID(
+      new RegisterIDImpl(FrameConstant<>::kConstantOffset + offset, this), false);
 }
 
 } } }  // namespace iv::lv5::railgun

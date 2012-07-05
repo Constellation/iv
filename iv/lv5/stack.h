@@ -38,6 +38,10 @@ class Stack : core::Noncopyable<Stack> {
 
   // not bytes. JSVals capacity.
   // if you calc bytes, sizeof(JSVal) * kStackCapacity
+  //
+  // NOTE:
+  // DO NOT CHANGE THIS SIZE.
+  // railgun constant register calculation is based on this size information.
   static const size_type kStackCapacity = 16 * 1024;
   static const size_type kStackBytes = kStackCapacity * sizeof(JSVal);
 
