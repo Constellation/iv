@@ -17,15 +17,19 @@ namespace railgun {
 template<typename D = void>
 struct FrameConstant {
   static const int kFrameSize;
+
+  // These are register offset from register baseline
   static const int kThisOffset;
   static const int kCalleeOffset;
+  static const int kMaxNormalRegisterOffset;
 
-  // offset from register start to args
-  static int Arg(int i) {
+  // offset from register start to args. i is arguments index.
+  static int ConvertArgToRegister(int i) {
     return kThisOffset - (i + 1);
   }
 
-  // convert register number to arguments number
+  // convert register number to arguments index.
+  // inversion function of Arg
   static int ConvertRegisterToArg(int16_t i) {
     return kThisOffset - 1 + i;
   }
@@ -37,6 +41,7 @@ struct FrameConstant {
 // ARG2 | ARG1 | THIS | FRAME | LOCAL REGISTERS | HEAP REGISTERS | TEMP ...
 //
 struct Frame {
+  // These are minus offset from frame baseline. not from register baseline.
   static const int kThisOffset = 1;
   static const int kArgumentsOffset = 2;
 

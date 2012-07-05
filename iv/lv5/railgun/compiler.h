@@ -137,8 +137,9 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   friend class ArraySite;
   friend class CallSite;
 
-  explicit Compiler(Context* ctx)
+  explicit Compiler(Context* ctx, bool use_folded_registers = false)
     : ctx_(ctx),
+      use_folded_registers_(use_folded_registers),
       code_(NULL),
       core_(NULL),
       data_(NULL),
@@ -987,8 +988,11 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   void set_dst(RegisterID dst) { dst_ = dst; }
 
+  bool use_folded_registers() const { return use_folded_registers_; }
+
  private:
   Context* ctx_;
+  bool use_folded_registers_;
   Code* code_;
   CoreData* core_;
   Code::Data* data_;

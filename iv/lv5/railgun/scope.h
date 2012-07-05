@@ -218,7 +218,7 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
           const Symbol name = assigned->symbol();
           const LookupInfo info = LookupInfo::NewHeap(
               heap_size,
-              FrameConstant<>::Arg(assigned->parameter()),
+              FrameConstant<>::ConvertArgToRegister(assigned->parameter()),
               assigned->immutable(),
               scope_nest_count(),
               assigned);
@@ -250,7 +250,7 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
         if (assigned->IsReferenced()) {
           if (assigned->IsParameter()) {
             const LookupInfo info = LookupInfo::NewStack(
-                FrameConstant<>::Arg(assigned->parameter()),
+                FrameConstant<>::ConvertArgToRegister(assigned->parameter()),
                 assigned->immutable(),
                 assigned);
             map_.insert(std::make_pair(assigned->symbol(), info));

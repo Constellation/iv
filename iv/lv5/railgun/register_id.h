@@ -83,10 +83,17 @@ class Registers {
 
   ID LocalID(int32_t id);
 
-  // these are defined in frame.h
+  // implemented in frame.h
+
   ID This();
 
+  // implemented in frame.h
+
   ID Callee();
+
+  // implemented in frame.h
+
+  ID Constant(uint32_t offset);
 
   int32_t AcquireCallBase(int size);
 
