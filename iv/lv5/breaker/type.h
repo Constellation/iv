@@ -64,18 +64,38 @@ class Type {
   explicit Type(TypeValue value)
     : type_(value) { }
 
+  // Always Int32
   bool IsInt32() const { return type_ == TYPE_INT32; }
 
-  bool IsNotInt32() const { return !IsInt32() && !IsUnknown(); }
+  // Always not Int32
+  // Number may be Int32, so purge it.
+  bool IsNotInt32() const {
+    return IsDouble() || IsNotNumber();
+  }
+
+  bool MaybeNumber() const {
+    return (type_ & TYPE_NUMBER_MASK);
+  }
 
   bool IsNumber() const {
-    return (type_ & TYPE_NUMBER_MASK) && !(type_ & ~TYPE_NUMBER_MASK);
+    return MaybeNumber() && !(type_ & ~TYPE_NUMBER_MASK);
+  }
+
+  bool IsNotNumber() const {
+    return !MaybeNumber() && !IsUnknown();
+  }
+
+  // Always Double
+  bool IsDouble() const {
+    return type_ == TYPE_NUMBER_DOUBLE;
   }
 
   bool IsString() const { return type_ == TYPE_STRING; }
 
+  bool MaybeString() const { return type_ & TYPE_STRING; }
+
   bool IsNotString() const {
-    return !IsString() && !IsUnknown();
+    return !MaybeString() && !IsUnknown();
   }
 
   bool IsBoolean() const { return type_ == TYPE_BOOLEAN; }
