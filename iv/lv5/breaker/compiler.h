@@ -55,8 +55,6 @@ class Compiler {
   typedef std::vector<railgun::Code*> Codes;
   typedef std::unordered_map<const Instruction*, std::size_t> HandlerLinks;
 
-  typedef std::unordered_map<int16_t, TypeEntry> TypeRecord;
-
   static const int kJSValSize = sizeof(JSVal);
 
   static const int32_t kInvalidUsedOffset = INT32_MIN;
@@ -141,7 +139,7 @@ class Compiler {
     entry_points_.insert(std::make_pair(code, asm_->size()));
     previous_instr_ = NULL;
     last_used_ = kInvalidUsedOffset;
-    type_record_.clear();
+    type_record_.Init(code);
   }
 
   void Compile(railgun::Code* code) {
@@ -229,7 +227,7 @@ class Compiler {
       if (!in_basic_block) {
         set_previous_instr(NULL);
         set_last_used(kInvalidUsedOffset);
-        type_record_.clear();
+        type_record_.Clear();
       } else {
         set_previous_instr(previous);
       }
@@ -714,7 +712,7 @@ class Compiler {
         asm_->mov(out, asm_->rax);
       }
     } else {
-      const TypeEntry entry = type_record_[offset];
+      const TypeEntry entry = type_record_.Get(offset);
       if (entry.IsConstant()) {
         // constant propagation in basic block level
         asm_->mov(out, Extract(entry.constant()));
@@ -756,7 +754,7 @@ class Compiler {
     set_last_used_candidate(dst);
 
     // type propagation
-    type_record_[dst] = type_record_[src];
+    type_record_.Put(dst, type_record_.Get(src));
   }
 
   // opcode | (size | mutable_start)
@@ -797,7 +795,7 @@ class Compiler {
 
       asm_->L(".RETURN_TO_HANDLING");
       asm_->mov(asm_->rdi, asm_->r14);
-      LoadVR(asm_->rax, jump);
+      LoadVR(asm_->rsi, jump);
       asm_->Call(&stub::THROW);
     }
   }
@@ -839,7 +837,7 @@ class Compiler {
       set_last_used_candidate(dst);
     }
 
-    type_record_[dst] = TypeEntry::Add(type_record_[lhs], type_record_[rhs]);
+    type_record_.Put(dst, TypeEntry::Add(type_record_.Get(lhs), type_record_.Get(rhs)));
   }
 
   // opcode | (dst | lhs | rhs)
@@ -879,7 +877,7 @@ class Compiler {
       set_last_used_candidate(dst);
     }
 
-    type_record_[dst] = TypeEntry::Subtract(type_record_[lhs], type_record_[rhs]);
+    type_record_.Put(dst, TypeEntry::Subtract(type_record_.Get(lhs), type_record_.Get(rhs)));
   }
 
   // opcode | (dst | lhs | rhs)
@@ -915,7 +913,7 @@ class Compiler {
       set_last_used_candidate(dst);
     }
 
-    type_record_[dst] = TypeEntry::Multiply(type_record_[lhs], type_record_[rhs]);
+    type_record_.Put(dst, TypeEntry::Multiply(type_record_.Get(lhs), type_record_.Get(rhs)));
   }
 
   // opcode | (dst | lhs | rhs)
@@ -932,7 +930,7 @@ class Compiler {
       set_last_used_candidate(dst);
     }
 
-    type_record_[dst] = TypeEntry::Divide(type_record_[lhs], type_record_[rhs]);
+    type_record_.Put(dst, TypeEntry::Divide(type_record_.Get(lhs), type_record_.Get(rhs)));
   }
 
   // opcode | (dst | lhs | rhs)
@@ -972,7 +970,7 @@ class Compiler {
       set_last_used_candidate(dst);
     }
 
-    type_record_[dst] = TypeEntry::Modulo(type_record_[lhs], type_record_[rhs]);
+    type_record_.Put(dst, TypeEntry::Modulo(type_record_.Get(lhs), type_record_.Get(rhs)));
   }
 
   // opcode | (dst | lhs | rhs)
@@ -1000,7 +998,7 @@ class Compiler {
       set_last_used_candidate(dst);
     }
 
-    type_record_[dst] = TypeEntry::Lshift(type_record_[lhs], type_record_[rhs]);
+    type_record_.Put(dst, TypeEntry::Lshift(type_record_.Get(lhs), type_record_.Get(rhs)));
   }
 
   // opcode | (dst | lhs | rhs)
@@ -1028,7 +1026,7 @@ class Compiler {
       set_last_used_candidate(dst);
     }
 
-    type_record_[dst] = TypeEntry::Rshift(type_record_[lhs], type_record_[rhs]);
+    type_record_.Put(dst, TypeEntry::Rshift(type_record_.Get(lhs), type_record_.Get(rhs)));
   }
 
   // opcode | (dst | lhs | rhs)
@@ -1064,7 +1062,7 @@ class Compiler {
       set_last_used_candidate(dst);
     }
 
-    type_record_[dst] = TypeEntry::RshiftLogical(type_record_[lhs], type_record_[rhs]);
+    type_record_.Put(dst, TypeEntry::RshiftLogical(type_record_.Get(lhs), type_record_.Get(rhs)));
   }
 
   // opcode | (dst | lhs | rhs)
@@ -1114,7 +1112,7 @@ class Compiler {
       asm_->L(".BINARY_LT_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
-      type_record_[dst] = TypeEntry::LT(type_record_[lhs], type_record_[rhs]);
+      type_record_.Put(dst, TypeEntry::LT(type_record_.Get(lhs), type_record_.Get(rhs)));
     }
   }
 
@@ -1165,7 +1163,7 @@ class Compiler {
       asm_->L(".BINARY_LTE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
-      type_record_[dst] = TypeEntry::LTE(type_record_[lhs], type_record_[rhs]);
+      type_record_.Put(dst, TypeEntry::LTE(type_record_.Get(lhs), type_record_.Get(rhs)));
     }
   }
 
@@ -1215,7 +1213,7 @@ class Compiler {
       asm_->L(".BINARY_GT_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
-      type_record_[dst] = TypeEntry::GT(type_record_[lhs], type_record_[rhs]);
+      type_record_.Put(dst, TypeEntry::GT(type_record_.Get(lhs), type_record_.Get(rhs)));
     }
   }
 
@@ -1265,7 +1263,7 @@ class Compiler {
       asm_->L(".BINARY_GTE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
-      type_record_[dst] = TypeEntry::GTE(type_record_[lhs], type_record_[rhs]);
+      type_record_.Put(dst, TypeEntry::GTE(type_record_.Get(lhs), type_record_.Get(rhs)));
     }
   }
 
@@ -1293,7 +1291,7 @@ class Compiler {
       const int16_t dst = Reg(instr[1].i16[0]);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
-      type_record_[dst] = TypeEntry::Instanceof(type_record_[lhs], type_record_[rhs]);
+      type_record_.Put(dst, TypeEntry::Instanceof(type_record_.Get(lhs), type_record_.Get(rhs)));
     }
   }
 
@@ -1321,7 +1319,7 @@ class Compiler {
       const int16_t dst = Reg(instr[1].i16[0]);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
-      type_record_[dst] = TypeEntry::In(type_record_[lhs], type_record_[rhs]);
+      type_record_.Put(dst, TypeEntry::In(type_record_.Get(lhs), type_record_.Get(rhs)));
     }
   }
 
@@ -1371,7 +1369,7 @@ class Compiler {
       asm_->L(".BINARY_EQ_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
-      type_record_[dst] = TypeEntry::Equal(type_record_[lhs], type_record_[rhs]);
+      type_record_.Put(dst, TypeEntry::Equal(type_record_.Get(lhs), type_record_.Get(rhs)));
     }
   }
 
@@ -1423,7 +1421,7 @@ class Compiler {
       asm_->L(".BINARY_STRICT_EQ_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
-      type_record_[dst] = TypeEntry::StrictEqual(type_record_[lhs], type_record_[rhs]);
+      type_record_.Put(dst, TypeEntry::StrictEqual(type_record_.Get(lhs), type_record_.Get(rhs)));
     }
   }
 
@@ -1473,7 +1471,7 @@ class Compiler {
       asm_->L(".BINARY_NE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
-      type_record_[dst] = TypeEntry::NotEqual(type_record_[lhs], type_record_[rhs]);
+      type_record_.Put(dst, TypeEntry::NotEqual(type_record_.Get(lhs), type_record_.Get(rhs)));
     }
   }
 
@@ -1525,7 +1523,7 @@ class Compiler {
       asm_->L(".BINARY_STRICT_NE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
-      type_record_[dst] = TypeEntry::StrictNotEqual(type_record_[lhs], type_record_[rhs]);
+      type_record_.Put(dst, TypeEntry::StrictNotEqual(type_record_.Get(lhs), type_record_.Get(rhs)));
     }
   }
 
@@ -1575,7 +1573,7 @@ class Compiler {
       asm_->L(".BINARY_BIT_AND_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
-      type_record_[dst] = TypeEntry::BitwiseAnd(type_record_[lhs], type_record_[rhs]);
+      type_record_.Put(dst, TypeEntry::BitwiseAnd(type_record_.Get(lhs), type_record_.Get(rhs)));
     }
   }
 
@@ -1601,7 +1599,7 @@ class Compiler {
       asm_->L(".BINARY_BIT_XOR_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
-      type_record_[dst] = TypeEntry::BitwiseXor(type_record_[lhs], type_record_[rhs]);
+      type_record_.Put(dst, TypeEntry::BitwiseXor(type_record_.Get(lhs), type_record_.Get(rhs)));
     }
   }
 
@@ -1627,7 +1625,7 @@ class Compiler {
       asm_->L(".BINARY_BIT_OR_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
-      type_record_[dst] = TypeEntry::BitwiseOr(type_record_[lhs], type_record_[rhs]);
+      type_record_.Put(dst, TypeEntry::BitwiseOr(type_record_.Get(lhs), type_record_.Get(rhs)));
     }
   }
 
@@ -1638,7 +1636,7 @@ class Compiler {
     assert(layout <= UINT32_MAX);
     asm_->mov(asm_->qword[asm_->r13 + (dst * kJSValSize)], layout);
 
-    type_record_[dst] = TypeEntry(JSUndefined);
+    type_record_.Put(dst, TypeEntry(JSUndefined));
   }
 
   // opcode | dst
@@ -1648,7 +1646,7 @@ class Compiler {
     assert(layout <= UINT32_MAX);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
 
-    type_record_[dst] = TypeEntry(JSEmpty);
+    type_record_.Put(dst, TypeEntry(JSEmpty));
   }
 
   // opcode | dst
@@ -1657,7 +1655,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i32[0]);
     assert(layout <= UINT32_MAX);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
-    type_record_[dst] = TypeEntry(JSNull);
+    type_record_.Put(dst, TypeEntry(JSNull));
   }
 
   // opcode | dst
@@ -1666,7 +1664,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i32[0]);
     assert(layout <= UINT32_MAX);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
-    type_record_[dst] = TypeEntry(JSTrue);
+    type_record_.Put(dst, TypeEntry(JSTrue));
   }
 
   // opcode | dst
@@ -1675,7 +1673,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i32[0]);
     assert(layout <= UINT32_MAX);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
-    type_record_[dst] = TypeEntry(JSFalse);
+    type_record_.Put(dst, TypeEntry(JSFalse));
   }
 
   // opcode | (dst | src)
@@ -1696,7 +1694,7 @@ class Compiler {
       asm_->L(".UNARY_POSITIVE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
-      type_record_[dst] = TypeEntry::Positive(type_record_[src]);
+      type_record_.Put(dst, TypeEntry::Positive(type_record_.Get(src)));
     }
   }
 
@@ -1735,7 +1733,7 @@ class Compiler {
       asm_->L(".UNARY_NEGATIVE_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
-      type_record_[dst] = TypeEntry::Negative(type_record_[src]);
+      type_record_.Put(dst, TypeEntry::Negative(type_record_.Get(src)));
     }
   }
 
@@ -1747,7 +1745,7 @@ class Compiler {
     asm_->Call(&stub::UNARY_NOT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry::Not(type_record_[src]);
+    type_record_.Put(dst, TypeEntry::Not(type_record_.Get(src)));
   }
 
   // opcode | (dst | src)
@@ -1770,7 +1768,7 @@ class Compiler {
       asm_->L(".UNARY_BIT_NOT_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
-      type_record_[dst] = TypeEntry::BitwiseNot(type_record_[src]);
+      type_record_.Put(dst, TypeEntry::BitwiseNot(type_record_.Get(src)));
     }
   }
 
@@ -1806,7 +1804,7 @@ class Compiler {
     asm_->Call(&stub::TO_PRIMITIVE_AND_TO_STRING);
     asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], asm_->rax);
     set_last_used_candidate(src);
-    type_record_[src] = TypeEntry::ToPrimitiveAndToString(type_record_[src]);
+    type_record_.Put(src, TypeEntry::ToPrimitiveAndToString(type_record_.Get(src)));
   }
 
   // opcode | (dst | start | count)
@@ -1821,7 +1819,7 @@ class Compiler {
     asm_->Call(&stub::CONCAT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::String());
+    type_record_.Put(dst, TypeEntry(Type::String()));
   }
 
   // opcode
@@ -1847,7 +1845,7 @@ class Compiler {
     asm_->Call(&stub::TYPEOF);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::String());
+    type_record_.Put(dst, TypeEntry(Type::String()));
   }
 
   // opcode | (obj | item) | (offset | merged)
@@ -1901,7 +1899,7 @@ class Compiler {
     const int16_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
 
-    const TypeEntry& base_entry = type_record_[base];
+    const TypeEntry& base_entry = type_record_.Get(base);
 
     LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
@@ -1924,12 +1922,12 @@ class Compiler {
       if (base_entry.type().IsArray() ||
           base_entry.type().IsFunction() ||
           base_entry.type().IsString()) {
-        type_record_[dst] = TypeEntry(Type::Number());
+        type_record_.Put(dst, TypeEntry(Type::Number()));
       } else {
-        type_record_[dst] = TypeEntry(Type::Unknown());
+        type_record_.Put(dst, TypeEntry(Type::Unknown()));
       }
     } else {
-      type_record_[dst] = TypeEntry(Type::Unknown());
+      type_record_.Put(dst, TypeEntry(Type::Unknown()));
     }
   }
 
@@ -1974,7 +1972,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Boolean());
+    type_record_.Put(dst, TypeEntry(Type::Boolean()));
   }
 
   // opcode | (dst | base | name) | nop | nop | nop
@@ -1993,7 +1991,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Number());
+    type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
   // opcode | (dst | base | name) | nop | nop | nop
@@ -2012,7 +2010,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Number());
+    type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
   // opcode | (dst | base | name) | nop | nop | nop
@@ -2031,7 +2029,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Number());
+    type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
   // opcode | (dst | base | name) | nop | nop | nop
@@ -2050,7 +2048,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Number());
+    type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
   // opcode
@@ -2099,7 +2097,7 @@ class Compiler {
     asm_->Call(&stub::LOAD_ARRAY);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Array());
+    type_record_.Put(dst, TypeEntry(Type::Array()));
   }
 
   // opcode | (dst | code)
@@ -2112,7 +2110,7 @@ class Compiler {
     asm_->Call(&breaker::JSFunction::New);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Function());
+    type_record_.Put(dst, TypeEntry(Type::Function()));
   }
 
   // opcode | (dst | offset)
@@ -2125,7 +2123,7 @@ class Compiler {
     asm_->Call(&stub::LOAD_REGEXP);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Object());
+    type_record_.Put(dst, TypeEntry(Type::Object()));
   }
 
   // opcode | dst | map
@@ -2136,7 +2134,7 @@ class Compiler {
     asm_->Call(&stub::LOAD_OBJECT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Object());
+    type_record_.Put(dst, TypeEntry(Type::Object()));
   }
 
   // opcode | (dst | base | element)
@@ -2150,7 +2148,7 @@ class Compiler {
     asm_->Call(&stub::LOAD_ELEMENT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Unknown());
+    type_record_.Put(dst, TypeEntry(Type::Unknown()));
   }
 
   // opcode | (base | element | src)
@@ -2184,7 +2182,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Boolean());
+    type_record_.Put(dst, TypeEntry(Type::Boolean()));
   }
 
   // opcode | (dst | base | element)
@@ -2202,7 +2200,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Number());
+    type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
   // opcode | (dst | base | element)
@@ -2220,7 +2218,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Number());
+    type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
   // opcode | (dst | base | element)
@@ -2238,7 +2236,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Number());
+    type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
   // opcode | (dst | base | element)
@@ -2256,7 +2254,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Number());
+    type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
   // opcode | dst
@@ -2264,7 +2262,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].i32[0]);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Unknown());
+    type_record_.Put(dst, TypeEntry(Type::Unknown()));
   }
 
   // opcode | src
@@ -2293,7 +2291,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Unknown());
+    type_record_.Put(dst, TypeEntry(Type::Unknown()));
   }
 
   // opcode | (src | name) | nop | nop
@@ -2320,7 +2318,7 @@ class Compiler {
     asm_->Call(&stub::DELETE_GLOBAL);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Boolean());
+    type_record_.Put(dst, TypeEntry(Type::Boolean()));
   }
 
   // opcode | (dst | name) | nop | nop
@@ -2337,7 +2335,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Number());
+    type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
   // opcode | (dst | name) | nop | nop
@@ -2354,7 +2352,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Number());
+    type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
   // opcode | (dst | name) | nop | nop
@@ -2371,7 +2369,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Number());
+    type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
   // opcode | (dst | name) | nop | nop
@@ -2388,7 +2386,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Number());
+    type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
   // opcode | (dst | name) | nop | nop
@@ -2404,7 +2402,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::String());
+    type_record_.Put(dst, TypeEntry(Type::String()));
   }
 
   // opcode | (dst | index) | (offset | nest)
@@ -2426,7 +2424,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Unknown());
+    type_record_.Put(dst, TypeEntry(Type::Unknown()));
   }
 
   // opcode | (src | name) | (offset | nest)
@@ -2454,7 +2452,7 @@ class Compiler {
     static const uint64_t layout = Extract(JSFalse);
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
-    type_record_[dst] = TypeEntry(Type::Boolean());
+    type_record_.Put(dst, TypeEntry(Type::Boolean()));
   }
 
   // opcode | (dst | name) | (offset | nest)
@@ -2475,7 +2473,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Number());
+    type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
   // opcode | (dst | name) | (offset | nest)
@@ -2496,7 +2494,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Number());
+    type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
   // opcode | (dst | name) | (offset | nest)
@@ -2517,7 +2515,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Number());
+    type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
   // opcode | (dst | name) | (offset | nest)
@@ -2538,7 +2536,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Number());
+    type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
   // opcode | (dst | name) | (offset | nest)
@@ -2559,7 +2557,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::String());
+    type_record_.Put(dst, TypeEntry(Type::String()));
   }
 
   // opcode | (callee | offset | argc_with_this)
@@ -2783,7 +2781,7 @@ class Compiler {
       asm_->L(".INCREMENT_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], asm_->rax);
       set_last_used_candidate(src);
-      type_record_[src] = TypeEntry::Increment(type_record_[src]);
+      type_record_.Put(src, TypeEntry::Increment(type_record_.Get(src)));
     }
   }
 
@@ -2814,7 +2812,7 @@ class Compiler {
       asm_->L(".DECREMENT_EXIT");
       asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
       set_last_used_candidate(src);
-      type_record_[src] = TypeEntry::Decrement(type_record_[src]);
+      type_record_.Put(src, TypeEntry::Decrement(type_record_.Get(src)));
     }
   }
 
@@ -2850,9 +2848,9 @@ class Compiler {
       asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
       set_last_used_candidate(src);
       {
-        const TypeEntry from = type_record_[src];
-        type_record_[dst] = TypeEntry::ToNumber(from);
-        type_record_[src] = TypeEntry::Increment(from);
+        const TypeEntry from = type_record_.Get(src);
+        type_record_.Put(dst, TypeEntry::ToNumber(from));
+        type_record_.Put(src, TypeEntry::Increment(from));
       }
     }
   }
@@ -2889,9 +2887,9 @@ class Compiler {
       asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
       set_last_used_candidate(src);
       {
-        const TypeEntry from = type_record_[src];
-        type_record_[dst] = TypeEntry::ToNumber(from);
-        type_record_[src] = TypeEntry::Increment(from);
+        const TypeEntry from = type_record_.Get(src);
+        type_record_.Put(dst, TypeEntry::ToNumber(from));
+        type_record_.Put(src, TypeEntry::Increment(from));
       }
     }
   }
@@ -2909,8 +2907,8 @@ class Compiler {
     asm_->Call(&stub::PREPARE_DYNAMIC_CALL);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[base] = TypeEntry(Type::Unknown());
-    type_record_[dst] = TypeEntry(Type::Unknown());
+    type_record_.Put(base, TypeEntry(Type::Unknown()));
+    type_record_.Put(dst, TypeEntry(Type::Unknown()));
   }
 
   // opcode | (jmp | cond)
@@ -3015,7 +3013,7 @@ class Compiler {
     asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
     asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::String());
+    type_record_.Put(dst, TypeEntry(Type::String()));
   }
 
   // opcode | iterator
@@ -3052,7 +3050,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Unknown());
+    type_record_.Put(dst, TypeEntry(Type::Unknown()));
   }
 
   // opcode | (src | name)
@@ -3084,7 +3082,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Boolean());
+    type_record_.Put(dst, TypeEntry(Type::Boolean()));
   }
 
   // opcode | (dst | name)
@@ -3101,7 +3099,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Number());
+    type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
   // opcode | (dst | name)
@@ -3118,7 +3116,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Number());
+    type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
   // opcode | (dst | name)
@@ -3135,7 +3133,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Number());
+    type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
   // opcode | (dst | name)
@@ -3152,7 +3150,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Number());
+    type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
   // opcode | (dst | name)
@@ -3169,7 +3167,7 @@ class Compiler {
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::String());
+    type_record_.Put(dst, TypeEntry(Type::String()));
   }
 
   // opcode | jmp
@@ -3189,7 +3187,7 @@ class Compiler {
     }
     asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_[dst] = TypeEntry(Type::Arguments());
+    type_record_.Put(dst, TypeEntry(Type::Arguments()));
   }
 
   // NaN is not handled
@@ -3211,7 +3209,7 @@ class Compiler {
                   const Xbyak::Reg64& tmp1,
                   const char* label,
                   Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
-    if (type_record_[reg].type().IsInt32()) {
+    if (type_record_.Get(reg).type().IsInt32()) {
       // no check
       return;
     }

@@ -421,5 +421,51 @@ class TypeEntry {
   JSVal constant_;
 };
 
+class TypeRecord {
+ public:
+  typedef std::unordered_map<int16_t, TypeEntry> Record;
+
+  static bool IsConstantID(int16_t offset) {
+    return (offset - railgun::FrameConstant<>::kFrameSize) >=
+        railgun::FrameConstant<>::kConstantOffset;
+  }
+
+  static uint32_t ExtractConstantOffset(int16_t reg) {
+    assert(IsConstantID(reg));
+    return reg -
+        railgun::FrameConstant<>::kFrameSize -
+        railgun::FrameConstant<>::kConstantOffset;
+  }
+
+  TypeRecord()
+    : record_(),
+      code_(NULL) {
+  }
+
+  void Init(railgun::Code* code) {
+    record_.clear();
+    code_ = code;
+  }
+
+  void Clear() {
+    record_.clear();
+  }
+
+  TypeEntry Get(int16_t offset) {
+    if (IsConstantID(offset)) {
+      return TypeEntry(code_->constants()[ExtractConstantOffset(offset)]);
+    }
+    return record_[offset];
+  }
+
+  void Put(int16_t offset, const TypeEntry& entry) {
+    record_[offset] = entry;
+  }
+
+ private:
+  Record record_;
+  railgun::Code* code_;
+};
+
 } } }  // namespace iv::lv5::breaker
 #endif  // IV_LV5_BREAKER_TYPE_H_
