@@ -437,7 +437,7 @@ class Compiler {
           EmitPOSTFIX_DECREMENT_PROP(instr);
           break;
         case r::OP::LOAD_CONST:
-          EmitLOAD_CONST(instr);
+          UNREACHABLE();
           break;
         case r::OP::JUMP_BY:
           EmitJUMP_BY(instr);
@@ -684,9 +684,31 @@ class Compiler {
     return railgun::FrameConstant<>::kFrameSize + reg;
   }
 
+  static bool IsConstantID(int16_t reg) {
+    return reg >= Reg(railgun::FrameConstant<>::kConstantOffset);
+  }
+
+  static uint32_t ExtractConstantOffset(int16_t reg) {
+    assert(IsConstantID(reg));
+    return reg -
+        railgun::FrameConstant<>::kFrameSize -
+        railgun::FrameConstant<>::kConstantOffset;
+  }
+
   // Load virtual register
   void LoadVR(const Xbyak::Reg64& out, int16_t offset) {
     const bool break_result = out.getIdx() == asm_->rax.getIdx();
+
+    if (IsConstantID(offset)) {
+      // This is constant register.
+      const JSVal val = code_->constants()[ExtractConstantOffset(offset)];
+      asm_->mov(out, Extract(val));
+      if (break_result) {
+        set_last_used(kInvalidUsedOffset);
+      }
+      return;
+    }
+
     if (last_used() == offset) {
       if (!break_result) {
         asm_->mov(out, asm_->rax);
@@ -775,23 +797,9 @@ class Compiler {
 
       asm_->L(".RETURN_TO_HANDLING");
       asm_->mov(asm_->rdi, asm_->r14);
-      asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + jump * kJSValSize]);
+      LoadVR(asm_->rax, jump);
       asm_->Call(&stub::THROW);
     }
-  }
-
-  // opcode | (dst | offset)
-  void EmitLOAD_CONST(const Instruction* instr) {
-    // extract constant bytes
-    // append immediate value to machine code
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
-    const uint32_t offset = instr[1].ssw.u32;
-    const JSVal val = code_->constants()[offset];
-    asm_->mov(asm_->rax, Extract(val));
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-    set_last_used_candidate(dst);
-
-    type_record_[dst] = TypeEntry(val);
   }
 
   // opcode | (dst | lhs | rhs)
@@ -1806,6 +1814,7 @@ class Compiler {
     const int16_t dst = Reg(instr[1].ssw.i16[0]);
     const int16_t start = Reg(instr[1].ssw.i16[1]);
     const uint32_t count = instr[1].ssw.u32;
+    assert(!IsConstantID(start));
     asm_->lea(asm_->rsi, asm_->ptr[asm_->r13 + start * kJSValSize]);
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->edx, count);
@@ -1933,7 +1942,10 @@ class Compiler {
     asm_->mov(asm_->rdi, asm_->r14);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
-    asm_->mov(asm_->rcx, asm_->ptr[asm_->r13 + src * kJSValSize]);
+
+    // NOTE
+    // Do not break rax before this LoadVR
+    LoadVR(asm_->rcx, src);
     asm_->mov(asm_->r8, core::BitCast<uint64_t>(instr));
 
     Assembler::RepatchSite site;
@@ -2057,6 +2069,7 @@ class Compiler {
     const uint32_t index = instr[2].u32[0];
     const uint32_t size = instr[2].u32[1];
     LoadVR(asm_->rdi, ary);
+    assert(!IsConstantID(reg));
     asm_->lea(asm_->rsi, asm_->ptr[asm_->r13 + reg * kJSValSize]);
     asm_->mov(asm_->edx, index);
     asm_->mov(asm_->ecx, size);
@@ -2070,6 +2083,7 @@ class Compiler {
     const uint32_t index = instr[2].u32[0];
     const uint32_t size = instr[2].u32[1];
     LoadVR(asm_->rdi, ary);
+    assert(!IsConstantID(reg));
     asm_->lea(asm_->rsi, asm_->ptr[asm_->r13 + reg * kJSValSize]);
     asm_->mov(asm_->edx, index);
     asm_->mov(asm_->ecx, size);
@@ -2557,6 +2571,7 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rdi, asm_->r14);
       LoadVR(asm_->rsi, callee);
+      assert(!IsConstantID(offset));
       asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + offset * kJSValSize]);
       asm_->mov(asm_->ecx, argc_with_this);
       asm_->mov(asm_->r8, asm_->rsp);
@@ -2575,6 +2590,7 @@ class Compiler {
       asm_->mov(asm_->rcx, asm_->r13);  // old frame
       asm_->mov(asm_->r13, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, prev_)]);  // current frame
       const int16_t frame_end_offset = Reg(code_->registers());
+      assert(!IsConstantID(frame_end_offset));
       asm_->lea(asm_->r10, asm_->ptr[asm_->r13 + frame_end_offset * kJSValSize]);
       asm_->cmp(asm_->rcx, asm_->r10);
       asm_->jge(".CALL_UNWIND_OLD");
@@ -2599,6 +2615,7 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rdi, asm_->r14);
       LoadVR(asm_->rsi, callee);
+      assert(!IsConstantID(offset));
       asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + offset * kJSValSize]);
       asm_->mov(asm_->ecx, argc_with_this);
       asm_->mov(asm_->r8, asm_->rsp);
@@ -2658,6 +2675,7 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       asm_->mov(asm_->rdi, asm_->r14);
       LoadVR(asm_->rsi, callee);
+      assert(!IsConstantID(offset));
       asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + offset * kJSValSize]);
       asm_->mov(asm_->ecx, argc_with_this);
       asm_->mov(asm_->r8, asm_->rsp);
@@ -2676,6 +2694,7 @@ class Compiler {
       asm_->mov(asm_->rcx, asm_->r13);  // old frame
       asm_->mov(asm_->r13, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, prev_)]);  // current frame
       const int16_t frame_end_offset = Reg(code_->registers());
+      assert(!IsConstantID(frame_end_offset));
       asm_->lea(asm_->r10, asm_->ptr[asm_->r13 + frame_end_offset * kJSValSize]);
       asm_->cmp(asm_->rcx, asm_->r10);
       asm_->jge(".CALL_UNWIND_OLD");
@@ -2823,6 +2842,7 @@ class Compiler {
 
       asm_->L(".INCREMENT_SLOW");
       asm_->mov(asm_->rdi, asm_->r14);
+      assert(!IsConstantID(dst));
       asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + dst * kJSValSize]);
       asm_->Call(&stub::POSTFIX_INCREMENT);
 
@@ -2861,6 +2881,7 @@ class Compiler {
 
       asm_->L(".DECREMENT_SLOW");
       asm_->mov(asm_->rdi, asm_->r14);
+      assert(!IsConstantID(dst));
       asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + dst * kJSValSize]);
       asm_->Call(&stub::POSTFIX_DECREMENT);
 
@@ -2883,6 +2904,7 @@ class Compiler {
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    assert(!IsConstantID(base));
     asm_->lea(asm_->rcx, asm_->ptr[asm_->r13 + base * kJSValSize]);
     asm_->Call(&stub::PREPARE_DYNAMIC_CALL);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
@@ -3336,7 +3358,7 @@ inline void Compile(railgun::Code* code) {
 inline railgun::Code* Compile(
     Context* ctx,
     const FunctionLiteral& global, railgun::JSScript* script) {
-  railgun::Code* code = railgun::Compile(ctx, global, script);
+  railgun::Code* code = railgun::Compile(ctx, global, script, true);
   if (code) {
     Compile(code);
   }
@@ -3346,7 +3368,7 @@ inline railgun::Code* Compile(
 inline railgun::Code* CompileFunction(
     Context* ctx,
     const FunctionLiteral& func, railgun::JSScript* script) {
-  railgun::Code* code = railgun::CompileFunction(ctx, func, script);
+  railgun::Code* code = railgun::CompileFunction(ctx, func, script, true);
   if (code) {
     Compile(code);
   }
@@ -3356,7 +3378,7 @@ inline railgun::Code* CompileFunction(
 inline railgun::Code* CompileEval(
     Context* ctx,
     const FunctionLiteral& eval, railgun::JSScript* script) {
-  railgun::Code* code = railgun::CompileEval(ctx, eval, script);
+  railgun::Code* code = railgun::CompileEval(ctx, eval, script, true);
   if (code) {
     Compile(code);
   }
@@ -3367,7 +3389,7 @@ inline railgun::Code* CompileIndirectEval(
     Context* ctx,
     const FunctionLiteral& eval,
     railgun::JSScript* script) {
-  railgun::Code* code = railgun::CompileIndirectEval(ctx, eval, script);
+  railgun::Code* code = railgun::CompileIndirectEval(ctx, eval, script, true);
   if (code) {
     Compile(code);
   }

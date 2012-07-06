@@ -154,7 +154,7 @@ class Registers {
 
  private:
   void Release(int32_t reg) {
-    if (!IsLocalID(reg)) {
+    if (!IsLocalID(reg) && !IsConstantID(reg)) {
       // this is temporary register
       assert(lives_[reg - variable_registers_]);
       assert(std::find(

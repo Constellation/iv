@@ -28,7 +28,7 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
       internal::IsOneFunctionExpression(*eval, IV_LV5_ERROR(e));
   railgun::JSScript* script =
       railgun::JSSourceScript<EvalSource>::New(ctx, src);
-  railgun::Code* code = railgun::CompileFunction(ctx, *func, script);
+  railgun::Code* code = railgun::CompileFunction(ctx, *func, script, true);
   Compile(code);
   return JSFunction::New(ctx, code, ctx->global_env());
 }
@@ -70,7 +70,7 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
   }
   railgun::JSScript* script =
       railgun::JSSourceScript<EvalSource>::New(ctx, src);
-  railgun::Code* code = railgun::CompileIndirectEval(ctx, *eval, script);
+  railgun::Code* code = railgun::CompileIndirectEval(ctx, *eval, script, true);
   Compile(code);
   return breaker::RunEval(
       ctx,
@@ -121,7 +121,7 @@ inline JSVal DirectCallToEval(const Arguments& args, railgun::Frame* frame, Erro
     }
     railgun::JSScript* script =
         railgun::JSSourceScript<EvalSource>::New(ctx, src);
-    code = railgun::CompileEval(ctx, *eval, script);
+    code = railgun::CompileEval(ctx, *eval, script, true);
     breaker::Compile(code);
     if (!code->strict()) {
       ctx->direct_eval_map()->Insert(str, code);

@@ -27,7 +27,7 @@ railgun::Code* Compile(Context* ctx,
     std::fprintf(stderr, "%s\n", parser.error().c_str());
     return NULL;
   }
-  return railgun::Compile(ctx, *global, script);
+  return railgun::Compile(ctx, *global, script, true);
 }
 
 static void Execute(const core::StringPiece& data,
