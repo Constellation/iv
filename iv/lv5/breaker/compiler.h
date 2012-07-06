@@ -881,40 +881,7 @@ class Compiler {
   }
 
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_MULTIPLY(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t lhs = Reg(instr[1].i16[1]);
-    const int16_t rhs = Reg(instr[1].i16[2]);
-    {
-      const Assembler::LocalLabelScope scope(asm_);
-      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_MULTIPLY_SLOW_GENERIC");
-      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_MULTIPLY_SLOW_GENERIC");
-      MultiplyingInt32OverflowGuard(asm_->esi,
-                                    asm_->edx, asm_->eax, ".BINARY_MULTIPLY_SLOW_NUMBER");
-      asm_->or(asm_->rax, asm_->r15);
-      asm_->jmp(".BINARY_MULTIPLY_EXIT");
-
-      // rdi and rsi is always int32 (but overflow)
-      asm_->L(".BINARY_MULTIPLY_SLOW_NUMBER");
-      asm_->cvtsi2sd(asm_->xmm0, asm_->esi);
-      asm_->cvtsi2sd(asm_->xmm1, asm_->edx);
-      asm_->mulsd(asm_->xmm0, asm_->xmm1);
-      asm_->movq(asm_->rax, asm_->xmm0);
-      ConvertNotNaNDoubleToJSVal(asm_->rax, asm_->rcx);
-      asm_->jmp(".BINARY_MULTIPLY_EXIT");
-
-      asm_->L(".BINARY_MULTIPLY_SLOW_GENERIC");
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->Call(&stub::BINARY_MULTIPLY);
-
-      asm_->L(".BINARY_MULTIPLY_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      set_last_used_candidate(dst);
-    }
-
-    type_record_.Put(dst, TypeEntry::Multiply(type_record_.Get(lhs), type_record_.Get(rhs)));
-  }
+  void EmitBINARY_MULTIPLY(const Instruction* instr);
 
   // opcode | (dst | lhs | rhs)
   void EmitBINARY_DIVIDE(const Instruction* instr) {
@@ -3231,7 +3198,6 @@ class Compiler {
     asm_->je(label, type);
   }
 
-
   void CheckObjectCoercible(const Xbyak::Reg64& target,
                             const Xbyak::Reg64& tmp) {
     // (1000)2 = 8
@@ -3247,6 +3213,12 @@ class Compiler {
       asm_->Call(&stub::THROW_CHECK_OBJECT);
       asm_->L(".EXIT");
     }
+  }
+
+  void EmitConstantDest(const TypeEntry& entry, int16_t dst) {
+    asm_->mov(asm_->rax, Extract(entry.constant()));
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    set_last_used_candidate(dst);
   }
 
   void AddingInt32OverflowGuard(const Xbyak::Reg32& lhs,
@@ -3266,16 +3238,6 @@ class Compiler {
                                      Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
     asm_->mov(out, lhs);
     asm_->sub(out, rhs);
-    asm_->jo(label, type);
-  }
-
-  void MultiplyingInt32OverflowGuard(const Xbyak::Reg32& lhs,
-                                     const Xbyak::Reg32& rhs,
-                                     const Xbyak::Reg32& out,
-                                     const char* label,
-                                     Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
-    asm_->mov(out, lhs);
-    asm_->imul(out, rhs);
     asm_->jo(label, type);
   }
 
@@ -3316,6 +3278,10 @@ class Compiler {
 
   inline void set_last_used_candidate(int32_t reg) {
     last_used_candidate_ = reg;
+  }
+
+  inline void kill_last_used_candidate() {
+    set_last_used_candidate(kInvalidUsedOffset);
   }
 
   void LookupHeapEnv(const Xbyak::Reg64& target, uint32_t nest) {

@@ -8,6 +8,7 @@
 #include <iv/lv5/breaker/stub.h>
 #include <iv/lv5/breaker/assembler.h>
 #include <iv/lv5/breaker/compiler.h>
+#include <iv/lv5/breaker/compiler_arithmetic.h>
 #include <iv/lv5/breaker/entry_point.h>
 #include <iv/lv5/breaker/jsfunction.h>
 #include <iv/lv5/breaker/runtime.h>

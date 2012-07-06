@@ -66,6 +66,8 @@ class Type {
 
   bool IsInt32() const { return type_ == TYPE_INT32; }
 
+  bool IsNotInt32() const { return !IsInt32() && !IsUnknown(); }
+
   bool IsNumber() const {
     return (type_ & TYPE_NUMBER_MASK) && !(type_ & ~TYPE_NUMBER_MASK);
   }
@@ -147,6 +149,10 @@ class TypeEntry {
 
   bool IsConstant() const {
     return !constant_.IsEmpty();
+  }
+
+  bool IsConstantInt32() const {
+    return IsConstant() && constant().IsInt32();
   }
 
   JSVal constant() const { return constant_; }
