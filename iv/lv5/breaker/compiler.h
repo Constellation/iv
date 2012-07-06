@@ -2690,12 +2690,11 @@ class Compiler {
     static const uint64_t overflow = Extract(JSVal(static_cast<double>(INT32_MAX) + 1));
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, src);
-      Int32Guard(src, asm_->rsi, asm_->rax, ".INCREMENT_SLOW");
-      asm_->inc(asm_->esi);
+      LoadVR(asm_->rax, src);
+      Int32Guard(src, asm_->rax, asm_->rcx, ".INCREMENT_SLOW");
+      asm_->inc(asm_->eax);
       asm_->jo(".INCREMENT_OVERFLOW");
 
-      asm_->mov(asm_->eax, asm_->esi);
       asm_->or(asm_->rax, asm_->r15);
       asm_->jmp(".INCREMENT_EXIT");
 
@@ -2706,6 +2705,7 @@ class Compiler {
 
       asm_->L(".INCREMENT_SLOW");
       asm_->mov(asm_->rdi, asm_->r14);
+      asm_->mov(asm_->rsi, asm_->rax);
       asm_->Call(&stub::INCREMENT);
 
       asm_->L(".INCREMENT_EXIT");
@@ -2721,12 +2721,11 @@ class Compiler {
     static const uint64_t overflow = Extract(JSVal(static_cast<double>(INT32_MIN) - 1));
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, src);
-      Int32Guard(src, asm_->rsi, asm_->rax, ".DECREMENT_SLOW");
-      asm_->sub(asm_->esi, 1);
+      LoadVR(asm_->rax, src);
+      Int32Guard(src, asm_->rax, asm_->rcx, ".DECREMENT_SLOW");
+      asm_->sub(asm_->eax, 1);
       asm_->jo(".DECREMENT_OVERFLOW");
 
-      asm_->mov(asm_->eax, asm_->esi);
       asm_->or(asm_->rax, asm_->r15);
       asm_->jmp(".DECREMENT_EXIT");
 
@@ -2736,6 +2735,7 @@ class Compiler {
       asm_->jmp(".DECREMENT_EXIT");
 
       asm_->L(".DECREMENT_SLOW");
+      asm_->mov(asm_->rsi, asm_->rax);
       asm_->mov(asm_->rdi, asm_->r14);
       asm_->Call(&stub::DECREMENT);
 
