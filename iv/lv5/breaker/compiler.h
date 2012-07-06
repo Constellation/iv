@@ -138,7 +138,7 @@ class Compiler {
     jump_map_.clear();
     entry_points_.insert(std::make_pair(code, asm_->size()));
     previous_instr_ = NULL;
-    last_used_ = kInvalidUsedOffset;
+    kill_last_used();
     type_record_.Init(code);
   }
 
@@ -226,7 +226,7 @@ class Compiler {
       const bool in_basic_block = SplitBasicBlock(previous, instr);
       if (!in_basic_block) {
         set_previous_instr(NULL);
-        set_last_used(kInvalidUsedOffset);
+        kill_last_used();
         type_record_.Clear();
       } else {
         set_previous_instr(previous);
@@ -702,7 +702,7 @@ class Compiler {
       const JSVal val = code_->constants()[ExtractConstantOffset(offset)];
       asm_->mov(out, Extract(val));
       if (break_result) {
-        set_last_used(kInvalidUsedOffset);
+        kill_last_used();
       }
       return;
     }
@@ -717,13 +717,13 @@ class Compiler {
         // constant propagation in basic block level
         asm_->mov(out, Extract(entry.constant()));
         if (break_result) {
-          set_last_used(kInvalidUsedOffset);
+          kill_last_used();
         }
         return;
       }
       asm_->mov(out, asm_->ptr[asm_->r13 + offset * kJSValSize]);
       if (break_result) {
-        set_last_used(kInvalidUsedOffset);
+        kill_last_used();
       }
     }
   }
@@ -3233,8 +3233,8 @@ class Compiler {
     last_used_candidate_ = reg;
   }
 
-  inline void kill_last_used_candidate() {
-    set_last_used_candidate(kInvalidUsedOffset);
+  inline void kill_last_used() {
+    set_last_used(kInvalidUsedOffset);
   }
 
   void LookupHeapEnv(const Xbyak::Reg64& target, uint32_t nest) {

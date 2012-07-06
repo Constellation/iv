@@ -58,7 +58,7 @@ inline void Compiler::EmitBINARY_MULTIPLY(const Instruction* instr) {
   asm_->or(asm_->rax, asm_->r15);
   asm_->jmp(".ARITHMETIC_EXIT");
 
-  kill_last_used_candidate();
+  kill_last_used();
 
   // lhs and rhs is always int32 (but overflow)
   asm_->L(".ARITHMETIC_OVERFLOW");
@@ -134,7 +134,7 @@ inline void Compiler::EmitBINARY_ADD(const Instruction* instr) {
   asm_->or(asm_->rax, asm_->r15);
   asm_->jmp(".ARITHMETIC_EXIT");
 
-  kill_last_used_candidate();
+  kill_last_used();
 
   // lhs and rhs is always int32 (but overflow)
   asm_->L(".ARITHMETIC_OVERFLOW");
