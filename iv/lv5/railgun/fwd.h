@@ -33,7 +33,5 @@ class JSScript;
 
 class JSVMFunction;
 
-Code* CompileFunction(Context* ctx, const JSString* str, Error* e);
-
 } } }  // namespace iv::lv5::railgun
 #endif  // IV_LV5_RAILGUN_FWD_H_

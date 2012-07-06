@@ -26,6 +26,18 @@ class DisAssembler : private core::Noncopyable<> {
     DisAssemble(code, true);
   }
 
+  static std::string ExtractReg(int reg) {
+    std::array<char, 32> buf;
+    char prefix = 'r';
+    if (reg >= FrameConstant<>::kConstantOffset) {
+      // This is constant register
+      prefix = 'k';
+      reg -= FrameConstant<>::kConstantOffset;
+    }
+    const int len = snprintf(buf.data(), buf.size() - 1, "%c%d", prefix, reg);
+    return std::string(buf.data(), buf.data() + len);
+  }
+
   void DisAssemble(const Code& code, bool all = true) {
     {
       // code description
@@ -90,7 +102,11 @@ class DisAssembler : private core::Noncopyable<> {
       case OP::UNARY_POSITIVE:
       case OP::MV: {
         const int r0 = instr[1].i16[0], r1 = instr[1].i16[1];
-        len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d", op, r0, r1);
+        len = snprintf(
+            buf,
+            sizeof(buf) - 1,
+            "%s %s %s",
+            op, ExtractReg(r0).c_str(), ExtractReg(r1).c_str());
         break;
       }
       case OP::TO_PRIMITIVE_AND_TO_STRING:
@@ -109,7 +125,11 @@ class DisAssembler : private core::Noncopyable<> {
       case OP::RESULT:
       case OP::RETURN: {
         const int r0 = instr[1].i32[0];
-        len = snprintf(buf, sizeof(buf) - 1, "%s r%d", op, r0);
+        len = snprintf(
+            buf,
+            sizeof(buf) - 1,
+            "%s %s",
+            op, ExtractReg(r0).c_str());
         break;
       }
       case OP::RAISE_IMMUTABLE: {
@@ -145,7 +165,11 @@ class DisAssembler : private core::Noncopyable<> {
       case OP::INITIALIZE_HEAP_IMMUTABLE: {
         const int r0 = instr[1].ssw.i16[0];
         const unsigned int offset = instr[1].ssw.u32;
-        len = snprintf(buf, sizeof(buf) - 1, "%s r%d %u", op, r0, offset);
+        len = snprintf(
+            buf,
+            sizeof(buf) - 1,
+            "%s %s %u",
+            op, ExtractReg(r0).c_str(), offset);
         break;
       }
       case OP::POSTFIX_INCREMENT_HEAP:
@@ -160,8 +184,11 @@ class DisAssembler : private core::Noncopyable<> {
         const unsigned int name = instr[1].ssw.u32;
         const unsigned int offset = instr[2].u32[0];
         const unsigned int nest = instr[2].u32[1];
-        len = snprintf(buf, sizeof(buf) - 1, "%s r%d %u %u %u",
-                       op, r0, name, offset, nest);
+        len = snprintf(
+            buf,
+            sizeof(buf) - 1,
+            "%s %s %u %u %u",
+            op, ExtractReg(r0).c_str(), name, offset, nest);
         break;
       }
       case OP::POSTFIX_INCREMENT_GLOBAL:
@@ -176,9 +203,12 @@ class DisAssembler : private core::Noncopyable<> {
         const unsigned int name = instr[1].ssw.u32;
         const Map* map = instr[2].map;
         const unsigned int offset = instr[3].u32[0];
-        len = snprintf(buf, sizeof(buf) - 1, "%s r%d %u %p %u",
-                       op, r0, name,
-                       reinterpret_cast<const void*>(map), offset);
+        len = snprintf(
+            buf,
+            sizeof(buf) - 1,
+            "%s %s %u %p %u",
+            op, ExtractReg(r0).c_str(), name,
+            reinterpret_cast<const void*>(map), offset);
         break;
       }
       case OP::BINARY_BIT_OR:
@@ -211,7 +241,11 @@ class DisAssembler : private core::Noncopyable<> {
       case OP::LOAD_ELEMENT: {
         const int r0 = instr[1].i16[0],
               r1 = instr[1].i16[1], r2 = instr[1].i16[2];
-        len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d r%d", op, r0, r1, r2);
+        len = snprintf(
+            buf,
+            sizeof(buf) - 1,
+            "%s %s %s %s",
+            op, ExtractReg(r0).c_str(), ExtractReg(r1).c_str(), ExtractReg(r2).c_str());
         break;
       }
       case OP::STORE_OBJECT_SET:
@@ -221,8 +255,11 @@ class DisAssembler : private core::Noncopyable<> {
       case OP::INIT_SPARSE_ARRAY_ELEMENT: {
         const int r0 = instr[1].i16[0], r1 = instr[1].i16[1];
         const unsigned int index = instr[2].u32[0], size = instr[2].u32[1];
-        len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d %u %u",
-                       op, r0, r1, index, size);
+        len = snprintf(
+            buf,
+            sizeof(buf) - 1,
+            "%s %s %s %u %u",
+            op, ExtractReg(r0).c_str(), ExtractReg(r1).c_str(), index, size);
         break;
       }
       case OP::CALL:
@@ -241,14 +278,20 @@ class DisAssembler : private core::Noncopyable<> {
       case OP::LOAD_PROP: {
         const int r0 = instr[1].ssw.i16[0], r1 = instr[1].ssw.i16[1];
         const unsigned int name = instr[1].ssw.u32;
-        len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d %u", op, r0, r1, name);
+        len = snprintf(
+            buf,
+            sizeof(buf) - 1,
+            "%s %s %s %u",
+            op, ExtractReg(r0).c_str(), ExtractReg(r1).c_str(), name);
         break;
       }
       case OP::LOAD_OBJECT: {
         const int r0 = instr[1].i32[0];
         const Map* map = instr[2].map;
-        len = snprintf(buf, sizeof(buf) - 1, "%s r%d %p",
-                       op, r0, reinterpret_cast<const void*>(map));
+        len = snprintf(
+            buf, sizeof(buf) - 1,
+            "%s %s %p",
+            op, ExtractReg(r0).c_str(), reinterpret_cast<const void*>(map));
         break;
       }
       case OP::STORE_PROP:
@@ -257,9 +300,12 @@ class DisAssembler : private core::Noncopyable<> {
         const unsigned int name = instr[1].ssw.u32;
         const Map* map = instr[2].map;
         const unsigned int offset = instr[3].u32[0];
-        len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d %u %p %u",
-                       op, r0, r1, name,
-                       reinterpret_cast<const void*>(map), offset);
+        len = snprintf(
+            buf,
+            sizeof(buf) - 1,
+            "%s %s %s %u %p %u",
+            op, ExtractReg(r0).c_str(), ExtractReg(r1).c_str(), name,
+            reinterpret_cast<const void*>(map), offset);
         break;
       }
       case OP::LOAD_PROP_PROTO: {
@@ -268,10 +314,12 @@ class DisAssembler : private core::Noncopyable<> {
         const Map* map1 = instr[2].map;
         const Map* map2 = instr[3].map;
         const unsigned int offset = instr[4].u32[0];
-        len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d %u %p %p %u",
-                       op, r0, r1, name,
-                       reinterpret_cast<const void*>(map1),
-                       reinterpret_cast<const void*>(map2), offset);
+        len = snprintf(
+            buf, sizeof(buf) - 1,
+            "%s %s %s %u %p %p %u",
+            op, ExtractReg(r0).c_str(), ExtractReg(r1).c_str(), name,
+            reinterpret_cast<const void*>(map1),
+            reinterpret_cast<const void*>(map2), offset);
         break;
       }
       case OP::LOAD_PROP_CHAIN: {
@@ -280,18 +328,21 @@ class DisAssembler : private core::Noncopyable<> {
         const Chain* chain = instr[2].chain;
         const Map* map = instr[3].map;
         const unsigned int offset = instr[4].u32[0];
-        len = snprintf(buf, sizeof(buf) - 1, "%s r%d r%d %u %p %p %u",
-                       op, r0, r1, name,
-                       reinterpret_cast<const void*>(chain),
-                       reinterpret_cast<const void*>(map), offset);
+        len = snprintf(
+            buf, sizeof(buf) - 1, "%s %s %s %u %p %p %u",
+            op, ExtractReg(r0).c_str(), ExtractReg(r1).c_str(), name,
+            reinterpret_cast<const void*>(chain),
+            reinterpret_cast<const void*>(map), offset);
         break;
       }
       case OP::IF_TRUE:
       case OP::IF_FALSE: {
         const int r0 = instr[1].jump.i16[0], jump = instr[1].jump.to;
         const int to = index + jump;
-        len = snprintf(buf, sizeof(buf) - 1, "%s %d r%d ; => %d",
-                       op, jump, r0, to);
+        len = snprintf(
+            buf,
+            sizeof(buf) - 1, "%s %d %s ; => %d",
+            op, jump, ExtractReg(r0).c_str(), to);
         break;
       }
       case OP::IF_TRUE_BINARY_LT:
@@ -322,8 +373,9 @@ class DisAssembler : private core::Noncopyable<> {
         const int r0 = instr[1].jump.i16[0],
               r1 = instr[1].jump.i16[1], jump = instr[1].jump.to;
         const int to = index + jump;
-        len = snprintf(buf, sizeof(buf) - 1, "%s %d r%d r%d ; => %d",
-                       op, jump, r0, r1, to);
+        len = snprintf(
+            buf, sizeof(buf) - 1, "%s %d %s %s ; => %d",
+            op, jump, ExtractReg(r0).c_str(), ExtractReg(r1).c_str(), to);
         break;
       }
       case OP::JUMP_BY: {

@@ -137,7 +137,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   friend class ArraySite;
   friend class CallSite;
 
-  explicit Compiler(Context* ctx, bool use_folded_registers = false)
+  explicit Compiler(Context* ctx, bool use_folded_registers)
     : ctx_(ctx),
       use_folded_registers_(use_folded_registers),
       code_(NULL),
@@ -1017,27 +1017,34 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 };
 
 inline Code* Compile(Context* ctx,
-                     const FunctionLiteral& global, JSScript* script) {
-  Compiler compiler(ctx);
+                     const FunctionLiteral& global,
+                     JSScript* script,
+                     bool use_folded_registers = false) {
+  Compiler compiler(ctx, use_folded_registers);
   return compiler.Compile(global, script);
 }
 
 inline Code* CompileFunction(Context* ctx,
-                             const FunctionLiteral& func, JSScript* script) {
-  Compiler compiler(ctx);
+                             const FunctionLiteral& func,
+                             JSScript* script,
+                             bool use_folded_registers = false) {
+  Compiler compiler(ctx, use_folded_registers);
   return compiler.CompileFunction(func, script);
 }
 
 inline Code* CompileEval(Context* ctx,
-                         const FunctionLiteral& eval, JSScript* script) {
-  Compiler compiler(ctx);
+                         const FunctionLiteral& eval,
+                         JSScript* script,
+                         bool use_folded_registers = false) {
+  Compiler compiler(ctx, use_folded_registers);
   return compiler.CompileEval(eval, script);
 }
 
 inline Code* CompileIndirectEval(Context* ctx,
                                  const FunctionLiteral& eval,
-                                 JSScript* script) {
-  Compiler compiler(ctx);
+                                 JSScript* script,
+                                 bool use_folded_registers = false) {
+  Compiler compiler(ctx, use_folded_registers);
   return compiler.CompileIndirectEval(eval, script);
 }
 
