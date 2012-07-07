@@ -152,6 +152,7 @@ class DisAssembler : private core::Noncopyable<> {
       case OP::LOAD_REGEXP:
       case OP::LOAD_FUNCTION:
       case OP::LOAD_ARRAY:
+      case OP::DUP_ARRAY:
       case OP::TRY_CATCH_SETUP:
       case OP::INCREMENT_NAME:
       case OP::DECREMENT_NAME:

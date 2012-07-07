@@ -2014,6 +2014,15 @@ JSVal VM::Execute(Frame* start, Error* e) {
         DISPATCH(LOAD_ARRAY);
       }
 
+      DEFINE_OPCODE(DUP_ARRAY) {
+        // opcode | (dst | offset)
+        REG(instr[1].ssw.i16[0]) =
+            JSArray::New(
+                ctx(),
+                static_cast<JSArray*>(frame->GetConstant(instr[1].ssw.u32).object()));
+        DISPATCH(DUP_ARRAY);
+      }
+
       DEFINE_OPCODE(INIT_VECTOR_ARRAY_ELEMENT) {
         // opcode | (ary | reg) | (index | size)
         JSArray* ary = static_cast<JSArray*>(REG(instr[1].i16[0]).object());

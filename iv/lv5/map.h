@@ -156,6 +156,14 @@ class Map : public radio::HeapObject<radio::POINTER> {
     return new Map();
   }
 
+  // If unique map is provided, copy this.
+  static Map* NewFromPoint(Context* ctx, Map* map) {
+    if (map->IsUnique()) {
+      return NewUniqueMap(ctx, map);
+    }
+    return map;
+  }
+
   std::size_t Get(Context* ctx, Symbol name) {
     if (!HasTable()) {
       if (!previous_) {

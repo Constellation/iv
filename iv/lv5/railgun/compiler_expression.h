@@ -238,7 +238,8 @@ inline void Compiler::Visit(const Assignment* assign) {
             EmitStore(ident->symbol(), dst_);
           } else {
             RegisterID ret = Temporary(lv.reg(), rv);
-            EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(ret, lv.reg(), rv));
+            EmitUnsafe(OP::BinaryOP(token),
+                       Instruction::Reg3(ret, lv.reg(), rv));
             EmitStore(ident->symbol(), ret);
             dst_ = EmitMV(dst_, ret);
           }
@@ -413,7 +414,8 @@ inline void Compiler::Visit(const BinaryOperation* binary) {
         } else {
           dst_ = Dest(dst_, lv.Release(), rv);
           thunkpool_.Spill(dst_);
-          EmitUnsafe(OP::BinaryOP(token), Instruction::Reg3(dst_, lv.reg(), rv));
+          EmitUnsafe(OP::BinaryOP(token),
+                     Instruction::Reg3(dst_, lv.reg(), rv));
         }
       }
       break;
@@ -730,32 +732,7 @@ inline void Compiler::Visit(const StringLiteral* lit) {
     // this value is not used and StringLiteral doesn't have side effect
     return;
   }
-  const core::UString s = core::ToUString(lit->value());
-  const JSStringToIndexMap::const_iterator it = jsstring_to_index_map_.find(s);
-
-  if (it != jsstring_to_index_map_.end()) {
-    // duplicate constant
-    if (use_folded_registers()) {
-      dst_ = EmitMV(dst_, registers_.Constant(it->second));
-    } else {
-      dst_ = Dest(dst_);
-      thunkpool_.Spill(dst_);
-      Emit<OP::LOAD_CONST>(Instruction::SW(dst_, it->second));
-    }
-    return;
-  }
-
-  // new constant value
-  const uint32_t index = code_->constants_.size();
-  code_->constants_.push_back(
-      JSString::New(
-          ctx_,
-          lit->value().begin(),
-          lit->value().end(),
-          core::character::IsASCII(lit->value().begin(),
-                                   lit->value().end())));
-  jsstring_to_index_map_.insert(std::make_pair(s, index));
-
+  const uint32_t index = LookupPrimitiveConstantIndex(lit);
   if (use_folded_registers()) {
     dst_ = EmitMV(dst_, registers_.Constant(index));
   } else {
@@ -950,6 +927,48 @@ class Compiler::ArraySite {
 
 inline void Compiler::Visit(const ArrayLiteral* lit) {
   const DestGuard dest_guard(this);
+
+  if (lit->primitive_constant_array()) {
+    // use constant dup array
+    typedef ArrayLiteral::MaybeExpressions Items;
+    JSVector* vector = JSVector::New(ctx_);
+    for (Items::const_iterator it = lit->items().begin(),
+         last = lit->items().end(); it != last; ++it) {
+      assert(*it);
+      const Expression* expr = it->Address();
+      JSVal constant;
+      switch (expr->Type()) {
+        case iv::core::ast::kStringLiteral: {
+          const uint32_t i =
+              LookupPrimitiveConstantIndex(expr->AsStringLiteral());
+          constant = code_->constants()[i];
+          break;
+        }
+        case iv::core::ast::kNumberLiteral:
+          constant = expr->AsNumberLiteral()->value();
+          break;
+        case iv::core::ast::kNullLiteral:
+          constant = JSNull;
+          break;
+        case iv::core::ast::kTrueLiteral:
+          constant = JSTrue;
+          break;
+        case iv::core::ast::kFalseLiteral:
+          constant = JSFalse;
+          break;
+        default:
+          UNREACHABLE();
+      }
+      vector->push_back(constant);
+    }
+    const uint32_t index = code_->constants_.size();
+    code_->constants_.push_back(vector->ToJSArray());
+    dst_ = Dest(dst_);
+    thunkpool_.Spill(dst_);
+    Emit<OP::DUP_ARRAY>(Instruction::SW(dst_, index));
+    return;
+  }
+
   ArraySite site(lit, this, &thunkpool_, &registers_);
   site.Emit();
   dst_ = EmitMV(dst_, site.ary());
@@ -1192,7 +1211,6 @@ inline RegisterID Compiler::EmitCall(const Call& call, RegisterID dst) {
   return dst;
 }
 
-
 inline void Compiler::Visit(const FunctionCall* call) {
   const DestGuard dest_guard(this);
   dst_ = EmitCall<OP::CALL>(*call, dst_);
@@ -1201,6 +1219,29 @@ inline void Compiler::Visit(const FunctionCall* call) {
 inline void Compiler::Visit(const ConstructorCall* call) {
   const DestGuard dest_guard(this);
   dst_ = EmitCall<OP::CONSTRUCT>(*call, dst_);
+}
+
+inline uint32_t Compiler::LookupPrimitiveConstantIndex(
+    const StringLiteral* str) {
+  const core::UString s = core::ToUString(str->value());
+  const JSStringToIndexMap::const_iterator it = jsstring_to_index_map_.find(s);
+
+  if (it != jsstring_to_index_map_.end()) {
+    // duplicate constant
+    return it->second;
+  }
+
+  // new constant value
+  const uint32_t index = code_->constants_.size();
+  code_->constants_.push_back(
+      JSString::New(
+          ctx_,
+          str->value().begin(),
+          str->value().end(),
+          core::character::IsASCII(str->value().begin(),
+                                   str->value().end())));
+  jsstring_to_index_map_.insert(std::make_pair(s, index));
+  return index;
 }
 
 } } }  // namespace iv::lv5::railgun

@@ -1105,6 +1105,10 @@ inline Rep LOAD_ARRAY(Context* ctx, uint32_t len) {
   return Extract(JSArray::ReservedNew(ctx, len));
 }
 
+inline Rep DUP_ARRAY(Context* ctx, const JSVal constant) {
+  return Extract(JSArray::New(ctx, static_cast<JSArray*>(constant.object())));
+}
+
 inline JSEnv* TRY_CATCH_SETUP(Context* ctx,
                               JSEnv* outer, Symbol sym, JSVal value) {
   return JSStaticEnv::New(ctx, outer, sym, value);

@@ -921,6 +921,9 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     }
   }
 
+  // constant instantiation
+  uint32_t LookupPrimitiveConstantIndex(const StringLiteral* str);
+
   // accessors
 
   void set_code(Code* code) { code_ = code; }

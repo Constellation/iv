@@ -638,6 +638,9 @@ class Compiler {
         case r::OP::LOAD_ARRAY:
           EmitLOAD_ARRAY(instr);
           break;
+        case r::OP::DUP_ARRAY:
+          EmitDUP_ARRAY(instr);
+          break;
         case r::OP::BUILD_ENV:
           EmitBUILD_ENV(instr);
           break;
@@ -2027,6 +2030,17 @@ class Compiler {
     asm_->Call(&stub::LOAD_ARRAY);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_.Put(dst, TypeEntry(Type::Array()));
+  }
+
+  // opcode | (dst | offset)
+  void EmitDUP_ARRAY(const Instruction* instr) {
+    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const uint32_t offset = instr[1].ssw.u32;
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rsi, Extract(code_->constants()[offset]));
+    asm_->Call(&stub::DUP_ARRAY);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     type_record_.Put(dst, TypeEntry(Type::Array()));
   }
 

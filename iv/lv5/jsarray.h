@@ -297,9 +297,9 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
   }
 
   JSArray(Context* ctx, JSArray* array)
-    : JSObject(array->map()),
+    : JSObject(Map::NewFromPoint(ctx, array->map())),
       vector_(array->vector_),
-      map_(array->map_),
+      map_(array->map_ ? new(GC)SparseArray(*array->map_) : NULL),
       dense_(array->dense_),
       length_(array->length_) {
   }
