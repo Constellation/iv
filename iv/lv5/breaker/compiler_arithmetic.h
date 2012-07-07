@@ -15,11 +15,10 @@ inline void Compiler::EmitBINARY_MULTIPLY(const Instruction* instr) {
   const TypeEntry dst_type_entry =
       TypeEntry::Multiply(lhs_type_entry, rhs_type_entry);
 
-  type_record_.Put(dst, dst_type_entry);
-
   // dst is constant
   if (dst_type_entry.IsConstant()) {
     EmitConstantDest(dst_type_entry, dst);
+    type_record_.Put(dst, dst_type_entry);
     return;
   }
 
@@ -30,6 +29,7 @@ inline void Compiler::EmitBINARY_MULTIPLY(const Instruction* instr) {
     asm_->Call(&stub::BINARY_MULTIPLY);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_.Put(dst, dst_type_entry);
     return;
   }
 
@@ -78,6 +78,7 @@ inline void Compiler::EmitBINARY_MULTIPLY(const Instruction* instr) {
   asm_->L(".ARITHMETIC_EXIT");
   asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   set_last_used_candidate(dst);
+  type_record_.Put(dst, dst_type_entry);
 }
 
 // opcode | (dst | lhs | rhs)
@@ -91,11 +92,10 @@ inline void Compiler::EmitBINARY_ADD(const Instruction* instr) {
   const TypeEntry dst_type_entry =
       TypeEntry::Add(lhs_type_entry, rhs_type_entry);
 
-  type_record_.Put(dst, dst_type_entry);
-
   // dst is constant
   if (dst_type_entry.IsConstant()) {
     EmitConstantDest(dst_type_entry, dst);
+    type_record_.Put(dst, dst_type_entry);
     return;
   }
 
@@ -106,6 +106,7 @@ inline void Compiler::EmitBINARY_ADD(const Instruction* instr) {
     asm_->Call(&stub::BINARY_ADD);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    type_record_.Put(dst, dst_type_entry);
     return;
   }
 
@@ -155,6 +156,125 @@ inline void Compiler::EmitBINARY_ADD(const Instruction* instr) {
   asm_->L(".ARITHMETIC_EXIT");
   asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
   set_last_used_candidate(dst);
+  type_record_.Put(dst, dst_type_entry);
+}
+
+// opcode | (dst | lhs | rhs)
+inline void Compiler::EmitBINARY_LSHIFT(const Instruction* instr) {
+  const int16_t dst = Reg(instr[1].i16[0]);
+  const int16_t lhs = Reg(instr[1].i16[1]);
+  const int16_t rhs = Reg(instr[1].i16[2]);
+
+  const TypeEntry lhs_type_entry = type_record_.Get(lhs);
+  const TypeEntry rhs_type_entry = type_record_.Get(rhs);
+  const TypeEntry dst_type_entry =
+      TypeEntry::Lshift(lhs_type_entry, rhs_type_entry);
+
+  // dst is constant
+  if (dst_type_entry.IsConstant()) {
+    EmitConstantDest(dst_type_entry, dst);
+    type_record_.Put(dst, dst_type_entry);
+    return;
+  }
+
+  // lhs or rhs is not int32_t
+  if (lhs_type_entry.type().IsNotInt32() || rhs_type_entry.type().IsNotInt32()) {
+    LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
+    asm_->mov(asm_->rdi, asm_->r14);
+    asm_->Call(&stub::BINARY_LSHIFT);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    set_last_used_candidate(dst);
+    type_record_.Put(dst, dst_type_entry);
+    return;
+  }
+
+  const Assembler::LocalLabelScope scope(asm_);
+
+  if (rhs_type_entry.IsConstantInt32()) {
+    const int32_t rhs_value = rhs_type_entry.constant().int32();
+    LoadVR(asm_->rax, lhs);
+    Int32Guard(lhs, asm_->rax, asm_->rcx, ".ARITHMETIC_GENERIC");
+    asm_->sal(asm_->eax, rhs_value & 0x1F);
+  } else {
+    LoadVRs(asm_->rax, lhs, asm_->rcx, rhs);
+    Int32Guard(lhs, asm_->rax, asm_->rdx, ".ARITHMETIC_GENERIC");
+    Int32Guard(rhs, asm_->rcx, asm_->rdx, ".ARITHMETIC_GENERIC");
+    asm_->sal(asm_->eax, asm_->cl);
+  }
+  // boxing
+  asm_->or(asm_->rax, asm_->r15);
+  asm_->jmp(".ARITHMETIC_EXIT");
+
+  kill_last_used();
+
+  asm_->L(".ARITHMETIC_GENERIC");
+  LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
+  asm_->mov(asm_->rdi, asm_->r14);
+  asm_->Call(&stub::BINARY_LSHIFT);
+
+  asm_->L(".ARITHMETIC_EXIT");
+  asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  set_last_used_candidate(dst);
+  type_record_.Put(dst, dst_type_entry);
+}
+
+// opcode | (dst | lhs | rhs)
+inline void Compiler::EmitBINARY_RSHIFT(const Instruction* instr) {
+  const int16_t dst = Reg(instr[1].i16[0]);
+  const int16_t lhs = Reg(instr[1].i16[1]);
+  const int16_t rhs = Reg(instr[1].i16[2]);
+
+  const TypeEntry lhs_type_entry = type_record_.Get(lhs);
+  const TypeEntry rhs_type_entry = type_record_.Get(rhs);
+  const TypeEntry dst_type_entry =
+      TypeEntry::Rshift(lhs_type_entry, rhs_type_entry);
+
+  // dst is constant
+  if (dst_type_entry.IsConstant()) {
+    EmitConstantDest(dst_type_entry, dst);
+    type_record_.Put(dst, dst_type_entry);
+    return;
+  }
+
+  // lhs or rhs is not int32_t
+  if (lhs_type_entry.type().IsNotInt32() || rhs_type_entry.type().IsNotInt32()) {
+    LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
+    asm_->mov(asm_->rdi, asm_->r14);
+    asm_->Call(&stub::BINARY_RSHIFT);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    set_last_used_candidate(dst);
+    type_record_.Put(dst, dst_type_entry);
+    return;
+  }
+
+  const Assembler::LocalLabelScope scope(asm_);
+
+  if (rhs_type_entry.IsConstantInt32()) {
+    const int32_t rhs_value = rhs_type_entry.constant().int32();
+    LoadVR(asm_->rax, lhs);
+    Int32Guard(lhs, asm_->rax, asm_->rcx, ".ARITHMETIC_GENERIC");
+    asm_->sar(asm_->eax, rhs_value & 0x1F);
+  } else {
+    LoadVRs(asm_->rax, lhs, asm_->rcx, rhs);
+    Int32Guard(lhs, asm_->rax, asm_->rdx, ".ARITHMETIC_GENERIC");
+    Int32Guard(rhs, asm_->rcx, asm_->rdx, ".ARITHMETIC_GENERIC");
+    asm_->sar(asm_->eax, asm_->cl);
+  }
+  // boxing
+  asm_->or(asm_->rax, asm_->r15);
+  asm_->jmp(".ARITHMETIC_EXIT");
+
+  kill_last_used();
+
+  asm_->L(".ARITHMETIC_GENERIC");
+  LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
+  asm_->mov(asm_->rdi, asm_->r14);
+  asm_->Call(&stub::BINARY_RSHIFT);
+
+  asm_->L(".ARITHMETIC_EXIT");
+  asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+  set_last_used_candidate(dst);
+  type_record_.Put(dst, dst_type_entry);
 }
 
 } } }  // namespace iv::lv5::breaker

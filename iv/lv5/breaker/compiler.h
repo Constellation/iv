@@ -907,60 +907,10 @@ class Compiler {
   }
 
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_LSHIFT(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t lhs = Reg(instr[1].i16[1]);
-    const int16_t rhs = Reg(instr[1].i16[2]);
-    {
-      const Assembler::LocalLabelScope scope(asm_);
-      LoadVRs(asm_->rsi, lhs, asm_->rcx, rhs);
-      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_LSHIFT_SLOW_GENERIC");
-      Int32Guard(rhs, asm_->rcx, asm_->rax, ".BINARY_LSHIFT_SLOW_GENERIC");
-      asm_->sal(asm_->esi, asm_->cl);
-      asm_->mov(asm_->eax, asm_->esi);
-      asm_->or(asm_->rax, asm_->r15);
-      asm_->jmp(".BINARY_LSHIFT_EXIT");
-
-      asm_->L(".BINARY_LSHIFT_SLOW_GENERIC");
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->mov(asm_->rdx, asm_->rcx);
-      asm_->Call(&stub::BINARY_LSHIFT);
-
-      asm_->L(".BINARY_LSHIFT_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      set_last_used_candidate(dst);
-    }
-
-    type_record_.Put(dst, TypeEntry::Lshift(type_record_.Get(lhs), type_record_.Get(rhs)));
-  }
+  void EmitBINARY_LSHIFT(const Instruction* instr);
 
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_RSHIFT(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t lhs = Reg(instr[1].i16[1]);
-    const int16_t rhs = Reg(instr[1].i16[2]);
-    {
-      const Assembler::LocalLabelScope scope(asm_);
-      LoadVRs(asm_->rsi, lhs, asm_->rcx, rhs);
-      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_RSHIFT_SLOW_GENERIC");
-      Int32Guard(rhs, asm_->rcx, asm_->rax, ".BINARY_RSHIFT_SLOW_GENERIC");
-      asm_->sar(asm_->esi, asm_->cl);
-      asm_->mov(asm_->eax, asm_->esi);
-      asm_->or(asm_->rax, asm_->r15);
-      asm_->jmp(".BINARY_RSHIFT_EXIT");
-
-      asm_->L(".BINARY_RSHIFT_SLOW_GENERIC");
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->mov(asm_->rdx, asm_->rcx);
-      asm_->Call(&stub::BINARY_RSHIFT);
-
-      asm_->L(".BINARY_RSHIFT_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      set_last_used_candidate(dst);
-    }
-
-    type_record_.Put(dst, TypeEntry::Rshift(type_record_.Get(lhs), type_record_.Get(rhs)));
-  }
+  void EmitBINARY_RSHIFT(const Instruction* instr);
 
   // opcode | (dst | lhs | rhs)
   void EmitBINARY_RSHIFT_LOGICAL(const Instruction* instr) {
