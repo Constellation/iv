@@ -133,6 +133,134 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     std::size_t from_;
   };
 
+  class ConstantPool {
+    // TODO(Constellation) not boxed constants...
+    //
+    // Bytecode register size is very limited.
+    // So probably, constant register may be overflown sometimes.
+    // When constant register is overflown, we can use LOAD_CONST instead of
+    // constant register.
+   public:
+    static const uint32_t kEmpty = UINT32_MAX;
+
+    ConstantPool(Context* ctx)
+      : ctx_(ctx),
+        code_(NULL),
+        jsstring_to_index_map_(),
+        double_to_index_map_(),
+        undefined_index_(),
+        null_index_(),
+        true_index_(),
+        false_index_(),
+        empty_index_() {
+    }
+
+    void Init(Code* code) {
+      code_ = code;
+      jsstring_to_index_map_.clear();
+      double_to_index_map_.clear();
+      undefined_index_ = kEmpty;
+      null_index_ = kEmpty;
+      true_index_ = kEmpty;
+      false_index_ = kEmpty;
+      empty_index_ = kEmpty;
+    }
+
+    uint32_t undefined_index() {
+      if (undefined_index_ != kEmpty) {
+        return undefined_index_;
+      }
+      undefined_index_ = AddConstant(JSUndefined);
+      return undefined_index_;
+    }
+
+    uint32_t null_index() {
+      if (null_index_ != kEmpty) {
+        return null_index_;
+      }
+      null_index_ = AddConstant(JSNull);
+      return null_index_;
+    }
+
+    uint32_t true_index() {
+      if (true_index_ != kEmpty) {
+        return true_index_;
+      }
+      true_index_ = AddConstant(JSTrue);
+      return true_index_;
+    }
+
+    uint32_t false_index() {
+      if (false_index_ != kEmpty) {
+        return false_index_;
+      }
+      false_index_ = AddConstant(JSFalse);
+      return false_index_;
+    }
+
+    uint32_t empty_index() {
+      if (empty_index_ != kEmpty) {
+        return empty_index_;
+      }
+      empty_index_ = AddConstant(JSEmpty);
+      return empty_index_;
+    }
+
+    uint32_t string_index(const StringLiteral* str) {
+      const core::UString s = core::ToUString(str->value());
+      const JSStringToIndexMap::const_iterator it =
+          jsstring_to_index_map_.find(s);
+
+      if (it != jsstring_to_index_map_.end()) {
+        // duplicate constant
+        return it->second;
+      }
+
+      // new constant value
+      const uint32_t index = AddConstant(
+          JSString::New(
+              ctx_,
+              str->value().begin(),
+              str->value().end(),
+              core::character::IsASCII(str->value().begin(),
+                                       str->value().end())));
+      jsstring_to_index_map_.insert(std::make_pair(s, index));
+      return index;
+    }
+
+    uint32_t number_index(double val) {
+      const JSDoubleToIndexMap::const_iterator it =
+          double_to_index_map_.find(val);
+
+      if (it != double_to_index_map_.end()) {
+        // duplicate constant pool
+        return it->second;
+      }
+
+      // new constant value
+      const uint32_t index = AddConstant(val);
+      double_to_index_map_.insert(std::make_pair(val, index));
+      return index;
+    }
+
+   private:
+    uint32_t AddConstant(JSVal value) {
+      const uint32_t result = code_->constants().size();
+      code_->constants_.push_back(value);
+      return result;
+    }
+
+    Context* ctx_;
+    Code* code_;
+    JSStringToIndexMap jsstring_to_index_map_;
+    JSDoubleToIndexMap double_to_index_map_;
+    uint32_t undefined_index_;
+    uint32_t null_index_;
+    uint32_t true_index_;
+    uint32_t false_index_;
+    uint32_t empty_index_;
+  };
+
   friend class ThunkPool;
   friend class ArraySite;
   friend class CallSite;
@@ -154,8 +282,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       dst_(),
       eval_result_(),
       symbol_to_index_map_(),
-      jsstring_to_index_map_(),
-      double_to_index_map_(),
+      constant_pool_(ctx),
       function_literal_to_code_map_(),
       continuation_status_(),
       current_variable_scope_(),
@@ -271,8 +398,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     dst_.reset();
     eval_result_.reset();
     symbol_to_index_map_.clear();
-    jsstring_to_index_map_.clear();
-    double_to_index_map_.clear();
+    constant_pool_.Init(code);
     function_literal_to_code_map_.clear();
     continuation_status_.Clear();
     code->set_start(data_->size());
@@ -921,9 +1047,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     }
   }
 
-  // constant instantiation
-  uint32_t LookupPrimitiveConstantIndex(const StringLiteral* str);
-
   // accessors
 
   void set_code(Code* code) { code_ = code; }
@@ -1011,8 +1134,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   RegisterID dst_;
   RegisterID eval_result_;
   std::unordered_map<Symbol, uint32_t> symbol_to_index_map_;
-  JSStringToIndexMap jsstring_to_index_map_;
-  JSDoubleToIndexMap double_to_index_map_;
+  ConstantPool constant_pool_;
   FunctionLiteralToCodeMap function_literal_to_code_map_;
   ContinuationStatus continuation_status_;
   std::shared_ptr<VariableScope> current_variable_scope_;

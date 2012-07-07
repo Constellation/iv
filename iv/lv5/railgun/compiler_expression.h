@@ -732,7 +732,7 @@ inline void Compiler::Visit(const StringLiteral* lit) {
     // this value is not used and StringLiteral doesn't have side effect
     return;
   }
-  const uint32_t index = LookupPrimitiveConstantIndex(lit);
+  const uint32_t index = constant_pool_.string_index(lit);
   if (use_folded_registers()) {
     dst_ = EmitMV(dst_, registers_.Constant(index));
   } else {
@@ -748,25 +748,7 @@ inline void Compiler::Visit(const NumberLiteral* lit) {
     // this value is not used and NumberLiteral doesn't have side effect
     return;
   }
-  const double val = lit->value();
-  const JSDoubleToIndexMap::const_iterator it =
-      double_to_index_map_.find(val);
-  if (it != double_to_index_map_.end()) {
-    // duplicate constant pool
-    if (use_folded_registers()) {
-      dst_ = EmitMV(dst_, registers_.Constant(it->second));
-    } else {
-      dst_ = Dest(dst_);
-      thunkpool_.Spill(dst_);
-      Emit<OP::LOAD_CONST>(Instruction::SW(dst_, it->second));
-    }
-    return;
-  }
-
-  // new constant value
-  const uint32_t index = code_->constants_.size();
-  code_->constants_.push_back(val);
-  double_to_index_map_.insert(std::make_pair(val, index));
+  const uint32_t index = constant_pool_.number_index(lit->value());
   if (use_folded_registers()) {
     dst_ = EmitMV(dst_, registers_.Constant(index));
   } else {
@@ -940,7 +922,7 @@ inline void Compiler::Visit(const ArrayLiteral* lit) {
       switch (expr->Type()) {
         case iv::core::ast::kStringLiteral: {
           const uint32_t i =
-              LookupPrimitiveConstantIndex(expr->AsStringLiteral());
+              constant_pool_.string_index(expr->AsStringLiteral());
           constant = code_->constants()[i];
           break;
         }
@@ -1219,29 +1201,6 @@ inline void Compiler::Visit(const FunctionCall* call) {
 inline void Compiler::Visit(const ConstructorCall* call) {
   const DestGuard dest_guard(this);
   dst_ = EmitCall<OP::CONSTRUCT>(*call, dst_);
-}
-
-inline uint32_t Compiler::LookupPrimitiveConstantIndex(
-    const StringLiteral* str) {
-  const core::UString s = core::ToUString(str->value());
-  const JSStringToIndexMap::const_iterator it = jsstring_to_index_map_.find(s);
-
-  if (it != jsstring_to_index_map_.end()) {
-    // duplicate constant
-    return it->second;
-  }
-
-  // new constant value
-  const uint32_t index = code_->constants_.size();
-  code_->constants_.push_back(
-      JSString::New(
-          ctx_,
-          str->value().begin(),
-          str->value().end(),
-          core::character::IsASCII(str->value().begin(),
-                                   str->value().end())));
-  jsstring_to_index_map_.insert(std::make_pair(s, index));
-  return index;
 }
 
 } } }  // namespace iv::lv5::railgun
