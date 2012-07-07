@@ -1344,56 +1344,10 @@ class Compiler {
   void EmitBINARY_BIT_AND(const Instruction* instr, OP::Type fused = OP::NOP);
 
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_BIT_XOR(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t lhs = Reg(instr[1].i16[1]);
-    const int16_t rhs = Reg(instr[1].i16[2]);
-    {
-      const Assembler::LocalLabelScope scope(asm_);
-      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_BIT_XOR_SLOW");
-      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_BIT_XOR_SLOW");
-      asm_->xor(asm_->esi, asm_->edx);
-      asm_->mov(asm_->eax, asm_->esi);
-      asm_->or(asm_->rax, asm_->r15);
-      asm_->jmp(".BINARY_BIT_XOR_EXIT");
-
-      asm_->L(".BINARY_BIT_XOR_SLOW");
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->Call(&stub::BINARY_BIT_XOR);
-
-      asm_->L(".BINARY_BIT_XOR_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      set_last_used_candidate(dst);
-      type_record_.Put(dst, TypeEntry::BitwiseXor(type_record_.Get(lhs), type_record_.Get(rhs)));
-    }
-  }
+  void EmitBINARY_BIT_XOR(const Instruction* instr);
 
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_BIT_OR(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t lhs = Reg(instr[1].i16[1]);
-    const int16_t rhs = Reg(instr[1].i16[2]);
-    {
-      const Assembler::LocalLabelScope scope(asm_);
-      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_BIT_OR_SLOW");
-      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_BIT_OR_SLOW");
-      asm_->or(asm_->esi, asm_->edx);
-      asm_->mov(asm_->eax, asm_->esi);
-      asm_->or(asm_->rax, asm_->r15);
-      asm_->jmp(".BINARY_BIT_OR_EXIT");
-
-      asm_->L(".BINARY_BIT_OR_SLOW");
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->Call(&stub::BINARY_BIT_OR);
-
-      asm_->L(".BINARY_BIT_OR_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      set_last_used_candidate(dst);
-      type_record_.Put(dst, TypeEntry::BitwiseOr(type_record_.Get(lhs), type_record_.Get(rhs)));
-    }
-  }
+  void EmitBINARY_BIT_OR(const Instruction* instr);
 
   // opcode | dst
   void EmitLOAD_UNDEFINED(const Instruction* instr) {
