@@ -334,21 +334,6 @@ class Compiler {
         case r::OP::DEBUGGER:
           EmitDEBUGGER(instr);
           break;
-        case r::OP::LOAD_UNDEFINED:
-          EmitLOAD_UNDEFINED(instr);
-          break;
-        case r::OP::LOAD_TRUE:
-          EmitLOAD_TRUE(instr);
-          break;
-        case r::OP::LOAD_FALSE:
-          EmitLOAD_FALSE(instr);
-          break;
-        case r::OP::LOAD_NULL:
-          EmitLOAD_NULL(instr);
-          break;
-        case r::OP::LOAD_EMPTY:
-          EmitLOAD_EMPTY(instr);
-          break;
         case r::OP::LOAD_REGEXP:
           EmitLOAD_REGEXP(instr);
           break;
@@ -1348,53 +1333,6 @@ class Compiler {
 
   // opcode | (dst | lhs | rhs)
   void EmitBINARY_BIT_OR(const Instruction* instr);
-
-  // opcode | dst
-  void EmitLOAD_UNDEFINED(const Instruction* instr) {
-    static const uint64_t layout = Extract(JSUndefined);
-    const register_t dst = Reg(instr[1].i32[0]);
-    assert(layout <= UINT32_MAX);
-    asm_->mov(asm_->qword[asm_->r13 + (dst * kJSValSize)], layout);
-
-    type_record_.Put(dst, TypeEntry(JSUndefined));
-  }
-
-  // opcode | dst
-  void EmitLOAD_EMPTY(const Instruction* instr) {
-    static const uint64_t layout = Extract(JSEmpty);
-    const register_t dst = Reg(instr[1].i32[0]);
-    assert(layout <= UINT32_MAX);
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
-
-    type_record_.Put(dst, TypeEntry(JSEmpty));
-  }
-
-  // opcode | dst
-  void EmitLOAD_NULL(const Instruction* instr) {
-    static const uint64_t layout = Extract(JSNull);
-    const register_t dst = Reg(instr[1].i32[0]);
-    assert(layout <= UINT32_MAX);
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
-    type_record_.Put(dst, TypeEntry(JSNull));
-  }
-
-  // opcode | dst
-  void EmitLOAD_TRUE(const Instruction* instr) {
-    static const uint64_t layout = Extract(JSTrue);
-    const register_t dst = Reg(instr[1].i32[0]);
-    assert(layout <= UINT32_MAX);
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
-    type_record_.Put(dst, TypeEntry(JSTrue));
-  }
-
-  // opcode | dst
-  void EmitLOAD_FALSE(const Instruction* instr) {
-    static const uint64_t layout = Extract(JSFalse);
-    const register_t dst = Reg(instr[1].i32[0]);
-    assert(layout <= UINT32_MAX);
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
-    type_record_.Put(dst, TypeEntry(JSFalse));
-  }
 
   // opcode | (dst | src)
   void EmitUNARY_POSITIVE(const Instruction* instr) {

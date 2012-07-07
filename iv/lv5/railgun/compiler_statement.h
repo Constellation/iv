@@ -479,8 +479,7 @@ inline void Compiler::Visit(const ReturnStatement* stmt) {
   if (const core::Maybe<const Expression> expr = stmt->expr()) {
     dst = EmitExpression(expr.Address());
   } else {
-    dst = Temporary();
-    Emit<OP::LOAD_UNDEFINED>(dst);
+    dst = EmitConstantLoad(constant_pool_.undefined_index());
   }
 
   if (CurrentLevel() == 0) {

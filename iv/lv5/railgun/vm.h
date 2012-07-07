@@ -1237,36 +1237,6 @@ JSVal VM::Execute(Frame* start, Error* e) {
         FAST_PATH_JUMP_BY();
       }
 
-      DEFINE_OPCODE(LOAD_EMPTY) {
-        // opcode | dst
-        REG(instr[1].i32[0]) = JSEmpty;
-        DISPATCH(LOAD_EMPTY);
-      }
-
-      DEFINE_OPCODE(LOAD_NULL) {
-        // opcode | dst
-        REG(instr[1].i32[0]) = JSNull;
-        DISPATCH(LOAD_NULL);
-      }
-
-      DEFINE_OPCODE(LOAD_TRUE) {
-        // opcode | dst
-        REG(instr[1].i32[0]) = JSTrue;
-        DISPATCH(LOAD_TRUE);
-      }
-
-      DEFINE_OPCODE(LOAD_FALSE) {
-        // opcode | dst
-        REG(instr[1].i32[0]) = JSFalse;
-        DISPATCH(LOAD_FALSE);
-      }
-
-      DEFINE_OPCODE(LOAD_UNDEFINED) {
-        // opcode | dst
-        REG(instr[1].i32[0]) = JSUndefined;
-        DISPATCH(LOAD_UNDEFINED);
-      }
-
       DEFINE_OPCODE(UNARY_POSITIVE) {
         // opcode | (dst | src)
         const JSVal src = REG(instr[1].i16[1]);

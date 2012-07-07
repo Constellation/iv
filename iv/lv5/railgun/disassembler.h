@@ -115,11 +115,6 @@ class DisAssembler : private core::Noncopyable<> {
       case OP::INCREMENT:
       case OP::DECREMENT:
       case OP::FORIN_LEAVE:
-      case OP::LOAD_UNDEFINED:
-      case OP::LOAD_FALSE:
-      case OP::LOAD_TRUE:
-      case OP::LOAD_NULL:
-      case OP::LOAD_EMPTY:
       case OP::LOAD_ARGUMENTS:
       case OP::THROW:
       case OP::RESULT:

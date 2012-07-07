@@ -966,9 +966,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     } else {
       if (!continuation_status_.IsDeadStatement()) {
         // insert return undefined
-        RegisterID tmp = Temporary();
-        Emit<OP::LOAD_UNDEFINED>(tmp);
-        Emit<OP::RETURN>(tmp);
+        Emit<OP::RETURN>(EmitConstantLoad(constant_pool_.undefined_index()));
       }
     }
 
@@ -1047,6 +1045,17 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     }
   }
 
+  RegisterID EmitConstantLoad(uint32_t index, RegisterID dst = RegisterID()) {
+    if (use_folded_registers()) {
+      return EmitMV(dst, registers_.Constant(index));
+    } else {
+      dst = Dest(dst);
+      thunkpool_.Spill(dst);
+      Emit<OP::LOAD_CONST>(Instruction::SW(dst, index));
+      return dst;
+    }
+  }
+
   // accessors
 
   void set_code(Code* code) { code_ = code; }
@@ -1115,6 +1124,10 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   void set_dst(RegisterID dst) { dst_ = dst; }
 
   bool use_folded_registers() const { return use_folded_registers_; }
+
+  ConstantPool* constant_pool() { return &constant_pool_; }
+
+  const ConstantPool* constant_pool() const { return &constant_pool_; }
 
  private:
   Context* ctx_;

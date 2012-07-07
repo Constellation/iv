@@ -488,9 +488,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
         // DELETE_NAME_STRICT is already rejected in parser
         assert(!code_->strict());
         if (RegisterID local = GetLocal(ident->symbol())) {
-          dst_ = Dest(dst_);
-          thunkpool_.Spill(dst_);
-          Emit<OP::LOAD_FALSE>(dst_);
+          dst_ = EmitConstantLoad(constant_pool_.false_index(), dst_);
         } else {
           dst_ = EmitOptimizedLookup(
               OP::DELETE_NAME,
@@ -514,18 +512,14 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
         // other case is no effect
         // but accept expr
         EmitExpressionIgnoreResult(expr);
-        dst_ = Dest(dst_);
-        thunkpool_.Spill(dst_);
-        Emit<OP::LOAD_TRUE>(dst_);
+        dst_ = EmitConstantLoad(constant_pool_.true_index(), dst_);
       }
       return;
     }
 
     case Token::TK_VOID: {
       EmitExpressionIgnoreResult(expr);
-      dst_ = Dest(dst_);
-      thunkpool_.Spill(dst_);
-      Emit<OP::LOAD_UNDEFINED>(dst_);
+      EmitConstantLoad(constant_pool_.undefined_index(), dst_);
       return;
     }
 
@@ -749,13 +743,7 @@ inline void Compiler::Visit(const NumberLiteral* lit) {
     return;
   }
   const uint32_t index = constant_pool_.number_index(lit->value());
-  if (use_folded_registers()) {
-    dst_ = EmitMV(dst_, registers_.Constant(index));
-  } else {
-    dst_ = Dest(dst_);
-    thunkpool_.Spill(dst_);
-    Emit<OP::LOAD_CONST>(Instruction::SW(dst_, index));
-  }
+  dst_ = EmitConstantLoad(index, dst_);
 }
 
 inline void Compiler::Visit(const Assigned* lit) {
@@ -788,9 +776,8 @@ inline void Compiler::Visit(const NullLiteral* lit) {
     // this value is not used and NullLiteral doesn't have side effect
     return;
   }
-  dst_ = Dest(dst_);
-  thunkpool_.Spill(dst_);
-  Emit<OP::LOAD_NULL>(dst_);
+  const uint32_t index = constant_pool_.null_index();
+  dst_ = EmitConstantLoad(index, dst_);
 }
 
 inline void Compiler::Visit(const TrueLiteral* lit) {
@@ -799,9 +786,8 @@ inline void Compiler::Visit(const TrueLiteral* lit) {
     // this value is not used and TrueLiteral doesn't have side effect
     return;
   }
-  dst_ = Dest(dst_);
-  thunkpool_.Spill(dst_);
-  Emit<OP::LOAD_TRUE>(dst_);
+  const uint32_t index = constant_pool_.true_index();
+  dst_ = EmitConstantLoad(index, dst_);
 }
 
 inline void Compiler::Visit(const FalseLiteral* lit) {
@@ -810,9 +796,8 @@ inline void Compiler::Visit(const FalseLiteral* lit) {
     // this value is not used and FalseLiteral doesn't have side effect
     return;
   }
-  dst_ = Dest(dst_);
-  thunkpool_.Spill(dst_);
-  Emit<OP::LOAD_FALSE>(dst_);
+  const uint32_t index = constant_pool_.false_index();
+  dst_ = EmitConstantLoad(index, dst_);
 }
 
 inline void Compiler::Visit(const RegExpLiteral* lit) {
@@ -877,7 +862,8 @@ class Compiler::ArraySite {
               expr.Address(),
               Place(register_start, i));
         } else {
-          compiler_->Emit<OP::LOAD_EMPTY>(Place(register_start, i));
+          compiler_->EmitConstantLoad(
+              compiler_->constant_pool()->empty_index(), Place(register_start, i));
         }
       }
       EmitElement(idx, dis);
@@ -1121,7 +1107,7 @@ inline RegisterID Compiler::EmitCall(const Call& call, RegisterID dst) {
     if (const Identifier* ident = target->AsIdentifier()) {
       if (RegisterID local = GetLocal(ident->symbol())) {
         EmitMV(site.callee(), local);
-        Emit<OP::LOAD_UNDEFINED>(site.base());
+        EmitConstantLoad(constant_pool_.undefined_index(), site.base());
       } else {
         // lookup dynamic call or not
         {
@@ -1133,7 +1119,7 @@ inline RegisterID Compiler::EmitCall(const Call& call, RegisterID dst) {
                 Instruction::SSW(site.callee(), site.base(), index));
           } else {
             EmitOptimizedLookup(OP::LOAD_NAME, index, site.callee());
-            Emit<OP::LOAD_UNDEFINED>(site.base());
+            EmitConstantLoad(constant_pool_.undefined_index(), site.base());
           }
         }
       }
@@ -1166,7 +1152,7 @@ inline RegisterID Compiler::EmitCall(const Call& call, RegisterID dst) {
     }
   } else {
     EmitExpressionToDest(target, site.callee());
-    Emit<OP::LOAD_UNDEFINED>(site.base());
+    EmitConstantLoad(constant_pool_.undefined_index(), site.base());
   }
 
   site.EmitArguments(this);
