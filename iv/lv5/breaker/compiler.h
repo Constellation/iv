@@ -807,44 +807,7 @@ class Compiler {
   void EmitBINARY_ADD(const Instruction* instr);
 
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_SUBTRACT(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t lhs = Reg(instr[1].i16[1]);
-    const int16_t rhs = Reg(instr[1].i16[2]);
-    {
-      const Assembler::LocalLabelScope scope(asm_);
-      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_SUBTRACT_SLOW_GENERIC");
-      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_SUBTRACT_SLOW_GENERIC");
-      SubtractingInt32OverflowGuard(asm_->esi,
-                                    asm_->edx, asm_->eax, ".BINARY_SUBTRACT_SLOW_NUMBER");
-      asm_->or(asm_->rax, asm_->r15);
-      asm_->jmp(".BINARY_SUBTRACT_EXIT");
-
-      // rdi and rsi is always int32 (but overflow)
-      // So we just sub as int64_t and convert to double,
-      // because INT32_MIN - INT32_MIN is in int64_t range, and convert to
-      // double makes no error.
-      asm_->L(".BINARY_SUBTRACT_SLOW_NUMBER");
-      asm_->movsxd(asm_->rsi, asm_->esi);
-      asm_->movsxd(asm_->rdx, asm_->edx);
-      asm_->sub(asm_->rsi, asm_->rdx);
-      asm_->cvtsi2sd(asm_->xmm0, asm_->rsi);
-      asm_->movq(asm_->rax, asm_->xmm0);
-      ConvertNotNaNDoubleToJSVal(asm_->rax, asm_->rcx);
-      asm_->jmp(".BINARY_SUBTRACT_EXIT");
-
-      asm_->L(".BINARY_SUBTRACT_SLOW_GENERIC");
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->Call(&stub::BINARY_SUBTRACT);
-
-      asm_->L(".BINARY_SUBTRACT_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      set_last_used_candidate(dst);
-    }
-
-    type_record_.Put(dst, TypeEntry::Subtract(type_record_.Get(lhs), type_record_.Get(rhs)));
-  }
+  void EmitBINARY_SUBTRACT(const Instruction* instr);
 
   // opcode | (dst | lhs | rhs)
   void EmitBINARY_MULTIPLY(const Instruction* instr);
@@ -3113,16 +3076,6 @@ class Compiler {
     asm_->mov(asm_->rax, Extract(entry.constant()));
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-  }
-
-  void SubtractingInt32OverflowGuard(const Xbyak::Reg32& lhs,
-                                     const Xbyak::Reg32& rhs,
-                                     const Xbyak::Reg32& out,
-                                     const char* label,
-                                     Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
-    asm_->mov(out, lhs);
-    asm_->sub(out, rhs);
-    asm_->jo(label, type);
   }
 
   std::string MakeLabel(const Instruction* op_instr) const {
