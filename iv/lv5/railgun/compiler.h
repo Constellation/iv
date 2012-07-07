@@ -693,7 +693,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     if (cand2 && cand2->IsTemporary()) {
       return cand2;
     }
-    return registers_.Acquire();
+    return Temporary();
   }
 
   RegisterID GetLocal(Symbol sym) {
