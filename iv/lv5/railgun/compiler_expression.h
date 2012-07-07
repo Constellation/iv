@@ -519,7 +519,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
 
     case Token::TK_VOID: {
       EmitExpressionIgnoreResult(expr);
-      EmitConstantLoad(constant_pool_.undefined_index(), dst_);
+      dst_ = EmitConstantLoad(constant_pool_.undefined_index(), dst_);
       return;
     }
 

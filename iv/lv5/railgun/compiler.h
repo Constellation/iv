@@ -677,6 +677,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
                   RegisterID cand1 = RegisterID(),
                   RegisterID cand2 = RegisterID()) {
     if (dst) {
+      assert(!dst->IsConstant());
       return dst;
     }
 
