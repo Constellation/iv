@@ -913,40 +913,7 @@ class Compiler {
   void EmitBINARY_RSHIFT(const Instruction* instr);
 
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_RSHIFT_LOGICAL(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t lhs = Reg(instr[1].i16[1]);
-    const int16_t rhs = Reg(instr[1].i16[2]);
-    {
-      const Assembler::LocalLabelScope scope(asm_);
-      LoadVRs(asm_->rsi, lhs, asm_->rcx, rhs);
-      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_RSHIFT_LOGICAL_SLOW_GENERIC");
-      Int32Guard(rhs, asm_->rcx, asm_->rax, ".BINARY_RSHIFT_LOGICAL_SLOW_GENERIC");
-      asm_->shr(asm_->esi, asm_->cl);
-      asm_->cmp(asm_->esi, 0);
-      asm_->jl(".BINARY_RSHIFT_LOGICAL_DOUBLE");  // uint32_t
-      asm_->mov(asm_->eax, asm_->esi);
-      asm_->or(asm_->rax, asm_->r15);
-      asm_->jmp(".BINARY_RSHIFT_LOGICAL_EXIT");
-
-      asm_->L(".BINARY_RSHIFT_LOGICAL_DOUBLE");
-      asm_->cvtsi2sd(asm_->xmm0, asm_->rsi);
-      asm_->movq(asm_->rax, asm_->xmm0);
-      ConvertNotNaNDoubleToJSVal(asm_->rax, asm_->rcx);
-      asm_->jmp(".BINARY_RSHIFT_LOGICAL_EXIT");
-
-      asm_->L(".BINARY_RSHIFT_LOGICAL_SLOW_GENERIC");
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->mov(asm_->rdx, asm_->rcx);
-      asm_->Call(&stub::BINARY_RSHIFT_LOGICAL);
-
-      asm_->L(".BINARY_RSHIFT_LOGICAL_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      set_last_used_candidate(dst);
-    }
-
-    type_record_.Put(dst, TypeEntry::RshiftLogical(type_record_.Get(lhs), type_record_.Get(rhs)));
-  }
+  void EmitBINARY_RSHIFT_LOGICAL(const Instruction* instr);
 
   // opcode | (dst | lhs | rhs)
   void EmitBINARY_LT(const Instruction* instr, OP::Type fused = OP::NOP) {
