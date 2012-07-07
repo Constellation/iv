@@ -9,6 +9,7 @@ class Compiler::DestGuard {
  public:
   explicit DestGuard(Compiler* compiler)
     : compiler_(compiler) {
+    assert(!compiler_->dst() || !compiler_->dst()->IsConstant());
   }
   ~DestGuard() {
     assert(compiler_->ignore_result() || compiler_->dst());

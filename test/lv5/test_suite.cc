@@ -9,7 +9,8 @@ using namespace iv;
 namespace {
 
 lv5::railgun::Code* Compile(lv5::railgun::Context* ctx,
-                            std::shared_ptr<iv::core::FileSource> src) {
+                            std::shared_ptr<iv::core::FileSource> src,
+                            bool use_folded_registers) {
   lv5::AstFactory factory(ctx);
   core::Parser<
       lv5::AstFactory,
@@ -18,7 +19,7 @@ lv5::railgun::Code* Compile(lv5::railgun::Context* ctx,
   if (global) {
     lv5::railgun::JSScript* script =
         lv5::railgun::JSSourceScript<iv::core::FileSource>::New(ctx, src);
-    return lv5::railgun::CompileIndirectEval(ctx, *global, script);
+    return lv5::railgun::CompileIndirectEval(ctx, *global, script, use_folded_registers);
   } else {
     return NULL;
   }
@@ -76,7 +77,7 @@ static void ExecuteInBreakerContext(lv5::breaker::Context* ctx,
   ASSERT_TRUE(core::ReadFile(filename, &res)) << filename;
   std::shared_ptr<core::FileSource> src(
       new core::FileSource(core::StringPiece(res.data(), res.size()), filename));
-  lv5::railgun::Code* code = Compile(ctx, src);
+  lv5::railgun::Code* code = Compile(ctx, src, true);
   ASSERT_TRUE(code) << filename;
   iv::lv5::breaker::Compile(code);
   iv::lv5::breaker::Run(ctx, code, e);
@@ -114,7 +115,7 @@ static void ExecuteInRailgunContext(lv5::railgun::Context* ctx,
   ASSERT_TRUE(core::ReadFile(filename, &res)) << filename;
   std::shared_ptr<core::FileSource> src(
       new core::FileSource(core::StringPiece(res.data(), res.size()), filename));
-  lv5::railgun::Code* code = Compile(ctx, src);
+  lv5::railgun::Code* code = Compile(ctx, src, false);
   ASSERT_TRUE(code) << filename;
   ctx->vm()->Run(code, e);
 }

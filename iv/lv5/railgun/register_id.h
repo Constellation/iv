@@ -111,10 +111,6 @@ class Registers {
     return reg >= 0 && reg < stack_;
   }
 
-  bool IsLocalID(int32_t reg) {
-    return variable_registers_ > reg;
-  }
-
   // implemented in frame.h
 
   bool IsConstantID(int32_t reg);
@@ -123,15 +119,28 @@ class Registers {
 
   bool IsTemporaryID(int32_t reg);
 
+  // implemented in frame.h
+
+  static bool IsThisID(int32_t reg);
+
+  // implemented in frame.h
+
+  static bool IsCalleeID(int32_t reg);
+
+  // implemented in frame.h
+
+  static bool IsArgumentID(int32_t reg);
+
   int Type(uint32_t reg) {
     if (IsHeapID(reg)) {
       return RegisterIDImpl::HEAP;
-    } else if (IsStackID(reg)) {
+    } else if (IsStackID(reg) || IsArgumentID(reg)) {
       return RegisterIDImpl::STACK;
     } else if (IsTemporaryID(reg)) {
       return RegisterIDImpl::TEMPORARY;
     } else {
       // IsConstantID or this or callee
+      assert(IsThisID(reg) || IsConstantID(reg) || IsCalleeID(reg));
       return RegisterIDImpl::CONSTANT;
     }
   }
@@ -154,7 +163,7 @@ class Registers {
 
  private:
   void Release(int32_t reg) {
-    if (!IsLocalID(reg) && !IsConstantID(reg)) {
+    if (IsTemporaryID(reg)) {
       // this is temporary register
       assert(lives_[reg - variable_registers_]);
       assert(std::find(

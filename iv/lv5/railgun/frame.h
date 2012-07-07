@@ -32,7 +32,7 @@ struct FrameConstant {
   // convert register number to arguments index.
   // inversion function of Arg
   static int ConvertRegisterToArg(int16_t i) {
-    return kThisOffset - 1 + i;
+    return kThisOffset - 1 - i;
   }
 };
 
@@ -264,6 +264,19 @@ inline bool Registers::IsConstantID(int32_t reg) {
 
 inline bool Registers::IsTemporaryID(int32_t reg) {
   return variable_registers_ <= reg && reg < FrameConstant<>::kConstantOffset;
+}
+
+// TODO(Constellation) refactoring
+inline bool Registers::IsThisID(int32_t reg) {
+  return reg == FrameConstant<>::kThisOffset;
+}
+
+inline bool Registers::IsCalleeID(int32_t reg) {
+  return reg == FrameConstant<>::kCalleeOffset;
+}
+
+inline bool Registers::IsArgumentID(int32_t reg) {
+  return reg < FrameConstant<>::kThisOffset;
 }
 
 inline RegisterID Registers::This() {
