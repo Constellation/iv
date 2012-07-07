@@ -728,13 +728,7 @@ inline void Compiler::Visit(const StringLiteral* lit) {
     return;
   }
   const uint32_t index = constant_pool_.string_index(lit);
-  if (use_folded_registers()) {
-    dst_ = EmitMV(dst_, registers_.Constant(index));
-  } else {
-    dst_ = Dest(dst_);
-    thunkpool_.Spill(dst_);
-    Emit<OP::LOAD_CONST>(Instruction::SW(dst_, index));
-  }
+  dst_ = EmitConstantLoad(index, dst_);
 }
 
 inline void Compiler::Visit(const NumberLiteral* lit) {
