@@ -6,9 +6,9 @@ namespace breaker {
 
 // opcode | (dst | lhs | rhs)
 inline void Compiler::EmitBINARY_MULTIPLY(const Instruction* instr) {
-  const int16_t dst = Reg(instr[1].i16[0]);
-  const int16_t lhs = Reg(instr[1].i16[1]);
-  const int16_t rhs = Reg(instr[1].i16[2]);
+  const register_t dst = Reg(instr[1].i16[0]);
+  const register_t lhs = Reg(instr[1].i16[1]);
+  const register_t rhs = Reg(instr[1].i16[2]);
 
   const TypeEntry lhs_type_entry = type_record_.Get(lhs);
   const TypeEntry rhs_type_entry = type_record_.Get(rhs);
@@ -83,9 +83,9 @@ inline void Compiler::EmitBINARY_MULTIPLY(const Instruction* instr) {
 
 // opcode | (dst | lhs | rhs)
 inline void Compiler::EmitBINARY_ADD(const Instruction* instr) {
-  const int16_t dst = Reg(instr[1].i16[0]);
-  const int16_t lhs = Reg(instr[1].i16[1]);
-  const int16_t rhs = Reg(instr[1].i16[2]);
+  const register_t dst = Reg(instr[1].i16[0]);
+  const register_t lhs = Reg(instr[1].i16[1]);
+  const register_t rhs = Reg(instr[1].i16[2]);
 
   const TypeEntry lhs_type_entry = type_record_.Get(lhs);
   const TypeEntry rhs_type_entry = type_record_.Get(rhs);
@@ -161,9 +161,9 @@ inline void Compiler::EmitBINARY_ADD(const Instruction* instr) {
 
 // opcode | (dst | lhs | rhs)
 inline void Compiler::EmitBINARY_LSHIFT(const Instruction* instr) {
-  const int16_t dst = Reg(instr[1].i16[0]);
-  const int16_t lhs = Reg(instr[1].i16[1]);
-  const int16_t rhs = Reg(instr[1].i16[2]);
+  const register_t dst = Reg(instr[1].i16[0]);
+  const register_t lhs = Reg(instr[1].i16[1]);
+  const register_t rhs = Reg(instr[1].i16[2]);
 
   const TypeEntry lhs_type_entry = type_record_.Get(lhs);
   const TypeEntry rhs_type_entry = type_record_.Get(rhs);
@@ -220,9 +220,9 @@ inline void Compiler::EmitBINARY_LSHIFT(const Instruction* instr) {
 
 // opcode | (dst | lhs | rhs)
 inline void Compiler::EmitBINARY_RSHIFT(const Instruction* instr) {
-  const int16_t dst = Reg(instr[1].i16[0]);
-  const int16_t lhs = Reg(instr[1].i16[1]);
-  const int16_t rhs = Reg(instr[1].i16[2]);
+  const register_t dst = Reg(instr[1].i16[0]);
+  const register_t lhs = Reg(instr[1].i16[1]);
+  const register_t rhs = Reg(instr[1].i16[2]);
 
   const TypeEntry lhs_type_entry = type_record_.Get(lhs);
   const TypeEntry rhs_type_entry = type_record_.Get(rhs);
@@ -278,9 +278,9 @@ inline void Compiler::EmitBINARY_RSHIFT(const Instruction* instr) {
 }
 
 inline void Compiler::EmitBINARY_RSHIFT_LOGICAL(const Instruction* instr) {
-  const int16_t dst = Reg(instr[1].i16[0]);
-  const int16_t lhs = Reg(instr[1].i16[1]);
-  const int16_t rhs = Reg(instr[1].i16[2]);
+  const register_t dst = Reg(instr[1].i16[0]);
+  const register_t lhs = Reg(instr[1].i16[1]);
+  const register_t rhs = Reg(instr[1].i16[2]);
 
   const TypeEntry lhs_type_entry = type_record_.Get(lhs);
   const TypeEntry rhs_type_entry = type_record_.Get(rhs);
@@ -346,9 +346,9 @@ inline void Compiler::EmitBINARY_RSHIFT_LOGICAL(const Instruction* instr) {
 
 // opcode | (dst | lhs | rhs)
 inline void Compiler::EmitBINARY_SUBTRACT(const Instruction* instr) {
-  const int16_t dst = Reg(instr[1].i16[0]);
-  const int16_t lhs = Reg(instr[1].i16[1]);
-  const int16_t rhs = Reg(instr[1].i16[2]);
+  const register_t dst = Reg(instr[1].i16[0]);
+  const register_t lhs = Reg(instr[1].i16[1]);
+  const register_t rhs = Reg(instr[1].i16[2]);
 
   const TypeEntry lhs_type_entry = type_record_.Get(lhs);
   const TypeEntry rhs_type_entry = type_record_.Get(rhs);
@@ -421,9 +421,9 @@ inline void Compiler::EmitBINARY_SUBTRACT(const Instruction* instr) {
 
 // opcode | (dst | lhs | rhs)
 inline void Compiler::EmitBINARY_BIT_AND(const Instruction* instr, OP::Type fused) {
-  const int16_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
-  const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
-  const int16_t dst = Reg(instr[1].i16[0]);
+  const register_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
+  const register_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
+  const register_t dst = Reg(instr[1].i16[0]);
 
   const TypeEntry lhs_type_entry = type_record_.Get(lhs);
   const TypeEntry rhs_type_entry = type_record_.Get(rhs);
@@ -531,9 +531,9 @@ inline void Compiler::EmitBINARY_BIT_AND(const Instruction* instr, OP::Type fuse
 
 // opcode | (dst | lhs | rhs)
 inline void Compiler::EmitBINARY_BIT_XOR(const Instruction* instr) {
-  const int16_t dst = Reg(instr[1].i16[0]);
-  const int16_t lhs = Reg(instr[1].i16[1]);
-  const int16_t rhs = Reg(instr[1].i16[2]);
+  const register_t dst = Reg(instr[1].i16[0]);
+  const register_t lhs = Reg(instr[1].i16[1]);
+  const register_t rhs = Reg(instr[1].i16[2]);
 
   const TypeEntry lhs_type_entry = type_record_.Get(lhs);
   const TypeEntry rhs_type_entry = type_record_.Get(rhs);
@@ -595,9 +595,9 @@ inline void Compiler::EmitBINARY_BIT_XOR(const Instruction* instr) {
 
 // opcode | (dst | lhs | rhs)
 inline void Compiler::EmitBINARY_BIT_OR(const Instruction* instr) {
-  const int16_t dst = Reg(instr[1].i16[0]);
-  const int16_t lhs = Reg(instr[1].i16[1]);
-  const int16_t rhs = Reg(instr[1].i16[2]);
+  const register_t dst = Reg(instr[1].i16[0]);
+  const register_t lhs = Reg(instr[1].i16[1]);
+  const register_t rhs = Reg(instr[1].i16[2]);
 
   const TypeEntry lhs_type_entry = type_record_.Get(lhs);
   const TypeEntry rhs_type_entry = type_record_.Get(rhs);

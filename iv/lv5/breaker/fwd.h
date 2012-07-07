@@ -3,6 +3,7 @@
 
 #include <iv/platform.h>
 #include <iv/static_assert.h>
+#include <iv/detail/cstdint.h>
 
 #if defined(IV_ENABLE_JIT)
 // xbyak assembler
@@ -87,6 +88,8 @@ void Compile(railgun::Code* code);
 JSVal FunctionConstructor(const Arguments& args, Error* e);
 JSVal GlobalEval(const Arguments& args, Error* e);
 JSVal DirectCallToEval(const Arguments& args, railgun::Frame* frame, Error* e);
+
+typedef int32_t register_t;
 
 } } }  // namespace iv::lv5::breaker
 #endif  // IV_LV5_BREAKER_FWD_H_

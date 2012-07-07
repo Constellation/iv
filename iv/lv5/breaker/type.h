@@ -449,14 +449,14 @@ class TypeEntry {
 
 class TypeRecord {
  public:
-  typedef std::unordered_map<int16_t, TypeEntry> Record;
+  typedef std::unordered_map<register_t, TypeEntry> Record;
 
-  static bool IsConstantID(int16_t offset) {
+  static bool IsConstantID(register_t offset) {
     return (offset - railgun::FrameConstant<>::kFrameSize) >=
         railgun::FrameConstant<>::kConstantOffset;
   }
 
-  static uint32_t ExtractConstantOffset(int16_t reg) {
+  static uint32_t ExtractConstantOffset(register_t reg) {
     assert(IsConstantID(reg));
     return reg -
         railgun::FrameConstant<>::kFrameSize -
@@ -477,14 +477,14 @@ class TypeRecord {
     record_.clear();
   }
 
-  TypeEntry Get(int16_t offset) {
+  TypeEntry Get(register_t offset) {
     if (IsConstantID(offset)) {
       return TypeEntry(code_->constants()[ExtractConstantOffset(offset)]);
     }
     return record_[offset];
   }
 
-  void Put(int16_t offset, const TypeEntry& entry) {
+  void Put(register_t offset, const TypeEntry& entry) {
     record_[offset] = entry;
   }
 

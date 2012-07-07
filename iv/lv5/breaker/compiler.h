@@ -681,15 +681,15 @@ class Compiler {
   //   r14 : breaker frame
   //   r15 : number mask immediate
 
-  static int16_t Reg(int16_t reg) {
+  static register_t Reg(register_t reg) {
     return railgun::FrameConstant<>::kFrameSize + reg;
   }
 
-  static bool IsConstantID(int16_t reg) {
+  static bool IsConstantID(register_t reg) {
     return reg >= Reg(railgun::FrameConstant<>::kConstantOffset);
   }
 
-  static uint32_t ExtractConstantOffset(int16_t reg) {
+  static uint32_t ExtractConstantOffset(register_t reg) {
     assert(IsConstantID(reg));
     return reg -
         railgun::FrameConstant<>::kFrameSize -
@@ -697,7 +697,7 @@ class Compiler {
   }
 
   // Load virtual register
-  void LoadVR(const Xbyak::Reg64& out, int16_t offset) {
+  void LoadVR(const Xbyak::Reg64& out, register_t offset) {
     const bool break_result = out.getIdx() == asm_->rax.getIdx();
 
     if (IsConstantID(offset)) {
@@ -731,8 +731,8 @@ class Compiler {
     }
   }
 
-  void LoadVRs(const Xbyak::Reg64& out1, int16_t offset1,
-               const Xbyak::Reg64& out2, int16_t offset2) {
+  void LoadVRs(const Xbyak::Reg64& out1, register_t offset1,
+               const Xbyak::Reg64& out2, register_t offset2) {
     if (last_used() == offset1) {
       LoadVR(out1, offset1);
       LoadVR(out2, offset2);
@@ -750,8 +750,8 @@ class Compiler {
 
   // opcode | (dst | src)
   void EmitMV(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t src = Reg(instr[1].i16[1]);
+    const register_t dst = Reg(instr[1].i16[0]);
+    const register_t src = Reg(instr[1].i16[1]);
     LoadVR(asm_->rax, src);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
@@ -773,7 +773,7 @@ class Compiler {
 
   // opcode | src
   void EmitWITH_SETUP(const Instruction* instr) {
-    const int16_t src = Reg(instr[1].i32[0]);
+    const register_t src = Reg(instr[1].i32[0]);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->r13);
     LoadVR(asm_->rdx, src);
@@ -782,8 +782,8 @@ class Compiler {
 
   // opcode | (jmp | flag)
   void EmitRETURN_SUBROUTINE(const Instruction* instr) {
-    const int16_t jump = Reg(instr[1].i16[0]);
-    const int16_t flag = Reg(instr[1].i16[1]);
+    const register_t jump = Reg(instr[1].i16[0]);
+    const register_t flag = Reg(instr[1].i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(asm_->rcx, flag);
@@ -814,9 +814,9 @@ class Compiler {
 
   // opcode | (dst | lhs | rhs)
   void EmitBINARY_DIVIDE(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t lhs = Reg(instr[1].i16[1]);
-    const int16_t rhs = Reg(instr[1].i16[2]);
+    const register_t dst = Reg(instr[1].i16[0]);
+    const register_t lhs = Reg(instr[1].i16[1]);
+    const register_t rhs = Reg(instr[1].i16[2]);
     {
       asm_->mov(asm_->rdi, asm_->r14);
       LoadVR(asm_->rsi, lhs);
@@ -831,9 +831,9 @@ class Compiler {
 
   // opcode | (dst | lhs | rhs)
   void EmitBINARY_MODULO(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t lhs = Reg(instr[1].i16[1]);
-    const int16_t rhs = Reg(instr[1].i16[2]);
+    const register_t dst = Reg(instr[1].i16[0]);
+    const register_t lhs = Reg(instr[1].i16[1]);
+    const register_t rhs = Reg(instr[1].i16[2]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
@@ -880,8 +880,8 @@ class Compiler {
 
   // opcode | (dst | lhs | rhs)
   void EmitBINARY_LT(const Instruction* instr, OP::Type fused = OP::NOP) {
-    const int16_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
-    const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
+    const register_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
+    const register_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
@@ -913,7 +913,7 @@ class Compiler {
         return;
       }
 
-      const int16_t dst = Reg(instr[1].i16[0]);
+      const register_t dst = Reg(instr[1].i16[0]);
       asm_->setl(asm_->cl);
       ConvertBooleanToJSVal(asm_->cl, asm_->rax);
       asm_->jmp(".BINARY_LT_EXIT");
@@ -931,8 +931,8 @@ class Compiler {
 
   // opcode | (dst | lhs | rhs)
   void EmitBINARY_LTE(const Instruction* instr, OP::Type fused = OP::NOP) {
-    const int16_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
-    const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
+    const register_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
+    const register_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
@@ -964,7 +964,7 @@ class Compiler {
         return;
       }
 
-      const int16_t dst = Reg(instr[1].i16[0]);
+      const register_t dst = Reg(instr[1].i16[0]);
       asm_->setle(asm_->cl);
       ConvertBooleanToJSVal(asm_->cl, asm_->rax);
       asm_->jmp(".BINARY_LTE_EXIT");
@@ -982,8 +982,8 @@ class Compiler {
 
   // opcode | (dst | lhs | rhs)
   void EmitBINARY_GT(const Instruction* instr, OP::Type fused = OP::NOP) {
-    const int16_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
-    const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
+    const register_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
+    const register_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
@@ -1014,7 +1014,7 @@ class Compiler {
         return;
       }
 
-      const int16_t dst = Reg(instr[1].i16[0]);
+      const register_t dst = Reg(instr[1].i16[0]);
       asm_->setg(asm_->cl);
       ConvertBooleanToJSVal(asm_->cl, asm_->rax);
       asm_->jmp(".BINARY_GT_EXIT");
@@ -1032,8 +1032,8 @@ class Compiler {
 
   // opcode | (dst | lhs | rhs)
   void EmitBINARY_GTE(const Instruction* instr, OP::Type fused = OP::NOP) {
-    const int16_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
-    const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
+    const register_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
+    const register_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
@@ -1064,7 +1064,7 @@ class Compiler {
         return;
       }
 
-      const int16_t dst = Reg(instr[1].i16[0]);
+      const register_t dst = Reg(instr[1].i16[0]);
       asm_->setge(asm_->cl);
       ConvertBooleanToJSVal(asm_->cl, asm_->rax);
       asm_->jmp(".BINARY_GTE_EXIT");
@@ -1082,8 +1082,8 @@ class Compiler {
 
   // opcode | (dst | lhs | rhs)
   void EmitBINARY_INSTANCEOF(const Instruction* instr, OP::Type fused = OP::NOP) {
-    const int16_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
-    const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
+    const register_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
+    const register_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
@@ -1101,7 +1101,7 @@ class Compiler {
         return;
       }
 
-      const int16_t dst = Reg(instr[1].i16[0]);
+      const register_t dst = Reg(instr[1].i16[0]);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
       type_record_.Put(dst, TypeEntry::Instanceof(type_record_.Get(lhs), type_record_.Get(rhs)));
@@ -1110,8 +1110,8 @@ class Compiler {
 
   // opcode | (dst | lhs | rhs)
   void EmitBINARY_IN(const Instruction* instr, OP::Type fused = OP::NOP) {
-    const int16_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
-    const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
+    const register_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
+    const register_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
@@ -1129,7 +1129,7 @@ class Compiler {
         return;
       }
 
-      const int16_t dst = Reg(instr[1].i16[0]);
+      const register_t dst = Reg(instr[1].i16[0]);
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       set_last_used_candidate(dst);
       type_record_.Put(dst, TypeEntry::In(type_record_.Get(lhs), type_record_.Get(rhs)));
@@ -1138,8 +1138,8 @@ class Compiler {
 
   // opcode | (dst | lhs | rhs)
   void EmitBINARY_EQ(const Instruction* instr, OP::Type fused = OP::NOP) {
-    const int16_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
-    const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
+    const register_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
+    const register_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
@@ -1170,7 +1170,7 @@ class Compiler {
         return;
       }
 
-      const int16_t dst = Reg(instr[1].i16[0]);
+      const register_t dst = Reg(instr[1].i16[0]);
       asm_->sete(asm_->cl);
       ConvertBooleanToJSVal(asm_->cl, asm_->rax);
       asm_->jmp(".BINARY_EQ_EXIT");
@@ -1192,8 +1192,8 @@ class Compiler {
     // Because stub::BINARY_STRICT_EQ is not require Frame as first argument,
     // so register layout is different from BINARY_ other ops.
     // BINARY_STRICT_NE too.
-    const int16_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
-    const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
+    const register_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
+    const register_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rdi, lhs, asm_->rsi, rhs);
@@ -1223,7 +1223,7 @@ class Compiler {
         return;
       }
 
-      const int16_t dst = Reg(instr[1].i16[0]);
+      const register_t dst = Reg(instr[1].i16[0]);
       asm_->sete(asm_->cl);
       ConvertBooleanToJSVal(asm_->cl, asm_->rax);
       asm_->jmp(".BINARY_STRICT_EQ_EXIT");
@@ -1240,8 +1240,8 @@ class Compiler {
 
   // opcode | (dst | lhs | rhs)
   void EmitBINARY_NE(const Instruction* instr, OP::Type fused = OP::NOP) {
-    const int16_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
-    const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
+    const register_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
+    const register_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
@@ -1272,7 +1272,7 @@ class Compiler {
         return;
       }
 
-      const int16_t dst = Reg(instr[1].i16[0]);
+      const register_t dst = Reg(instr[1].i16[0]);
       asm_->setne(asm_->cl);
       ConvertBooleanToJSVal(asm_->cl, asm_->rax);
       asm_->jmp(".BINARY_NE_EXIT");
@@ -1294,8 +1294,8 @@ class Compiler {
     // Because stub::BINARY_STRICT_EQ is not require Frame as first argument,
     // so register layout is different from BINARY_ other ops.
     // BINARY_STRICT_NE too.
-    const int16_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
-    const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
+    const register_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
+    const register_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rdi, lhs, asm_->rsi, rhs);
@@ -1325,7 +1325,7 @@ class Compiler {
         return;
       }
 
-      const int16_t dst = Reg(instr[1].i16[0]);
+      const register_t dst = Reg(instr[1].i16[0]);
       asm_->setne(asm_->cl);
       ConvertBooleanToJSVal(asm_->cl, asm_->rax);
       asm_->jmp(".BINARY_STRICT_NE_EXIT");
@@ -1352,7 +1352,7 @@ class Compiler {
   // opcode | dst
   void EmitLOAD_UNDEFINED(const Instruction* instr) {
     static const uint64_t layout = Extract(JSUndefined);
-    const int16_t dst = Reg(instr[1].i32[0]);
+    const register_t dst = Reg(instr[1].i32[0]);
     assert(layout <= UINT32_MAX);
     asm_->mov(asm_->qword[asm_->r13 + (dst * kJSValSize)], layout);
 
@@ -1362,7 +1362,7 @@ class Compiler {
   // opcode | dst
   void EmitLOAD_EMPTY(const Instruction* instr) {
     static const uint64_t layout = Extract(JSEmpty);
-    const int16_t dst = Reg(instr[1].i32[0]);
+    const register_t dst = Reg(instr[1].i32[0]);
     assert(layout <= UINT32_MAX);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
 
@@ -1372,7 +1372,7 @@ class Compiler {
   // opcode | dst
   void EmitLOAD_NULL(const Instruction* instr) {
     static const uint64_t layout = Extract(JSNull);
-    const int16_t dst = Reg(instr[1].i32[0]);
+    const register_t dst = Reg(instr[1].i32[0]);
     assert(layout <= UINT32_MAX);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
     type_record_.Put(dst, TypeEntry(JSNull));
@@ -1381,7 +1381,7 @@ class Compiler {
   // opcode | dst
   void EmitLOAD_TRUE(const Instruction* instr) {
     static const uint64_t layout = Extract(JSTrue);
-    const int16_t dst = Reg(instr[1].i32[0]);
+    const register_t dst = Reg(instr[1].i32[0]);
     assert(layout <= UINT32_MAX);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
     type_record_.Put(dst, TypeEntry(JSTrue));
@@ -1390,7 +1390,7 @@ class Compiler {
   // opcode | dst
   void EmitLOAD_FALSE(const Instruction* instr) {
     static const uint64_t layout = Extract(JSFalse);
-    const int16_t dst = Reg(instr[1].i32[0]);
+    const register_t dst = Reg(instr[1].i32[0]);
     assert(layout <= UINT32_MAX);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
     type_record_.Put(dst, TypeEntry(JSFalse));
@@ -1398,8 +1398,8 @@ class Compiler {
 
   // opcode | (dst | src)
   void EmitUNARY_POSITIVE(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t src = Reg(instr[1].i16[1]);
+    const register_t dst = Reg(instr[1].i16[0]);
+    const register_t src = Reg(instr[1].i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(asm_->rax, src);
@@ -1422,8 +1422,8 @@ class Compiler {
   void EmitUNARY_NEGATIVE(const Instruction* instr) {
     static const uint64_t layout = Extract(JSVal(-0.0));
     static const uint64_t layout2 = Extract(JSVal(-static_cast<double>(INT32_MIN)));
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t src = Reg(instr[1].i16[1]);
+    const register_t dst = Reg(instr[1].i16[0]);
+    const register_t src = Reg(instr[1].i16[1]);
     {
       // Because ECMA262 number value is defined as double,
       // -0 should be double -0.0.
@@ -1459,8 +1459,8 @@ class Compiler {
 
   // opcode | (dst | src)
   void EmitUNARY_NOT(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t src = Reg(instr[1].i16[1]);
+    const register_t dst = Reg(instr[1].i16[0]);
+    const register_t src = Reg(instr[1].i16[1]);
     LoadVR(asm_->rdi, src);
     asm_->Call(&stub::UNARY_NOT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
@@ -1470,8 +1470,8 @@ class Compiler {
 
   // opcode | (dst | src)
   void EmitUNARY_BIT_NOT(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t src = Reg(instr[1].i16[1]);
+    const register_t dst = Reg(instr[1].i16[0]);
+    const register_t src = Reg(instr[1].i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(asm_->rsi, src);
@@ -1494,7 +1494,7 @@ class Compiler {
 
   // opcode | src
   void EmitTHROW(const Instruction* instr) {
-    const int16_t src = Reg(instr[1].i32[0]);
+    const register_t src = Reg(instr[1].i32[0]);
     LoadVR(asm_->rsi, src);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->Call(&stub::THROW);
@@ -1510,7 +1510,7 @@ class Compiler {
 
   // opcode | src
   void EmitTO_NUMBER(const Instruction* instr) {
-    const int16_t src = Reg(instr[1].i32[0]);
+    const register_t src = Reg(instr[1].i32[0]);
     LoadVR(asm_->rsi, src);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->Call(&stub::TO_NUMBER);
@@ -1518,7 +1518,7 @@ class Compiler {
 
   // opcode | src
   void EmitTO_PRIMITIVE_AND_TO_STRING(const Instruction* instr) {
-    const int16_t src = Reg(instr[1].i32[0]);
+    const register_t src = Reg(instr[1].i32[0]);
     LoadVR(asm_->rsi, src);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->Call(&stub::TO_PRIMITIVE_AND_TO_STRING);
@@ -1529,8 +1529,8 @@ class Compiler {
 
   // opcode | (dst | start | count)
   void EmitCONCAT(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
-    const int16_t start = Reg(instr[1].ssw.i16[1]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t start = Reg(instr[1].ssw.i16[1]);
     const uint32_t count = instr[1].ssw.u32;
     assert(!IsConstantID(start));
     asm_->lea(asm_->rsi, asm_->ptr[asm_->r13 + start * kJSValSize]);
@@ -1558,8 +1558,8 @@ class Compiler {
 
   // opcode | (dst | src)
   void EmitTYPEOF(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t src = Reg(instr[1].i16[1]);
+    const register_t dst = Reg(instr[1].i16[0]);
+    const register_t src = Reg(instr[1].i16[1]);
     LoadVR(asm_->rsi, src);
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->Call(&stub::TYPEOF);
@@ -1570,8 +1570,8 @@ class Compiler {
 
   // opcode | (obj | item) | (offset | merged)
   void EmitSTORE_OBJECT_DATA(const Instruction* instr) {
-    const int16_t obj = Reg(instr[1].i16[0]);
-    const int16_t item = Reg(instr[1].i16[1]);
+    const register_t obj = Reg(instr[1].i16[0]);
+    const register_t item = Reg(instr[1].i16[1]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t merged = instr[2].u32[1];
     LoadVRs(asm_->rdi, obj, asm_->rsi, item);
@@ -1585,8 +1585,8 @@ class Compiler {
 
   // opcode | (obj | item) | (offset | merged)
   void EmitSTORE_OBJECT_GET(const Instruction* instr) {
-    const int16_t obj = Reg(instr[1].i16[0]);
-    const int16_t item = Reg(instr[1].i16[1]);
+    const register_t obj = Reg(instr[1].i16[0]);
+    const register_t item = Reg(instr[1].i16[1]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t merged = instr[2].u32[1];
     LoadVRs(asm_->rdi, obj, asm_->rsi, item);
@@ -1600,8 +1600,8 @@ class Compiler {
 
   // opcode | (obj | item) | (offset | merged)
   void EmitSTORE_OBJECT_SET(const Instruction* instr) {
-    const int16_t obj = Reg(instr[1].i16[0]);
-    const int16_t item = Reg(instr[1].i16[1]);
+    const register_t obj = Reg(instr[1].i16[0]);
+    const register_t item = Reg(instr[1].i16[1]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t merged = instr[2].u32[1];
     LoadVRs(asm_->rdi, obj, asm_->rsi, item);
@@ -1615,8 +1615,8 @@ class Compiler {
 
   // opcode | (dst | base | name) | nop | nop | nop
   void EmitLOAD_PROP(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
-    const int16_t base = Reg(instr[1].ssw.i16[1]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
 
     const TypeEntry& base_entry = type_record_.Get(base);
@@ -1653,8 +1653,8 @@ class Compiler {
 
   // opcode | (base | src | index) | nop | nop
   void EmitSTORE_PROP(const Instruction* instr) {
-    const int16_t base = Reg(instr[1].ssw.i16[0]);
-    const int16_t src = Reg(instr[1].ssw.i16[1]);
+    const register_t base = Reg(instr[1].ssw.i16[0]);
+    const register_t src = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
     LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
@@ -1678,8 +1678,8 @@ class Compiler {
 
   // opcode | (dst | base | name) | nop | nop | nop
   void EmitDELETE_PROP(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
-    const int16_t base = Reg(instr[1].ssw.i16[1]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
     LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
@@ -1697,8 +1697,8 @@ class Compiler {
 
   // opcode | (dst | base | name) | nop | nop | nop
   void EmitINCREMENT_PROP(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
-    const int16_t base = Reg(instr[1].ssw.i16[1]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
     LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
@@ -1716,8 +1716,8 @@ class Compiler {
 
   // opcode | (dst | base | name) | nop | nop | nop
   void EmitDECREMENT_PROP(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
-    const int16_t base = Reg(instr[1].ssw.i16[1]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
     LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
@@ -1735,8 +1735,8 @@ class Compiler {
 
   // opcode | (dst | base | name) | nop | nop | nop
   void EmitPOSTFIX_INCREMENT_PROP(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
-    const int16_t base = Reg(instr[1].ssw.i16[1]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
     LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
@@ -1754,8 +1754,8 @@ class Compiler {
 
   // opcode | (dst | base | name) | nop | nop | nop
   void EmitPOSTFIX_DECREMENT_PROP(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
-    const int16_t base = Reg(instr[1].ssw.i16[1]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
     LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
@@ -1782,8 +1782,8 @@ class Compiler {
 
   // opcode | (ary | reg) | (index | size)
   void EmitINIT_VECTOR_ARRAY_ELEMENT(const Instruction* instr) {
-    const int16_t ary = Reg(instr[1].i16[0]);
-    const int16_t reg = Reg(instr[1].i16[1]);
+    const register_t ary = Reg(instr[1].i16[0]);
+    const register_t reg = Reg(instr[1].i16[1]);
     const uint32_t index = instr[2].u32[0];
     const uint32_t size = instr[2].u32[1];
     LoadVR(asm_->rdi, ary);
@@ -1796,8 +1796,8 @@ class Compiler {
 
   // opcode | (ary | reg) | (index | size)
   void EmitINIT_SPARSE_ARRAY_ELEMENT(const Instruction* instr) {
-    const int16_t ary = Reg(instr[1].i16[0]);
-    const int16_t reg = Reg(instr[1].i16[1]);
+    const register_t ary = Reg(instr[1].i16[0]);
+    const register_t reg = Reg(instr[1].i16[1]);
     const uint32_t index = instr[2].u32[0];
     const uint32_t size = instr[2].u32[1];
     LoadVR(asm_->rdi, ary);
@@ -1810,7 +1810,7 @@ class Compiler {
 
   // opcode | (dst | size)
   void EmitLOAD_ARRAY(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t size = instr[1].ssw.u32;
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->esi, size);
@@ -1822,7 +1822,7 @@ class Compiler {
 
   // opcode | (dst | offset)
   void EmitDUP_ARRAY(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[1].ssw.u32;
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, Extract(code_->constants()[offset]));
@@ -1833,7 +1833,7 @@ class Compiler {
 
   // opcode | (dst | code)
   void EmitLOAD_FUNCTION(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     railgun::Code* target = code_->codes()[instr[1].ssw.u32];
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(target));
@@ -1846,7 +1846,7 @@ class Compiler {
 
   // opcode | (dst | offset)
   void EmitLOAD_REGEXP(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     JSRegExp* regexp =
         static_cast<JSRegExp*>(code_->constants()[instr[1].ssw.u32].object());
     asm_->mov(asm_->rdi, asm_->r12);
@@ -1859,7 +1859,7 @@ class Compiler {
 
   // opcode | dst | map
   void EmitLOAD_OBJECT(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i32[0]);
+    const register_t dst = Reg(instr[1].i32[0]);
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(instr[2].map));
     asm_->Call(&stub::LOAD_OBJECT);
@@ -1870,9 +1870,9 @@ class Compiler {
 
   // opcode | (dst | base | element)
   void EmitLOAD_ELEMENT(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t base = Reg(instr[1].i16[1]);
-    const int16_t element = Reg(instr[1].i16[2]);
+    const register_t dst = Reg(instr[1].i16[0]);
+    const register_t base = Reg(instr[1].i16[1]);
+    const register_t element = Reg(instr[1].i16[2]);
     LoadVRs(asm_->rsi, base, asm_->rdx, element);
     asm_->mov(asm_->rdi, asm_->r14);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
@@ -1884,9 +1884,9 @@ class Compiler {
 
   // opcode | (base | element | src)
   void EmitSTORE_ELEMENT(const Instruction* instr) {
-    const int16_t base = Reg(instr[1].i16[0]);
-    const int16_t element = Reg(instr[1].i16[1]);
-    const int16_t src = Reg(instr[1].i16[2]);
+    const register_t base = Reg(instr[1].i16[0]);
+    const register_t element = Reg(instr[1].i16[1]);
+    const register_t src = Reg(instr[1].i16[2]);
     LoadVRs(asm_->rsi, base, asm_->rdx, element);
     asm_->mov(asm_->rdi, asm_->r14);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
@@ -1900,9 +1900,9 @@ class Compiler {
 
   // opcode | (dst | base | element)
   void EmitDELETE_ELEMENT(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t base = Reg(instr[1].i16[1]);
-    const int16_t element = Reg(instr[1].i16[2]);
+    const register_t dst = Reg(instr[1].i16[0]);
+    const register_t base = Reg(instr[1].i16[1]);
+    const register_t element = Reg(instr[1].i16[2]);
     LoadVRs(asm_->rsi, base, asm_->rdx, element);
     asm_->mov(asm_->rdi, asm_->r14);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
@@ -1918,9 +1918,9 @@ class Compiler {
 
   // opcode | (dst | base | element)
   void EmitINCREMENT_ELEMENT(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t base = Reg(instr[1].i16[1]);
-    const int16_t element = Reg(instr[1].i16[2]);
+    const register_t dst = Reg(instr[1].i16[0]);
+    const register_t base = Reg(instr[1].i16[1]);
+    const register_t element = Reg(instr[1].i16[2]);
     LoadVRs(asm_->rsi, base, asm_->rdx, element);
     asm_->mov(asm_->rdi, asm_->r14);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
@@ -1936,9 +1936,9 @@ class Compiler {
 
   // opcode | (dst | base | element)
   void EmitDECREMENT_ELEMENT(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t base = Reg(instr[1].i16[1]);
-    const int16_t element = Reg(instr[1].i16[2]);
+    const register_t dst = Reg(instr[1].i16[0]);
+    const register_t base = Reg(instr[1].i16[1]);
+    const register_t element = Reg(instr[1].i16[2]);
     LoadVRs(asm_->rsi, base, asm_->rdx, element);
     asm_->mov(asm_->rdi, asm_->r14);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
@@ -1954,9 +1954,9 @@ class Compiler {
 
   // opcode | (dst | base | element)
   void EmitPOSTFIX_INCREMENT_ELEMENT(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t base = Reg(instr[1].i16[1]);
-    const int16_t element = Reg(instr[1].i16[2]);
+    const register_t dst = Reg(instr[1].i16[0]);
+    const register_t base = Reg(instr[1].i16[1]);
+    const register_t element = Reg(instr[1].i16[2]);
     LoadVRs(asm_->rsi, base, asm_->rdx, element);
     asm_->mov(asm_->rdi, asm_->r14);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
@@ -1972,9 +1972,9 @@ class Compiler {
 
   // opcode | (dst | base | element)
   void EmitPOSTFIX_DECREMENT_ELEMENT(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t base = Reg(instr[1].i16[1]);
-    const int16_t element = Reg(instr[1].i16[2]);
+    const register_t dst = Reg(instr[1].i16[0]);
+    const register_t base = Reg(instr[1].i16[1]);
+    const register_t element = Reg(instr[1].i16[2]);
     LoadVRs(asm_->rsi, base, asm_->rdx, element);
     asm_->mov(asm_->rdi, asm_->r14);
     CheckObjectCoercible(asm_->rsi, asm_->rcx);
@@ -1990,7 +1990,7 @@ class Compiler {
 
   // opcode | dst
   void EmitRESULT(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i32[0]);
+    const register_t dst = Reg(instr[1].i32[0]);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Unknown()));
@@ -2001,7 +2001,7 @@ class Compiler {
     // Calling convension is different from railgun::VM.
     // Constructor checks value is object in call site, not callee site.
     // So r13 is still callee Frame.
-    const int16_t src = Reg(instr[1].i32[0]);
+    const register_t src = Reg(instr[1].i32[0]);
     LoadVR(asm_->rax, src);
     asm_->add(asm_->rsp, k64Size);
     asm_->add(asm_->qword[asm_->r14 + offsetof(Frame, ret)], k64Size * kStackPayload);
@@ -2010,7 +2010,7 @@ class Compiler {
 
   // opcode | (dst | index) | nop | nop
   void EmitLOAD_GLOBAL(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(name));
@@ -2027,7 +2027,7 @@ class Compiler {
 
   // opcode | (src | name) | nop | nop
   void EmitSTORE_GLOBAL(const Instruction* instr) {
-    const int16_t src = Reg(instr[1].ssw.i16[0]);
+    const register_t src = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
     asm_->mov(asm_->rdi, asm_->r14);
     LoadVR(asm_->rsi, src);
@@ -2042,7 +2042,7 @@ class Compiler {
 
   // opcode | (dst | name) | nop | nop
   void EmitDELETE_GLOBAL(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(name));
@@ -2054,7 +2054,7 @@ class Compiler {
 
   // opcode | (dst | name) | nop | nop
   void EmitINCREMENT_GLOBAL(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(instr));
@@ -2071,7 +2071,7 @@ class Compiler {
 
   // opcode | (dst | name) | nop | nop
   void EmitDECREMENT_GLOBAL(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(instr));
@@ -2088,7 +2088,7 @@ class Compiler {
 
   // opcode | (dst | name) | nop | nop
   void EmitPOSTFIX_INCREMENT_GLOBAL(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(instr));
@@ -2105,7 +2105,7 @@ class Compiler {
 
   // opcode | (dst | name) | nop | nop
   void EmitPOSTFIX_DECREMENT_GLOBAL(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(instr));
@@ -2122,7 +2122,7 @@ class Compiler {
 
   // opcode | (dst | name) | nop | nop
   void EmitTYPEOF_GLOBAL(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(name));
@@ -2138,7 +2138,7 @@ class Compiler {
 
   // opcode | (dst | index) | (offset | nest)
   void EmitLOAD_HEAP(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
     asm_->mov(asm_->rdi, asm_->r14);
@@ -2160,7 +2160,7 @@ class Compiler {
 
   // opcode | (src | name) | (offset | nest)
   void EmitSTORE_HEAP(const Instruction* instr) {
-    const int16_t src = Reg(instr[1].ssw.i16[0]);
+    const register_t src = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
     LoadVR(asm_->rcx, src);
@@ -2181,14 +2181,14 @@ class Compiler {
   // opcode | (dst | name) | (offset | nest)
   void EmitDELETE_HEAP(const Instruction* instr) {
     static const uint64_t layout = Extract(JSFalse);
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
     type_record_.Put(dst, TypeEntry(Type::Boolean()));
   }
 
   // opcode | (dst | name) | (offset | nest)
   void EmitINCREMENT_HEAP(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
     asm_->mov(asm_->rdi, asm_->r14);
@@ -2209,7 +2209,7 @@ class Compiler {
 
   // opcode | (dst | name) | (offset | nest)
   void EmitDECREMENT_HEAP(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
     asm_->mov(asm_->rdi, asm_->r14);
@@ -2230,7 +2230,7 @@ class Compiler {
 
   // opcode | (dst | name) | (offset | nest)
   void EmitPOSTFIX_INCREMENT_HEAP(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
     asm_->mov(asm_->rdi, asm_->r14);
@@ -2251,7 +2251,7 @@ class Compiler {
 
   // opcode | (dst | name) | (offset | nest)
   void EmitPOSTFIX_DECREMENT_HEAP(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
     asm_->mov(asm_->rdi, asm_->r14);
@@ -2272,7 +2272,7 @@ class Compiler {
 
   // opcode | (dst | name) | (offset | nest)
   void EmitTYPEOF_HEAP(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
     asm_->mov(asm_->rdi, asm_->r14);
@@ -2293,8 +2293,8 @@ class Compiler {
 
   // opcode | (callee | offset | argc_with_this)
   void EmitCALL(const Instruction* instr) {
-    const int16_t callee = Reg(instr[1].ssw.i16[0]);
-    const int16_t offset = Reg(instr[1].ssw.i16[1]);
+    const register_t callee = Reg(instr[1].ssw.i16[0]);
+    const register_t offset = Reg(instr[1].ssw.i16[1]);
     const uint32_t argc_with_this = instr[1].ssw.u32;
     {
       const Assembler::LocalLabelScope scope(asm_);
@@ -2318,7 +2318,7 @@ class Compiler {
       // unwind Frame
       asm_->mov(asm_->rcx, asm_->r13);  // old frame
       asm_->mov(asm_->r13, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, prev_)]);  // current frame
-      const int16_t frame_end_offset = Reg(code_->registers());
+      const register_t frame_end_offset = Reg(code_->registers());
       assert(!IsConstantID(frame_end_offset));
       asm_->lea(asm_->r10, asm_->ptr[asm_->r13 + frame_end_offset * kJSValSize]);
       asm_->cmp(asm_->rcx, asm_->r10);
@@ -2337,8 +2337,8 @@ class Compiler {
 
   // opcode | (callee | offset | argc_with_this)
   void EmitCONSTRUCT(const Instruction* instr) {
-    const int16_t callee = Reg(instr[1].ssw.i16[0]);
-    const int16_t offset = Reg(instr[1].ssw.i16[1]);
+    const register_t callee = Reg(instr[1].ssw.i16[0]);
+    const register_t offset = Reg(instr[1].ssw.i16[1]);
     const uint32_t argc_with_this = instr[1].ssw.u32;
     {
       const Assembler::LocalLabelScope scope(asm_);
@@ -2363,7 +2363,7 @@ class Compiler {
       asm_->mov(asm_->rcx, asm_->r13);  // old frame
       asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + kJSValSize * Reg(railgun::FrameConstant<>::kThisOffset)]);  // NOLINT
       asm_->mov(asm_->r13, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, prev_)]);  // current frame
-      const int16_t frame_end_offset = Reg(code_->registers());
+      const register_t frame_end_offset = Reg(code_->registers());
       asm_->lea(asm_->r10, asm_->ptr[asm_->r13 + frame_end_offset * kJSValSize]);
       asm_->cmp(asm_->rcx, asm_->r10);
       asm_->jge(".CALL_UNWIND_OLD");
@@ -2397,8 +2397,8 @@ class Compiler {
 
   // opcode | (callee | offset | argc_with_this)
   void EmitEVAL(const Instruction* instr) {
-    const int16_t callee = Reg(instr[1].ssw.i16[0]);
-    const int16_t offset = Reg(instr[1].ssw.i16[1]);
+    const register_t callee = Reg(instr[1].ssw.i16[0]);
+    const register_t offset = Reg(instr[1].ssw.i16[1]);
     const uint32_t argc_with_this = instr[1].ssw.u32;
     {
       const Assembler::LocalLabelScope scope(asm_);
@@ -2422,7 +2422,7 @@ class Compiler {
       // unwind Frame
       asm_->mov(asm_->rcx, asm_->r13);  // old frame
       asm_->mov(asm_->r13, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, prev_)]);  // current frame
-      const int16_t frame_end_offset = Reg(code_->registers());
+      const register_t frame_end_offset = Reg(code_->registers());
       assert(!IsConstantID(frame_end_offset));
       asm_->lea(asm_->r10, asm_->ptr[asm_->r13 + frame_end_offset * kJSValSize]);
       asm_->cmp(asm_->rcx, asm_->r10);
@@ -2477,7 +2477,7 @@ class Compiler {
 
   // opcode | (src | offset)
   void EmitINITIALIZE_HEAP_IMMUTABLE(const Instruction* instr) {
-    const int16_t src = Reg(instr[1].ssw.i16[0]);
+    const register_t src = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[1].ssw.u32;
     asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, variable_env_)]);
     LoadVR(asm_->rsi, src);
@@ -2487,7 +2487,7 @@ class Compiler {
 
   // opcode | src
   void EmitINCREMENT(const Instruction* instr) {
-    const int16_t src = Reg(instr[1].i32[0]);
+    const register_t src = Reg(instr[1].i32[0]);
     static const uint64_t overflow = Extract(JSVal(static_cast<double>(INT32_MAX) + 1));
     {
       const Assembler::LocalLabelScope scope(asm_);
@@ -2518,7 +2518,7 @@ class Compiler {
 
   // opcode | src
   void EmitDECREMENT(const Instruction* instr) {
-    const int16_t src = Reg(instr[1].i32[0]);
+    const register_t src = Reg(instr[1].i32[0]);
     static const uint64_t overflow = Extract(JSVal(static_cast<double>(INT32_MIN) - 1));
     {
       const Assembler::LocalLabelScope scope(asm_);
@@ -2549,8 +2549,8 @@ class Compiler {
 
   // opcode | (dst | src)
   void EmitPOSTFIX_INCREMENT(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t src = Reg(instr[1].i16[1]);
+    const register_t dst = Reg(instr[1].i16[0]);
+    const register_t src = Reg(instr[1].i16[1]);
     static const uint64_t overflow = Extract(JSVal(static_cast<double>(INT32_MAX) + 1));
     {
       const Assembler::LocalLabelScope scope(asm_);
@@ -2588,8 +2588,8 @@ class Compiler {
 
   // opcode | (dst | src)
   void EmitPOSTFIX_DECREMENT(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].i16[0]);
-    const int16_t src = Reg(instr[1].i16[1]);
+    const register_t dst = Reg(instr[1].i16[0]);
+    const register_t src = Reg(instr[1].i16[1]);
     static const uint64_t overflow = Extract(JSVal(static_cast<double>(INT32_MIN) - 1));
     {
       const Assembler::LocalLabelScope scope(asm_);
@@ -2628,8 +2628,8 @@ class Compiler {
   // opcode | (dst | basedst | name)
   void EmitPREPARE_DYNAMIC_CALL(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
-    const int16_t base = Reg(instr[1].ssw.i16[1]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t base = Reg(instr[1].ssw.i16[1]);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
@@ -2645,7 +2645,7 @@ class Compiler {
   // opcode | (jmp | cond)
   void EmitIF_FALSE(const Instruction* instr) {
     // TODO(Constelation) inlining this
-    const int16_t cond = Reg(instr[1].jump.i16[0]);
+    const register_t cond = Reg(instr[1].jump.i16[0]);
     const std::string label = MakeLabel(instr);
     {
       const Assembler::LocalLabelScope scope(asm_);
@@ -2672,7 +2672,7 @@ class Compiler {
   // opcode | (jmp | cond)
   void EmitIF_TRUE(const Instruction* instr) {
     // TODO(Constelation) inlining this
-    const int16_t cond = Reg(instr[1].jump.i16[0]);
+    const register_t cond = Reg(instr[1].jump.i16[0]);
     const std::string label = MakeLabel(instr);
     {
       const Assembler::LocalLabelScope scope(asm_);
@@ -2699,8 +2699,8 @@ class Compiler {
   // opcode | (jmp : addr | flag)
   void EmitJUMP_SUBROUTINE(const Instruction* instr) {
     static const uint64_t layout = Extract(JSVal::Int32(railgun::VM::kJumpFromSubroutine));
-    const int16_t addr = Reg(instr[1].jump.i16[0]);
-    const int16_t flag = Reg(instr[1].jump.i16[1]);
+    const register_t addr = Reg(instr[1].jump.i16[0]);
+    const register_t flag = Reg(instr[1].jump.i16[1]);
     const std::string label = MakeLabel(instr);
 
     // register position and repatch afterward
@@ -2721,8 +2721,8 @@ class Compiler {
 
   // opcode | (jmp : iterator | enumerable)
   void EmitFORIN_SETUP(const Instruction* instr) {
-    const int16_t iterator = Reg(instr[1].jump.i16[0]);
-    const int16_t enumerable = Reg(instr[1].jump.i16[1]);
+    const register_t iterator = Reg(instr[1].jump.i16[0]);
+    const register_t enumerable = Reg(instr[1].jump.i16[1]);
     const std::string label = MakeLabel(instr);
     LoadVR(asm_->rsi, enumerable);
     NullOrUndefinedGuard(asm_->rsi, asm_->rdi, label.c_str(), Xbyak::CodeGenerator::T_NEAR);
@@ -2734,8 +2734,8 @@ class Compiler {
 
   // opcode | (jmp : dst | iterator)
   void EmitFORIN_ENUMERATE(const Instruction* instr) {
-    const int16_t dst = Reg(instr[1].jump.i16[0]);
-    const int16_t iterator = Reg(instr[1].jump.i16[1]);
+    const register_t dst = Reg(instr[1].jump.i16[0]);
+    const register_t iterator = Reg(instr[1].jump.i16[1]);
     const std::string label = MakeLabel(instr);
     asm_->mov(asm_->rdi, asm_->r12);
     LoadVR(asm_->rsi, iterator);
@@ -2749,7 +2749,7 @@ class Compiler {
 
   // opcode | iterator
   void EmitFORIN_LEAVE(const Instruction* instr) {
-    const int16_t iterator = Reg(instr[1].i32[0]);
+    const register_t iterator = Reg(instr[1].i32[0]);
     asm_->mov(asm_->rdi, asm_->r12);
     LoadVR(asm_->rsi, iterator);
     asm_->Call(&stub::FORIN_LEAVE);
@@ -2757,7 +2757,7 @@ class Compiler {
 
   // opcode | (error | name)
   void EmitTRY_CATCH_SETUP(const Instruction* instr) {
-    const int16_t error = Reg(instr[1].ssw.i16[0]);
+    const register_t error = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
@@ -2770,7 +2770,7 @@ class Compiler {
   // opcode | (dst | index)
   void EmitLOAD_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
@@ -2787,7 +2787,7 @@ class Compiler {
   // opcode | (src | name)
   void EmitSTORE_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    const int16_t src = Reg(instr[1].ssw.i16[0]);
+    const register_t src = Reg(instr[1].ssw.i16[0]);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
@@ -2802,7 +2802,7 @@ class Compiler {
   // opcode | (dst | name)
   void EmitDELETE_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
@@ -2819,7 +2819,7 @@ class Compiler {
   // opcode | (dst | name)
   void EmitINCREMENT_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
@@ -2836,7 +2836,7 @@ class Compiler {
   // opcode | (dst | name)
   void EmitDECREMENT_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
@@ -2853,7 +2853,7 @@ class Compiler {
   // opcode | (dst | name)
   void EmitPOSTFIX_INCREMENT_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
@@ -2870,7 +2870,7 @@ class Compiler {
   // opcode | (dst | name)
   void EmitPOSTFIX_DECREMENT_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
@@ -2887,7 +2887,7 @@ class Compiler {
   // opcode | (dst | name)
   void EmitTYPEOF_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    const int16_t dst = Reg(instr[1].ssw.i16[0]);
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
@@ -2935,7 +2935,7 @@ class Compiler {
     asm_->or(Xbyak::Reg8(result.getIdx()), cond);
   }
 
-  void Int32Guard(int16_t reg,
+  void Int32Guard(register_t reg,
                   const Xbyak::Reg64& target,
                   const Xbyak::Reg64& tmp1,
                   const char* label,
@@ -2979,7 +2979,7 @@ class Compiler {
     }
   }
 
-  void EmitConstantDest(const TypeEntry& entry, int16_t dst) {
+  void EmitConstantDest(const TypeEntry& entry, register_t dst) {
     asm_->mov(asm_->rax, Extract(entry.constant()));
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
