@@ -1875,6 +1875,7 @@ class Parser : private Noncopyable<> {
 //    | Elision ','
   Expression* ParseArrayLiteral(bool *res) {
     assert(token_ == Token::TK_LBRACK);
+    bool is_primitive_constant_array = true;
     const std::size_t begin = lexer_.begin_position();
     const std::size_t line_number = lexer_.line_number();
     MaybeExpressions* const items =
@@ -1884,8 +1885,17 @@ class Parser : private Noncopyable<> {
       if (token_ == Token::TK_COMMA) {
         // when Token::TK_COMMA, only increment length
         items->push_back(NULL);
+        is_primitive_constant_array = false;
       } else {
         Expression* const expr = ParseAssignmentExpression(true, CHECK);
+        if (is_primitive_constant_array) {
+          if (!(expr->AsStringLiteral() || expr->AsNumberLiteral() ||
+               expr->AsTrueLiteral() || expr->AsFalseLiteral() ||
+               expr->AsNullLiteral())) {
+            // not primitive
+            is_primitive_constant_array = false;
+          }
+        }
         items->push_back(expr);
       }
       if (token_ != Token::TK_RBRACK) {
@@ -1896,6 +1906,7 @@ class Parser : private Noncopyable<> {
     assert(items);
     return factory_->NewArrayLiteral(
         items,
+        is_primitive_constant_array,
         begin,
         lexer_.previous_end_position(),
         line_number);

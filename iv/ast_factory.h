@@ -135,11 +135,13 @@ class BasicAstFactory {
   }
 
   ArrayLiteral* NewArrayLiteral(MaybeExpressions* items,
+                                bool is_primitive_constant_array,
                                 std::size_t begin,
                                 std::size_t end,
                                 std::size_t line_number) {
     return Location(
-        new(static_cast<Factory*>(this)) ArrayLiteral(items),
+        new(static_cast<Factory*>(this))
+          ArrayLiteral(items, is_primitive_constant_array),
         begin,
         end,
         line_number);

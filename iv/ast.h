@@ -1391,22 +1391,25 @@ class ArrayLiteral : public ArrayLiteralBase<Factory> {
     }
   };
 
-  explicit ArrayLiteral(MaybeExpressions* items)
+  explicit ArrayLiteral(MaybeExpressions* items, bool is_primitive_constant_array)
     : items_(items),
       side_effect_(
         std::find_if(items->begin(),
                      items->end(),
-                     SideEffectFinder()) != items->end())  {
+                     SideEffectFinder()) != items->end()),
+      primitive_constant_array_(is_primitive_constant_array) {
   }
   inline const MaybeExpressions& items() const {
     return *items_;
   }
   bool SideEffect() const { return side_effect_; }
+  bool primitive_constant_array() const { return primitive_constant_array_; }
   DECLARE_DERIVED_NODE_TYPE(ArrayLiteral)
   ACCEPT_EXPRESSION_VISITOR
  private:
   MaybeExpressions* items_;
   bool side_effect_;
+  bool primitive_constant_array_;
 };
 
 // ObjectLiteral
