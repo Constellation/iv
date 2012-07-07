@@ -135,11 +135,11 @@ class JSVector : private JSArray {
 
  private:
   explicit JSVector(Context* ctx)
-    : JSArray(ctx, 0) {
+    : JSArray(ctx, 0u) {
   }
 
   JSVector(Context* ctx, size_type n, const JSVal& v)
-    : JSArray(ctx, 0) {
+    : JSArray(ctx, 0u) {
     vector_.resize(n, v);
   }
 };

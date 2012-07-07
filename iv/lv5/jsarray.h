@@ -79,7 +79,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
   uint32_t GetLength() const { return length_.value(); }
 
   static JSArray* New(Context* ctx) {
-    JSArray* const ary = new JSArray(ctx, 0);
+    JSArray* const ary = new JSArray(ctx, 0u);
     ary->set_cls(JSArray::GetClass());
     ary->set_prototype(context::GetClassSlot(ctx, Class::Array).prototype);
     return ary;
@@ -87,6 +87,13 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
 
   static JSArray* New(Context* ctx, uint32_t n) {
     JSArray* const ary = new JSArray(ctx, n);
+    ary->set_cls(JSArray::GetClass());
+    ary->set_prototype(context::GetClassSlot(ctx, Class::Array).prototype);
+    return ary;
+  }
+
+  static JSArray* New(Context* ctx, JSArray* array) {
+    JSArray* const ary = new JSArray(ctx, array);
     ary->set_cls(JSArray::GetClass());
     ary->set_prototype(context::GetClassSlot(ctx, Class::Array).prototype);
     return ary;
@@ -108,11 +115,11 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
   }
 
   static JSArray* NewPlain(Context* ctx) {
-    return new JSArray(ctx, 0);
+    return new JSArray(ctx, 0u);
   }
 
   static JSArray* NewPlain(Context* ctx, Map* map) {
-    return new JSArray(ctx, map, 0);
+    return new JSArray(ctx, map, 0u);
   }
 
   virtual bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
@@ -287,6 +294,14 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
       map_(NULL),
       dense_(true),
       length_(len, ATTR::WRITABLE) {
+  }
+
+  JSArray(Context* ctx, JSArray* array)
+    : JSObject(array->map()),
+      vector_(array->vector_),
+      map_(array->map_),
+      dense_(array->dense_),
+      length_(array->length_) {
   }
 
 #define REJECT(str)\
