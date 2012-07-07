@@ -1341,54 +1341,7 @@ class Compiler {
   }
 
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_BIT_AND(const Instruction* instr, OP::Type fused = OP::NOP) {
-    const int16_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
-    const int16_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
-    {
-      const Assembler::LocalLabelScope scope(asm_);
-      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_BIT_AND_SLOW");
-      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_BIT_AND_SLOW");
-      asm_->and(asm_->esi, asm_->edx);
-
-      if (fused != OP::NOP) {
-        // fused jump opcode
-        const std::string label = MakeLabel(instr);
-        if (fused == OP::IF_TRUE) {
-          asm_->jnz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-        } else {
-          asm_->jz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-        }
-        asm_->jmp(".BINARY_BIT_AND_EXIT");
-
-        asm_->L(".BINARY_BIT_AND_SLOW");
-        asm_->mov(asm_->rdi, asm_->r14);
-        asm_->Call(&stub::BINARY_BIT_AND);
-        asm_->test(asm_->eax, asm_->eax);
-        if (fused == OP::IF_TRUE) {
-          asm_->jnz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-        } else {
-          asm_->jz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-        }
-        asm_->L(".BINARY_BIT_AND_EXIT");
-        return;
-      }
-
-      const int16_t dst = Reg(instr[1].i16[0]);
-      asm_->mov(asm_->eax, asm_->esi);
-      asm_->or(asm_->rax, asm_->r15);
-      asm_->jmp(".BINARY_BIT_AND_EXIT");
-
-      asm_->L(".BINARY_BIT_AND_SLOW");
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->Call(&stub::BINARY_BIT_AND);
-
-      asm_->L(".BINARY_BIT_AND_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      set_last_used_candidate(dst);
-      type_record_.Put(dst, TypeEntry::BitwiseAnd(type_record_.Get(lhs), type_record_.Get(rhs)));
-    }
-  }
+  void EmitBINARY_BIT_AND(const Instruction* instr, OP::Type fused = OP::NOP);
 
   // opcode | (dst | lhs | rhs)
   void EmitBINARY_BIT_XOR(const Instruction* instr) {
