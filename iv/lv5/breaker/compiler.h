@@ -1428,6 +1428,13 @@ class Compiler {
   // opcode | src
   void EmitTO_NUMBER(const Instruction* instr) {
     const register_t src = Reg(instr[1].i32[0]);
+    const TypeEntry src_type_entry = type_record_.Get(src);
+
+    if (src_type_entry.type().IsNumber()) {
+      // no effect
+      return;
+    }
+
     LoadVR(asm_->rsi, src);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->Call(&stub::TO_NUMBER);
@@ -1436,12 +1443,21 @@ class Compiler {
   // opcode | src
   void EmitTO_PRIMITIVE_AND_TO_STRING(const Instruction* instr) {
     const register_t src = Reg(instr[1].i32[0]);
+    const TypeEntry src_type_entry = type_record_.Get(src);
+    const TypeEntry dst_type_entry = TypeEntry::ToPrimitiveAndToString(src_type_entry);
+
+    if (src_type_entry.type().IsString()) {
+      // no effect
+      type_record_.Put(src, dst_type_entry);
+      return;
+    }
+
     LoadVR(asm_->rsi, src);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->Call(&stub::TO_PRIMITIVE_AND_TO_STRING);
     asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], asm_->rax);
     set_last_used_candidate(src);
-    type_record_.Put(src, TypeEntry::ToPrimitiveAndToString(type_record_.Get(src)));
+    type_record_.Put(src, dst_type_entry);
   }
 
   // opcode | (dst | start | count)
