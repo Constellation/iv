@@ -831,44 +831,7 @@ class Compiler {
   }
 
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_MODULO(const Instruction* instr) {
-    const register_t dst = Reg(instr[1].i16[0]);
-    const register_t lhs = Reg(instr[1].i16[1]);
-    const register_t rhs = Reg(instr[1].i16[2]);
-    {
-      const Assembler::LocalLabelScope scope(asm_);
-      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_MODULO_SLOW_GENERIC");
-      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_MODULO_SLOW_GENERIC");
-      // check rhs is more than 0 (n % 0 == NaN)
-      // lhs is >= 0 and rhs is > 0 because example like
-      //   -1 % -1
-      // should return -0.0, so this value is double
-      asm_->cmp(asm_->esi, 0);
-      asm_->jl(".BINARY_MODULO_SLOW_GENERIC");
-      asm_->cmp(asm_->edx, 0);
-      asm_->jle(".BINARY_MODULO_SLOW_GENERIC");
-
-      asm_->mov(asm_->eax, asm_->esi);
-      asm_->mov(asm_->ecx, asm_->edx);
-      asm_->mov(asm_->edx, 0);
-      asm_->idiv(asm_->ecx);
-
-      asm_->mov(asm_->eax, asm_->edx);
-      asm_->or(asm_->rax, asm_->r15);
-      asm_->jmp(".BINARY_MODULO_EXIT");
-
-      asm_->L(".BINARY_MODULO_SLOW_GENERIC");
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->Call(&stub::BINARY_MODULO);
-
-      asm_->L(".BINARY_MODULO_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      set_last_used_candidate(dst);
-    }
-
-    type_record_.Put(dst, TypeEntry::Modulo(type_record_.Get(lhs), type_record_.Get(rhs)));
-  }
+  void EmitBINARY_MODULO(const Instruction* instr);
 
   // opcode | (dst | lhs | rhs)
   void EmitBINARY_LSHIFT(const Instruction* instr);

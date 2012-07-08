@@ -175,6 +175,11 @@ class TypeEntry {
     return IsConstant() && constant().IsInt32();
   }
 
+  int32_t ExtractConstantInt32() const {
+    assert(IsConstantInt32());
+    return constant().int32();
+  }
+
   JSVal constant() const { return constant_; }
 
   static TypeEntry Add(const TypeEntry& lhs, const TypeEntry& rhs) {
@@ -197,7 +202,8 @@ class TypeEntry {
   static TypeEntry Subtract(const TypeEntry& lhs, const TypeEntry& rhs) {
     if (lhs.IsConstant() && lhs.constant().IsNumber() &&
         rhs.IsConstant() && rhs.constant().IsNumber()) {
-      return TypeEntry(JSVal(lhs.constant().number() - rhs.constant().number()));
+      return TypeEntry(
+          JSVal(lhs.constant().number() - rhs.constant().number()));
     }
     return TypeEntry(Type::Number());
   }
@@ -205,7 +211,8 @@ class TypeEntry {
   static TypeEntry Multiply(const TypeEntry& lhs, const TypeEntry& rhs) {
     if (lhs.IsConstant() && lhs.constant().IsNumber() &&
         rhs.IsConstant() && rhs.constant().IsNumber()) {
-      return TypeEntry(JSVal(lhs.constant().number() * rhs.constant().number()));
+      return TypeEntry(
+          JSVal(lhs.constant().number() * rhs.constant().number()));
     }
     return TypeEntry(Type::Number());
   }
@@ -213,7 +220,8 @@ class TypeEntry {
   static TypeEntry Divide(const TypeEntry& lhs, const TypeEntry& rhs) {
     if (lhs.IsConstant() && lhs.constant().IsNumber() &&
         rhs.IsConstant() && rhs.constant().IsNumber()) {
-      return TypeEntry(JSVal(lhs.constant().number() / rhs.constant().number()));
+      return TypeEntry(
+          JSVal(lhs.constant().number() / rhs.constant().number()));
     }
     return TypeEntry(Type::Number());
   }
