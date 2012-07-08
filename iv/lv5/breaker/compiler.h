@@ -1540,7 +1540,7 @@ class Compiler {
 
     LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(asm_->rsi, asm_->rcx);
+    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     asm_->mov(asm_->rcx, core::BitCast<uint64_t>(instr));
 
@@ -1575,7 +1575,7 @@ class Compiler {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(asm_->rsi, asm_->rcx);
+    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
 
     // NOTE
@@ -1600,7 +1600,7 @@ class Compiler {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(asm_->rsi, asm_->rcx);
+    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::DELETE_PROP<true>);
@@ -1619,7 +1619,7 @@ class Compiler {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(asm_->rsi, asm_->rcx);
+    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_PROP<1, 1, true>);
@@ -1638,7 +1638,7 @@ class Compiler {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(asm_->rsi, asm_->rcx);
+    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_PROP<-1, 1, true>);
@@ -1657,7 +1657,7 @@ class Compiler {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(asm_->rsi, asm_->rcx);
+    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_PROP<1, 0, true>);
@@ -1676,7 +1676,7 @@ class Compiler {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     LoadVR(asm_->rsi, base);
     asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(asm_->rsi, asm_->rcx);
+    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_PROP<-1, 0, true>);
@@ -1792,7 +1792,7 @@ class Compiler {
     const register_t element = Reg(instr[1].i16[2]);
     LoadVRs(asm_->rsi, base, asm_->rdx, element);
     asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(asm_->rsi, asm_->rcx);
+    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
     asm_->Call(&stub::LOAD_ELEMENT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
@@ -1806,7 +1806,7 @@ class Compiler {
     const register_t src = Reg(instr[1].i16[2]);
     LoadVRs(asm_->rsi, base, asm_->rdx, element);
     asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(asm_->rsi, asm_->rcx);
+    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
     LoadVR(asm_->rcx, src);
     if (code_->strict()) {
       asm_->Call(&stub::STORE_ELEMENT<true>);
@@ -1822,7 +1822,7 @@ class Compiler {
     const register_t element = Reg(instr[1].i16[2]);
     LoadVRs(asm_->rsi, base, asm_->rdx, element);
     asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(asm_->rsi, asm_->rcx);
+    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
     if (code_->strict()) {
       asm_->Call(&stub::DELETE_ELEMENT<true>);
     } else {
@@ -1840,7 +1840,7 @@ class Compiler {
     const register_t element = Reg(instr[1].i16[2]);
     LoadVRs(asm_->rsi, base, asm_->rdx, element);
     asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(asm_->rsi, asm_->rcx);
+    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_ELEMENT<1, 1, true>);
     } else {
@@ -1858,7 +1858,7 @@ class Compiler {
     const register_t element = Reg(instr[1].i16[2]);
     LoadVRs(asm_->rsi, base, asm_->rdx, element);
     asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(asm_->rsi, asm_->rcx);
+    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_ELEMENT<-1, 1, true>);
     } else {
@@ -1876,7 +1876,7 @@ class Compiler {
     const register_t element = Reg(instr[1].i16[2]);
     LoadVRs(asm_->rsi, base, asm_->rdx, element);
     asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(asm_->rsi, asm_->rcx);
+    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_ELEMENT<1, 0, true>);
     } else {
@@ -1894,7 +1894,7 @@ class Compiler {
     const register_t element = Reg(instr[1].i16[2]);
     LoadVRs(asm_->rsi, base, asm_->rdx, element);
     asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(asm_->rsi, asm_->rcx);
+    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_ELEMENT<-1, 0, true>);
     } else {
@@ -2886,21 +2886,26 @@ class Compiler {
     asm_->je(label, type);
   }
 
-  void CheckObjectCoercible(const Xbyak::Reg64& target,
+  void CheckObjectCoercible(register_t reg,
+                            const Xbyak::Reg64& target,
                             const Xbyak::Reg64& tmp) {
+    const TypeEntry type = type_record_.Get(reg);
+    if (type.type().IsNotUndefined() && type.type().IsNotNull()) {
+      // no check
+      return;
+    }
+
     // (1000)2 = 8
     // Null is (0010)2 and Undefined is (1010)2
     // ~UINT64_C(8) value is -9
-    {
-      const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(tmp, target);
-      asm_->and(tmp, -9);
-      asm_->cmp(tmp, detail::jsval64::kNull);
-      asm_->jne(".EXIT");
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->Call(&stub::THROW_CHECK_OBJECT);
-      asm_->L(".EXIT");
-    }
+    const Assembler::LocalLabelScope scope(asm_);
+    asm_->mov(tmp, target);
+    asm_->and(tmp, -9);
+    asm_->cmp(tmp, detail::jsval64::kNull);
+    asm_->jne(".EXIT");
+    asm_->mov(asm_->rdi, asm_->r14);
+    asm_->Call(&stub::THROW_CHECK_OBJECT);
+    asm_->L(".EXIT");
   }
 
   void EmitConstantDest(const TypeEntry& entry, register_t dst) {

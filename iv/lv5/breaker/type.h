@@ -102,7 +102,23 @@ class Type {
 
   bool IsUndefined() const { return type_ == TYPE_UNDEFINED; }
 
+  bool MaybeUndefined() const {
+    return type_ & TYPE_UNDEFINED;
+  }
+
+  bool IsNotUndefined() const {
+    return !MaybeUndefined() && !IsUnknown();
+  }
+
   bool IsNull() const { return type_ == TYPE_NULL; }
+
+  bool MaybeNull() const {
+    return type_ & TYPE_NULL;
+  }
+
+  bool IsNotNull() const {
+    return !MaybeNull() && !IsUnknown();
+  }
 
   bool IsUnknown() const { return type_ == TYPE_UNKNOWN; }
 
@@ -141,7 +157,6 @@ class Type {
   static Type Arguments() {
     return Type(TYPE_ARGUMENTS);
   }
-
 
   static Type Function() {
     return Type(TYPE_FUNCTION);
