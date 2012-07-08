@@ -11,6 +11,7 @@ namespace lv5 {
 class JSPrimitive : public JSLayout {
  public:
   typedef JSLayout generic_type;
+  typedef JSPrimitive this_type;
 
   JSPrimitive() {
     set_undefined();
@@ -63,7 +64,7 @@ class JSPrimitive : public JSLayout {
     assert(IsNumber());
   }
 
-  JSPrimitive(JSLayout layout)  // NOLINT
+  explicit JSPrimitive(JSLayout layout)
     : JSLayout(layout) {
     assert(IsPrimitive() || IsNullOrUndefined() || IsEmpty());
   }
@@ -76,6 +77,26 @@ class JSPrimitive : public JSLayout {
   double ToNumber(Context* ctx) const {
     Error::Dummy dummy;
     return generic_type::ToNumber(ctx, &dummy);
+  }
+
+  static bool IsConversible(JSVal value) {
+    return value.IsNullOrUndefined() || value.IsPrimitive() || value.IsEmpty();
+  }
+
+  template<bool LeftFirst>
+  static CompareResult Compare(Context* ctx, this_type lhs, this_type rhs) {
+    Error::Dummy dummy;
+    return JSVal::Compare<LeftFirst>(ctx, lhs, rhs, &dummy);
+  }
+
+  static bool AbstractEqual(Context* ctx, this_type lhs, this_type rhs) {
+    Error::Dummy dummy;
+    return JSVal::AbstractEqual(ctx, lhs, rhs, &dummy);
+  }
+
+ private:
+  operator JSVal() {
+    return *this;
   }
 };
 
