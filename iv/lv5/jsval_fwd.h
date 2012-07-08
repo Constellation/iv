@@ -221,8 +221,6 @@ class JSLayout {
 
   inline bool IsCell() const;
 
-  inline radio::Cell* cell() const;
-
   inline bool IsString() const;
 
   inline bool IsObject() const;
@@ -248,6 +246,8 @@ class JSLayout {
   inline int32_t int32() const;
 
   inline double number() const;
+
+  inline radio::Cell* cell() const;
 
   inline void set_value_int32(int32_t val);
 
