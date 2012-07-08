@@ -289,7 +289,7 @@ bool JSLayout::StrictEqual(this_type lhs, this_type rhs) {
   return lhs.value_.bytes_ == rhs.value_.bytes_;
 }
 
-inline std::size_t JSVal::Hasher::operator()(JSVal val) const {
+inline std::size_t JSLayout::Hasher::operator()(JSLayout val) const {
   if (val.IsInt32()) {
     return std::hash<int32_t>()(val.int32());
   }
@@ -572,7 +572,7 @@ bool JSLayout::StrictEqual(this_type lhs, this_type rhs) {
   return false;
 }
 
-inline std::size_t JSVal::Hasher::operator()(JSVal val) const {
+inline std::size_t JSLayout::Hasher::operator()(JSLayout val) const {
   if (val.IsInt32()) {
     return std::hash<int32_t>()(val.int32());
   }

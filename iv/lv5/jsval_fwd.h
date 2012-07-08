@@ -171,6 +171,25 @@ class JSLayout {
       core::Size::kPointerSize,
       core::kLittleEndian> value_type;
 
+  // JSLayout Hasher is used by SameValue algorithm
+  struct Hasher {
+    std::size_t operator()(this_type val) const;
+  };
+
+  friend struct Hasher;
+
+  struct SameValueEqualer {
+    bool operator()(this_type lhs, this_type rhs) const {
+      return this_type::SameValue(lhs, rhs);
+    }
+  };
+
+  struct StrictEqualer {
+    bool operator()(this_type lhs, this_type rhs) const {
+      return this_type::StrictEqual(lhs, rhs);
+    }
+  };
+
   inline JSString* TypeOf(Context* ctx) const;
 
   inline JSObject* GetPrimitiveProto(Context* ctx) const;
@@ -304,24 +323,6 @@ IV_STATIC_ASSERT(std::is_pod<JSLayout>::value);
 class JSVal : public JSLayout {
  public:
   typedef JSVal this_type;
-  // JSVal Hasher is used by SameValue algorithm
-  struct Hasher {
-    std::size_t operator()(JSVal val) const;
-  };
-
-  friend struct Hasher;
-
-  struct SameValueEqualer {
-    bool operator()(JSVal lhs, JSVal rhs) const {
-      return JSVal::SameValue(lhs, rhs);
-    }
-  };
-
-  struct StrictEqualer {
-    bool operator()(JSVal lhs, JSVal rhs) const {
-      return JSVal::StrictEqual(lhs, rhs);
-    }
-  };
 
   JSVal() {
     set_undefined();
