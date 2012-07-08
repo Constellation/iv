@@ -74,7 +74,7 @@ class JSNumberFormat : public JSObject {
 
   static JSNumberFormat* NewPlain(Context* ctx, Map* map) {
     JSNumberFormat* obj = new JSNumberFormat(ctx, map);
-    Error e;
+    Error::Dummy e;
     JSNumberFormat::Initialize(ctx, obj, JSUndefined, JSUndefined, &e);
     return obj;
   }

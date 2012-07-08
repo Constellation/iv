@@ -40,7 +40,7 @@ class Interactive {
   }
 
   int Run() {
-    Error e;
+    Error::Standard e;
     std::vector<char> buffer;
     while (true) {
       std::array<char, 1024> line;

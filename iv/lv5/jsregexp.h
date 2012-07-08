@@ -32,7 +32,7 @@ class JSRegExp : public JSObject {
   };
 
   JSString* source(Context* ctx) {
-    Error e;
+    Error::Dummy e;
     const JSVal source = Get(ctx, symbol::source(), &e);
     assert(!e);
     assert(source.IsString());

@@ -28,7 +28,7 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
   if (str->size() > 2) {
     MaybeJSONParser maybe(str);
     if (maybe.IsParsable()) {
-      Error json_parse_error;
+      Error::Dummy json_parse_error;
       const JSVal res = maybe.Parse(ctx, &json_parse_error);
       if (!json_parse_error) {
         return res;
@@ -75,7 +75,7 @@ inline JSVal DirectCallToEval(const Arguments& args, Error* e) {
   if (str->size() > 2 && !ctx->IsStrict()) {
     MaybeJSONParser maybe(str);
     if (maybe.IsParsable()) {
-      Error json_parse_error;
+      Error::Dummy json_parse_error;
       const JSVal res = maybe.Parse(ctx, &json_parse_error);
       if (!json_parse_error) {
         return res;

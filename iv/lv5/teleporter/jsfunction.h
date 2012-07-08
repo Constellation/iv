@@ -114,7 +114,7 @@ class JSCodeFunction : public JSFunction {
       function_(func),
       script_(script),
       env_(env) {
-    Error e;
+    Error::Dummy e;
     DefineOwnProperty(
         ctx, symbol::length(),
         DataDescriptor(

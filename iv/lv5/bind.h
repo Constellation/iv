@@ -200,7 +200,7 @@ class Object : public Scope {
 
  private:
   JSObject* obj_;
-  Error e_;
+  Error::Dummy e_;
 };
 
 } } }  // namespace iv::lv5::bind

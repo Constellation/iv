@@ -67,7 +67,7 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
   void DefineFunction(const Func& f,
                       const core::StringPiece& func_name,
                       std::size_t n) {
-    Error e;
+    Error::Dummy e;
     JSFunction* const func = JSNativeFunction::New(this, f, n);
     const Symbol name = context::Intern(this, func_name);
     global_env_->CreateMutableBinding(this, name, false, IV_LV5_ERROR_VOID(&e));
@@ -76,7 +76,7 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
   void DefineFunction(const core::StringPiece& func_name) {
-    Error e;
+    Error::Dummy e;
     const Symbol name = context::Intern(this, func_name);
     JSFunction* const f = JSInlinedFunction<func, n>::New(this, name);
     global_env_->CreateMutableBinding(this, name, false, IV_LV5_ERROR_VOID(&e));

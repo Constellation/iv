@@ -189,7 +189,7 @@ class Context : public iv::lv5::Context {
   Mode mode_;
   JSVal ret_;
   const BreakableStatement* target_;
-  Error error_;
+  Error::Standard error_;
   std::size_t generate_script_counter_;
   JSScript* current_script_;
   bool strict_;

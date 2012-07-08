@@ -18,80 +18,139 @@ class Error {
   typedef void (Error::*bool_type)() const;
   typedef std::vector<core::UString> Stack;
 
+  class Dummy;
+  class Standard;
+
   enum Code {
-    Normal = 0,
-    Eval,
-    Range,
-    Reference,
-    Syntax,
-    Type,
-    URI,
-    User
+    Normal     = 0,
+    Eval       = 1,
+    Range      = 2,
+    Reference  = 3,
+    Syntax     = 4,
+    Type       = 5,
+    URI        = 6,
+    User       = 7
   };
+  static const uint8_t kCodeMask = 7;
 
-  Error()
-    : code_(Normal),
-      value_(),
-      detail_(),
-      stack_() {
+  enum Kind {
+    TYPE_DUMMY = 0,
+    TYPE_STANDARD = 8
+  };
+  static const uint8_t kKindMask = 8;
+
+  virtual void Report(Code code, const core::StringPiece& str) {
+    set_code(code);
   }
 
-  void Report(Code code, const core::StringPiece& str) {
-    code_ = code;
-    detail_.assign(str.begin(), str.end());
+  virtual void Report(Code code, const core::UStringPiece& str) {
+    set_code(code);
   }
 
-  void Report(Code code, const core::UStringPiece& str) {
-    code_ = code;
-    detail_.assign(str.begin(), str.end());
+  virtual void Report(const JSVal& val) {
+    set_code(User);
   }
 
-  void Report(const JSVal& val) {
-    code_ = User;
-    value_ = val;
+  virtual void Clear() { set_code(Normal); }
+
+  Code code() const { return static_cast<Code>(data_ & kCodeMask); }
+
+  void set_code(Code c) {
+    data_ = ((data_ & (~kCodeMask)) | c);
   }
 
-  void Clear() {
-    code_ = Normal;
-    stack_.reset();
-  }
+  virtual core::UString detail() const { return core::UString(); }
 
-  Code code() const {
-    return code_;
-  }
-
-  const core::UString detail() const {
-    return detail_;
-  }
-
-  const JSVal& value() const {
-    return value_;
-  }
+  virtual JSVal value() const { return JSUndefined; }
 
   operator bool_type() const {
-    return code_ != Normal ?
+    return code() != Normal ?
         &Error::this_type_does_not_support_comparisons : 0;
   }
 
-  void set_stack(std::shared_ptr<Stack> stack) {
+  virtual void set_stack(std::shared_ptr<Stack> stack) { }
+
+  virtual std::shared_ptr<Stack> stack() const { return std::shared_ptr<Stack>(); }
+
+  virtual bool RequireMaterialize(Context* ctx) const { return false; }
+
+  virtual JSVal Detail(Context* ctx) { return JSUndefined; }
+
+  virtual void Dump(Context* ctx, FILE* out) { }
+
+ protected:
+  Error(Kind k) : data_() {
+    set_code(Normal);
+    set_kind(k);
+    assert(code() == Normal);
+    assert(kind() == k);
+  }
+
+  bool IsStandard() const { return data_ & kKindMask; }
+
+  bool IsDummy() const { return !IsStandard(); }
+
+  void set_kind(Kind kind) {
+    data_ = ((data_ & (~kKindMask)) | kind);
+  }
+
+  Kind kind() const { return static_cast<Kind>(data_ & kKindMask); }
+
+  void this_type_does_not_support_comparisons() const { }
+
+ private:
+  uint8_t data_;
+};
+
+class Error::Dummy : public Error {
+ public:
+  Dummy() : Error(TYPE_DUMMY) { }
+};
+
+class Error::Standard : public Error {
+ public:
+  Standard() : Error(TYPE_STANDARD) { }
+
+  virtual void Report(Code code, const core::StringPiece& str) {
+    Error::Report(code, str);
+    detail_.assign(str.begin(), str.end());
+  }
+
+  virtual void Report(Code code, const core::UStringPiece& str) {
+    Error::Report(code, str);
+    detail_.assign(str.begin(), str.end());
+  }
+
+  virtual void Report(const JSVal& val) {
+    Error::Report(val);
+    value_ = val;
+  }
+
+  virtual void Clear() {
+    Error::Clear();
+    stack_.reset();
+  }
+
+  virtual core::UString detail() const { return detail_; }
+
+  virtual JSVal value() const { return value_; }
+
+  virtual void set_stack(std::shared_ptr<Stack> stack) {
     stack_ = stack;
   }
 
-  std::shared_ptr<Stack> stack() const { return stack_; }
+  virtual std::shared_ptr<Stack> stack() const { return stack_; }
 
   // This function is implemented at jserror.h
-  bool RequireMaterialize(Context* ctx) const;
+  virtual bool RequireMaterialize(Context* ctx) const;
 
   // This function is implemented at jserror.h
-  JSVal Detail(Context* ctx);
+  virtual JSVal Detail(Context* ctx);
 
   // This function is implemented at jserror.h
-  void Dump(Context* ctx, FILE* out);
+  virtual void Dump(Context* ctx, FILE* out);
 
  private:
-  void this_type_does_not_support_comparisons() const { }
-
-  Code code_;
   JSVal value_;
   core::UString detail_;
   std::shared_ptr<Stack> stack_;

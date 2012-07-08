@@ -67,7 +67,7 @@ class JSVMFunction : public JSFunction {
     : JSFunction(ctx),
       code_(code),
       env_(env) {
-    Error e;
+    Error::Dummy e;
     DefineOwnProperty(
         ctx, symbol::length(),
         DataDescriptor(

@@ -158,7 +158,7 @@ class JSURIError : public JSError {
 
 // Error function implementations (error.h)
 
-inline bool Error::RequireMaterialize(Context* ctx) const {
+inline bool Error::Standard::RequireMaterialize(Context* ctx) const {
   if (code() == Error::User) {
     if (value().IsObject() && value().object()->IsClass<Class::Error>()) {
       JSError* error = static_cast<JSError*>(value().object());
@@ -172,7 +172,7 @@ inline bool Error::RequireMaterialize(Context* ctx) const {
   return !stack();
 }
 
-inline JSVal Error::Detail(Context* ctx) {
+inline JSVal Error::Standard::Detail(Context* ctx) {
   assert(code() != Error::Normal);
   JSError* error = NULL;
   switch (code()) {
@@ -245,7 +245,7 @@ inline JSVal Error::Detail(Context* ctx) {
   return error;
 }
 
-inline void Error::Dump(Context* ctx, FILE* out) {
+inline void Error::Standard::Dump(Context* ctx, FILE* out) {
   assert(*this);
   core::UString dump;
   if (stack()) {

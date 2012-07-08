@@ -38,7 +38,7 @@ iv::lv5::railgun::Code* Compile(iv::lv5::railgun::Context* ctx,
 #if defined(IV_ENABLE_JIT)
 int BreakerExecute(const iv::core::StringPiece& data,
                    const std::string& filename, bool statistics) {
-  iv::lv5::Error e;
+  iv::lv5::Error::Standard e;
   iv::lv5::breaker::Context ctx;
   std::shared_ptr<iv::core::FileSource>
       src(new iv::core::FileSource(data, filename));
@@ -66,7 +66,7 @@ int BreakerExecute(const iv::core::StringPiece& data,
 }
 
 int BreakerExecuteFiles(const std::vector<std::string>& filenames) {
-  iv::lv5::Error e;
+  iv::lv5::Error::Standard e;
   iv::lv5::breaker::Context ctx;
   ctx.DefineFunction<&iv::lv5::Print, 1>("print");
   ctx.DefineFunction<&iv::lv5::Log, 1>("log");
@@ -104,7 +104,7 @@ int BreakerExecuteFiles(const std::vector<std::string>& filenames) {
 
 int RailgunExecute(const iv::core::StringPiece& data,
                    const std::string& filename, bool statistics) {
-  iv::lv5::Error e;
+  iv::lv5::Error::Standard e;
   iv::lv5::railgun::Context ctx;
   std::shared_ptr<iv::core::FileSource>
       src(new iv::core::FileSource(data, filename));
@@ -133,7 +133,7 @@ int RailgunExecute(const iv::core::StringPiece& data,
 }
 
 int RailgunExecuteFiles(const std::vector<std::string>& filenames) {
-  iv::lv5::Error e;
+  iv::lv5::Error::Standard e;
   iv::lv5::railgun::Context ctx;
   ctx.DefineFunction<&iv::lv5::Print, 1>("print");
   ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
