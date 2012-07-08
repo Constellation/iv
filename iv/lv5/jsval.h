@@ -15,6 +15,7 @@
 #include <iv/lv5/jsbooleanobject.h>
 #include <iv/lv5/jsnumberobject.h>
 #include <iv/lv5/jsstringobject.h>
+#include <iv/lv5/jsprimitive.h>
 namespace iv {
 namespace lv5 {
 
