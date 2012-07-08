@@ -1910,7 +1910,14 @@ class Compiler {
     const register_t dst = Reg(instr[1].i32[0]);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_.Put(dst, TypeEntry(Type::Unknown()));
+
+    if (previous_instr() && previous_instr()->GetOP() == OP::CONSTRUCT) {
+      // [[Construct]] always returns object.
+      // This is ensured by ECMA262 spec.
+      type_record_.Put(dst, TypeEntry(Type::Object()));
+    } else {
+      type_record_.Put(dst, TypeEntry(Type::Unknown()));
+    }
   }
 
   // opcode | src
