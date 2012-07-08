@@ -1048,13 +1048,15 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   RegisterID EmitConstantLoad(uint32_t index, RegisterID dst = RegisterID()) {
     if (use_folded_registers()) {
-      return EmitMV(dst, registers_.Constant(index));
-    } else {
-      dst = Dest(dst);
-      thunkpool_.Spill(dst);
-      Emit<OP::LOAD_CONST>(Instruction::SW(dst, index));
-      return dst;
+      if ((FrameConstant<>::kConstantOffset + index) <= INT16_MAX) {
+        // use constant folded register
+        return EmitMV(dst, registers_.Constant(index));
+      }
     }
+    dst = Dest(dst);
+    thunkpool_.Spill(dst);
+    Emit<OP::LOAD_CONST>(Instruction::SW(dst, index));
+    return dst;
   }
 
   // accessors

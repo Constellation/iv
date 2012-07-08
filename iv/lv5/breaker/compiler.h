@@ -420,7 +420,7 @@ class Compiler {
           EmitPOSTFIX_DECREMENT_PROP(instr);
           break;
         case r::OP::LOAD_CONST:
-          UNREACHABLE();
+          EmitLOAD_CONST(instr);
           break;
         case r::OP::JUMP_BY:
           EmitJUMP_BY(instr);
@@ -786,6 +786,22 @@ class Compiler {
       LoadVR(asm_->rsi, jump);
       asm_->Call(&stub::THROW);
     }
+  }
+
+  // opcode | (dst | offset)
+  void EmitLOAD_CONST(const Instruction* instr) {
+    // extract constant bytes
+    // append immediate value to machine code
+    //
+    // This method is used when constant register is overflow
+    const register_t dst = Reg(instr[1].ssw.i16[0]);
+    const uint32_t offset = instr[1].ssw.u32;
+    const JSVal val = code_->constants()[offset];
+    asm_->mov(asm_->rax, Extract(val));
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    set_last_used_candidate(dst);
+
+    type_record_.Put(dst, TypeEntry(val));
   }
 
   // opcode | (dst | lhs | rhs)
