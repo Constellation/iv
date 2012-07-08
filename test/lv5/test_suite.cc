@@ -79,7 +79,7 @@ static void ExecuteInBreakerContext(lv5::breaker::Context* ctx,
       new core::FileSource(core::StringPiece(res.data(), res.size()), filename));
   lv5::railgun::Code* code = Compile(ctx, src, true);
   ASSERT_TRUE(code) << filename;
-  iv::lv5::breaker::Compile(code);
+  iv::lv5::breaker::Compile(ctx, code);
   iv::lv5::breaker::Run(ctx, code, e);
 }
 

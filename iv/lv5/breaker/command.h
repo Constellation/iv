@@ -41,7 +41,7 @@ static void Execute(const core::StringPiece& data,
   if (!code) {
     return;
   }
-  breaker::Compile(code);
+  breaker::Compile(&ctx, code);
 
   breaker::Run(&ctx, code, e);
 }

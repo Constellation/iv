@@ -1,6 +1,7 @@
 #ifndef IV_LV5_BREAKER_TYPE_H_
 #define IV_LV5_BREAKER_TYPE_H_
 #include <iv/lv5/jsval_fwd.h>
+#include <iv/lv5/breaker/context.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {
@@ -125,6 +126,8 @@ class Type {
   bool IsArray() const { return type_ == TYPE_ARRAY; }
 
   bool IsFunction() const { return type_ == TYPE_FUNCTION; }
+
+  bool IsObjectGeneric() const { return type_ == TYPE_OBJECT_GENERIC; }
 
   friend Type operator|(const Type& lhs, const Type& rhs) {
     return Type(lhs.type_ | rhs.type_);
@@ -463,6 +466,30 @@ class TypeEntry {
       return src;
     }
     return TypeEntry(Type::Number());
+  }
+
+  static TypeEntry TypeOf(Context* ctx, const TypeEntry& src) {
+    if (src.IsConstant()) {
+      return TypeEntry(src.constant().TypeOf(ctx));
+    }
+
+    if (src.type().IsString()) {
+      return TypeEntry(ctx->global_data()->string_string());
+    } else if (src.type().IsNumber()) {
+      return TypeEntry(ctx->global_data()->string_number());
+    } else if (src.type().IsNull()) {
+      return TypeEntry(ctx->global_data()->string_null());
+    } else if (src.type().IsUndefined()) {
+      return TypeEntry(ctx->global_data()->string_undefined());
+    } else if (src.type().IsBoolean()) {
+      return TypeEntry(ctx->global_data()->string_boolean());
+    } else if (src.type().IsFunction()) {
+      return TypeEntry(ctx->global_data()->string_function());
+    } else if (src.type().IsArray()) {
+      return TypeEntry(ctx->global_data()->string_object());
+    }
+
+    return TypeEntry(Type::String());
   }
 
  private:

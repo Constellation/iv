@@ -59,8 +59,9 @@ class Compiler {
 
   static const int32_t kInvalidUsedOffset = INT32_MIN;
 
-  explicit Compiler(railgun::Code* top)
-    : top_(top),
+  explicit Compiler(Context* ctx, railgun::Code* top)
+    : ctx_(ctx),
+      top_(top),
       code_(NULL),
       asm_(new Assembler),
       jump_map_(),
@@ -1493,12 +1494,21 @@ class Compiler {
   void EmitTYPEOF(const Instruction* instr) {
     const register_t dst = Reg(instr[1].i16[0]);
     const register_t src = Reg(instr[1].i16[1]);
+    const TypeEntry src_type_entry = type_record_.Get(src);
+    const TypeEntry dst_type_entry = TypeEntry::TypeOf(ctx_, src_type_entry);
+
+    if (dst_type_entry.IsConstant()) {
+      EmitConstantDest(dst_type_entry, dst);
+      type_record_.Put(dst, dst_type_entry);
+      return;
+    }
+
     LoadVR(asm_->rsi, src);
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->Call(&stub::TYPEOF);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_.Put(dst, TypeEntry(Type::String()));
+    type_record_.Put(dst, dst_type_entry);
   }
 
   // opcode | (obj | item) | (offset | merged)
@@ -2973,12 +2983,15 @@ class Compiler {
     set_last_used(kInvalidUsedOffset);
   }
 
+  Context* ctx() const { return ctx_; }
+
   void LookupHeapEnv(const Xbyak::Reg64& target, uint32_t nest) {
     for (uint32_t i = 0; i < nest; ++i) {
       asm_->mov(target, asm_->ptr[target + IV_OFFSETOF(JSEnv, outer_)]);
     }
   }
 
+  Context* ctx_;
   railgun::Code* top_;
   railgun::Code* code_;
   Assembler* asm_;
@@ -3002,8 +3015,8 @@ inline void CompileInternal(Compiler* compiler, railgun::Code* code) {
   }
 }
 
-inline void Compile(railgun::Code* code) {
-  Compiler compiler(code);
+inline void Compile(Context* ctx, railgun::Code* code) {
+  Compiler compiler(ctx, code);
   CompileInternal(&compiler, code);
 }
 
@@ -3013,7 +3026,7 @@ inline railgun::Code* Compile(
     const FunctionLiteral& global, railgun::JSScript* script) {
   railgun::Code* code = railgun::Compile(ctx, global, script, true);
   if (code) {
-    Compile(code);
+    Compile(ctx, code);
   }
   return code;
 }
@@ -3023,7 +3036,7 @@ inline railgun::Code* CompileFunction(
     const FunctionLiteral& func, railgun::JSScript* script) {
   railgun::Code* code = railgun::CompileFunction(ctx, func, script, true);
   if (code) {
-    Compile(code);
+    Compile(ctx, code);
   }
   return code;
 }
@@ -3033,7 +3046,7 @@ inline railgun::Code* CompileEval(
     const FunctionLiteral& eval, railgun::JSScript* script) {
   railgun::Code* code = railgun::CompileEval(ctx, eval, script, true);
   if (code) {
-    Compile(code);
+    Compile(ctx, code);
   }
   return code;
 }
@@ -3044,7 +3057,7 @@ inline railgun::Code* CompileIndirectEval(
     railgun::JSScript* script) {
   railgun::Code* code = railgun::CompileIndirectEval(ctx, eval, script, true);
   if (code) {
-    Compile(code);
+    Compile(ctx, code);
   }
   return code;
 }

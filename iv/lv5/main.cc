@@ -54,7 +54,7 @@ int BreakerExecute(const iv::core::StringPiece& data,
   ctx.DefineFunction<&iv::lv5::railgun::Dis, 1>("dis");
 
   ctx.DefineFunction<&iv::lv5::breaker::Run, 0>("run");
-  iv::lv5::breaker::Compile(code);
+  iv::lv5::breaker::Compile(&ctx, code);
   iv::lv5::breaker::Run(&ctx, code, &e);
 
   if (e) {
@@ -90,7 +90,7 @@ int BreakerExecuteFiles(const std::vector<std::string>& filenames) {
     if (!code) {
       return EXIT_FAILURE;
     }
-    iv::lv5::breaker::Compile(code);
+    iv::lv5::breaker::Compile(&ctx, code);
     iv::lv5::breaker::Run(&ctx, code, &e);
     if (e) {
       e.Dump(&ctx, stderr);

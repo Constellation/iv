@@ -29,7 +29,7 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
   railgun::JSScript* script =
       railgun::JSSourceScript<EvalSource>::New(ctx, src);
   railgun::Code* code = railgun::CompileFunction(ctx, *func, script, true);
-  Compile(code);
+  Compile(ctx, code);
   return JSFunction::New(ctx, code, ctx->global_env());
 }
 
@@ -71,7 +71,7 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
   railgun::JSScript* script =
       railgun::JSSourceScript<EvalSource>::New(ctx, src);
   railgun::Code* code = railgun::CompileIndirectEval(ctx, *eval, script, true);
-  Compile(code);
+  Compile(ctx, code);
   return breaker::RunEval(
       ctx,
       code,
@@ -122,7 +122,7 @@ inline JSVal DirectCallToEval(const Arguments& args, railgun::Frame* frame, Erro
     railgun::JSScript* script =
         railgun::JSSourceScript<EvalSource>::New(ctx, src);
     code = railgun::CompileEval(ctx, *eval, script, true);
-    breaker::Compile(code);
+    breaker::Compile(ctx, code);
     if (!code->strict()) {
       ctx->direct_eval_map()->Insert(str, code);
     }

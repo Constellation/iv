@@ -83,7 +83,7 @@ JSVal RunEval(Context* ctx,
 JSVal Run(Context* ctx, railgun::Code* code, Error* e);
 JSVal Execute(Context* ctx, Arguments* args,
               JSFunction* func, Error* e);
-void Compile(railgun::Code* code);
+void Compile(Context* ctx, railgun::Code* code);
 
 JSVal FunctionConstructor(const Arguments& args, Error* e);
 JSVal GlobalEval(const Arguments& args, Error* e);
