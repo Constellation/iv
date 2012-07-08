@@ -478,7 +478,7 @@ class TypeEntry {
     } else if (src.type().IsNumber()) {
       return TypeEntry(ctx->global_data()->string_number());
     } else if (src.type().IsNull()) {
-      return TypeEntry(ctx->global_data()->string_null());
+      return TypeEntry(ctx->global_data()->string_object());
     } else if (src.type().IsUndefined()) {
       return TypeEntry(ctx->global_data()->string_undefined());
     } else if (src.type().IsBoolean()) {
