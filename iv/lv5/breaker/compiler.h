@@ -2894,10 +2894,8 @@ class Compiler {
       // no check
       return;
     }
-    asm_->mov(tmp1, asm_->r15);
-    asm_->and(tmp1, target);
-    asm_->cmp(tmp1, asm_->r15);
-    asm_->jne(label, type);
+    asm_->cmp(target, asm_->r15);
+    asm_->jb(label, type);
   }
 
   void NullOrUndefinedGuard(const Xbyak::Reg64& target,

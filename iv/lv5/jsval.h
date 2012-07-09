@@ -85,8 +85,7 @@ bool JSLayout::IsBoolean() const {
 }
 
 bool JSLayout::IsInt32() const {
-  return (value_.bytes_ & detail::jsval64::kNumberMask)
-      == detail::jsval64::kNumberMask;
+  return value_.bytes_ >= detail::jsval64::kNumberMask;
 }
 
 bool JSLayout::IsNumber() const {
