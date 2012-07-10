@@ -850,8 +850,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_LT_SLOW");
-      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_LT_SLOW");
+      Int32Guard(lhs, asm_->rsi, ".BINARY_LT_SLOW");
+      Int32Guard(rhs, asm_->rdx, ".BINARY_LT_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
 
       if (fused != OP::NOP) {
@@ -901,8 +901,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_LTE_SLOW");
-      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_LTE_SLOW");
+      Int32Guard(lhs, asm_->rsi, ".BINARY_LTE_SLOW");
+      Int32Guard(rhs, asm_->rdx, ".BINARY_LTE_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
 
       if (fused != OP::NOP) {
@@ -952,8 +952,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_GT_SLOW");
-      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_GT_SLOW");
+      Int32Guard(lhs, asm_->rsi, ".BINARY_GT_SLOW");
+      Int32Guard(rhs, asm_->rdx, ".BINARY_GT_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
 
       if (fused != OP::NOP) {
@@ -1002,8 +1002,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_GTE_SLOW");
-      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_GTE_SLOW");
+      Int32Guard(lhs, asm_->rsi, ".BINARY_GTE_SLOW");
+      Int32Guard(rhs, asm_->rdx, ".BINARY_GTE_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
 
       if (fused != OP::NOP) {
@@ -1108,8 +1108,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_EQ_SLOW");
-      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_EQ_SLOW");
+      Int32Guard(lhs, asm_->rsi, ".BINARY_EQ_SLOW");
+      Int32Guard(rhs, asm_->rdx, ".BINARY_EQ_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
 
       if (fused != OP::NOP) {
@@ -1162,8 +1162,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rdi, lhs, asm_->rsi, rhs);
-      Int32Guard(lhs, asm_->rdi, asm_->rax, ".BINARY_STRICT_EQ_SLOW");
-      Int32Guard(rhs, asm_->rsi, asm_->rax, ".BINARY_STRICT_EQ_SLOW");
+      Int32Guard(lhs, asm_->rdi, ".BINARY_STRICT_EQ_SLOW");
+      Int32Guard(rhs, asm_->rsi, ".BINARY_STRICT_EQ_SLOW");
       asm_->cmp(asm_->esi, asm_->edi);
 
       if (fused != OP::NOP) {
@@ -1210,8 +1210,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      Int32Guard(lhs, asm_->rsi, asm_->rax, ".BINARY_NE_SLOW");
-      Int32Guard(rhs, asm_->rdx, asm_->rax, ".BINARY_NE_SLOW");
+      Int32Guard(lhs, asm_->rsi, ".BINARY_NE_SLOW");
+      Int32Guard(rhs, asm_->rdx, ".BINARY_NE_SLOW");
       asm_->cmp(asm_->esi, asm_->edx);
 
       if (fused != OP::NOP) {
@@ -1264,8 +1264,8 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVRs(asm_->rdi, lhs, asm_->rsi, rhs);
-      Int32Guard(lhs, asm_->rdi, asm_->rax, ".BINARY_STRICT_NE_SLOW");
-      Int32Guard(rhs, asm_->rsi, asm_->rax, ".BINARY_STRICT_NE_SLOW");
+      Int32Guard(lhs, asm_->rdi, ".BINARY_STRICT_NE_SLOW");
+      Int32Guard(rhs, asm_->rsi, ".BINARY_STRICT_NE_SLOW");
       asm_->cmp(asm_->esi, asm_->edi);
 
       if (fused != OP::NOP) {
@@ -1347,7 +1347,7 @@ class Compiler {
       // -0 should be double -0.0.
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(asm_->rax, src);
-      Int32Guard(src, asm_->rax, asm_->rsi, ".UNARY_NEGATIVE_SLOW");
+      Int32Guard(src, asm_->rax, ".UNARY_NEGATIVE_SLOW");
       asm_->test(asm_->eax, asm_->eax);
       asm_->jz(".UNARY_NEGATIVE_MINUS_ZERO");
       asm_->neg(asm_->eax);
@@ -1393,7 +1393,7 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(asm_->rsi, src);
-      Int32Guard(src, asm_->rsi, asm_->rax, ".UNARY_BIT_NOT_SLOW");
+      Int32Guard(src, asm_->rsi, ".UNARY_BIT_NOT_SLOW");
       asm_->not(asm_->esi);
       asm_->mov(asm_->eax, asm_->esi);
       asm_->or(asm_->rax, asm_->r15);
@@ -2442,7 +2442,7 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(asm_->rax, src);
-      Int32Guard(src, asm_->rax, asm_->rcx, ".INCREMENT_SLOW");
+      Int32Guard(src, asm_->rax, ".INCREMENT_SLOW");
       asm_->inc(asm_->eax);
       asm_->jo(".INCREMENT_OVERFLOW");
 
@@ -2473,7 +2473,7 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(asm_->rax, src);
-      Int32Guard(src, asm_->rax, asm_->rcx, ".DECREMENT_SLOW");
+      Int32Guard(src, asm_->rax, ".DECREMENT_SLOW");
       asm_->sub(asm_->eax, 1);
       asm_->jo(".DECREMENT_OVERFLOW");
 
@@ -2505,7 +2505,7 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(asm_->rsi, src);
-      Int32Guard(src, asm_->rsi, asm_->rax, ".INCREMENT_SLOW");
+      Int32Guard(src, asm_->rsi, ".INCREMENT_SLOW");
       asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rsi);
       asm_->inc(asm_->esi);
       asm_->jo(".INCREMENT_OVERFLOW");
@@ -2544,7 +2544,7 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(asm_->rsi, src);
-      Int32Guard(src, asm_->rsi, asm_->rax, ".DECREMENT_SLOW");
+      Int32Guard(src, asm_->rsi, ".DECREMENT_SLOW");
       asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rsi);
       asm_->sub(asm_->esi, 1);
       asm_->jo(".DECREMENT_OVERFLOW");
@@ -2887,7 +2887,6 @@ class Compiler {
 
   void Int32Guard(register_t reg,
                   const Xbyak::Reg64& target,
-                  const Xbyak::Reg64& tmp1,
                   const char* label,
                   Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
     if (type_record_.Get(reg).type().IsInt32()) {

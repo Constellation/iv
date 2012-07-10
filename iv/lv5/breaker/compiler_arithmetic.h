@@ -39,19 +39,19 @@ inline void Compiler::EmitBINARY_MULTIPLY(const Instruction* instr) {
   if (lhs_type_entry.IsConstantInt32()) {
     const int32_t lhs_value = lhs_type_entry.constant().int32();
     LoadVR(asm_->rax, rhs);
-    Int32Guard(rhs, asm_->rax, asm_->rcx, ".ARITHMETIC_GENERIC");
+    Int32Guard(rhs, asm_->rax, ".ARITHMETIC_GENERIC");
     asm_->imul(asm_->eax, asm_->eax, lhs_value);
     asm_->jo(".ARITHMETIC_OVERFLOW");
   } else if (rhs_type_entry.IsConstantInt32()) {
     const int32_t rhs_value = rhs_type_entry.constant().int32();
     LoadVR(asm_->rax, lhs);
-    Int32Guard(lhs, asm_->rax, asm_->rcx, ".ARITHMETIC_GENERIC");
+    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
     asm_->imul(asm_->eax, asm_->eax, rhs_value);
     asm_->jo(".ARITHMETIC_OVERFLOW");
   } else {
     LoadVRs(asm_->rax, lhs, asm_->rdx, rhs);
-    Int32Guard(lhs, asm_->rax, asm_->rcx, ".ARITHMETIC_GENERIC");
-    Int32Guard(rhs, asm_->rdx, asm_->rcx, ".ARITHMETIC_GENERIC");
+    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
+    Int32Guard(rhs, asm_->rdx, ".ARITHMETIC_GENERIC");
     asm_->imul(asm_->eax, asm_->edx);
     asm_->jo(".ARITHMETIC_OVERFLOW");
   }
@@ -117,19 +117,19 @@ inline void Compiler::EmitBINARY_ADD(const Instruction* instr) {
   if (lhs_type_entry.IsConstantInt32()) {
     const int32_t lhs_value = lhs_type_entry.constant().int32();
     LoadVR(asm_->rax, rhs);
-    Int32Guard(rhs, asm_->rax, asm_->rcx, ".ARITHMETIC_GENERIC");
+    Int32Guard(rhs, asm_->rax, ".ARITHMETIC_GENERIC");
     asm_->add(asm_->eax, lhs_value);
     asm_->jo(".ARITHMETIC_OVERFLOW");
   } else if (rhs_type_entry.IsConstantInt32()) {
     const int32_t rhs_value = rhs_type_entry.constant().int32();
     LoadVR(asm_->rax, lhs);
-    Int32Guard(lhs, asm_->rax, asm_->rcx, ".ARITHMETIC_GENERIC");
+    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
     asm_->add(asm_->eax, rhs_value);
     asm_->jo(".ARITHMETIC_OVERFLOW");
   } else {
     LoadVRs(asm_->rax, lhs, asm_->rdx, rhs);
-    Int32Guard(lhs, asm_->rax, asm_->rcx, ".ARITHMETIC_GENERIC");
-    Int32Guard(rhs, asm_->rdx, asm_->rcx, ".ARITHMETIC_GENERIC");
+    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
+    Int32Guard(rhs, asm_->rdx, ".ARITHMETIC_GENERIC");
     asm_->add(asm_->eax, asm_->edx);
     asm_->jo(".ARITHMETIC_OVERFLOW");
   }
@@ -210,7 +210,7 @@ inline void Compiler::EmitBINARY_MODULO(const Instruction* instr) {
     // RHS > 0
     const int32_t lhs_value = lhs_type_entry.constant().int32();
     LoadVR(asm_->rcx, rhs);
-    Int32Guard(rhs, asm_->rcx, asm_->rdx, ".ARITHMETIC_GENERIC");
+    Int32Guard(rhs, asm_->rcx, ".ARITHMETIC_GENERIC");
     asm_->cmp(asm_->ecx, 0);
     asm_->jle(".ARITHMETIC_GENERIC");
     asm_->xor(asm_->edx, asm_->edx);
@@ -219,15 +219,15 @@ inline void Compiler::EmitBINARY_MODULO(const Instruction* instr) {
     // LHS >= 0
     const int32_t rhs_value = rhs_type_entry.constant().int32();
     LoadVR(asm_->rax, lhs);
-    Int32Guard(lhs, asm_->rax, asm_->rcx, ".ARITHMETIC_GENERIC");
+    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
     asm_->cmp(asm_->eax, 0);
     asm_->jl(".ARITHMETIC_GENERIC");
     asm_->xor(asm_->edx, asm_->edx);
     asm_->mov(asm_->ecx, rhs_value);
   } else {
     LoadVRs(asm_->rax, lhs, asm_->rcx, rhs);
-    Int32Guard(lhs, asm_->rax, asm_->rdx, ".ARITHMETIC_GENERIC");
-    Int32Guard(rhs, asm_->rcx, asm_->rdx, ".ARITHMETIC_GENERIC");
+    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
+    Int32Guard(rhs, asm_->rcx, ".ARITHMETIC_GENERIC");
     asm_->cmp(asm_->eax, 0);
     asm_->jl(".ARITHMETIC_GENERIC");
     asm_->cmp(asm_->ecx, 0);
@@ -289,12 +289,12 @@ inline void Compiler::EmitBINARY_LSHIFT(const Instruction* instr) {
   if (rhs_type_entry.IsConstantInt32()) {
     const int32_t rhs_value = rhs_type_entry.constant().int32();
     LoadVR(asm_->rax, lhs);
-    Int32Guard(lhs, asm_->rax, asm_->rcx, ".ARITHMETIC_GENERIC");
+    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
     asm_->sal(asm_->eax, rhs_value & 0x1F);
   } else {
     LoadVRs(asm_->rax, lhs, asm_->rcx, rhs);
-    Int32Guard(lhs, asm_->rax, asm_->rdx, ".ARITHMETIC_GENERIC");
-    Int32Guard(rhs, asm_->rcx, asm_->rdx, ".ARITHMETIC_GENERIC");
+    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
+    Int32Guard(rhs, asm_->rcx, ".ARITHMETIC_GENERIC");
     asm_->sal(asm_->eax, asm_->cl);
   }
   // boxing
@@ -349,12 +349,12 @@ inline void Compiler::EmitBINARY_RSHIFT(const Instruction* instr) {
   if (rhs_type_entry.IsConstantInt32()) {
     const int32_t rhs_value = rhs_type_entry.constant().int32();
     LoadVR(asm_->rax, lhs);
-    Int32Guard(lhs, asm_->rax, asm_->rcx, ".ARITHMETIC_GENERIC");
+    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
     asm_->sar(asm_->eax, rhs_value & 0x1F);
   } else {
     LoadVRs(asm_->rax, lhs, asm_->rcx, rhs);
-    Int32Guard(lhs, asm_->rax, asm_->rdx, ".ARITHMETIC_GENERIC");
-    Int32Guard(rhs, asm_->rcx, asm_->rdx, ".ARITHMETIC_GENERIC");
+    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
+    Int32Guard(rhs, asm_->rcx, ".ARITHMETIC_GENERIC");
     asm_->sar(asm_->eax, asm_->cl);
   }
   // boxing
@@ -408,12 +408,12 @@ inline void Compiler::EmitBINARY_RSHIFT_LOGICAL(const Instruction* instr) {
   if (rhs_type_entry.IsConstantInt32()) {
     const int32_t rhs_value = rhs_type_entry.constant().int32();
     LoadVR(asm_->rax, lhs);
-    Int32Guard(lhs, asm_->rax, asm_->rcx, ".ARITHMETIC_GENERIC");
+    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
     asm_->shr(asm_->eax, rhs_value & 0x1F);
   } else {
     LoadVRs(asm_->rax, lhs, asm_->rcx, rhs);
-    Int32Guard(lhs, asm_->rax, asm_->rdx, ".ARITHMETIC_GENERIC");
-    Int32Guard(rhs, asm_->rcx, asm_->rdx, ".ARITHMETIC_GENERIC");
+    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
+    Int32Guard(rhs, asm_->rcx, ".ARITHMETIC_GENERIC");
     asm_->shr(asm_->eax, asm_->cl);
   }
   asm_->cmp(asm_->eax, 0);
@@ -477,13 +477,13 @@ inline void Compiler::EmitBINARY_SUBTRACT(const Instruction* instr) {
   if (rhs_type_entry.IsConstantInt32()) {
     const int32_t rhs_value = rhs_type_entry.constant().int32();
     LoadVR(asm_->rax, lhs);
-    Int32Guard(lhs, asm_->rax, asm_->rcx, ".ARITHMETIC_GENERIC");
+    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
     asm_->sub(asm_->eax, rhs_value);
     asm_->jo(".ARITHMETIC_OVERFLOW");
   } else {
     LoadVRs(asm_->rax, lhs, asm_->rdx, rhs);
-    Int32Guard(lhs, asm_->rax, asm_->rcx, ".ARITHMETIC_GENERIC");
-    Int32Guard(rhs, asm_->rdx, asm_->rcx, ".ARITHMETIC_GENERIC");
+    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
+    Int32Guard(rhs, asm_->rdx, ".ARITHMETIC_GENERIC");
     asm_->sub(asm_->eax, asm_->edx);
     asm_->jo(".ARITHMETIC_OVERFLOW");
   }
@@ -575,17 +575,17 @@ inline void Compiler::EmitBINARY_BIT_AND(const Instruction* instr,
   if (lhs_type_entry.IsConstantInt32()) {
     const int32_t lhs_value = lhs_type_entry.constant().int32();
     LoadVR(asm_->rax, rhs);
-    Int32Guard(rhs, asm_->rax, asm_->rcx, ".ARITHMETIC_GENERIC");
+    Int32Guard(rhs, asm_->rax, ".ARITHMETIC_GENERIC");
     asm_->and(asm_->eax, lhs_value);
   } else if (rhs_type_entry.IsConstantInt32()) {
     const int32_t rhs_value = rhs_type_entry.constant().int32();
     LoadVR(asm_->rax, lhs);
-    Int32Guard(lhs, asm_->rax, asm_->rcx, ".ARITHMETIC_GENERIC");
+    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
     asm_->and(asm_->eax, rhs_value);
   } else {
     LoadVRs(asm_->rax, lhs, asm_->rdx, rhs);
-    Int32Guard(lhs, asm_->rax, asm_->rcx, ".ARITHMETIC_GENERIC");
-    Int32Guard(rhs, asm_->rdx, asm_->rcx, ".ARITHMETIC_GENERIC");
+    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
+    Int32Guard(rhs, asm_->rdx, ".ARITHMETIC_GENERIC");
     asm_->and(asm_->eax, asm_->edx);
   }
 
@@ -667,17 +667,17 @@ inline void Compiler::EmitBINARY_BIT_XOR(const Instruction* instr) {
   if (lhs_type_entry.IsConstantInt32()) {
     const int32_t lhs_value = lhs_type_entry.constant().int32();
     LoadVR(asm_->rax, rhs);
-    Int32Guard(rhs, asm_->rax, asm_->rcx, ".ARITHMETIC_GENERIC");
+    Int32Guard(rhs, asm_->rax, ".ARITHMETIC_GENERIC");
     asm_->xor(asm_->eax, lhs_value);
   } else if (rhs_type_entry.IsConstantInt32()) {
     const int32_t rhs_value = rhs_type_entry.constant().int32();
     LoadVR(asm_->rax, lhs);
-    Int32Guard(lhs, asm_->rax, asm_->rcx, ".ARITHMETIC_GENERIC");
+    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
     asm_->xor(asm_->eax, rhs_value);
   } else {
     LoadVRs(asm_->rax, lhs, asm_->rdx, rhs);
-    Int32Guard(lhs, asm_->rax, asm_->rcx, ".ARITHMETIC_GENERIC");
-    Int32Guard(rhs, asm_->rdx, asm_->rcx, ".ARITHMETIC_GENERIC");
+    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
+    Int32Guard(rhs, asm_->rdx, ".ARITHMETIC_GENERIC");
     asm_->xor(asm_->eax, asm_->edx);
   }
   // boxing
@@ -732,17 +732,17 @@ inline void Compiler::EmitBINARY_BIT_OR(const Instruction* instr) {
   if (lhs_type_entry.IsConstantInt32()) {
     const int32_t lhs_value = lhs_type_entry.constant().int32();
     LoadVR(asm_->rax, rhs);
-    Int32Guard(rhs, asm_->rax, asm_->rcx, ".ARITHMETIC_GENERIC");
+    Int32Guard(rhs, asm_->rax, ".ARITHMETIC_GENERIC");
     asm_->or(asm_->rax, lhs_value);
   } else if (rhs_type_entry.IsConstantInt32()) {
     const int32_t rhs_value = rhs_type_entry.constant().int32();
     LoadVR(asm_->rax, lhs);
-    Int32Guard(lhs, asm_->rax, asm_->rcx, ".ARITHMETIC_GENERIC");
+    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
     asm_->or(asm_->rax, rhs_value);
   } else {
     LoadVRs(asm_->rax, lhs, asm_->rdx, rhs);
-    Int32Guard(lhs, asm_->rax, asm_->rcx, ".ARITHMETIC_GENERIC");
-    Int32Guard(rhs, asm_->rdx, asm_->rcx, ".ARITHMETIC_GENERIC");
+    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
+    Int32Guard(rhs, asm_->rdx, ".ARITHMETIC_GENERIC");
     asm_->or(asm_->rax, asm_->rdx);
   }
   // boxing, but because of 'or', we can remove boxing or phase.
