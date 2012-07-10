@@ -463,7 +463,11 @@ void Context::InitString(const ClassSlot& func_cls,
       // prototype
       .def(symbol::prototype(), proto, ATTR::NONE)
       // section 15.5.3.2 String.fromCharCode([char0 [, char1[, ...]]])
-      .def<&runtime::StringFromCharCode, 1>("fromCharCode");
+      .def<&runtime::StringFromCharCode, 1>("fromCharCode")
+      // ES6 section 15.5.3.3 String.fromCodePoint(...codePoints)
+      .def<&runtime::StringFromCodePoint, 1>("fromCodePoint")
+      // ES6 section 15.5.3.4 String.raw(callSite, ...substitutions)
+      .def<&runtime::StringRaw, 1>("raw");
 
   bind::Object(this, proto)
       .cls(cls.cls)
@@ -478,6 +482,8 @@ void Context::InitString(const ClassSlot& func_cls,
       .def<&runtime::StringCharAt, 1>("charAt")
       // section 15.5.4.5 String.prototype.charCodeAt(pos)
       .def<&runtime::StringCharCodeAt, 1>("charCodeAt")
+      // ES6 section 15.5.4.6 String.prototype.codePointAt(pos)
+      .def<&runtime::StringCodePointAt, 1>("codePointAt")
       // section 15.5.4.6 String.prototype.concat([string1[, string2[, ...]]])
       .def<&runtime::StringConcat, 1>("concat")
       // section 15.5.4.7 String.prototype.indexOf(searchString, position)

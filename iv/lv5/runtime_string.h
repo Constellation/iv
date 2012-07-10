@@ -219,7 +219,7 @@ class StringReplacer : public Replacer<StringReplacer> {
     for (typename FiberType::const_iterator it = fiber->begin(),
          last = fiber->end();
          it != last; ++it) {
-start:
+start:  // NOLINT
       const uint16_t ch = *it;
       if (state == Replace::kNormal) {
         if (ch == '$') {
@@ -479,7 +479,61 @@ inline JSVal StringFromCharCode(const Arguments& args, Error* e) {
     const uint32_t ch = it->ToUInt32(ctx, IV_LV5_ERROR(e));
     builder.Append(ch);
   }
-  return builder.Build(args.ctx());
+  return builder.Build(ctx);
+}
+
+// ES6
+// section 15.5.3.3 String.fromCodePoint(...codePoints)
+inline JSVal StringFromCodePoint(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.fromCodePoint", args, e);
+  Context* const ctx = args.ctx();
+  JSStringBuilder builder;
+  for (Arguments::const_iterator it = args.begin(),
+       last = args.end(); it != last; ++it) {
+    const double nextCP = it->ToNumber(ctx, IV_LV5_ERROR(e));
+    // FIXME spec. SaveValue not. SameValue
+    if (!JSVal::SameNumber(nextCP, core::DoubleToInteger(nextCP)) ||
+        nextCP < 0 ||
+        nextCP > 0x10FFFF) {
+      e->Report(Error::Range, "code point out of range");
+      return JSEmpty;
+    }
+    const uint32_t cp = static_cast<uint32_t>(nextCP);
+    core::unicode::CodePointToUTF16(cp, std::back_inserter(builder));
+  }
+  return builder.Build(ctx);
+}
+
+// ES6
+// section 15.5.3.4 String.raw(callSite, ...substitutions)
+inline JSVal StringRaw(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.raw", args, e);
+  Context* const ctx = args.ctx();
+  JSObject* cooked = args.At(0).ToObject(ctx, IV_LV5_ERROR(e));
+  const JSVal raw_value = cooked->Get(ctx, symbol::raw(), IV_LV5_ERROR(e));
+  JSObject* raw = raw_value.ToObject(ctx, IV_LV5_ERROR(e));
+  const uint32_t literal_segments =
+      internal::GetLength(ctx, raw, IV_LV5_ERROR(e));
+  if (!literal_segments) {
+    return JSString::NewEmptyString(ctx);
+  }
+  JSStringBuilder elements;
+  uint32_t next_index = 0;
+  while (next_index < literal_segments) {
+    JSVal next =
+        raw->Get(ctx, symbol::MakeSymbolFromIndex(next_index), IV_LV5_ERROR(e));
+    const JSString* next_seg = next.ToString(ctx, IV_LV5_ERROR(e));
+    elements.AppendJSString(*next_seg);
+    ++next_index;
+    if (next_index == literal_segments) {
+      return elements.Build(ctx);
+    }
+    next = args.At(next_index);
+    const JSString* next_sub = next.ToString(ctx, IV_LV5_ERROR(e));
+    elements.AppendJSString(*next_sub);
+  }
+  UNREACHABLE();
+  return JSEmpty;  // makes compiler happy
 }
 
 static inline JSVal detail::StringToStringValueOfImpl(JSVal this_binding,
@@ -556,6 +610,38 @@ inline JSVal StringCharCodeAt(const Arguments& args, Error* e) {
     pos = static_cast<uint32_t>(position);
   }
   return JSVal::UInt16(str->At(pos));
+}
+
+// ES6
+// section 15.5.4.5 String.prototype.codePointAt(pos)
+inline JSVal StringCodePointAt(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype.charCodeAt", args, e);
+  const JSVal& val = args.this_binding();
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
+  JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
+  const JSVal arg1 = args.At(0);
+  uint32_t pos;
+  if (arg1.GetUInt32(&pos)) {
+    if (pos >= str->size()) {
+      return JSNaN;
+    }
+  } else {
+    const double position = arg1.ToInteger(args.ctx(), IV_LV5_ERROR(e));
+    if (position < 0 || position >= str->size()) {
+      return JSNaN;
+    }
+    pos = static_cast<uint32_t>(position);
+  }
+  const uint16_t first = str->At(pos);
+  if (first < 0xD800 || first > 0xDBFF || (pos + 1) == str->size()) {
+    return JSVal::UInt16(first);
+  }
+  const uint16_t second = str->At(pos + 1);
+  // FIXME typo. first isn't. second
+  if (second < 0xDC00 || second > 0xDFFF) {
+    return JSVal::UInt16(first);
+  }
+  return JSVal::UInt32(core::unicode::DecodeSurrogatePair(first, second));
 }
 
 // section 15.5.4.6 String.prototype.concat([string1[, string2[, ...]]])

@@ -25,7 +25,6 @@ lv5::railgun::Code* Compile(lv5::railgun::Context* ctx,
 }
 
 static const char* kSpecFileNames[] = {
-  "test/lv5/suite/spec/string-object-length.js",
   "test/lv5/suite/spec/error-constructing.js",
   "test/lv5/suite/spec/function-expression-name.js",
   "test/lv5/suite/spec/date-parse.js",
@@ -51,13 +50,17 @@ static const char* kSpecFileNames[] = {
   "test/lv5/suite/spec/number-isfinite.js",
   "test/lv5/suite/spec/number-isinteger.js",
   "test/lv5/suite/spec/number-toint.js",
-  "test/lv5/suite/spec/string-repeat.js",
-  "test/lv5/suite/spec/string-startswith.js",
-  "test/lv5/suite/spec/string-endswith.js",
-  "test/lv5/suite/spec/string-contains.js",
-  "test/lv5/suite/spec/string-reverse.js",
   "test/lv5/suite/spec/lhs-assignment.js",
-  "test/lv5/suite/spec/rhs-assignment.js"
+  "test/lv5/suite/spec/rhs-assignment.js",
+  "test/lv5/suite/spec/string/string-repeat.js",
+  "test/lv5/suite/spec/string/string-startswith.js",
+  "test/lv5/suite/spec/string/string-endswith.js",
+  "test/lv5/suite/spec/string/string-contains.js",
+  "test/lv5/suite/spec/string/string-object-length.js",
+  "test/lv5/suite/spec/string/string-reverse.js",
+  "test/lv5/suite/spec/string/string-fromcodepoint.js",
+  "test/lv5/suite/spec/string/string-raw.js",
+  "test/lv5/suite/spec/string/string-codepointat.js",
 };
 static const std::size_t kSpecFileNamesSize =
   sizeof(kSpecFileNames) / sizeof(const char*);
