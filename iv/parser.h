@@ -2363,7 +2363,11 @@ class Parser : private Noncopyable<> {
     error_.append(lexer_.filename());
     error_.append(":");
     UInt64ToString(line, std::back_inserter(error_));
-    error_.append(": SyntaxError: ");
+    if (!reference_error_) {
+      error_.append(": SyntaxError: ");
+    } else {
+      error_.append(": ReferenceError: ");
+    }
   }
 
   void ReportUnexpectedToken(Token::Type expected_token) {

@@ -228,8 +228,6 @@ void Context::Initialize() {
       .def<&runtime::ObjectIsExtensible, 1>("isExtensible")
       // section 15.2.3.14 Object.keys(O)
       .def<&runtime::ObjectKeys, 1>("keys")
-      // section 15.2.3.15 Object.isObject(O)
-      .def<&runtime::ObjectIsObject, 1>("isObject")
       // ES.next Object.is(x, y)
       .def<&runtime::ObjectIs, 2>("is");
 
@@ -465,7 +463,11 @@ void Context::InitString(const ClassSlot& func_cls,
       // prototype
       .def(symbol::prototype(), proto, ATTR::NONE)
       // section 15.5.3.2 String.fromCharCode([char0 [, char1[, ...]]])
-      .def<&runtime::StringFromCharCode, 1>("fromCharCode");
+      .def<&runtime::StringFromCharCode, 1>("fromCharCode")
+      // ES6 section 15.5.3.3 String.fromCodePoint(...codePoints)
+      .def<&runtime::StringFromCodePoint, 1>("fromCodePoint")
+      // ES6 section 15.5.3.4 String.raw(callSite, ...substitutions)
+      .def<&runtime::StringRaw, 1>("raw");
 
   bind::Object(this, proto)
       .cls(cls.cls)
@@ -480,6 +482,8 @@ void Context::InitString(const ClassSlot& func_cls,
       .def<&runtime::StringCharAt, 1>("charAt")
       // section 15.5.4.5 String.prototype.charCodeAt(pos)
       .def<&runtime::StringCharCodeAt, 1>("charCodeAt")
+      // ES6 section 15.5.4.6 String.prototype.codePointAt(pos)
+      .def<&runtime::StringCodePointAt, 1>("codePointAt")
       // section 15.5.4.6 String.prototype.concat([string1[, string2[, ...]]])
       .def<&runtime::StringConcat, 1>("concat")
       // section 15.5.4.7 String.prototype.indexOf(searchString, position)
@@ -519,9 +523,7 @@ void Context::InitString(const ClassSlot& func_cls,
       .def<&runtime::StringEndsWith, 1>("endsWith")
       // section 15.5.4.24 String.prototype.contains(searchString, [position])
       .def<&runtime::StringContains, 1>("contains")
-      // section 15.5.4.25 String.prototype.toArray()
-      .def<&runtime::StringToArray, 0>("toArray")
-      // section 15.5.4.26 String.prototype.reverse()
+      // section 15.5.4.25 String.prototype.reverse()
       .def<&runtime::StringReverse, 0>("reverse")
       // section B.2.3 String.prototype.substr(start, length)
       // this method is deprecated.

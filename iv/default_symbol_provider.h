@@ -40,7 +40,8 @@ namespace symbol {
     V(global)\
     V(source)\
     V(compare)\
-    V(join)
+    V(join)\
+    V(raw)
 
 class DefaultSymbolProvider : public core::Singleton<DefaultSymbolProvider> {
  public:

@@ -403,6 +403,22 @@ inline UTF8Error UTF8ToUCS4(UC8InputIter it, UC8InputIter last,
   return UNICODE_NO_ERROR;
 }
 
+template<typename UTF16OutputIter>
+inline UTF16OutputIter CodePointToUTF16(
+    uint32_t point, UTF16OutputIter result) {
+  // assume point is valid
+  assert(point <= 0x10FFFFUL);
+  if (point > 0xFFFF) {
+    // surrogate pair only ch > 0xFFFF
+    // because NextUCS4FromUTF8 checks code point is valid
+    *result++ = ToHighSurrogate(point);
+    *result++ = ToLowSurrogate(point);
+  } else {
+    *result++ = static_cast<uint16_t>(point);
+  }
+  return result;
+}
+
 template<typename UC8InputIter, typename UTF16OutputIter>
 inline UTF8Error UTF8ToUTF16(UC8InputIter it,
                              UC8InputIter last, UTF16OutputIter result) {
@@ -412,16 +428,8 @@ inline UTF8Error UTF8ToUTF16(UC8InputIter it,
     it = NextUCS4FromUTF8(it, last, &res, &error);
     if (error != UNICODE_NO_ERROR) {
       return error;
-    } else {
-      if (res > 0xFFFF) {
-        // surrogate pair only ch > 0xFFFF
-        // because NextUCS4FromUTF8 checks code point is valid
-        *result++ = ToHighSurrogate(res);
-        *result++ = ToLowSurrogate(res);
-      } else {
-        *result++ = static_cast<uint16_t>(res);
-      }
     }
+    result = CodePointToUTF16(res, result);
   }
   return UNICODE_NO_ERROR;
 }
