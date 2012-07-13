@@ -67,5 +67,12 @@ TEST(IntrusiveListCase, IntrusiveListElementsTest) {
         EXPECT_EQ(i, it->value());
       }
     }
+
+    head.clear();
+    EXPECT_TRUE(head.empty());
+    for (Vector::const_iterator it = vec.begin(),
+         last = vec.end(); it != last; ++it) {
+      EXPECT_TRUE(!(*it)->IsLinked());
+    }
   }
 }

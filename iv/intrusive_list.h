@@ -37,13 +37,13 @@ class IntrusiveListBase {
   IntrusiveListBase(this_type* n, this_type* p) : next_(n), prev_(p) { }
 
   void Unlink() {
-    assert(!IsLinked());
+    assert(IsLinked());
     next_->prev_ = prev_;
     prev_->next_ = next_;
     next_ = prev_ = NULL;
   }
 
-  bool IsLinked() const { return next_ == NULL && prev_ == NULL; }
+  bool IsLinked() const { return !(next_ == NULL && prev_ == NULL); }
 
  private:
   this_type* pointer() { return this; }
@@ -208,8 +208,8 @@ class IntrusiveList : protected IntrusiveListBase<T> {
 
   iterator erase(const_iterator it) {
     iterator res(it.current());
-    it.current()->Unlink();
     ++res;
+    it.current()->Unlink();
     --size_;
     return res;
   }
@@ -218,7 +218,7 @@ class IntrusiveList : protected IntrusiveListBase<T> {
     while (it != last) {
       it = erase(it);
     }
-    return it;
+    return iterator(last.current());
   }
 
   reference front() { return *begin(); }
@@ -226,6 +226,10 @@ class IntrusiveList : protected IntrusiveListBase<T> {
 
   reference back() { return *(--end()); }
   const_reference back() const { return *(--end()); }
+
+  void clear() {
+    erase(begin(), end());
+  }
 
   size_type size() const { return size_; }
 
