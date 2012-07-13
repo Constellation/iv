@@ -18,6 +18,13 @@ namespace std { using namespace tr1; }
 
 #endif
 
+namespace iv {
+namespace core {
 
+template<typename T>
+struct identity {
+  typedef T type;
+};
 
+} }  // namespace iv::core
 #endif  // IV_DETAIL_TYPE_TRAITS_H_
