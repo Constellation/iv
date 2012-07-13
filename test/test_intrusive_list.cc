@@ -75,4 +75,39 @@ TEST(IntrusiveListCase, IntrusiveListElementsTest) {
       EXPECT_TRUE(!(*it)->IsLinked());
     }
   }
+
+  {
+    List head;
+    EXPECT_TRUE(head.empty());
+    for (Vector::const_iterator it = vec.begin(),
+         last = vec.end(); it != last; ++it) {
+      head.push_front(**it);
+    }
+    EXPECT_EQ(1000u, head.size());
+    EXPECT_EQ(999, head.front().value());
+    EXPECT_EQ(0, head.back().value());
+
+    {
+      int i = 999;
+      for (List::const_iterator it = head.cbegin(),
+           last = head.cend(); it != last; ++it, --i) {
+        EXPECT_EQ(i, it->value());
+      }
+    }
+
+    {
+      int i = 0;
+      for (List::const_reverse_iterator it = head.crbegin(),
+           last = head.crend(); it != last; ++it, ++i) {
+        EXPECT_EQ(i, it->value());
+      }
+    }
+
+    head.clear();
+    EXPECT_TRUE(head.empty());
+    for (Vector::const_iterator it = vec.begin(),
+         last = vec.end(); it != last; ++it) {
+      EXPECT_TRUE(!(*it)->IsLinked());
+    }
+  }
 }
