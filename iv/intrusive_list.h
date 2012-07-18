@@ -4,6 +4,7 @@
 #include <iterator>
 #include <iv/detail/type_traits.h>
 #include <iv/static_assert.h>
+#include <iv/noncopyable.h>
 namespace iv {
 namespace core {
 namespace intrusive_list_detail {
@@ -135,7 +136,7 @@ class IntrusiveListIterator
 };
 
 template<typename T>
-class IntrusiveList : protected IntrusiveListBase {
+class IntrusiveList : protected IntrusiveListBase, private Noncopyable<IntrusiveList<T> > {
  public:
   typedef IntrusiveListBase node_type;
   typedef IntrusiveListIterator<T, false> iterator;
