@@ -5,7 +5,7 @@
 #include <iv/intrusive_list.h>
 namespace {
 
-class A : public iv::core::IntrusiveListBase<A> {
+class A : public iv::core::IntrusiveListBase {
  public:
   explicit A(int v) : value_(v) { }
   int value() const { return value_; }

@@ -26,12 +26,11 @@ class IntrusiveListIterator;
 template<typename T>
 class IntrusiveList;
 
-template<typename T>
 class IntrusiveListBase {
  public:
-  typedef IntrusiveListBase<T> this_type;
+  typedef IntrusiveListBase this_type;
   template<typename U, bool IsConst> friend class IntrusiveListIterator;
-  friend class IntrusiveList<T>;
+  template<typename U> friend class IntrusiveList;
 
   IntrusiveListBase() : next_(NULL), prev_(NULL) { }
   IntrusiveListBase(this_type* n, this_type* p) : next_(n), prev_(p) { }
@@ -62,8 +61,8 @@ class IntrusiveListIterator
 
   typedef IntrusiveListIterator<T, IsConst> this_type;
   typedef std::iterator<std::bidirectional_iterator_tag, T> super_type;
-  typedef IntrusiveListBase<T> node_type;
-  typedef IntrusiveListBase<T>* cursor_type;
+  typedef IntrusiveListBase node_type;
+  typedef IntrusiveListBase* cursor_type;
 
   typedef T value_type;
   typedef typename intrusive_list_detail::Prefix<value_type*, IsConst>::type pointer;  // NOLINT
@@ -136,9 +135,9 @@ class IntrusiveListIterator
 };
 
 template<typename T>
-class IntrusiveList : protected IntrusiveListBase<T> {
+class IntrusiveList : protected IntrusiveListBase {
  public:
-  typedef IntrusiveListBase<T> node_type;
+  typedef IntrusiveListBase node_type;
   typedef IntrusiveListIterator<T, false> iterator;
   typedef IntrusiveListIterator<T, true> const_iterator;
   typedef std::reverse_iterator<iterator> reverse_iterator;
@@ -152,7 +151,7 @@ class IntrusiveList : protected IntrusiveListBase<T> {
   typedef std::size_t size_type;
   typedef std::ptrdiff_t difference_type;
 
-  IntrusiveList() : IntrusiveListBase<T>(this, this), size_(0) { }
+  IntrusiveList() : IntrusiveListBase(this, this), size_(0) { }
 
   iterator begin() { return iterator(this->next_); }
   const_iterator begin() const { return const_iterator(this->next_); }
