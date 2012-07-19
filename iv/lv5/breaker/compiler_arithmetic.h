@@ -443,6 +443,57 @@ inline void Compiler::EmitBINARY_RSHIFT_LOGICAL(const Instruction* instr) {
 }
 
 // opcode | (dst | lhs | rhs)
+inline void Compiler::EmitBINARY_LT(const Instruction* instr, OP::Type fused) {
+  const register_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
+  const register_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
+  {
+    const Assembler::LocalLabelScope scope(asm_);
+    LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
+    Int32Guard(lhs, asm_->rsi, ".BINARY_LT_SLOW");
+    Int32Guard(rhs, asm_->rdx, ".BINARY_LT_SLOW");
+    asm_->cmp(asm_->esi, asm_->edx);
+
+    if (fused != OP::NOP) {
+      // fused jump opcode
+      const std::string label = MakeLabel(instr);
+      if (fused == OP::IF_TRUE) {
+        asm_->jl(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+      } else {
+        asm_->jge(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+      }
+      asm_->jmp(".BINARY_LT_EXIT");
+
+      asm_->L(".BINARY_LT_SLOW");
+      asm_->mov(asm_->rdi, asm_->r14);
+      asm_->Call(&stub::BINARY_LT);
+      asm_->cmp(asm_->rax, Extract(JSTrue));
+      if (fused == OP::IF_TRUE) {
+        asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+      } else {
+        asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+      }
+
+      asm_->L(".BINARY_LT_EXIT");
+      return;
+    }
+
+    const register_t dst = Reg(instr[1].i16[0]);
+    asm_->setl(asm_->cl);
+    ConvertBooleanToJSVal(asm_->cl, asm_->rax);
+    asm_->jmp(".BINARY_LT_EXIT");
+
+    asm_->L(".BINARY_LT_SLOW");
+    asm_->mov(asm_->rdi, asm_->r14);
+    asm_->Call(&stub::BINARY_LT);
+
+    asm_->L(".BINARY_LT_EXIT");
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    set_last_used_candidate(dst);
+    type_record_.Put(dst, TypeEntry::LT(type_record_.Get(lhs), type_record_.Get(rhs)));
+  }
+}
+
+// opcode | (dst | lhs | rhs)
 inline void Compiler::EmitBINARY_SUBTRACT(const Instruction* instr) {
   const register_t dst = Reg(instr[1].i16[0]);
   const register_t lhs = Reg(instr[1].i16[1]);
