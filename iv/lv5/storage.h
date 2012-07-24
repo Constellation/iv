@@ -68,10 +68,12 @@ class Storage : core::Noncopyable<Storage<T> > {
   bool empty() const { return size_ == 0; }
   void resize(size_type n, value_type c = value_type()) {
     const size_type previous = size();
-    size_ = n;
-    if (capacity() < size()) {
-      capacity_ = core::NextCapacity(capacity());
-      data_ = new(GC)value_type[capacity()];
+    if (capacity() < n) {
+      capacity_ = core::NextCapacity(n);
+      pointer ptr = new(GC)value_type[capacity()];
+      std::copy(begin(), end(), ptr);
+      data_ = ptr;
+      size_ = n;
     }
     if (previous < size()) {
       std::fill(begin() + previous, begin() + size(), c);
@@ -80,7 +82,9 @@ class Storage : core::Noncopyable<Storage<T> > {
   void push_back(value_type c) {
     if (size() == capacity()) {
       capacity_ = core::NextCapacity(capacity());
-      data_ = new(GC)value_type[capacity()];
+      pointer ptr = new(GC)value_type[capacity()];
+      std::copy(begin(), end(), ptr);
+      data_ = ptr;
     }
     *(begin() + size()) = c;
     ++size_;
