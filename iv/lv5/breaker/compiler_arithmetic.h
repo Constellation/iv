@@ -671,7 +671,7 @@ inline void Compiler::EmitBINARY_GT(const Instruction* instr, OP::Type fused) {
   const TypeEntry lhs_type_entry = type_record_.Get(lhs);
   const TypeEntry rhs_type_entry = type_record_.Get(rhs);
   const TypeEntry dst_type_entry =
-      TypeEntry::LTE(lhs_type_entry, rhs_type_entry);
+      TypeEntry::GT(lhs_type_entry, rhs_type_entry);
 
   // dst is constant
   if (dst_type_entry.IsConstant()) {
@@ -780,7 +780,7 @@ inline void Compiler::EmitBINARY_GTE(const Instruction* instr, OP::Type fused) {
   const TypeEntry lhs_type_entry = type_record_.Get(lhs);
   const TypeEntry rhs_type_entry = type_record_.Get(rhs);
   const TypeEntry dst_type_entry =
-      TypeEntry::LTE(lhs_type_entry, rhs_type_entry);
+      TypeEntry::GTE(lhs_type_entry, rhs_type_entry);
 
   // dst is constant
   if (dst_type_entry.IsConstant()) {
