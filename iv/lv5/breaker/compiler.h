@@ -856,6 +856,9 @@ class Compiler {
   // opcode | (dst | lhs | rhs)
   void EmitBINARY_GTE(const Instruction* instr, OP::Type fused = OP::NOP);
 
+  template<typename Traits>
+  void EmitCompare(const Instruction* instr, OP::Type fused);
+
   // opcode | (dst | lhs | rhs)
   void EmitBINARY_INSTANCEOF(const Instruction* instr, OP::Type fused = OP::NOP) {
     const register_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);

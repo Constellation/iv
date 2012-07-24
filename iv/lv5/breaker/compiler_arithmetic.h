@@ -442,8 +442,77 @@ inline void Compiler::EmitBINARY_RSHIFT_LOGICAL(const Instruction* instr) {
   type_record_.Put(dst, dst_type_entry);
 }
 
-// opcode | (dst | lhs | rhs)
-inline void Compiler::EmitBINARY_LT(const Instruction* instr, OP::Type fused) {
+template<Rep (*STUB)(Frame* stack, JSVal lhs, JSVal rhs)>
+struct CompareTraits {
+  typedef Rep (*Stub)(Frame* stack, JSVal lhs, JSVal rhs);
+  static const Stub kStub;
+};
+
+template<Rep (*STUB)(Frame* stack, JSVal lhs, JSVal rhs)>
+const typename CompareTraits<STUB>::Stub CompareTraits<STUB>::kStub = STUB;
+
+struct LTTraits : public CompareTraits<stub::BINARY_LT> {
+  static TypeEntry TypeAnalysis(const TypeEntry& lhs, const TypeEntry& rhs) {
+    return TypeEntry::LT(lhs, rhs);
+  }
+  static void JumpIfTrue(Assembler* assembler, const char* label) {
+    assembler->jl(label, Xbyak::CodeGenerator::T_NEAR);
+  }
+  static void JumpIfFalse(Assembler* assembler, const char* label) {
+    assembler->jge(label, Xbyak::CodeGenerator::T_NEAR);
+  }
+  static void SetFlag(Assembler* assembler, const Xbyak::Reg8& reg) {
+    assembler->setl(reg);
+  }
+};
+
+struct LTETraits : public CompareTraits<stub::BINARY_LTE> {
+  static TypeEntry TypeAnalysis(const TypeEntry& lhs, const TypeEntry& rhs) {
+    return TypeEntry::LTE(lhs, rhs);
+  }
+  static void JumpIfTrue(Assembler* assembler, const char* label) {
+    assembler->jle(label, Xbyak::CodeGenerator::T_NEAR);
+  }
+  static void JumpIfFalse(Assembler* assembler, const char* label) {
+    assembler->jg(label, Xbyak::CodeGenerator::T_NEAR);
+  }
+  static void SetFlag(Assembler* assembler, const Xbyak::Reg8& reg) {
+    assembler->setle(reg);
+  }
+};
+
+struct GTTraits : public CompareTraits<stub::BINARY_GT> {
+  static TypeEntry TypeAnalysis(const TypeEntry& lhs, const TypeEntry& rhs) {
+    return TypeEntry::GT(lhs, rhs);
+  }
+  static void JumpIfTrue(Assembler* assembler, const char* label) {
+    assembler->jg(label, Xbyak::CodeGenerator::T_NEAR);
+  }
+  static void JumpIfFalse(Assembler* assembler, const char* label) {
+    assembler->jle(label, Xbyak::CodeGenerator::T_NEAR);
+  }
+  static void SetFlag(Assembler* assembler, const Xbyak::Reg8& reg) {
+    assembler->setg(reg);
+  }
+};
+
+struct GTETraits : public CompareTraits<stub::BINARY_GTE> {
+  static TypeEntry TypeAnalysis(const TypeEntry& lhs, const TypeEntry& rhs) {
+    return TypeEntry::GTE(lhs, rhs);
+  }
+  static void JumpIfTrue(Assembler* assembler, const char* label) {
+    assembler->jge(label, Xbyak::CodeGenerator::T_NEAR);
+  }
+  static void JumpIfFalse(Assembler* assembler, const char* label) {
+    assembler->jl(label, Xbyak::CodeGenerator::T_NEAR);
+  }
+  static void SetFlag(Assembler* assembler, const Xbyak::Reg8& reg) {
+    assembler->setge(reg);
+  }
+};
+
+template<typename Traits>
+inline void Compiler::EmitCompare(const Instruction* instr, OP::Type fused) {
   const register_t lhs =
       Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
   const register_t rhs =
@@ -453,7 +522,7 @@ inline void Compiler::EmitBINARY_LT(const Instruction* instr, OP::Type fused) {
   const TypeEntry lhs_type_entry = type_record_.Get(lhs);
   const TypeEntry rhs_type_entry = type_record_.Get(rhs);
   const TypeEntry dst_type_entry =
-      TypeEntry::LT(lhs_type_entry, rhs_type_entry);
+      Traits::TypeAnalysis(lhs_type_entry, rhs_type_entry);
 
   // dst is constant
   if (dst_type_entry.IsConstant()) {
@@ -476,7 +545,7 @@ inline void Compiler::EmitBINARY_LT(const Instruction* instr, OP::Type fused) {
       rhs_type_entry.type().IsNotInt32()) {
     LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->Call(&stub::BINARY_LT);
+    asm_->Call(Traits::kStub);
     if (fused != OP::NOP) {
       const std::string label = MakeLabel(instr);
       asm_->cmp(asm_->rax, Extract(JSTrue));
@@ -511,9 +580,9 @@ inline void Compiler::EmitBINARY_LT(const Instruction* instr, OP::Type fused) {
     // fused jump opcode
     const std::string label = MakeLabel(instr);
     if (fused == OP::IF_TRUE) {
-      asm_->jl(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+      Traits::JumpIfTrue(asm_, label.c_str());
     } else {
-      asm_->jge(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+      Traits::JumpIfFalse(asm_, label.c_str());
     }
     asm_->jmp(".ARITHMETIC_EXIT");
 
@@ -522,7 +591,7 @@ inline void Compiler::EmitBINARY_LT(const Instruction* instr, OP::Type fused) {
     asm_->L(".ARITHMETIC_GENERIC");
     LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->Call(&stub::BINARY_LT);
+    asm_->Call(Traits::kStub);
 
     asm_->cmp(asm_->rax, Extract(JSTrue));
     if (fused == OP::IF_TRUE) {
@@ -533,7 +602,7 @@ inline void Compiler::EmitBINARY_LT(const Instruction* instr, OP::Type fused) {
     asm_->L(".ARITHMETIC_EXIT");
   } else {
     // boxing
-    asm_->setl(asm_->cl);
+    Traits::SetFlag(asm_, asm_->cl);
     ConvertBooleanToJSVal(asm_->cl, asm_->rax);
     asm_->jmp(".ARITHMETIC_EXIT");
 
@@ -542,340 +611,33 @@ inline void Compiler::EmitBINARY_LT(const Instruction* instr, OP::Type fused) {
     asm_->L(".ARITHMETIC_GENERIC");
     LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->Call(&stub::BINARY_LT);
+    asm_->Call(Traits::kStub);
 
     asm_->L(".ARITHMETIC_EXIT");
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, dst_type_entry);
   }
+}
+
+// opcode | (dst | lhs | rhs)
+inline void Compiler::EmitBINARY_LT(const Instruction* instr, OP::Type fused) {
+  EmitCompare<LTTraits>(instr, fused);
 }
 
 // opcode | (dst | lhs | rhs)
 inline void Compiler::EmitBINARY_LTE(const Instruction* instr, OP::Type fused) {
-  const register_t lhs =
-      Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
-  const register_t rhs =
-      Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
-  const register_t dst = Reg(instr[1].i16[0]);
-
-  const TypeEntry lhs_type_entry = type_record_.Get(lhs);
-  const TypeEntry rhs_type_entry = type_record_.Get(rhs);
-  const TypeEntry dst_type_entry =
-      TypeEntry::LTE(lhs_type_entry, rhs_type_entry);
-
-  // dst is constant
-  if (dst_type_entry.IsConstant()) {
-    if (fused != OP::NOP) {
-      // fused jump opcode
-      const std::string label = MakeLabel(instr);
-      const bool result = dst_type_entry.constant().ToBoolean();
-      if ((fused == OP::IF_TRUE) == result) {
-        asm_->jmp(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-      }
-    } else {
-      EmitConstantDest(dst_type_entry, dst);
-      type_record_.Put(dst, dst_type_entry);
-    }
-    return;
-  }
-
-  // lhs or rhs are not int32_t
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32()) {
-    LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->Call(&stub::BINARY_LTE);
-    if (fused != OP::NOP) {
-      const std::string label = MakeLabel(instr);
-      asm_->cmp(asm_->rax, Extract(JSTrue));
-      if (fused == OP::IF_TRUE) {
-        asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-      } else {
-        asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-      }
-    } else {
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      set_last_used_candidate(dst);
-      type_record_.Put(dst, dst_type_entry);
-    }
-    return;
-  }
-
-  const Assembler::LocalLabelScope scope(asm_);
-
-  if (rhs_type_entry.IsConstantInt32()) {
-    const int32_t rhs_value = rhs_type_entry.constant().int32();
-    LoadVR(asm_->rax, lhs);
-    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
-    asm_->cmp(asm_->eax, rhs_value);
-  } else {
-    LoadVRs(asm_->rax, lhs, asm_->rdx, rhs);
-    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
-    Int32Guard(rhs, asm_->rdx, ".ARITHMETIC_GENERIC");
-    asm_->cmp(asm_->eax, asm_->edx);
-  }
-
-  if (fused != OP::NOP) {
-    // fused jump opcode
-    const std::string label = MakeLabel(instr);
-    if (fused == OP::IF_TRUE) {
-      asm_->jle(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-    } else {
-      asm_->jg(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-    }
-    asm_->jmp(".ARITHMETIC_EXIT");
-
-    kill_last_used();
-
-    asm_->L(".ARITHMETIC_GENERIC");
-    LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->Call(&stub::BINARY_LTE);
-
-    asm_->cmp(asm_->rax, Extract(JSTrue));
-    if (fused == OP::IF_TRUE) {
-      asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-    } else {
-      asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-    }
-    asm_->L(".ARITHMETIC_EXIT");
-  } else {
-    // boxing
-    asm_->setle(asm_->cl);
-    ConvertBooleanToJSVal(asm_->cl, asm_->rax);
-    asm_->jmp(".ARITHMETIC_EXIT");
-
-    kill_last_used();
-
-    asm_->L(".ARITHMETIC_GENERIC");
-    LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->Call(&stub::BINARY_LTE);
-
-    asm_->L(".ARITHMETIC_EXIT");
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-    set_last_used_candidate(dst);
-    type_record_.Put(dst, dst_type_entry);
-  }
+  EmitCompare<LTETraits>(instr, fused);
 }
 
 // opcode | (dst | lhs | rhs)
 inline void Compiler::EmitBINARY_GT(const Instruction* instr, OP::Type fused) {
-  const register_t lhs =
-      Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
-  const register_t rhs =
-      Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
-  const register_t dst = Reg(instr[1].i16[0]);
-
-  const TypeEntry lhs_type_entry = type_record_.Get(lhs);
-  const TypeEntry rhs_type_entry = type_record_.Get(rhs);
-  const TypeEntry dst_type_entry =
-      TypeEntry::GT(lhs_type_entry, rhs_type_entry);
-
-  // dst is constant
-  if (dst_type_entry.IsConstant()) {
-    if (fused != OP::NOP) {
-      // fused jump opcode
-      const std::string label = MakeLabel(instr);
-      const bool result = dst_type_entry.constant().ToBoolean();
-      if ((fused == OP::IF_TRUE) == result) {
-        asm_->jmp(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-      }
-    } else {
-      EmitConstantDest(dst_type_entry, dst);
-      type_record_.Put(dst, dst_type_entry);
-    }
-    return;
-  }
-
-  // lhs or rhs are not int32_t
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32()) {
-    LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->Call(&stub::BINARY_GT);
-    if (fused != OP::NOP) {
-      const std::string label = MakeLabel(instr);
-      asm_->cmp(asm_->rax, Extract(JSTrue));
-      if (fused == OP::IF_TRUE) {
-        asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-      } else {
-        asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-      }
-    } else {
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      set_last_used_candidate(dst);
-      type_record_.Put(dst, dst_type_entry);
-    }
-    return;
-  }
-
-  const Assembler::LocalLabelScope scope(asm_);
-
-  if (rhs_type_entry.IsConstantInt32()) {
-    const int32_t rhs_value = rhs_type_entry.constant().int32();
-    LoadVR(asm_->rax, lhs);
-    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
-    asm_->cmp(asm_->eax, rhs_value);
-  } else {
-    LoadVRs(asm_->rax, lhs, asm_->rdx, rhs);
-    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
-    Int32Guard(rhs, asm_->rdx, ".ARITHMETIC_GENERIC");
-    asm_->cmp(asm_->eax, asm_->edx);
-  }
-
-  if (fused != OP::NOP) {
-    // fused jump opcode
-    const std::string label = MakeLabel(instr);
-    if (fused == OP::IF_TRUE) {
-      asm_->jg(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-    } else {
-      asm_->jle(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-    }
-    asm_->jmp(".ARITHMETIC_EXIT");
-
-    kill_last_used();
-
-    asm_->L(".ARITHMETIC_GENERIC");
-    LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->Call(&stub::BINARY_GT);
-
-    asm_->cmp(asm_->rax, Extract(JSTrue));
-    if (fused == OP::IF_TRUE) {
-      asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-    } else {
-      asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-    }
-    asm_->L(".ARITHMETIC_EXIT");
-  } else {
-    // boxing
-    asm_->setg(asm_->cl);
-    ConvertBooleanToJSVal(asm_->cl, asm_->rax);
-    asm_->jmp(".ARITHMETIC_EXIT");
-
-    kill_last_used();
-
-    asm_->L(".ARITHMETIC_GENERIC");
-    LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->Call(&stub::BINARY_GT);
-
-    asm_->L(".ARITHMETIC_EXIT");
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-    set_last_used_candidate(dst);
-    type_record_.Put(dst, dst_type_entry);
-  }
+  EmitCompare<GTTraits>(instr, fused);
 }
 
 // opcode | (dst | lhs | rhs)
 inline void Compiler::EmitBINARY_GTE(const Instruction* instr, OP::Type fused) {
-  const register_t lhs =
-      Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
-  const register_t rhs =
-      Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
-  const register_t dst = Reg(instr[1].i16[0]);
-
-  const TypeEntry lhs_type_entry = type_record_.Get(lhs);
-  const TypeEntry rhs_type_entry = type_record_.Get(rhs);
-  const TypeEntry dst_type_entry =
-      TypeEntry::GTE(lhs_type_entry, rhs_type_entry);
-
-  // dst is constant
-  if (dst_type_entry.IsConstant()) {
-    if (fused != OP::NOP) {
-      // fused jump opcode
-      const std::string label = MakeLabel(instr);
-      const bool result = dst_type_entry.constant().ToBoolean();
-      if ((fused == OP::IF_TRUE) == result) {
-        asm_->jmp(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-      }
-    } else {
-      EmitConstantDest(dst_type_entry, dst);
-      type_record_.Put(dst, dst_type_entry);
-    }
-    return;
-  }
-
-  // lhs or rhs are not int32_t
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32()) {
-    LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->Call(&stub::BINARY_GTE);
-    if (fused != OP::NOP) {
-      const std::string label = MakeLabel(instr);
-      asm_->cmp(asm_->rax, Extract(JSTrue));
-      if (fused == OP::IF_TRUE) {
-        asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-      } else {
-        asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-      }
-    } else {
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      set_last_used_candidate(dst);
-      type_record_.Put(dst, dst_type_entry);
-    }
-    return;
-  }
-
-  const Assembler::LocalLabelScope scope(asm_);
-
-  if (rhs_type_entry.IsConstantInt32()) {
-    const int32_t rhs_value = rhs_type_entry.constant().int32();
-    LoadVR(asm_->rax, lhs);
-    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
-    asm_->cmp(asm_->eax, rhs_value);
-  } else {
-    LoadVRs(asm_->rax, lhs, asm_->rdx, rhs);
-    Int32Guard(lhs, asm_->rax, ".ARITHMETIC_GENERIC");
-    Int32Guard(rhs, asm_->rdx, ".ARITHMETIC_GENERIC");
-    asm_->cmp(asm_->eax, asm_->edx);
-  }
-
-  if (fused != OP::NOP) {
-    // fused jump opcode
-    const std::string label = MakeLabel(instr);
-    if (fused == OP::IF_TRUE) {
-      asm_->jge(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-    } else {
-      asm_->jl(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-    }
-    asm_->jmp(".ARITHMETIC_EXIT");
-
-    kill_last_used();
-
-    asm_->L(".ARITHMETIC_GENERIC");
-    LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->Call(&stub::BINARY_GTE);
-
-    asm_->cmp(asm_->rax, Extract(JSTrue));
-    if (fused == OP::IF_TRUE) {
-      asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-    } else {
-      asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-    }
-    asm_->L(".ARITHMETIC_EXIT");
-  } else {
-    // boxing
-    asm_->setge(asm_->cl);
-    ConvertBooleanToJSVal(asm_->cl, asm_->rax);
-    asm_->jmp(".ARITHMETIC_EXIT");
-
-    kill_last_used();
-
-    asm_->L(".ARITHMETIC_GENERIC");
-    LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->Call(&stub::BINARY_GTE);
-
-    asm_->L(".ARITHMETIC_EXIT");
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-    set_last_used_candidate(dst);
-    type_record_.Put(dst, dst_type_entry);
-  }
+  EmitCompare<GTETraits>(instr, fused);
 }
 
 // opcode | (dst | lhs | rhs)
