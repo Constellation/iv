@@ -16,6 +16,7 @@
 #include <iv/lv5/breaker/stub.h>
 #include <iv/lv5/breaker/jsfunction.h>
 #include <iv/lv5/breaker/type.h>
+#include <iv/lv5/breaker/mono_ic.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {
