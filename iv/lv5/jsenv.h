@@ -12,6 +12,7 @@
 #include <iv/lv5/context_utils.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsval_fwd.h>
+#include <iv/lv5/storage.h>
 #include <iv/lv5/radio/cell.h>
 #include <iv/lv5/radio/core_fwd.h>
 #include <iv/lv5/breaker/fwd.h>
@@ -125,7 +126,7 @@ class JSDeclEnv : public JSEnv {
   };
 
  public:
-  typedef GCVector<UpValue>::type Record;
+  typedef Storage<UpValue> Record;
   typedef GCHashMap<Symbol, uint32_t>::type Offsets;
 
   bool HasBinding(Context* ctx, Symbol name) const {
