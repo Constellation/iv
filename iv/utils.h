@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <iv/debug.h>
+#include <iv/arith.h>
 #include <iv/detail/cstdint.h>
 namespace iv {
 namespace core {
@@ -145,12 +146,9 @@ inline int CompareIterators(LIter lit, LIter llast, RIter rit, RIter rlast) {
 
 inline std::size_t NextCapacity(std::size_t capacity) {
   if (capacity < 256) {
-    if (capacity < 8) {
-      capacity = 8;
-    }
-    return capacity << 1;
+    return math::CLP2(capacity);
   }
-  return IV_ALIGNED_SIZE(capacity + 1, 256);
+  return IV_ALIGNED_SIZE(capacity, 256);
 }
 
 } }  // namespace iv::core

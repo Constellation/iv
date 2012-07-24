@@ -81,7 +81,7 @@ class Storage : core::Noncopyable<Storage<T> > {
   }
   void push_back(value_type c) {
     if (size() == capacity()) {
-      capacity_ = core::NextCapacity(capacity());
+      capacity_ = core::NextCapacity(size() + 1);
       pointer ptr = new(GC)value_type[capacity()];
       std::copy(begin(), end(), ptr);
       data_ = ptr;
