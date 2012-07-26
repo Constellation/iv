@@ -129,6 +129,10 @@ class Type {
 
   bool IsObjectGeneric() const { return type_ == TYPE_OBJECT_GENERIC; }
 
+  bool IsSomeObject() const {
+    return IsArray() || IsFunction() || IsObjectGeneric();
+  }
+
   friend Type operator|(const Type& lhs, const Type& rhs) {
     return Type(lhs.type_ | rhs.type_);
   }

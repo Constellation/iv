@@ -1020,22 +1020,6 @@ inline void StorePropImpl(Context* ctx,
 template<bool STRICT>
 inline Rep STORE_ELEMENT(Frame* stack, JSVal base, JSVal element, JSVal src) {
   Context* ctx = stack->ctx;
-  // array fast path
-  uint32_t index;
-  if (element.GetUInt32(&index)) {
-    if (base.IsObject() && base.object()->IsClass<Class::Array>()) {
-      JSArray* ary = static_cast<JSArray*>(base.object());
-      if (ary->CanSetIndexDirect(index)) {
-        ary->SetIndexDirect(index, src);
-      } else {
-        ary->JSArray::Put(
-            ctx,
-            symbol::MakeSymbolFromIndex(index),
-            src, STRICT, ERR);
-      }
-      return 0;
-    }
-  }
   const Symbol name = element.ToSymbol(ctx, ERR);
   StorePropImpl<STRICT>(ctx, base, name, src, ERR);
   return 0;

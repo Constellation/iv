@@ -1395,7 +1395,7 @@ class Compiler {
     if (symbol::IsArrayIndexSymbol(name)) {
       // generate Array index fast path
       const uint32_t index = symbol::GetIndexFromSymbol(name);
-      DenseArrayGuard(asm_->rsi, asm_->rdi, ".ARRAY_FAST_PATH_EXIT");
+      DenseArrayGuard(base, asm_->rsi, asm_->rdi, ".ARRAY_FAST_PATH_EXIT");
 
       // check index is not out of range
       const std::ptrdiff_t vector_offset =
@@ -1444,14 +1444,41 @@ class Compiler {
     const register_t base = Reg(instr[1].ssw.i16[0]);
     const register_t src = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
+
+    const Assembler::LocalLabelScope scope(asm_);
+
     LoadVR(asm_->rsi, base);
-    asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
 
     // NOTE
     // Do not break rax before this LoadVR
     LoadVR(asm_->rcx, src);
+
+    if (symbol::IsArrayIndexSymbol(name)) {
+      // generate Array index fast path
+      const uint32_t index = symbol::GetIndexFromSymbol(name);
+      DenseArrayGuard(base, asm_->rsi, asm_->rdi, ".ARRAY_FAST_PATH_EXIT");
+
+      // check index is not out of range
+      const std::ptrdiff_t vector_offset =
+          IV_CAST_OFFSET(radio::Cell*, JSArray*) + IV_OFFSETOF(JSArray, vector_);
+      const std::ptrdiff_t size_offset =
+          vector_offset + IV_OFFSETOF(JSArray::JSValVector, size_);
+      asm_->cmp(asm_->qword[asm_->rsi + size_offset], index);
+      asm_->jbe(".ARRAY_FAST_PATH_EXIT");
+
+      // load element from index directly
+      const std::ptrdiff_t data_offset =
+          vector_offset + IV_OFFSETOF(JSArray::JSValVector, data_);
+      asm_->mov(asm_->rax, asm_->qword[asm_->rsi + data_offset]);
+      asm_->mov(asm_->qword[asm_->rax + k64Size * index], asm_->rcx);
+      asm_->jmp(".EXIT");
+      asm_->L(".ARRAY_FAST_PATH_EXIT");
+    }
+
+    CheckObjectCoercible(base, asm_->rsi, asm_->rdx);
+
+    asm_->mov(asm_->rdi, asm_->r14);
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
     asm_->mov(asm_->r8, core::BitCast<uint64_t>(instr));
 
     Assembler::RepatchSite site;
@@ -1462,6 +1489,7 @@ class Compiler {
       site.Repatch(asm_, core::BitCast<uint64_t>(&stub::STORE_PROP<false>));
     }
     asm_->call(asm_->rax);
+    asm_->L(".EXIT");
   }
 
   // opcode | (dst | base | name) | nop | nop | nop
@@ -1675,7 +1703,7 @@ class Compiler {
       asm_->jl(".ARRAY_FAST_PATH_EXIT");
 
       // generate Array index fast path
-      DenseArrayGuard(asm_->rsi, asm_->rdi, ".ARRAY_FAST_PATH_EXIT");
+      DenseArrayGuard(base, asm_->rsi, asm_->rdi, ".ARRAY_FAST_PATH_EXIT");
 
       // check index is not out of range
       const std::ptrdiff_t vector_offset =
@@ -1717,15 +1745,50 @@ class Compiler {
     const register_t base = Reg(instr[1].i16[0]);
     const register_t element = Reg(instr[1].i16[1]);
     const register_t src = Reg(instr[1].i16[2]);
+
+    const Assembler::LocalLabelScope scope(asm_);
+
     LoadVRs(asm_->rsi, base, asm_->rdx, element);
-    asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
     LoadVR(asm_->rcx, src);
+
+    {
+      // check element is int32_t and element >= 0
+      Int32Guard(element, asm_->rdx, ".ARRAY_FAST_PATH_EXIT");
+      asm_->cmp(asm_->edx, 0);
+      asm_->jl(".ARRAY_FAST_PATH_EXIT");
+
+      // generate Array index fast path
+      DenseArrayGuard(base, asm_->rsi, asm_->rdi, ".ARRAY_FAST_PATH_EXIT");
+
+      // check index is not out of range
+      const std::ptrdiff_t vector_offset =
+          IV_CAST_OFFSET(radio::Cell*, JSArray*) + IV_OFFSETOF(JSArray, vector_);
+      const std::ptrdiff_t size_offset =
+          vector_offset + IV_OFFSETOF(JSArray::JSValVector, size_);
+      // TODO(Constellation): change Storage size to uint32_t
+      asm_->mov(asm_->edi, asm_->edx);
+      asm_->cmp(asm_->rdi, asm_->qword[asm_->rsi + size_offset]);
+      asm_->jae(".ARRAY_FAST_PATH_EXIT");
+
+      // load element from index directly
+      const std::ptrdiff_t data_offset =
+          vector_offset + IV_OFFSETOF(JSArray::JSValVector, data_);
+      asm_->mov(asm_->rax, asm_->qword[asm_->rsi + data_offset]);
+      asm_->lea(asm_->rax, asm_->ptr[asm_->rax + asm_->rdi * k64Size]);
+      asm_->mov(asm_->qword[asm_->rax], asm_->rcx);
+      asm_->jmp(".EXIT");
+      asm_->L(".ARRAY_FAST_PATH_EXIT");
+    }
+
+    CheckObjectCoercible(base, asm_->rsi, asm_->rdi);
+    asm_->mov(asm_->rdi, asm_->r14);
+
     if (code_->strict()) {
       asm_->Call(&stub::STORE_ELEMENT<true>);
     } else {
       asm_->Call(&stub::STORE_ELEMENT<false>);
     }
+    asm_->L(".EXIT");
   }
 
   // opcode | (dst | base | element)
@@ -2841,27 +2904,35 @@ class Compiler {
     asm_->L(".EXIT");
   }
 
-  void DenseArrayGuard(const Xbyak::Reg64& target,
+  void DenseArrayGuard(register_t base,
+                       const Xbyak::Reg64& target,
                        const Xbyak::Reg64& tmp,
                        const char* label,
                        Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
     IV_STATIC_ASSERT(core::kLittleEndian);
-    // check target is Cell
-    asm_->mov(tmp, detail::jsval64::kValueMask);
-    asm_->test(tmp, target);
-    asm_->jnz(label, type);
 
-    // target is guaranteed as cell
+    const TypeEntry type_entry = type_record_.Get(base);
     const Xbyak::Reg32 tmp32(tmp.getIdx());
-    LoadCellTag(target, tmp32);
-    asm_->cmp(tmp32, radio::OBJECT);
-    asm_->jne(label, type);
+
+    if (!type_entry.type().IsSomeObject()) {
+      // check target is Cell
+      asm_->mov(tmp, detail::jsval64::kValueMask);
+      asm_->test(tmp, target);
+      asm_->jnz(label, type);
+
+      // target is guaranteed as cell
+      LoadCellTag(target, tmp32);
+      asm_->cmp(tmp32, radio::OBJECT);
+      asm_->jne(label, type);
+    }
 
     // target is guaranteed as object
     // load Class tag from object and check it is Array
-    LoadClassTag(target, tmp, tmp32);
-    asm_->cmp(tmp32, Class::Array);
-    asm_->jne(label, type);
+    if (!type_entry.type().IsArray()) {
+      LoadClassTag(target, tmp, tmp32);
+      asm_->cmp(tmp32, Class::Array);
+      asm_->jne(label, type);
+    }
 
     // target is guaranteed as Array (pointer to Cell)
     // load dense field and check it is dense
