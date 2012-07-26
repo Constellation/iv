@@ -1661,13 +1661,55 @@ class Compiler {
     const register_t dst = Reg(instr[1].i16[0]);
     const register_t base = Reg(instr[1].i16[1]);
     const register_t element = Reg(instr[1].i16[2]);
+
+    const TypeEntry dst_entry = TypeEntry(Type::Unknown());
+
+    const Assembler::LocalLabelScope scope(asm_);
+
     LoadVRs(asm_->rsi, base, asm_->rdx, element);
+
+    {
+      // check element is int32_t and element >= 0
+      Int32Guard(element, asm_->rdx, ".ARRAY_FAST_PATH_EXIT");
+      asm_->cmp(asm_->edx, 0);
+      asm_->jl(".ARRAY_FAST_PATH_EXIT");
+
+      // generate Array index fast path
+      DenseArrayGuard(asm_->rsi, asm_->rdi, ".ARRAY_FAST_PATH_EXIT");
+
+      // check index is not out of range
+      const std::ptrdiff_t vector_offset =
+          IV_CAST_OFFSET(radio::Cell*, JSArray*) + IV_OFFSETOF(JSArray, vector_);
+      const std::ptrdiff_t size_offset =
+          vector_offset + IV_OFFSETOF(JSArray::JSValVector, size_);
+      // TODO(Constellation): change Storage size to uint32_t
+      asm_->mov(asm_->ecx, asm_->edx);
+      asm_->cmp(asm_->rcx, asm_->qword[asm_->rsi + size_offset]);
+      asm_->jae(".ARRAY_FAST_PATH_EXIT");
+
+      // load element from index directly
+      const std::ptrdiff_t data_offset =
+          vector_offset + IV_OFFSETOF(JSArray::JSValVector, data_);
+      asm_->mov(asm_->rax, asm_->qword[asm_->rsi + data_offset]);
+      asm_->lea(asm_->rax, asm_->ptr[asm_->rax + asm_->rcx * k64Size]);
+      asm_->mov(asm_->rax, asm_->qword[asm_->rax]);
+
+      // check element is not JSEmpty
+      NotEmptyGuard(asm_->rax, ".ARRAY_FAST_PATH_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      set_last_used_candidate(dst);
+      asm_->jmp(".EXIT");
+      asm_->L(".ARRAY_FAST_PATH_EXIT");
+    }
+
     asm_->mov(asm_->rdi, asm_->r14);
     CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
     asm_->Call(&stub::LOAD_ELEMENT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_.Put(dst, TypeEntry(Type::Unknown()));
+    asm_->L(".EXIT");
+
+    type_record_.Put(dst, dst_entry);
   }
 
   // opcode | (base | element | src)

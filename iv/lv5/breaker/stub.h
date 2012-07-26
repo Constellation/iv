@@ -968,19 +968,6 @@ inline JSVal LoadPropImpl(Context* ctx, JSVal base, Symbol name, Error* e) {
 
 inline Rep LOAD_ELEMENT(Frame* stack, JSVal base, JSVal element) {
   Context* ctx = stack->ctx;
-  // array fast path
-  uint32_t index;
-  if (element.GetUInt32(&index)) {
-    if (base.IsObject() && base.object()->IsClass<Class::Array>()) {
-      JSArray* ary = static_cast<JSArray*>(base.object());
-      if (ary->CanGetIndexDirect(index)) {
-        return Extract(ary->GetIndexDirect(index));
-      } else {
-        const JSVal res = ary->JSArray::Get(ctx, symbol::MakeSymbolFromIndex(index), ERR);
-        return Extract(res);
-      }
-    }
-  }
   const Symbol name = element.ToSymbol(ctx, ERR);
   const JSVal res = LoadPropImpl(ctx, base, name, ERR);
   return Extract(res);
