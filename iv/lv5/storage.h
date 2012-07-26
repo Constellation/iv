@@ -12,7 +12,7 @@ namespace iv {
 namespace lv5 {
 
 template<typename T>
-class Storage : core::Noncopyable<Storage<T> > {
+class Storage {
  public:
   typedef std::size_t size_type;
   typedef T value_type;
@@ -25,18 +25,31 @@ class Storage : core::Noncopyable<Storage<T> > {
   typedef const T* const_pointer;
   typedef std::reverse_iterator<iterator> reverse_iterator;
   typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+  typedef Storage<T> this_type;
 
-  Storage(std::size_t n)
+  Storage(std::size_t n, value_type v = value_type())
     : data_(NULL),
       size_(0),
       capacity_(0) {
-    resize(n);
+    resize(n, v);
   }
 
   Storage()
     : data_(NULL),
       size_(0),
       capacity_(0) {
+  }
+
+  Storage(const this_type& v)
+    : data_(NULL),
+      size_(0),
+      capacity_(0) {
+    assign(v.begin(), v.end());
+  }
+
+  this_type& operator=(const this_type& v) {
+    assign(v.begin(), v.end());
+    return *this;
   }
 
   pointer data() { return data_; }
@@ -61,38 +74,106 @@ class Storage : core::Noncopyable<Storage<T> > {
   const_reverse_iterator crend() const {
     return const_reverse_iterator(begin());
   }
-  reference operator[](size_type n) { return *(data() + n); }
-  const_reference operator[](size_type n) const { return *(data() + n); }
+  reference operator[](size_type n) {
+    assert(size() > n);
+    return *(data() + n);
+  }
+  const_reference operator[](size_type n) const {
+    assert(size() > n);
+    return *(data() + n);
+  }
   size_type size() const { return size_; }
   size_type capacity() const { return capacity_; }
   bool empty() const { return size_ == 0; }
   void resize(size_type n, value_type c = value_type()) {
     const size_type previous = size();
-    if (capacity() < n) {
-      capacity_ = core::NextCapacity(n);
-      pointer ptr = new(GC)value_type[capacity()];
-      std::copy(begin(), end(), ptr);
-      data_ = ptr;
-      size_ = n;
-    }
+    reserve(n);
+    size_ = n;
     if (previous < size()) {
       std::fill(begin() + previous, begin() + size(), c);
     }
   }
   void push_back(value_type c) {
-    if (size() == capacity()) {
-      capacity_ = core::NextCapacity(size() + 1);
+    reserve(size() + 1);
+    *(begin() + size()) = c;
+    ++size_;
+  }
+  void pop_back() {
+    --size_;
+  }
+  void clear() { size_ = 0; }
+  void reserve(size_type n) {
+    if (n > capacity()) {
+      capacity_ = core::NextCapacity(n);
       pointer ptr = new(GC)value_type[capacity()];
       std::copy(begin(), end(), ptr);
       data_ = ptr;
     }
-    *(begin() + size()) = c;
-    ++size_;
   }
-  void clear() { size_ = 0; }
+  size_type max_size() const { return std::numeric_limits<size_type>::max(); }
+  reference front() { return (*this)[0]; }
+  const_reference front() const { return (*this)[0]; }
+  reference back() { return (*this)[size() - 1]; }
+  const_reference back() const { return (*this)[size() - 1]; }
+  iterator insert(iterator position, const JSVal& x) {
+    const difference_type offset = position - begin();
+    reserve(size() + 1);
+    const iterator it(begin() + offset);
+    const iterator last(end());
+    size_ += 1;
+    std::copy_backward(it, last, end());
+    (*it) = x;
+    return it;
+  }
+  void insert(iterator position, size_type n, const JSVal& x) {
+    const difference_type offset = position - begin();
+    reserve(size() + n);
+    const iterator it(begin() + offset);
+    const iterator last(end());
+    size_ += n;
+    std::copy_backward(it, last, end());
+    std::fill(it, it + n, x);
+  }
+  template<typename InputIterator>
+  void insert(iterator position, InputIterator first, InputIterator last) {
+    const difference_type offset = position - begin();
+    const size_type n = std::distance(first, last);
+    reserve(size() + n);
+    const iterator it(begin() + offset);
+    const iterator olast(end());
+    size_ += n;
+    std::copy_backward(it, olast, end());
+    std::copy(first, last, it);
+  }
+  template<typename InputIterator>
+  void assign(InputIterator first, InputIterator last) {
+    clear();
+    const size_type n = std::distance(first, last);
+    reserve(n);
+    size_ = n;
+    std::copy(first, last, begin());
+  }
+  void assign(size_type n, const JSVal& u) {
+    clear();
+    reserve(n);
+    size_ = n;
+    std::fill(begin(), end(), u);
+  }
+  iterator erase(iterator position) {
+    const iterator it(position + 1);
+    std::copy(it, end(), position);
+    --size_;
+    return it;
+  }
+  iterator erase(iterator first, iterator last) {
+    const size_type n = std::distance(first, last);
+    std::copy(last, end(), first);
+    size_ -= n;
+    return last;
+  }
 
  private:
-  T* data_;
+  T* data_;  // This is GC target pointer
   size_type size_;
   size_type capacity_;
 };

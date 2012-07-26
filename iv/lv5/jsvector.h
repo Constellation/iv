@@ -26,7 +26,6 @@ class JSVector : private JSArray {
   typedef JSValVector::const_reference const_reference;
   typedef JSValVector::difference_type difference_type;
   typedef JSValVector::size_type size_type;
-  typedef JSValVector::allocator_type allocator_type;
 
   iterator begin() { return vector_.begin(); }
   const_iterator begin() const { return vector_.begin(); }
@@ -60,8 +59,8 @@ class JSVector : private JSArray {
 
   reference operator[](size_type n) { return vector_[n]; }
   const_reference operator[](size_type n) const { return vector_[n]; }
-  reference at(size_type n) { return vector_.at(n); }
-  const_reference at(size_type n) const { return vector_.at(n); }
+  //  reference at(size_type n) { return vector_.at(n); }
+  //  const_reference at(size_type n) const { return vector_.at(n); }
 
   reference front() { return vector_.front(); }
   const_reference front() const { return vector_.front(); }
