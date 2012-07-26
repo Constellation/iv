@@ -2422,13 +2422,13 @@ class Parser : private Noncopyable<> {
 
   template<typename LexType>
   inline Token::Type Next() {
-    return token_ = lexer_.Next<LexType>(strict_);
+    return token_ = lexer_.template Next<LexType>(strict_);
   }
   inline Token::Type Next() {
-    return token_ = lexer_.Next<IdentifyReservedWords>(strict_);
+    return token_ = lexer_.template Next<IdentifyReservedWords>(strict_);
   }
   inline Token::Type Next(bool strict) {
-    return token_ = lexer_.Next<IdentifyReservedWords>(strict);
+    return token_ = lexer_.template Next<IdentifyReservedWords>(strict);
   }
 
   inline Scope* scope() const {
