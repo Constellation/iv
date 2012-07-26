@@ -14,6 +14,7 @@
 #include <iv/lv5/map.h>
 #include <iv/lv5/slot.h>
 #include <iv/lv5/class.h>
+#include <iv/lv5/storage.h>
 #include <iv/lv5/context_utils.h>
 #include <iv/lv5/object_utils.h>
 #include <iv/lv5/adapter/select1st.h>
@@ -74,7 +75,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
   friend class breaker::Compiler;
   friend class JSVector;
   typedef GCHashMap<uint32_t, JSVal>::type SparseArray;
-  typedef JSVals JSValVector;
+  typedef Storage<JSVal> JSValVector;
 
   uint32_t GetLength() const { return length_.value(); }
 
