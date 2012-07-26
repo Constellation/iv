@@ -6,14 +6,17 @@
 #include <cstddef>
 #include <iterator>
 #include <algorithm>
-#include <iv/noncopyable.h>
 #include <gc/gc.h>
+#include <iv/noncopyable.h>
+#include <iv/lv5/breaker/fwd.h>
 namespace iv {
 namespace lv5 {
 
 template<typename T>
 class Storage {
  public:
+  friend class breaker::Compiler;
+
   typedef std::size_t size_type;
   typedef T value_type;
   typedef T* iterator;

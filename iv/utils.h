@@ -56,7 +56,7 @@ class AlignOfImpl {
 #define IV_OFFSETOF(type, member) (reinterpret_cast<ptrdiff_t>(&(reinterpret_cast<type*>(0x2000)->member)) - 0x2000) /* NOLINT */
 
 #define IV_CAST_OFFSET(from, to)\
-/* NOLINT */    0x2000 - reinterpret_cast<uintptr_t>(static_cast<to>((reinterpret_cast<from>(0x2000))))
+/* NOLINT */  (reinterpret_cast<uintptr_t>(static_cast<to>((reinterpret_cast<from>(0x2000)))) - 0x2000)
 
 template<class T>
 T LowestOneBit(T value) {

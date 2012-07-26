@@ -47,7 +47,7 @@ struct Class {
     NUM_OF_CLASS
   };
   const char* name;
-  JSClassType type;
+  uint32_t type;
 };
 
 struct ClassSlot {

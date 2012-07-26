@@ -10,6 +10,7 @@
 #ifndef IV_LV5_BREAKER_COMPILER_H_
 #define IV_LV5_BREAKER_COMPILER_H_
 #include <iv/debug.h>
+#include <iv/byteorder.h>
 #include <iv/lv5/breaker/fwd.h>
 #include <iv/lv5/railgun/railgun.h>
 #include <iv/lv5/breaker/assembler.h>
@@ -1378,7 +1379,46 @@ class Compiler {
 
     const TypeEntry& base_entry = type_record_.Get(base);
 
+    TypeEntry dst_entry = TypeEntry(Type::Unknown());
+    if (name == symbol::length()) {
+      if (base_entry.type().IsArray() ||
+          base_entry.type().IsFunction() ||
+          base_entry.type().IsString()) {
+        dst_entry = TypeEntry(Type::Number());
+      }
+    }
+
+    const Assembler::LocalLabelScope scope(asm_);
+
     LoadVR(asm_->rsi, base);
+
+    if (symbol::IsArrayIndexSymbol(name)) {
+      // generate Array index fast path
+      const uint32_t index = symbol::GetIndexFromSymbol(name);
+      DenseArrayGuard(asm_->rsi, asm_->rdi, ".ARRAY_FAST_PATH_EXIT");
+
+      // check index is not out of range
+      const std::ptrdiff_t vector_offset =
+          IV_CAST_OFFSET(radio::Cell*, JSArray*) + IV_OFFSETOF(JSArray, vector_);
+      const std::ptrdiff_t size_offset =
+          vector_offset + IV_OFFSETOF(JSArray::JSValVector, size_);
+      asm_->cmp(asm_->qword[asm_->rsi + size_offset], index);
+      asm_->jbe(".ARRAY_FAST_PATH_EXIT");
+
+      // load element from index directly
+      const std::ptrdiff_t data_offset =
+          vector_offset + IV_OFFSETOF(JSArray::JSValVector, data_);
+      asm_->mov(asm_->rax, asm_->qword[asm_->rsi + data_offset]);
+      asm_->mov(asm_->rax, asm_->qword[asm_->rax + k64Size * index]);
+
+      // check element is not JSEmpty
+      NotEmptyGuard(asm_->rax, ".ARRAY_FAST_PATH_EXIT");
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      set_last_used_candidate(dst);
+      asm_->jmp(".EXIT");
+      asm_->L(".ARRAY_FAST_PATH_EXIT");
+    }
+
     asm_->mov(asm_->rdi, asm_->r14);
     CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
@@ -1394,18 +1434,9 @@ class Compiler {
     asm_->call(asm_->rax);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
+    asm_->L(".EXIT");
 
-    if (name == symbol::length()) {
-      if (base_entry.type().IsArray() ||
-          base_entry.type().IsFunction() ||
-          base_entry.type().IsString()) {
-        type_record_.Put(dst, TypeEntry(Type::Number()));
-      } else {
-        type_record_.Put(dst, TypeEntry(Type::Unknown()));
-      }
-    } else {
-      type_record_.Put(dst, TypeEntry(Type::Unknown()));
-    }
+    type_record_.Put(dst, dst_entry);
   }
 
   // opcode | (base | src | index) | nop | nop
@@ -2142,13 +2173,12 @@ class Compiler {
       // after call of JS Function
       // rax is result value
       asm_->mov(asm_->rsi, detail::jsval64::kValueMask);
-      asm_->and(asm_->rsi, asm_->rax);
+      asm_->test(asm_->rsi, asm_->rax);
       asm_->jnz(".RESULT_IS_NOT_OBJECT");
 
-      // currently, rax target is garanteed as cell
-      asm_->mov(asm_->rcx, asm_->ptr[asm_->rax + IV_OFFSETOF(radio::Cell, next_address_of_freelist_or_storage_)]);  // NOLINT
-      asm_->shr(asm_->rcx, radio::Color::kOffset);
-      asm_->cmp(asm_->rcx, radio::OBJECT);
+      // currently, rax target is guaranteed as cell
+      LoadCellTag(asm_->rax, asm_->ecx);
+      asm_->cmp(asm_->ecx, radio::OBJECT);
       asm_->je(".CONSTRUCT_EXIT");
 
       // constructor call and return value is not object
@@ -2489,7 +2519,7 @@ class Compiler {
     const register_t enumerable = Reg(instr[1].jump.i16[1]);
     const std::string label = MakeLabel(instr);
     LoadVR(asm_->rsi, enumerable);
-    NullOrUndefinedGuard(asm_->rsi, asm_->rdi, label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+    NotNullOrUndefinedGuard(asm_->rsi, asm_->rdi, label.c_str(), Xbyak::CodeGenerator::T_NEAR);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->Call(&stub::FORIN_SETUP);
     asm_->mov(asm_->ptr[asm_->r13 + iterator * kJSValSize], asm_->rax);
@@ -2711,9 +2741,33 @@ class Compiler {
     asm_->jb(label, type);
   }
 
-  void NullOrUndefinedGuard(const Xbyak::Reg64& target,
-                            const Xbyak::Reg64& tmp, const char* label,
-                            Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
+  void LoadCellTag(const Xbyak::Reg64& target, const Xbyak::Reg32& out) {
+    // Because of Little Endianess
+    IV_STATIC_ASSERT(core::kLittleEndian);
+    asm_->mov(out, asm_->word[target + IV_OFFSETOF(radio::Cell, next_address_of_freelist_or_storage_)]);  // NOLINT
+    asm_->shr(out, radio::Color::kOffset);
+  }
+
+  void LoadClassTag(const Xbyak::Reg64& target,
+                    const Xbyak::Reg64& tmp,
+                    const Xbyak::Reg32& out) {
+    const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + IV_OFFSETOF(JSObject, cls_);
+    asm_->mov(tmp, asm_->qword[target + offset]);
+    asm_->mov(out, asm_->word[tmp + IV_OFFSETOF(Class, type)]);
+  }
+
+  void NotEmptyGuard(const Xbyak::Reg64& target,
+                     const char* label,
+                     Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
+    assert(Extract(JSEmpty) == 0);  // Because of null pointer
+    asm_->test(target, target);
+    asm_->jz(label, type);
+  }
+
+  void NotNullOrUndefinedGuard(const Xbyak::Reg64& target,
+                               const Xbyak::Reg64& tmp,
+                               const char* label,
+                               Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
     // (1000)2 = 8
     // Null is (0010)2 and Undefined is (1010)2
     // ~UINT64_C(8) value is -9
@@ -2743,6 +2797,35 @@ class Compiler {
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->Call(&stub::THROW_CHECK_OBJECT);
     asm_->L(".EXIT");
+  }
+
+  void DenseArrayGuard(const Xbyak::Reg64& target,
+                       const Xbyak::Reg64& tmp,
+                       const char* label,
+                       Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
+    IV_STATIC_ASSERT(core::kLittleEndian);
+    // check target is Cell
+    asm_->mov(tmp, detail::jsval64::kValueMask);
+    asm_->test(tmp, target);
+    asm_->jnz(label, type);
+
+    // target is guaranteed as cell
+    const Xbyak::Reg32 tmp32(tmp.getIdx());
+    LoadCellTag(target, tmp32);
+    asm_->cmp(tmp32, radio::OBJECT);
+    asm_->jne(label, type);
+
+    // target is guaranteed as object
+    // load Class tag from object and check it is Array
+    LoadClassTag(target, tmp, tmp32);
+    asm_->cmp(tmp32, Class::Array);
+    asm_->jne(label, type);
+
+    // target is guaranteed as Array (pointer to Cell)
+    // load dense field and check it is dense
+    const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSArray*) + IV_OFFSETOF(JSArray, dense_);
+    asm_->test(asm_->word[target + offset], 0xFFFF);
+    asm_->jz(label, type);
   }
 
   void EmitConstantDest(const TypeEntry& entry, register_t dst) {
