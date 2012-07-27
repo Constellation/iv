@@ -7,7 +7,7 @@ def Build():
   env = conf.Finish()
   env.Append(
       CPPPATH=[join(root_dir, 'test')],
-      CCFLAGS=["-Wno-variadic-macros"])
+      CCFLAGS=["-Wno-variadic-macros", "-fno-strict-aliasing"])
   return env.Program('cctest', [Glob('*.cc'), gtest])
 
 program = Build()
