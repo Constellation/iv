@@ -389,13 +389,6 @@ inline Rep TYPEOF_GLOBAL(Frame* stack, Symbol name) {
   }
 }
 
-template<bool STRICT>
-inline Rep STORE_HEAP(Frame* stack, JSEnv* env,
-                      uint32_t offset, JSVal src) {
-  static_cast<JSDeclEnv*>(env)->SetByOffset(offset, src, STRICT, ERR);
-  return 0;
-}
-
 template<int Target, std::size_t Returned, bool STRICT>
 inline Rep INCREMENT_HEAP(Frame* stack, JSEnv* env, uint32_t offset) {
   JSDeclEnv* decl = static_cast<JSDeclEnv*>(env);
