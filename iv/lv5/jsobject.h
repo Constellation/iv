@@ -8,6 +8,7 @@
 #include <iv/lv5/hint.h>
 #include <iv/lv5/symbol.h>
 #include <iv/lv5/class.h>
+#include <iv/lv5/storage.h>
 #include <iv/lv5/radio/cell.h>
 #include <iv/lv5/radio/core_fwd.h>
 #include <iv/lv5/breaker/fwd.h>
@@ -30,7 +31,6 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
     EXCLUDE_NOT_ENUMERABLE,
     INCLUDE_NOT_ENUMERABLE
   };
-  typedef GCHashMap<Symbol, PropertyDescriptor>::type Properties;
 
   virtual ~JSObject() { }
 
@@ -159,7 +159,7 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
   JSObject* prototype_;
   bool extensible_;
   Map* map_;
-  GCVector<PropertyDescriptor>::type slots_;
+  Storage<PropertyDescriptor> slots_;
 };
 
 } }  // namespace iv::lv5
