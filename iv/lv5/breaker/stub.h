@@ -271,8 +271,8 @@ inline Rep THROW(Frame* stack, JSVal src) {
   RAISE();
 }
 
-inline Rep THROW_CHECK_OBJECT(Frame* stack) {
-  stack->error->Report(Error::Type, "null or undefined has no properties");
+inline Rep THROW_WITH_TYPE_AND_MESSAGE(Frame* stack, Error::Code type, const char* message) {
+  stack->error->Report(type, message);
   RAISE();
 }
 
@@ -389,21 +389,6 @@ inline Rep TYPEOF_GLOBAL(Frame* stack, Symbol name) {
   }
 }
 
-template<bool STRICT>
-inline Rep LOAD_HEAP(Frame* stack,
-                     JSEnv* env,
-                     uint32_t offset) {
-  const JSVal res = static_cast<JSDeclEnv*>(env)->GetByOffset(offset, STRICT, ERR);
-  return Extract(res);
-}
-
-template<bool STRICT>
-inline Rep STORE_HEAP(Frame* stack, JSEnv* env,
-                      uint32_t offset, JSVal src) {
-  static_cast<JSDeclEnv*>(env)->SetByOffset(offset, src, STRICT, ERR);
-  return 0;
-}
-
 template<int Target, std::size_t Returned, bool STRICT>
 inline Rep INCREMENT_HEAP(Frame* stack, JSEnv* env, uint32_t offset) {
   JSDeclEnv* decl = static_cast<JSDeclEnv*>(env);
@@ -424,12 +409,6 @@ inline Rep INCREMENT_HEAP(Frame* stack, JSEnv* env, uint32_t offset) {
     decl->SetByOffset(offset, std::get<1>(results), STRICT, ERR);
     return Extract(JSVal(std::get<Returned>(results)));
   }
-}
-
-template<bool STRICT>
-inline Rep TYPEOF_HEAP(Frame* stack, JSEnv* env, uint32_t offset) {
-  const JSVal res = static_cast<JSDeclEnv*>(env)->GetByOffset(offset, STRICT, ERR);
-  return Extract(res.TypeOf(stack->ctx));
 }
 
 template<int Target, std::size_t Returned, bool STRICT>
@@ -805,7 +784,7 @@ inline Rep INSTANTIATE_VARIABLE_BINDING(Frame* stack, JSEnv* env, Symbol name) {
 }
 
 inline void INITIALIZE_HEAP_IMMUTABLE(JSEnv* env, JSVal src, uint32_t offset) {
-  static_cast<JSDeclEnv*>(env)->InitializeImmutable(offset, src);
+  static_cast<JSDeclEnv*>(env)->InitializeImmutableBinding(offset, src);
 }
 
 inline Rep INCREMENT(Frame* stack, JSVal src) {

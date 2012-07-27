@@ -29,7 +29,7 @@ inline RegisterID Compiler::EmitOptimizedLookup(OP::Type op,
       thunkpool_.Spill(dst);
       EmitUnsafe(
           OP::ToHeap(op),
-          Instruction::SW(dst, index),
+          Instruction::SSW(dst, info.immutable(), index),
           Instruction::UInt32(
               info.heap_location(),
               current_variable_scope_->scope_nest_count() - info.scope()));
@@ -1105,17 +1105,15 @@ inline RegisterID Compiler::EmitCall(const Call& call, RegisterID dst) {
         EmitConstantLoad(constant_pool_.undefined_index(), site.base());
       } else {
         // lookup dynamic call or not
-        {
-          const LookupInfo info = Lookup(ident->symbol());
-          const uint32_t index = SymbolToNameIndex(ident->symbol());
-          assert(info.type() != LookupInfo::STACK);
-          if (info.type() == LookupInfo::LOOKUP) {
-            Emit<OP::PREPARE_DYNAMIC_CALL>(
-                Instruction::SSW(site.callee(), site.base(), index));
-          } else {
-            EmitOptimizedLookup(OP::LOAD_NAME, index, site.callee());
-            EmitConstantLoad(constant_pool_.undefined_index(), site.base());
-          }
+        const LookupInfo info = Lookup(ident->symbol());
+        const uint32_t index = SymbolToNameIndex(ident->symbol());
+        assert(info.type() != LookupInfo::STACK);
+        if (info.type() == LookupInfo::LOOKUP) {
+          Emit<OP::PREPARE_DYNAMIC_CALL>(
+              Instruction::SSW(site.callee(), site.base(), index));
+        } else {
+          EmitOptimizedLookup(OP::LOAD_NAME, index, site.callee());
+          EmitConstantLoad(constant_pool_.undefined_index(), site.base());
         }
       }
       if (op == OP::CALL && ident->symbol() == symbol::eval()) {
