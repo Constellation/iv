@@ -82,7 +82,8 @@ class JSNormalArguments : public JSObject {
       if (mapping_.size() > index) {
         const Symbol mapped = mapping_[index];
         if (mapped != symbol::kDummySymbol) {
-          const JSVal val = env_->GetBindingValue(mapped);
+          Error::Dummy dummy;
+          const JSVal val = env_->GetBindingValue(ctx, mapped, false, &dummy);
           slot->set_descriptor(
               DataDescriptor(
                   val,

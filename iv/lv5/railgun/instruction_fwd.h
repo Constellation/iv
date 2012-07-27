@@ -84,6 +84,14 @@ struct Instruction {
     return instr;
   }
 
+  static Instruction SSW(RegisterID a, int16_t b, uint32_t u32) {
+    Instruction instr(0u);
+    instr.ssw.i16[0] = static_cast<int16_t>(a->register_offset());
+    instr.ssw.i16[1] = b;
+    instr.ssw.u32 = u32;
+    return instr;
+  }
+
   static Instruction Jump(int32_t i32,
                           RegisterID a = RegisterID(), RegisterID b = RegisterID()) {
     Instruction instr(0u);

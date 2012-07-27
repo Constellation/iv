@@ -33,7 +33,7 @@ class JSEnv : public radio::HeapObject<radio::ENVIRONMENT> {
                                     bool del, Error* err) = 0;
   virtual void SetMutableBinding(Context* ctx,
                                  Symbol name,
-                                 const JSVal& val,
+                                 JSVal val,
                                  bool strict, Error* res) = 0;
   virtual JSVal GetBindingValue(Context* ctx, Symbol name,
                                 bool strict, Error* res) const = 0;
@@ -60,7 +60,7 @@ class JSEnv : public radio::HeapObject<radio::ENVIRONMENT> {
 
 class JSDeclEnv : public JSEnv {
  private:
-  class UpValue {
+  class DynamicVal {
    public:
     enum RecordType {
       NONE = 0,
@@ -70,27 +70,27 @@ class JSDeclEnv : public JSEnv {
       DELETABLE = 8
     };
 
-    UpValue()
+    DynamicVal()
       : attribute_(NONE),
         escaped_(JSEmpty) {
     }
 
-    UpValue(const UpValue& rhs)
+    DynamicVal(const DynamicVal& rhs)
       : attribute_(rhs.attribute_),
         escaped_(rhs.escaped_) {
     }
 
-    explicit UpValue(int attr)
+    explicit DynamicVal(int attr)
       : attribute_(attr),
         escaped_(JSUndefined) {
     }
 
-    UpValue(int attr, JSVal* reg)
+    DynamicVal(int attr, JSVal* reg)
       : attribute_(attr),
         escaped_(JSEmpty) {
     }
 
-    UpValue(int attr, JSVal val)
+    DynamicVal(int attr, JSVal val)
       : attribute_(attr),
         escaped_(val) {
     }
@@ -103,20 +103,20 @@ class JSDeclEnv : public JSEnv {
 
     void set_attribute(int attr) { attribute_ = attr; }
 
-    UpValue& operator=(const UpValue& rhs) {
+    DynamicVal& operator=(const DynamicVal& rhs) {
       using std::swap;
       attribute_ = rhs.attribute_;
       escaped_ = rhs.escaped_;
       return *this;
     }
 
-    void swap(UpValue& rhs) {
+    void swap(DynamicVal& rhs) {
       using std::swap;
       swap(attribute_, rhs.attribute_);
       swap(escaped_, rhs.escaped_);
     }
 
-    friend void swap(UpValue& lhs, UpValue& rhs) {
+    friend void swap(DynamicVal& lhs, DynamicVal& rhs) {
       lhs.swap(rhs);
     }
 
@@ -126,7 +126,9 @@ class JSDeclEnv : public JSEnv {
   };
 
  public:
-  typedef Storage<UpValue> Record;
+  friend class breaker::Compiler;
+  typedef Storage<JSVal> StaticVals;
+  typedef Storage<DynamicVal> DynamicVals;
   typedef GCHashMap<Symbol, uint32_t>::type Offsets;
 
   bool HasBinding(Context* ctx, Symbol name) const {
@@ -138,78 +140,55 @@ class JSDeclEnv : public JSEnv {
     if (it == offsets_.end()) {
       return true;
     }
-    if (record_[it->second].attribute() & UpValue::DELETABLE) {
-      record_[it->second] = UpValue();
-      offsets_.erase(it);
-      return true;
-    } else {
-      return false;
+    const uint32_t offset = it->second;
+    if (offset >= static_.size()) {
+      const DynamicVal& dyn = dynamic_[offset - static_.size()];
+      if (dyn.attribute() & DynamicVal::DELETABLE) {
+        dynamic_[offset - static_.size()] = DynamicVal();
+        offsets_.erase(it);
+        return true;
+      }
     }
+    return false;
   }
 
   void CreateMutableBinding(Context* ctx, Symbol name, bool del, Error* e) {
     assert(offsets_.find(name) == offsets_.end());
-    int flag = UpValue::MUTABLE;
+    int flag = DynamicVal::MUTABLE;
     if (del) {
-      flag |= UpValue::DELETABLE;
+      flag |= DynamicVal::DELETABLE;
     }
-    offsets_[name] = record_.size();
-    record_.push_back(UpValue(flag));
+    offsets_[name] = static_.size() + dynamic_.size();
+    dynamic_.push_back(DynamicVal(flag));
   }
 
-  void SetMutableBinding(Context* ctx,
-                         Symbol name,
-                         const JSVal& val,
-                         bool strict, Error* e) {
-    const Offsets::const_iterator it = offsets_.find(name);
-    assert(it != offsets_.end());
-    UpValue& upval = record_[it->second];
-    if (upval.attribute() & UpValue::MUTABLE) {
-      upval.set_value(val);
-    } else {
-      if (strict) {
-        e->Report(Error::Type, "mutating immutable binding not allowed");
-      }
-    }
+  virtual void SetMutableBinding(Context* ctx,
+                                 Symbol name,
+                                 JSVal val,
+                                 bool strict, Error* e) {
+    assert(offsets_.find(name) != offsets_.end());
+    SetByOffset(offsets_.find(name)->second, val, strict, e);
   }
 
-  JSVal GetBindingValue(Context* ctx,
-                        Symbol name, bool strict, Error* e) const {
-    const Offsets::const_iterator it = offsets_.find(name);
-    assert(it != offsets_.end());
-    if (record_[it->second].attribute() & UpValue::IM_UNINITIALIZED) {
-      if (strict) {
-        e->Report(Error::Reference,
-                  "uninitialized value access not allowed in strict code");
-      }
-      return JSUndefined;
-    } else {
-      return record_[it->second].value();
-    }
+  virtual JSVal GetBindingValue(Context* ctx,
+                                Symbol name, bool strict, Error* e) const {
+    assert(offsets_.find(name) != offsets_.end());
+    return GetByOffset(offsets_.find(name)->second, strict, e);
   }
 
-  JSVal GetBindingValue(Symbol name) const {
-    const Offsets::const_iterator it = offsets_.find(name);
-    assert(it != offsets_.end());
-    assert(!(record_[it->second].attribute() & UpValue::IM_UNINITIALIZED));
-    return record_[it->second].value();
-  }
-
-  JSVal ImplicitThisValue() const {
+  virtual JSVal ImplicitThisValue() const {
     return JSUndefined;
   }
 
   void CreateImmutableBinding(Symbol name) {
     assert(offsets_.find(name) == offsets_.end());
-    offsets_[name] = record_.size();
-    record_.push_back(UpValue(UpValue::IM_UNINITIALIZED));
+    offsets_[name] = static_.size() + dynamic_.size();
+    dynamic_.push_back(DynamicVal(DynamicVal::IM_UNINITIALIZED));
   }
 
-  void InitializeImmutableBinding(Symbol name, const JSVal& val) {
+  void InitializeImmutableBinding(Symbol name, JSVal val) {
     assert(offsets_.find(name) != offsets_.end());
-    assert(record_[offsets_.find(name)->second].attribute() &
-           UpValue::IM_UNINITIALIZED);
-    record_[offsets_.find(name)->second] = UpValue(UpValue::IM_INITIALIZED, val);
+    InitializeImmutableBinding(offsets_.find(name)->second, val);
   }
 
   JSDeclEnv* AsJSDeclEnv() {
@@ -239,15 +218,32 @@ class JSDeclEnv : public JSEnv {
     return new JSDeclEnv(outer, size, it, mutable_start);
   }
 
-  void InitializeImmutable(std::size_t offset, const JSVal& val) {
-    record_[offset] = UpValue(UpValue::IM_INITIALIZED, val);
+  void InitializeImmutableBinding(uint32_t offset, JSVal val) {
+    if (offset < mutable_start()) {
+      assert(static_[offset].IsEmpty());
+      static_[offset] = val;
+      return;
+    }
+    assert(offset >= static_.size());
+    offset -= static_.size();
+    assert(dynamic_[offset].attribute() & DynamicVal::IM_UNINITIALIZED);
+    dynamic_[offset] = DynamicVal(DynamicVal::IM_INITIALIZED, val);
   }
 
-  void SetByOffset(uint32_t offset, const JSVal& value, bool strict, Error* e) {
-    assert(offset < record_.size());
-    UpValue& upval = record_[offset];
-    if (upval.attribute() & UpValue::MUTABLE) {
-      upval.set_value(value);
+  void SetByOffset(uint32_t offset, JSVal val, bool strict, Error* e) {
+    if (offset < static_.size()) {
+      if (offset < mutable_start()) {
+        if (strict) {
+          e->Report(Error::Type, "mutating immutable binding not allowed");
+        }
+      } else {
+        static_[offset] = val;
+      }
+      return;
+    }
+    DynamicVal& dyn = dynamic_[offset - static_.size()];
+    if (dyn.attribute() & DynamicVal::MUTABLE) {
+      dyn.set_value(val);
     } else {
       if (strict) {
         e->Report(Error::Type, "mutating immutable binding not allowed");
@@ -256,22 +252,35 @@ class JSDeclEnv : public JSEnv {
   }
 
   JSVal GetByOffset(uint32_t offset, bool strict, Error* e) const {
-    assert(offset < record_.size());
-    const UpValue& upval = record_[offset];
-    if (upval.attribute() & UpValue::IM_UNINITIALIZED) {
+    if (offset < static_.size()) {
+      const JSVal ret = static_[offset];
+      if (offset < mutable_start()) {
+        if (ret.IsEmpty()) {
+          if (strict) {
+            e->Report(Error::Reference,
+                      "uninitialized value access not allowed in strict code");
+          }
+          return JSUndefined;
+        }
+      }
+      return ret;
+    }
+    const DynamicVal& dyn = dynamic_[offset - static_.size()];
+    if (dyn.attribute() & DynamicVal::IM_UNINITIALIZED) {
       if (strict) {
         e->Report(Error::Reference,
                   "uninitialized value access not allowed in strict code");
       }
       return JSUndefined;
     }
-    return upval.value();
+    return dyn.value();
   }
 
   void MarkChildren(radio::Core* core) {
     JSEnv::MarkChildren(core);
-    for (Record::const_iterator it = record_.begin(),
-         last = record_.end(); it != last; ++it) {
+    std::for_each(static_.begin(), static_.end(), radio::Core::Marker(core));
+    for (DynamicVals::const_iterator it = dynamic_.begin(),
+         last = dynamic_.end(); it != last; ++it) {
       core->MarkValue(it->value());
     }
   }
@@ -279,7 +288,9 @@ class JSDeclEnv : public JSEnv {
  private:
   JSDeclEnv(JSEnv* outer)
     : JSEnv(outer),
-      record_(),
+      mutable_start_(0),
+      static_(),
+      dynamic_(),
       offsets_() {
   }
 
@@ -289,21 +300,25 @@ class JSDeclEnv : public JSEnv {
             uint32_t size,
             NamesIter it, uint32_t mutable_start)
     : JSEnv(outer),
-      record_(size),
+      mutable_start_(mutable_start),
+      static_(size, JSUndefined),
+      dynamic_(),
       offsets_() {
-    assert(record_.size() == size);
     uint32_t i = 0;
     for (; i < mutable_start; ++i, ++it) {
-      record_[i] = UpValue(UpValue::IM_UNINITIALIZED, JSUndefined);
+      static_[i] = JSEmpty;
       offsets_[*it] = i;
     }
     for (; i < size; ++i, ++it) {
-      record_[i] = UpValue(UpValue::MUTABLE, JSUndefined);
       offsets_[*it] = i;
     }
   }
 
-  Record record_;
+  uint32_t mutable_start() const { return mutable_start_; }
+
+  uint32_t mutable_start_;
+  StaticVals static_;
+  DynamicVals dynamic_;
   Offsets offsets_;
 };
 
@@ -333,7 +348,7 @@ class JSObjectEnv : public JSEnv {
 
   void SetMutableBinding(Context* ctx,
                          Symbol name,
-                         const JSVal& val,
+                         JSVal val,
                          bool strict, Error* res) {
     record_->Put(ctx, name, val, strict, res);
   }
@@ -423,7 +438,7 @@ class JSStaticEnv : public JSEnv {
 
   void SetMutableBinding(Context* ctx,
                          Symbol name,
-                         const JSVal& val,
+                         JSVal val,
                          bool strict, Error* res) {
     assert(name == symbol_);
     value_ = val;
@@ -462,7 +477,7 @@ class JSStaticEnv : public JSEnv {
   }
 
  private:
-  explicit JSStaticEnv(JSEnv* outer, Symbol sym, const JSVal& value)
+  explicit JSStaticEnv(JSEnv* outer, Symbol sym, JSVal value)
     : JSEnv(outer),
       symbol_(sym),
       value_(value) {

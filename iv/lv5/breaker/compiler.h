@@ -1409,7 +1409,7 @@ class Compiler {
       const std::ptrdiff_t data_offset =
           vector_offset + IV_OFFSETOF(JSArray::JSValVector, data_);
       asm_->mov(asm_->rax, asm_->qword[asm_->rsi + data_offset]);
-      asm_->mov(asm_->rax, asm_->qword[asm_->rax + k64Size * index]);
+      asm_->mov(asm_->rax, asm_->qword[asm_->rax + kJSValSize * index]);
 
       // check element is not JSEmpty
       NotEmptyGuard(asm_->rax, ".ARRAY_FAST_PATH_EXIT");
@@ -1470,7 +1470,7 @@ class Compiler {
       const std::ptrdiff_t data_offset =
           vector_offset + IV_OFFSETOF(JSArray::JSValVector, data_);
       asm_->mov(asm_->rax, asm_->qword[asm_->rsi + data_offset]);
-      asm_->mov(asm_->qword[asm_->rax + k64Size * index], asm_->rcx);
+      asm_->mov(asm_->qword[asm_->rax + kJSValSize * index], asm_->rcx);
       asm_->jmp(".EXIT");
       asm_->L(".ARRAY_FAST_PATH_EXIT");
     }
@@ -1719,7 +1719,7 @@ class Compiler {
       const std::ptrdiff_t data_offset =
           vector_offset + IV_OFFSETOF(JSArray::JSValVector, data_);
       asm_->mov(asm_->rax, asm_->qword[asm_->rsi + data_offset]);
-      asm_->lea(asm_->rax, asm_->ptr[asm_->rax + asm_->rcx * k64Size]);
+      asm_->lea(asm_->rax, asm_->ptr[asm_->rax + asm_->rcx * kJSValSize]);
       asm_->mov(asm_->rax, asm_->qword[asm_->rax]);
 
       // check element is not JSEmpty
@@ -1774,7 +1774,7 @@ class Compiler {
       const std::ptrdiff_t data_offset =
           vector_offset + IV_OFFSETOF(JSArray::JSValVector, data_);
       asm_->mov(asm_->rax, asm_->qword[asm_->rsi + data_offset]);
-      asm_->lea(asm_->rax, asm_->ptr[asm_->rax + asm_->rdi * k64Size]);
+      asm_->lea(asm_->rax, asm_->ptr[asm_->rax + asm_->rdi * kJSValSize]);
       asm_->mov(asm_->qword[asm_->rax], asm_->rcx);
       asm_->jmp(".EXIT");
       asm_->L(".ARRAY_FAST_PATH_EXIT");
@@ -2036,29 +2036,42 @@ class Compiler {
     type_record_.Put(dst, TypeEntry(Type::String()));
   }
 
-  // opcode | (dst | index) | (offset | nest)
+  // opcode | (dst | imm | index) | (offset | nest)
   void EmitLOAD_HEAP(const Instruction* instr) {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
+    const bool immutable = !!instr[1].ssw.i16[1];
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
-    asm_->mov(asm_->rdi, asm_->r14);
 
     // inlined environment lookup
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     LookupHeapEnv(asm_->rsi, nest);
-
-    asm_->mov(asm_->edx, offset);
-    if (code_->strict()) {
-      asm_->Call(&stub::LOAD_HEAP<true>);
-    } else {
-      asm_->Call(&stub::LOAD_HEAP<false>);
+    const ptrdiff_t target =
+        IV_CAST_OFFSET(JSEnv*, JSDeclEnv*) +
+        IV_OFFSETOF(JSDeclEnv, static_) +
+        IV_OFFSETOF(JSDeclEnv::StaticVals, data_);
+    // pointer to the data
+    asm_->mov(asm_->rax, asm_->qword[asm_->rsi + target]);
+    asm_->mov(asm_->rax, asm_->qword[asm_->rax + kJSValSize * offset]);
+    if (immutable) {
+      EmptyGuard(asm_->rax, ".NOT_EMPTY");
+      if (code_->strict()) {
+        static const char* message = "uninitialized value access not allowed in strict code";
+        asm_->mov(asm_->rdi, asm_->r14);
+        asm_->mov(asm_->rsi, Error::Reference);
+        asm_->mov(asm_->rdx, core::BitCast<uint64_t>(message));
+        asm_->Call(&stub::THROW_WITH_TYPE_AND_MESSAGE);
+      } else {
+        asm_->mov(asm_->rax, Extract(JSUndefined));
+      }
+      asm_->L(".NOT_EMPTY");
     }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Unknown()));
   }
 
-  // opcode | (src | name) | (offset | nest)
+  // opcode | (src | imm | name) | (offset | nest)
   void EmitSTORE_HEAP(const Instruction* instr) {
     const register_t src = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
@@ -2078,7 +2091,7 @@ class Compiler {
     }
   }
 
-  // opcode | (dst | name) | (offset | nest)
+  // opcode | (dst | imm | name) | (offset | nest)
   void EmitDELETE_HEAP(const Instruction* instr) {
     static const uint64_t layout = Extract(JSFalse);
     const register_t dst = Reg(instr[1].ssw.i16[0]);
@@ -2086,7 +2099,7 @@ class Compiler {
     type_record_.Put(dst, TypeEntry(Type::Boolean()));
   }
 
-  // opcode | (dst | name) | (offset | nest)
+  // opcode | (dst | imm | name) | (offset | nest)
   void EmitINCREMENT_HEAP(const Instruction* instr) {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
@@ -2107,7 +2120,7 @@ class Compiler {
     type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
-  // opcode | (dst | name) | (offset | nest)
+  // opcode | (dst | imm | name) | (offset | nest)
   void EmitDECREMENT_HEAP(const Instruction* instr) {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
@@ -2128,7 +2141,7 @@ class Compiler {
     type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
-  // opcode | (dst | name) | (offset | nest)
+  // opcode | (dst | imm | name) | (offset | nest)
   void EmitPOSTFIX_INCREMENT_HEAP(const Instruction* instr) {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
@@ -2149,7 +2162,7 @@ class Compiler {
     type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
-  // opcode | (dst | name) | (offset | nest)
+  // opcode | (dst | imm | name) | (offset | nest)
   void EmitPOSTFIX_DECREMENT_HEAP(const Instruction* instr) {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
@@ -2170,7 +2183,7 @@ class Compiler {
     type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
-  // opcode | (dst | name) | (offset | nest)
+  // opcode | (dst | imm | name) | (offset | nest)
   void EmitTYPEOF_HEAP(const Instruction* instr) {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
@@ -2861,6 +2874,14 @@ class Compiler {
     asm_->mov(out, asm_->word[tmp + IV_OFFSETOF(Class, type)]);
   }
 
+  void EmptyGuard(const Xbyak::Reg64& target,
+                  const char* label,
+                  Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
+    assert(Extract(JSEmpty) == 0);  // Because of null pointer
+    asm_->test(target, target);
+    asm_->jnz(label, type);
+  }
+
   void NotEmptyGuard(const Xbyak::Reg64& target,
                      const char* label,
                      Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
@@ -2885,6 +2906,7 @@ class Compiler {
   void CheckObjectCoercible(register_t reg,
                             const Xbyak::Reg64& target,
                             const Xbyak::Reg64& tmp) {
+    static const char* message = "null or undefined has no properties";
     const TypeEntry type = type_record_.Get(reg);
     if (type.type().IsNotUndefined() && type.type().IsNotNull()) {
       // no check
@@ -2900,7 +2922,9 @@ class Compiler {
     asm_->cmp(tmp, detail::jsval64::kNull);
     asm_->jne(".EXIT");
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->Call(&stub::THROW_CHECK_OBJECT);
+    asm_->mov(asm_->rsi, Error::Type);
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(message));
+    asm_->Call(&stub::THROW_WITH_TYPE_AND_MESSAGE);
     asm_->L(".EXIT");
   }
 

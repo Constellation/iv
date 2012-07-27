@@ -29,7 +29,7 @@ inline RegisterID Compiler::EmitOptimizedLookup(OP::Type op,
       thunkpool_.Spill(dst);
       EmitUnsafe(
           OP::ToHeap(op),
-          Instruction::SW(dst, index),
+          Instruction::SSW(dst, info.immutable(), index),
           Instruction::UInt32(
               info.heap_location(),
               current_variable_scope_->scope_nest_count() - info.scope()));

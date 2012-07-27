@@ -387,7 +387,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
         // opcode | (src | offset)
         JSDeclEnv* const decl = static_cast<JSDeclEnv*>(frame->variable_env());
         const JSVal src = REG(instr[1].ssw.i16[0]);
-        decl->InitializeImmutable(instr[1].ssw.u32, src);
+        decl->InitializeImmutableBinding(instr[1].ssw.u32, src);
         DISPATCH(INITIALIZE_HEAP_IMMUTABLE);
       }
 
@@ -427,7 +427,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
       }
 
       DEFINE_OPCODE(LOAD_HEAP) {
-        // opcode | (dst | index) | (offset | nest)
+        // opcode | (dst | imm | index) | (offset | nest)
         const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res = LoadHeap(
             frame->lexical_env(),
@@ -693,7 +693,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
       }
 
       DEFINE_OPCODE(STORE_HEAP) {
-        // opcode | (src | name) | (offset | nest)
+        // opcode | (src | imm | name) | (offset | nest)
         const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal src = REG(instr[1].ssw.i16[0]);
         StoreHeap(frame->lexical_env(),
@@ -764,7 +764,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
       }
 
       DEFINE_OPCODE(DELETE_HEAP) {
-        // opcode | (dst | name) | (offset | nest)
+        // opcode | (dst | imm | name) | (offset | nest)
         REG(instr[1].ssw.i16[0]) = JSFalse;
         DISPATCH(DELETE_HEAP);
       }
@@ -1296,7 +1296,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
       }
 
       DEFINE_OPCODE(TYPEOF_HEAP) {
-        // opcode | (dst | name) | (offset | nest)
+        // opcode | (dst | imm | name) | (offset | nest)
         JSDeclEnv* decl = GetHeapEnv(frame->lexical_env(), instr[2].u32[1]);
         assert(decl);
         const JSVal res = decl->GetByOffset(instr[2].u32[0], strict, ERR);
@@ -1407,7 +1407,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
       }
 
       DEFINE_OPCODE(DECREMENT_HEAP) {
-        // opcode | (dst | name) | (offset | nest)
+        // opcode | (dst | imm | name) | (offset | nest)
         const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
             IncrementHeap<-1, 1>(
@@ -1418,7 +1418,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
       }
 
       DEFINE_OPCODE(POSTFIX_DECREMENT_HEAP) {
-        // opcode | (dst | name) | (offset | nest)
+        // opcode | (dst | imm | name) | (offset | nest)
         const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
             IncrementHeap<-1, 0>(
@@ -1429,7 +1429,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
       }
 
       DEFINE_OPCODE(INCREMENT_HEAP) {
-        // opcode | (dst | name) | (offset | nest)
+        // opcode | (dst | imm | name) | (offset | nest)
         const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
             IncrementHeap<1, 1>(
@@ -1440,7 +1440,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
       }
 
       DEFINE_OPCODE(POSTFIX_INCREMENT_HEAP) {
-        // opcode | (dst | name) | (offset | nest)
+        // opcode | (dst | imm | name) | (offset | nest)
         const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =
             IncrementHeap<1, 0>(
@@ -1451,7 +1451,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
       }
 
       DEFINE_OPCODE(DECREMENT_GLOBAL) {
-        // opcode | (dst | name) | nop | nop
+        // opcode | (dst | imm | name) | nop | nop
         JSGlobal* global = ctx()->global_obj();
         const Symbol name = frame->GetName(instr[1].ssw.u32);
         const JSVal res =

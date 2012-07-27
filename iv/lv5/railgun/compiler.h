@@ -624,7 +624,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     switch (info.type()) {
       case LookupInfo::HEAP: {
         Emit<OP::STORE_HEAP>(
-            Instruction::SW(src, index),
+            Instruction::SSW(src, info.immutable(), index),
             Instruction::UInt32(
                 info.heap_location(),
                 current_variable_scope_->scope_nest_count() - info.scope()));
@@ -1002,7 +1002,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
               Instruction::SW(src, info.heap_location()));
         } else {
           Emit<OP::STORE_HEAP>(
-              Instruction::SW(src, index),
+              Instruction::SSW(src, info.immutable(), index),
               Instruction::UInt32(
                   info.heap_location(),
                   current_variable_scope_->scope_nest_count() - info.scope()));

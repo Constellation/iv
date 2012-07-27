@@ -177,14 +177,15 @@ class DisAssembler : private core::Noncopyable<> {
       case OP::STORE_HEAP:
       case OP::LOAD_HEAP: {
         const int r0 = instr[1].ssw.i16[0];
+        const bool imm = !!instr[1].ssw.i16[1];
         const unsigned int name = instr[1].ssw.u32;
         const unsigned int offset = instr[2].u32[0];
         const unsigned int nest = instr[2].u32[1];
         len = snprintf(
             buf,
             sizeof(buf) - 1,
-            "%s %s %u %u %u",
-            op, ExtractReg(r0).c_str(), name, offset, nest);
+            "%s %s %s %u %u %u",
+            op, ExtractReg(r0).c_str(), (imm) ? "immutable" : "mutable", name, offset, nest);
         break;
       }
       case OP::POSTFIX_INCREMENT_GLOBAL:
