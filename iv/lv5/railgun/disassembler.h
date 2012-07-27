@@ -6,6 +6,7 @@
 #include <iv/detail/unordered_map.h>
 #include <iv/noncopyable.h>
 #include <iv/stringpiece.h>
+#include <iv/conversions.h>
 #include <iv/lv5/railgun/fwd.h>
 #include <iv/lv5/railgun/op.h>
 #include <iv/lv5/railgun/code.h>
@@ -27,15 +28,15 @@ class DisAssembler : private core::Noncopyable<> {
   }
 
   static std::string ExtractReg(int reg) {
-    std::array<char, 32> buf;
     char prefix = 'r';
     if (reg >= FrameConstant<>::kConstantOffset) {
       // This is constant register
       prefix = 'k';
       reg -= FrameConstant<>::kConstantOffset;
     }
-    const int len = snprintf(buf.data(), buf.size() - 1, "%c%d", prefix, reg);
-    return std::string(buf.data(), buf.data() + len);
+    std::string result(1, prefix);
+    core::Int32ToString(reg, std::back_inserter(result));
+    return result;
   }
 
   void DisAssemble(const Code& code, bool all = true) {
@@ -177,14 +178,15 @@ class DisAssembler : private core::Noncopyable<> {
       case OP::STORE_HEAP:
       case OP::LOAD_HEAP: {
         const int r0 = instr[1].ssw.i16[0];
+        const bool imm = !!instr[1].ssw.i16[1];
         const unsigned int name = instr[1].ssw.u32;
         const unsigned int offset = instr[2].u32[0];
         const unsigned int nest = instr[2].u32[1];
         len = snprintf(
             buf,
             sizeof(buf) - 1,
-            "%s %s %u %u %u",
-            op, ExtractReg(r0).c_str(), name, offset, nest);
+            "%s %s %s %u %u %u",
+            op, ExtractReg(r0).c_str(), (imm) ? "immutable" : "mutable", name, offset, nest);
         break;
       }
       case OP::POSTFIX_INCREMENT_GLOBAL:
