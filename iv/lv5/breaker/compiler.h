@@ -2043,6 +2043,8 @@ class Compiler {
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
 
+    const Assembler::LocalLabelScope scope(asm_);
+
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     LookupHeapEnv(asm_->rsi, nest);
     const ptrdiff_t target =
@@ -2076,6 +2078,8 @@ class Compiler {
     const bool immutable = !!instr[1].ssw.i16[1];
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
+
+    const Assembler::LocalLabelScope scope(asm_);
 
     if (immutable) {
       if (code_->strict()) {
