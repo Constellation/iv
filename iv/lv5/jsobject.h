@@ -117,11 +117,11 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
 
   template<Class::JSClassType CLS>
   bool IsClass() const {
-    return cls_->type == CLS;
+    return cls_->type == static_cast<uint32_t>(CLS);
   }
 
   bool IsClass(Class::JSClassType cls) const {
-    return cls_->type == cls;
+    return cls_->type == static_cast<uint32_t>(cls);
   }
 
   static JSObject* New(Context* ctx);
