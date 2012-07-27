@@ -2199,19 +2199,37 @@ class Compiler {
   // opcode | (dst | imm | name) | (offset | nest)
   void EmitTYPEOF_HEAP(const Instruction* instr) {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
+    const bool immutable = !!instr[1].ssw.i16[1];
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
-    asm_->mov(asm_->rdi, asm_->r14);
+
+    const Assembler::LocalLabelScope scope(asm_);
 
     asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
     LookupHeapEnv(asm_->rsi, nest);
-
-    asm_->mov(asm_->edx, offset);
-    if (code_->strict()) {
-      asm_->Call(&stub::TYPEOF_HEAP<true>);
-    } else {
-      asm_->Call(&stub::TYPEOF_HEAP<false>);
+    const ptrdiff_t target =
+        IV_CAST_OFFSET(JSEnv*, JSDeclEnv*) +
+        IV_OFFSETOF(JSDeclEnv, static_) +
+        IV_OFFSETOF(JSDeclEnv::StaticVals, data_);
+    // pointer to the data
+    asm_->mov(asm_->rax, asm_->qword[asm_->rsi + target]);
+    asm_->mov(asm_->rsi, asm_->qword[asm_->rax + kJSValSize * offset]);
+    if (immutable) {
+      EmptyGuard(asm_->rsi, ".NOT_EMPTY");
+      if (code_->strict()) {
+        static const char* message = "uninitialized value access not allowed in strict code";
+        asm_->mov(asm_->rdi, asm_->r14);
+        asm_->mov(asm_->rsi, Error::Reference);
+        asm_->mov(asm_->rdx, core::BitCast<uint64_t>(message));
+        asm_->Call(&stub::THROW_WITH_TYPE_AND_MESSAGE);
+      } else {
+        asm_->mov(asm_->rsi, Extract(JSUndefined));
+      }
+      asm_->L(".NOT_EMPTY");
     }
+
+    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->Call(&stub::TYPEOF);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::String()));

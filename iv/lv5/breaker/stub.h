@@ -411,12 +411,6 @@ inline Rep INCREMENT_HEAP(Frame* stack, JSEnv* env, uint32_t offset) {
   }
 }
 
-template<bool STRICT>
-inline Rep TYPEOF_HEAP(Frame* stack, JSEnv* env, uint32_t offset) {
-  const JSVal res = static_cast<JSDeclEnv*>(env)->GetByOffset(offset, STRICT, ERR);
-  return Extract(res.TypeOf(stack->ctx));
-}
-
 template<int Target, std::size_t Returned, bool STRICT>
 inline JSVal IncrementName(Context* ctx,
                            JSEnv* env, Symbol s, Error* e) {
