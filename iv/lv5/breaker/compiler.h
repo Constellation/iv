@@ -1913,38 +1913,32 @@ class Compiler {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
 
+    TypeEntry dst_entry(Type::Unknown());
+
     // Some variables are defined as non-configurable.
     if (name == symbol::undefined()) {
       asm_->mov(asm_->rax, Extract(JSUndefined));
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      set_last_used_candidate(dst);
-      type_record_.Put(dst, TypeEntry(JSUndefined));
-      return;
+      dst_entry = TypeEntry(JSUndefined);
     } else if (name == symbol::NaN()) {
       asm_->mov(asm_->rax, Extract(JSNaN));
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      set_last_used_candidate(dst);
-      type_record_.Put(dst, TypeEntry(JSNaN));
-      return;
+      dst_entry = TypeEntry(JSNaN);
     } else if (name == symbol::Infinity()) {
       asm_->mov(asm_->rax, Extract(iv::core::math::kInfinity));
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      set_last_used_candidate(dst);
-      type_record_.Put(dst, TypeEntry(iv::core::math::kInfinity));
-      return;
+      dst_entry = TypeEntry(iv::core::math::kInfinity);
+    } else {
+      asm_->mov(asm_->rdi, asm_->r14);
+      asm_->mov(asm_->rsi, core::BitCast<uint64_t>(name));
+      asm_->mov(asm_->rdx, core::BitCast<uint64_t>(instr));
+      if (code_->strict()) {
+        asm_->Call(&stub::LOAD_GLOBAL<true>);
+      } else {
+        asm_->Call(&stub::LOAD_GLOBAL<false>);
+      }
     }
 
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, core::BitCast<uint64_t>(name));
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(instr));
-    if (code_->strict()) {
-      asm_->Call(&stub::LOAD_GLOBAL<true>);
-    } else {
-      asm_->Call(&stub::LOAD_GLOBAL<false>);
-    }
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
-    type_record_.Put(dst, TypeEntry(Type::Unknown()));
+    type_record_.Put(dst, dst_entry);
   }
 
   // opcode | (src | name) | nop | nop
