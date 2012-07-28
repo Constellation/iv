@@ -1,7 +1,9 @@
 #ifndef IV_LV5_BREAKER_ASSEMBLER_H_
 #define IV_LV5_BREAKER_ASSEMBLER_H_
-#include <iv/lv5/breaker/fwd.h>
+#include <iv/detail/memory.h>
 #include <iv/noncopyable.h>
+#include <iv/lv5/breaker/fwd.h>
+#include <iv/lv5/breaker/ic.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {
@@ -74,6 +76,7 @@ class Assembler : public Xbyak::CodeGenerator {
 
   typedef std::pair<std::size_t, std::size_t> PCOffsetAndBytecodeOffset;
   typedef core::SortedVector<PCOffsetAndBytecodeOffset> BytecodeOffsets;
+  typedef std::vector<std::shared_ptr<IC> > ICVector;
 
   Assembler()
     : Xbyak::CodeGenerator(4096, Xbyak::AutoGrow),
@@ -197,10 +200,15 @@ class Assembler : public Xbyak::CodeGenerator {
     return 0;
   }
 
+  void BindIC(std::shared_ptr<IC> ic) {
+    ics_.push_back(ic);
+  }
+
   std::size_t size() const { return getSize(); }
 
  private:
   BytecodeOffsets bytecode_offsets_;
+  ICVector ics_;
 };
 
 } } }  // namespace iv::lv5::breaker

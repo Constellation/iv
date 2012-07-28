@@ -22,6 +22,8 @@ namespace symbol {
     V(prototype)\
     V(constructor)\
     V(undefined)\
+    V(NaN)\
+    V(Infinity)\
     V(null)\
     V(name)\
     V(message)\

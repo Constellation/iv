@@ -322,9 +322,9 @@ void Context::InitGlobal(const ClassSlot& func_cls,
   global_binder->cls(cls.cls)
       .prototype(cls.prototype)
       // section 15.1.1.1 NaN
-      .def("NaN", core::kNaN)
+      .def(symbol::NaN(), core::kNaN)
       // section 15.1.1.2 Infinity
-      .def("Infinity", std::numeric_limits<double>::infinity())
+      .def(symbol::Infinity(), std::numeric_limits<double>::infinity())
       // section 15.1.1.3 undefined
       .def("undefined", JSUndefined)
       // section 15.1.2.1 eval(x)
@@ -599,7 +599,7 @@ void Context::InitNumber(const ClassSlot& func_cls,
       // section 15.7.3.3 Number.MIN_VALUE
       .def("MIN_VALUE", 5e-324)
       // section 15.7.3.4 Number.NaN
-      .def("NaN", JSNaN)
+      .def(symbol::NaN(), JSNaN)
       // section 15.7.3.5 Number.NEGATIVE_INFINITY
       .def("NEGATIVE_INFINITY", -std::numeric_limits<double>::infinity())
       // section 15.7.3.6 Number.POSITIVE_INFINITY

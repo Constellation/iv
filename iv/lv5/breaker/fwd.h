@@ -52,6 +52,7 @@ class Context;
 class Compiler;
 class Assembler;
 class JSFunction;
+class IC;
 
 // JIT Frame layout. This frame layout is constructed on breaker prologue
 struct Frame {

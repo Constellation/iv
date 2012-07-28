@@ -1912,6 +1912,28 @@ class Compiler {
   void EmitLOAD_GLOBAL(const Instruction* instr) {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
+
+    // Some variables are defined as non-configurable.
+    if (name == symbol::undefined()) {
+      asm_->mov(asm_->rax, Extract(JSUndefined));
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      set_last_used_candidate(dst);
+      type_record_.Put(dst, TypeEntry(JSUndefined));
+      return;
+    } else if (name == symbol::NaN()) {
+      asm_->mov(asm_->rax, Extract(JSNaN));
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      set_last_used_candidate(dst);
+      type_record_.Put(dst, TypeEntry(JSNaN));
+      return;
+    } else if (name == symbol::Infinity()) {
+      asm_->mov(asm_->rax, Extract(iv::core::math::kInfinity));
+      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      set_last_used_candidate(dst);
+      type_record_.Put(dst, TypeEntry(iv::core::math::kInfinity));
+      return;
+    }
+
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(name));
     asm_->mov(asm_->rdx, core::BitCast<uint64_t>(instr));
