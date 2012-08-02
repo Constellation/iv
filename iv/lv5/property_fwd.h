@@ -45,7 +45,7 @@ class PropertyDescriptor {
       value_(rhs.value_) {
   }
 
-  int attrs() const {
+  uint32_t attrs() const {
     return attrs_;
   }
 
@@ -53,7 +53,7 @@ class PropertyDescriptor {
     return value_;
   }
 
-  int type() const {
+  uint32_t type() const {
     return attrs_ & ATTR::TYPE_MASK;
   }
 
@@ -74,7 +74,7 @@ class PropertyDescriptor {
   }
 
   inline bool IsDefault() const {
-    const int kDefault =
+    const uint32_t kDefault =
         (ATTR::CONFIGURABLE | ATTR::ENUMERABLE | ATTR::DATA | ATTR::WRITABLE);
     return (attrs_ & kDefault) == kDefault;
   }
@@ -148,7 +148,7 @@ class PropertyDescriptor {
 
  protected:
   PropertyDescriptor(DataDescriptorTag tag,
-                     const JSVal& val, int attrs)
+                     const JSVal& val, uint32_t attrs)
     : attrs_(attrs | ATTR::DATA | ATTR::UNDEF_GETTER | ATTR::UNDEF_SETTER),
       value_() {
     value_.data_ = val;
@@ -156,7 +156,7 @@ class PropertyDescriptor {
 
   PropertyDescriptor(AccessorDescriptorTag tag,
                      JSObject* getter, JSObject* setter,
-                     int attrs)
+                     uint32_t attrs)
     : attrs_(attrs | ATTR::ACCESSOR | ATTR::UNDEF_VALUE),
       value_() {
     value_.accessor_.getter_ = getter;
@@ -164,7 +164,7 @@ class PropertyDescriptor {
   }
 
   PropertyDescriptor(AccessorDescriptorGetterTag tag,
-                     JSObject* getter, int attrs)
+                     JSObject* getter, uint32_t attrs)
     : attrs_(attrs | ATTR::ACCESSOR | ATTR::UNDEF_VALUE | ATTR::UNDEF_SETTER),
       value_() {
     value_.accessor_.getter_ = getter;
@@ -172,14 +172,14 @@ class PropertyDescriptor {
   }
 
   PropertyDescriptor(AccessorDescriptorSetterTag tag,
-                     JSObject* setter, int attrs)
+                     JSObject* setter, uint32_t attrs)
     : attrs_(attrs | ATTR::ACCESSOR | ATTR::UNDEF_VALUE | ATTR::UNDEF_GETTER),
       value_() {
     value_.accessor_.getter_ = NULL;
     value_.accessor_.setter_ = setter;
   }
 
-  PropertyDescriptor(GenericDescriptorTag tag, int attrs)
+  PropertyDescriptor(GenericDescriptorTag tag, uint32_t attrs)
     : attrs_(attrs |
              ATTR::UNDEF_VALUE |
              ATTR::UNDEF_GETTER |
@@ -187,13 +187,13 @@ class PropertyDescriptor {
       value_() {
   }
 
-  int attrs_;
+  uint32_t attrs_;
   PropertyLayout value_;
 };
 
 class AccessorDescriptor : public PropertyDescriptor {
  public:
-  AccessorDescriptor(JSObject* get, JSObject* set, int attrs)
+  AccessorDescriptor(JSObject* get, JSObject* set, uint32_t attrs)
     : PropertyDescriptor(ACCESSOR_DESCRIPTOR, get, set, attrs) {
   }
   JSObject* get() const {
@@ -218,10 +218,10 @@ class AccessorDescriptor : public PropertyDescriptor {
 
 class DataDescriptor: public PropertyDescriptor {
  public:
-  explicit DataDescriptor(const JSVal& value, int attrs)
+  explicit DataDescriptor(const JSVal& value, uint32_t attrs)
      : PropertyDescriptor(DATA_DESCRIPTOR, value, attrs) {
   }
-  explicit DataDescriptor(int attrs)
+  explicit DataDescriptor(uint32_t attrs)
      : PropertyDescriptor(DATA_DESCRIPTOR, JSUndefined,
                           attrs | ATTR::UNDEF_VALUE) {
   }
@@ -255,7 +255,7 @@ class DataDescriptor: public PropertyDescriptor {
 
 class GenericDescriptor : public PropertyDescriptor {
  public:
-  explicit GenericDescriptor(int attrs)
+  explicit GenericDescriptor(uint32_t attrs)
      : PropertyDescriptor(GENERIC_DESCRIPTOR, attrs) {
   }
 };
@@ -279,7 +279,7 @@ class DescriptorSlot {
   template<typename T>
   class Data {
    public:
-    Data(T value, int attrs)
+    Data(T value, uint32_t attrs)
       : value_(value),
         attrs_(attrs) {
     }
@@ -296,11 +296,11 @@ class DescriptorSlot {
       value_ = val;
     }
 
-    int attrs() const {
+    uint32_t attrs() const {
       return attrs_;
     }
 
-    void set_attrs(int attrs) {
+    void set_attrs(uint32_t attrs) {
       attrs_ = attrs;
     }
 
@@ -318,7 +318,7 @@ class DescriptorSlot {
 
    private:
     T value_;
-    int attrs_;
+    uint32_t attrs_;
   };
 };
 

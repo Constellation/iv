@@ -1,5 +1,6 @@
 #ifndef IV_LV5_PROPERTY_H_
 #define IV_LV5_PROPERTY_H_
+#include <iv/bit_cast.h>
 #include <iv/lv5/property_fwd.h>
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsfunction.h>
@@ -25,22 +26,22 @@ JSVal PropertyDescriptor::Get(Context* ctx,
 
 const DataDescriptor* PropertyDescriptor::AsDataDescriptor() const {
   assert(IsDataDescriptor());
-  return static_cast<const DataDescriptor* const>(this);
+  return core::BitCast<const DataDescriptor* const>(this);
 }
 
 DataDescriptor* PropertyDescriptor::AsDataDescriptor() {
   assert(IsDataDescriptor());
-  return static_cast<DataDescriptor*>(this);
+  return core::BitCast<DataDescriptor*>(this);
 }
 
 const AccessorDescriptor* PropertyDescriptor::AsAccessorDescriptor() const {
   assert(IsAccessorDescriptor());
-  return static_cast<const AccessorDescriptor*>(this);
+  return core::BitCast<const AccessorDescriptor*>(this);
 }
 
 AccessorDescriptor* PropertyDescriptor::AsAccessorDescriptor() {
   assert(IsAccessorDescriptor());
-  return static_cast<AccessorDescriptor*>(this);
+  return core::BitCast<AccessorDescriptor*>(this);
 }
 
 void PropertyDescriptor::set_data_descriptor(const JSVal& value) {
