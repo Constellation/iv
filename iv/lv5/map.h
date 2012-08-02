@@ -92,7 +92,7 @@ class Map : public radio::HeapObject<radio::POINTER> {
         Map* map;
       } pair;
     } holder_;
-    uint32_t flags_;
+    uint8_t flags_;
   };
 
   class DeleteEntry {
@@ -112,7 +112,7 @@ class Map : public radio::HeapObject<radio::POINTER> {
 
    private:
     DeleteEntry* prev_;
-    std::size_t offset_;
+    uint32_t offset_;
   };
 
   class DeleteEntryHolder {
@@ -141,7 +141,7 @@ class Map : public radio::HeapObject<radio::POINTER> {
 
    private:
     DeleteEntry* entry_;
-    std::size_t size_;
+    uint32_t size_;
   };
 
   struct UniqueTag { };
@@ -425,8 +425,8 @@ class Map : public radio::HeapObject<radio::POINTER> {
   Transitions transitions_;
   DeleteEntryHolder deleted_;
   std::pair<Symbol, std::size_t> added_;
-  std::size_t calculated_size_;
-  std::size_t transit_count_;
+  uint32_t calculated_size_;
+  uint32_t transit_count_;
 };
 
 class MapBuilder {
