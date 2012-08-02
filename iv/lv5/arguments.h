@@ -121,7 +121,7 @@ class Arguments : private core::Noncopyable<> {
     return stack_[0];
   }
 
-  inline void set_this_binding(const JSVal& binding) {
+  inline void set_this_binding(JSVal binding) {
     stack_[0] = binding;
   }
 

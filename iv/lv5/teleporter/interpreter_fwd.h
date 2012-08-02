@@ -78,9 +78,9 @@ class Interpreter : private core::Noncopyable<Interpreter>, public AstVisitor {
 
   inline bool InCurrentLabelSet(const BreakableStatement* stmt);
 
-  inline JSVal GetValue(const JSVal& val, Error* e);
+  inline JSVal GetValue(JSVal val, Error* e);
 
-  inline void PutValue(const JSVal& val, const JSVal& w, Error* e);
+  inline void PutValue(JSVal val, JSVal w, Error* e);
 
   inline JSReference* GetIdentifierReference(JSEnv* lex,
                                              Symbol name, bool strict);

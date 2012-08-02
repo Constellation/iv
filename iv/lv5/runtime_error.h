@@ -37,7 +37,7 @@ inline JSVal ErrorConstructor(const Arguments& args, Error* e) {
 // section 15.11.4.4 Error.prototype.toString()
 inline JSVal ErrorToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Error.prototype.toString", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   Context* const ctx = args.ctx();
   if (obj.IsObject()) {
     JSString* name;

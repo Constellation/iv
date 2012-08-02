@@ -19,7 +19,7 @@ class ContextSwitcher : private core::Noncopyable<> {
   ContextSwitcher(Context* ctx,
                   JSEnv* lex,
                   JSEnv* var,
-                  const JSVal& binding,
+                  JSVal binding,
                   bool strict)
     : prev_lex_(ctx->lexical_env()),
       prev_var_(ctx->variable_env()),

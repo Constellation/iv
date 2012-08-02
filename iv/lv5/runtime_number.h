@@ -90,7 +90,7 @@ inline JSVal NumberToInt(const Arguments& args, Error* e) {
 // section 15.7.4.2 Number.prototype.toString([radix])
 inline JSVal NumberToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.toString", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   double num;
   if (!obj.IsNumber()) {
     if (obj.IsObject() && obj.object()->IsClass<Class::Number>()) {
@@ -104,7 +104,7 @@ inline JSVal NumberToString(const Arguments& args, Error* e) {
     num = obj.number();
   }
   if (!args.empty()) {
-    const JSVal& first = args[0];
+    const JSVal first = args[0];
     double radix;
     if (first.IsUndefined()) {
       radix = 10;
@@ -146,7 +146,7 @@ inline JSVal NumberToString(const Arguments& args, Error* e) {
 // section 15.7.4.2 Number.prototype.toLocaleString()
 inline JSVal NumberToLocaleString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.toLocaleString", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   double num;
   if (!obj.IsNumber()) {
     if (obj.IsObject() && obj.object()->IsClass<Class::Number>()) {
@@ -169,7 +169,7 @@ inline JSVal NumberToLocaleString(const Arguments& args, Error* e) {
 // section 15.7.4.4 Number.prototype.valueOf()
 inline JSVal NumberValueOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.valueOf", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (!obj.IsNumber()) {
     if (obj.IsObject() && obj.object()->IsClass<Class::Number>()) {
       return static_cast<JSNumberObject*>(obj.object())->value();
@@ -191,7 +191,7 @@ inline JSVal NumberToFixed(const Arguments& args, Error* e) {
   if (args.empty()) {
     fd = 0.0;
   } else {
-    const JSVal& first = args[0];
+    const JSVal first = args[0];
     if (first.IsUndefined()) {
       fd = 0.0;
     } else {
@@ -203,7 +203,7 @@ inline JSVal NumberToFixed(const Arguments& args, Error* e) {
               "fractionDigits is in range between 0 to 20");
     return JSEmpty;
   }
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   double x;
   if (!obj.IsNumber()) {
     if (obj.IsObject() && obj.object()->IsClass<Class::Number>()) {
@@ -234,7 +234,7 @@ inline JSVal NumberToExponential(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.toExponential", args, e);
   Context* const ctx = args.ctx();
 
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   double x;
   if (!obj.IsNumber()) {
     if (obj.IsObject() && obj.object()->IsClass<Class::Number>()) {
@@ -297,7 +297,7 @@ inline JSVal NumberToPrecision(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.toPrecision", args, e);
   Context* const ctx = args.ctx();
 
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   double x;
   if (!obj.IsNumber()) {
     if (obj.IsObject() && obj.object()->IsClass<Class::Number>()) {
@@ -315,7 +315,7 @@ inline JSVal NumberToPrecision(const Arguments& args, Error* e) {
   if (args.empty()) {
     return obj.ToString(ctx, e);
   } else {
-    const JSVal& precision = args[0];
+    const JSVal precision = args[0];
     if (precision.IsUndefined()) {
       return obj.ToString(ctx, e);
     } else {
@@ -347,7 +347,7 @@ inline JSVal NumberToPrecision(const Arguments& args, Error* e) {
 inline JSVal NumberCLZ(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.clz", args, e);
 
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   uint32_t x;
   if (!obj.IsNumber()) {
     if (obj.IsObject() && obj.object()->IsClass<Class::Number>()) {

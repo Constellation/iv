@@ -28,7 +28,7 @@ class Scope : private core::Noncopyable<Scope> {
     return current_;
   }
 
-  const JSVal& Close(const JSVal& val) {
+  JSVal Close(JSVal val) {
     reserved_ = val.IsCell() ? val.cell() : NULL;
     return val;
   }

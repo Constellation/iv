@@ -31,7 +31,7 @@ inline JSVal FunctionPrototype(const Arguments& args, Error* e) {
 // section 15.3.4.2 Function.prototype.toString()
 inline JSVal FunctionToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Function.prototype.toString", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
     Context* const ctx = args.ctx();
@@ -59,7 +59,7 @@ inline JSVal FunctionToString(const Arguments& args, Error* e) {
 // section 15.3.4.3 Function.prototype.apply(thisArg, argArray)
 inline JSVal FunctionApply(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Function.prototype.apply", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
     Context* const ctx = args.ctx();
@@ -68,7 +68,7 @@ inline JSVal FunctionApply(const Arguments& args, Error* e) {
       ScopedArguments a(ctx, 0, IV_LV5_ERROR(e));
       return func->Call(&a, args.At(0), e);
     }
-    const JSVal& second = args[1];
+    const JSVal second = args[1];
     if (!second.IsObject()) {
       e->Report(
           Error::Type,
@@ -93,7 +93,7 @@ inline JSVal FunctionApply(const Arguments& args, Error* e) {
 // section 15.3.4.4 Function.prototype.call(thisArg[, arg1[, arg2, ...]])
 inline JSVal FunctionCall(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Function.prototype.call", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const func = obj.object()->AsCallable();
     const std::size_t args_size = args.size();
@@ -112,7 +112,7 @@ inline JSVal FunctionCall(const Arguments& args, Error* e) {
 // section 15.3.4.5 Function.prototype.bind(thisArg[, arg1[, arg2, ...]])
 inline JSVal FunctionBind(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Function.prototype.bind", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsCallable()) {
     JSFunction* const target = obj.object()->AsCallable();
     return JSBoundFunction::New(args.ctx(), target, args.At(0), args);

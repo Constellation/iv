@@ -571,7 +571,7 @@ inline JSVal StringValueOf(const Arguments& args, Error* e) {
 // section 15.5.4.4 String.prototype.charAt(pos)
 inline JSVal StringCharAt(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.charAt", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   const JSVal first = args.At(0);
@@ -593,7 +593,7 @@ inline JSVal StringCharAt(const Arguments& args, Error* e) {
 // section 15.5.4.5 String.prototype.charCodeAt(pos)
 inline JSVal StringCharCodeAt(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.charCodeAt", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   const JSVal first = args.At(0);
@@ -616,7 +616,7 @@ inline JSVal StringCharCodeAt(const Arguments& args, Error* e) {
 // section 15.5.4.5 String.prototype.codePointAt(pos)
 inline JSVal StringCodePointAt(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.charCodeAt", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   const JSVal arg1 = args.At(0);
@@ -647,7 +647,7 @@ inline JSVal StringCodePointAt(const Arguments& args, Error* e) {
 // section 15.5.4.6 String.prototype.concat([string1[, string2[, ...]]])
 inline JSVal StringConcat(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.concat", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   JSStringBuilder builder;
@@ -663,7 +663,7 @@ inline JSVal StringConcat(const Arguments& args, Error* e) {
 // section 15.5.4.7 String.prototype.indexOf(searchString, position)
 inline JSVal StringIndexOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.indexOf", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   JSString* const search_str = args.At(0).ToString(args.ctx(), IV_LV5_ERROR(e));
@@ -693,7 +693,7 @@ inline JSVal StringIndexOf(const Arguments& args, Error* e) {
 // section 15.5.4.8 String.prototype.lastIndexOf(searchString, position)
 inline JSVal StringLastIndexOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.lastIndexOf", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   std::size_t target = str->size();
@@ -716,7 +716,7 @@ inline JSVal StringLastIndexOf(const Arguments& args, Error* e) {
 // section 15.5.4.9 String.prototype.localeCompare(that)
 inline JSVal StringLocaleCompare(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.localeCompare", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   JSString* that = args.At(0).ToString(args.ctx(), IV_LV5_ERROR(e));
@@ -726,7 +726,7 @@ inline JSVal StringLocaleCompare(const Arguments& args, Error* e) {
 // section 15.5.4.10 String.prototype.match(regexp)
 inline JSVal StringMatch(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.match", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   Context* const ctx = args.ctx();
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
@@ -758,7 +758,7 @@ inline JSVal StringMatch(const Arguments& args, Error* e) {
 // section 15.5.4.11 String.prototype.replace(searchValue, replaceValue)
 inline JSVal StringReplace(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.replace", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   Context* const ctx = args.ctx();
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
@@ -841,7 +841,7 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
 // section 15.5.4.12 String.prototype.search(regexp)
 inline JSVal StringSearch(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.search", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   Context* const ctx = args.ctx();
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
@@ -875,7 +875,7 @@ inline JSVal StringSearch(const Arguments& args, Error* e) {
 // section 15.5.4.13 String.prototype.slice(start, end)
 inline JSVal StringSlice(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.slice", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   Context* const ctx = args.ctx();
   const JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
@@ -914,7 +914,7 @@ inline JSVal StringSlice(const Arguments& args, Error* e) {
 inline JSVal StringSplit(const Arguments& args, Error* e) {
   using std::get;
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.split", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   Context* const ctx = args.ctx();
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
@@ -1015,7 +1015,7 @@ inline JSVal StringSplit(const Arguments& args, Error* e) {
 // section 15.5.4.15 String.prototype.substring(start, end)
 inline JSVal StringSubstring(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.substring", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   Context* const ctx = args.ctx();
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
@@ -1156,7 +1156,7 @@ struct ToLocaleLowerCase {
 // section 15.5.4.16 String.prototype.toLowerCase()
 inline JSVal StringToLowerCase(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toLowerCase", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   return detail::ConvertCase(args.ctx(), str, detail::ToLowerCase());
@@ -1165,7 +1165,7 @@ inline JSVal StringToLowerCase(const Arguments& args, Error* e) {
 // section 15.5.4.17 String.prototype.toLocaleLowerCase()
 inline JSVal StringToLocaleLowerCase(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toLocaleLowerCase", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   if (str->Is8Bit()) {
@@ -1184,7 +1184,7 @@ inline JSVal StringToLocaleLowerCase(const Arguments& args, Error* e) {
 // section 15.5.4.18 String.prototype.toUpperCase()
 inline JSVal StringToUpperCase(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toUpperCase", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   return detail::ConvertCase(args.ctx(), str, detail::ToUpperCase());
@@ -1193,7 +1193,7 @@ inline JSVal StringToUpperCase(const Arguments& args, Error* e) {
 // section 15.5.4.19 String.prototype.toLocaleUpperCase()
 inline JSVal StringToLocaleUpperCase(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.toLocaleUpperCase", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   if (str->Is8Bit()) {
@@ -1238,7 +1238,7 @@ inline JSVal detail::StringTrimHelper(Context* ctx, const FiberType* fiber) {
 // section 15.5.4.20 String.prototype.trim()
 inline JSVal StringTrim(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.trim", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   if (str->Is8Bit()) {
@@ -1251,7 +1251,7 @@ inline JSVal StringTrim(const Arguments& args, Error* e) {
 // section 15.5.4.21 String.prototype.repeat(count)
 inline JSVal StringRepeat(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.repeat", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   Context* ctx = args.ctx();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
@@ -1265,7 +1265,7 @@ inline JSVal StringRepeat(const Arguments& args, Error* e) {
 // section 15.5.4.22 String.prototype.startsWith(searchString, [position])
 inline JSVal StringStartsWith(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.startsWith", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   Context* ctx = args.ctx();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
@@ -1299,7 +1299,7 @@ inline JSVal StringStartsWith(const Arguments& args, Error* e) {
 // section 15.5.4.23 String.prototype.endsWith(searchString, [endPosition])
 inline JSVal StringEndsWith(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.endsWith", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   Context* ctx = args.ctx();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
@@ -1336,7 +1336,7 @@ inline JSVal StringEndsWith(const Arguments& args, Error* e) {
 // section 15.5.4.24 String.prototype.contains(searchString, [position])
 inline JSVal StringContains(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.contains", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   Context* ctx = args.ctx();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
@@ -1368,7 +1368,7 @@ inline JSVal StringContains(const Arguments& args, Error* e) {
 // section 15.5.4.25 String.prototype.reverse()
 inline JSVal StringReverse(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.reverse", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   Context* ctx = args.ctx();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
@@ -1379,7 +1379,7 @@ inline JSVal StringReverse(const Arguments& args, Error* e) {
 // this method is deprecated.
 inline JSVal StringSubstr(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.prototype.substr", args, e);
-  const JSVal& val = args.this_binding();
+  const JSVal val = args.this_binding();
   Context* const ctx = args.ctx();
   const JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   const double len = str->size();

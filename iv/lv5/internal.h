@@ -60,8 +60,7 @@ inline JSVal FromPropertyDescriptor(Context* ctx,
 }
 
 inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
-                                               const JSVal& target,
-                                               Error* e) {
+                                               JSVal target, Error* e) {
   if (!target.IsObject()) {
     e->Report(Error::Type, "ToPropertyDescriptor requires Object argument");
     return JSEmpty;

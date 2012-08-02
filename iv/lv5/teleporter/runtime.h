@@ -17,7 +17,7 @@ inline JSVal GlobalEval(const Arguments& args, Error* e) {
   if (!args.size()) {
     return JSUndefined;
   }
-  const JSVal& first = args[0];
+  const JSVal first = args[0];
   if (!first.IsString()) {
     return first;
   }
@@ -64,7 +64,7 @@ inline JSVal DirectCallToEval(const Arguments& args, Error* e) {
   if (!args.size()) {
     return JSUndefined;
   }
-  const JSVal& first = args[0];
+  const JSVal first = args[0];
   if (!first.IsString()) {
     return first;
   }

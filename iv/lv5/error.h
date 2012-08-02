@@ -47,7 +47,7 @@ class Error {
     set_code(code);
   }
 
-  virtual void Report(const JSVal& val) {
+  virtual void Report(JSVal val) {
     set_code(User);
   }
 
@@ -121,7 +121,7 @@ class Error::Standard : public Error {
     detail_.assign(str.begin(), str.end());
   }
 
-  virtual void Report(const JSVal& val) {
+  virtual void Report(JSVal val) {
     Error::Report(val);
     value_ = val;
   }

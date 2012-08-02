@@ -136,7 +136,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
       }
       // this target included in vector (if dense array)
       if (vector_.size() > index) {
-        const JSVal& val = vector_[index];
+        const JSVal val = vector_[index];
         if (!val.IsEmpty()) {
           // current is target
           slot->set_descriptor(

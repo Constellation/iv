@@ -28,7 +28,7 @@ class JSReference : public radio::HeapObject<radio::REFERENCE> {
   bool IsPropertyReference() const {
     return base_.IsObject() || HasPrimitiveBase();
   }
-  inline const JSVal& base() const {
+  inline JSVal base() const {
     return base_;
   }
   static JSReference* New(Context* ctx,

@@ -62,7 +62,7 @@ inline JSVal ObjectConstructor(const Arguments& args, Error* e) {
 inline JSVal ObjectGetPrototypeOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.getPrototypeOf", args, e);
   if (!args.empty()) {
-    const JSVal& first = args.front();
+    const JSVal first = args.front();
     if (first.IsObject()) {
       JSObject* const obj = first.object()->prototype();
       if (obj) {
@@ -81,7 +81,7 @@ inline JSVal ObjectGetOwnPropertyDescriptor(const Arguments& args,
                                             Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.getOwnPropertyDescriptor", args, e);
   if (!args.empty()) {
-    const JSVal& first = args.front();
+    const JSVal first = args.front();
     if (first.IsObject()) {
       JSObject* const obj = first.object();
       const Symbol name = args.At(1).ToSymbol(args.ctx(), IV_LV5_ERROR(e));
@@ -98,7 +98,7 @@ inline JSVal ObjectGetOwnPropertyDescriptor(const Arguments& args,
 inline JSVal ObjectGetOwnPropertyNames(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.getOwnPropertyNames", args, e);
   if (!args.empty()) {
-    const JSVal& first = args.front();
+    const JSVal first = args.front();
     if (first.IsObject()) {
       JSObject* const obj = first.object();
       Context* const ctx = args.ctx();
@@ -154,7 +154,7 @@ inline void detail::DefinePropertiesHelper(Context* ctx,
 inline JSVal ObjectCreate(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.create", args, e);
   if (!args.empty()) {
-    const JSVal& first = args.front();
+    const JSVal first = args.front();
     if (first.IsObject() || first.IsNull()) {
       JSObject* const res = JSObject::New(args.ctx());
       if (first.IsObject()) {
@@ -179,7 +179,7 @@ inline JSVal ObjectCreate(const Arguments& args, Error* e) {
 inline JSVal ObjectDefineProperty(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.defineProperty", args, e);
   if (!args.empty()) {
-    const JSVal& first = args.front();
+    const JSVal first = args.front();
     if (first.IsObject()) {
       JSObject* const obj = first.object();
       const Symbol name = args.At(1).ToSymbol(args.ctx(), IV_LV5_ERROR(e));
@@ -198,7 +198,7 @@ inline JSVal ObjectDefineProperty(const Arguments& args, Error* e) {
 inline JSVal ObjectDefineProperties(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.defineProperties", args, e);
   if (!args.empty()) {
-    const JSVal& first = args.front();
+    const JSVal first = args.front();
     if (first.IsObject()) {
       JSObject* const obj = first.object();
       JSObject* const props = args.At(1).ToObject(args.ctx(), IV_LV5_ERROR(e));
@@ -215,7 +215,7 @@ inline JSVal ObjectSeal(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.seal", args, e);
   Context* const ctx = args.ctx();
   if (!args.empty()) {
-    const JSVal& first = args.front();
+    const JSVal first = args.front();
     if (first.IsObject()) {
       JSObject* const obj = first.object();
       PropertyNamesCollector collector;
@@ -245,7 +245,7 @@ inline JSVal ObjectFreeze(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.freeze", args, e);
   Context* const ctx = args.ctx();
   if (!args.empty()) {
-    const JSVal& first = args.front();
+    const JSVal first = args.front();
     if (first.IsObject()) {
       JSObject* const obj = first.object();
       PropertyNamesCollector collector;
@@ -277,7 +277,7 @@ inline JSVal ObjectFreeze(const Arguments& args, Error* e) {
 inline JSVal ObjectPreventExtensions(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.preventExtensions", args, e);
   if (!args.empty()) {
-    const JSVal& first = args.front();
+    const JSVal first = args.front();
     if (first.IsObject()) {
       JSObject* const obj = first.object();
       obj->set_extensible(false);
@@ -293,7 +293,7 @@ inline JSVal ObjectIsSealed(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.isSealed", args, e);
   Context* const ctx = args.ctx();
   if (!args.empty()) {
-    const JSVal& first = args.front();
+    const JSVal first = args.front();
     if (first.IsObject()) {
       JSObject* const obj = first.object();
       PropertyNamesCollector collector;
@@ -320,7 +320,7 @@ inline JSVal ObjectIsFrozen(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.isFrozen", args, e);
   Context* const ctx = args.ctx();
   if (!args.empty()) {
-    const JSVal& first = args.front();
+    const JSVal first = args.front();
     if (first.IsObject()) {
       JSObject* const obj = first.object();
       PropertyNamesCollector collector;
@@ -349,7 +349,7 @@ inline JSVal ObjectIsFrozen(const Arguments& args, Error* e) {
 inline JSVal ObjectIsExtensible(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.isExtensible", args, e);
   if (!args.empty()) {
-    const JSVal& first = args.front();
+    const JSVal first = args.front();
     if (first.IsObject()) {
       JSObject* const obj = first.object();
       return JSVal::Bool(obj->IsExtensible());
@@ -364,7 +364,7 @@ inline JSVal ObjectKeys(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.keys", args, e);
   Context* const ctx = args.ctx();
   if (!args.empty()) {
-    const JSVal& first = args.front();
+    const JSVal first = args.front();
     if (first.IsObject()) {
       JSObject* const obj = first.object();
       PropertyNamesCollector collector;
@@ -395,7 +395,7 @@ inline JSVal ObjectIs(const Arguments& args, Error* e) {
 // section 15.2.4.2 Object.prototype.toString()
 inline JSVal ObjectToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.toString", args, e);
-  const JSVal& this_binding = args.this_binding();
+  const JSVal this_binding = args.this_binding();
   if (this_binding.IsUndefined()) {
     return JSString::NewAsciiString(args.ctx(), "[object Undefined]");
   }
@@ -443,7 +443,7 @@ inline JSVal ObjectValueOf(const Arguments& args, Error* e) {
 inline JSVal ObjectHasOwnProperty(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.hasOwnProperty", args, e);
   if (!args.empty()) {
-    const JSVal& val = args.front();
+    const JSVal val = args.front();
     Context* const ctx = args.ctx();
     const Symbol name = val.ToSymbol(ctx, IV_LV5_ERROR(e));
     JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -457,7 +457,7 @@ inline JSVal ObjectHasOwnProperty(const Arguments& args, Error* e) {
 inline JSVal ObjectIsPrototypeOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.isPrototypeOf", args, e);
   if (!args.empty()) {
-    const JSVal& first = args.front();
+    const JSVal first = args.front();
     if (first.IsObject()) {
       JSObject* const v = first.object();
       JSObject* const obj =

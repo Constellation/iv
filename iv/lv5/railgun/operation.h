@@ -125,14 +125,14 @@ class Operation {
     return GetHeapEnv(env, scope_nest_count)->GetByOffset(offset, strict, e);
   }
 
-  JSVal LoadProp(const JSVal& base, Symbol s, bool strict, Error* e) {
+  JSVal LoadProp(JSVal base, Symbol s, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     return LoadPropImpl(base, s, strict, e);
   }
 
   template<OP::Type own, OP::Type proto, OP::Type chain, OP::Type generic>
   JSVal LoadProp(Instruction* instr,
-                 const JSVal& base, Symbol s, bool strict, Error* e) {
+                 JSVal base, Symbol s, bool strict, Error* e) {
     // opcode | (dst | base | name) | nop | nop | nop
     base.CheckObjectCoercible(CHECK);
     JSObject* obj = NULL;
@@ -188,8 +188,8 @@ class Operation {
     }
   }
 
-  JSVal LoadElement(const JSVal& base,
-                    const JSVal& element, bool strict, Error* e) {
+  JSVal LoadElement(JSVal base,
+                    JSVal element, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     // array fast path
     uint32_t index;
@@ -207,7 +207,7 @@ class Operation {
     return LoadPropImpl(base, s, strict, e);
   }
 
-  JSVal LoadPropImpl(const JSVal& base,
+  JSVal LoadPropImpl(JSVal base,
                      Symbol s, bool strict, Error* e) {
     if (base.IsPrimitive()) {
       return LoadPropPrimitive(base, s, strict, e);
@@ -216,7 +216,7 @@ class Operation {
     }
   }
 
-  JSVal LoadPropPrimitive(const JSVal& base,
+  JSVal LoadPropPrimitive(JSVal base,
                           Symbol s, bool strict, Error* e) {
     JSVal res;
     if (GetPrimitiveOwnProperty(base, s, &res)) {
@@ -238,7 +238,7 @@ class Operation {
 #define CHECK IV_LV5_ERROR_VOID(e)
 
   void StoreName(JSEnv* env, Symbol name,
-                 const JSVal& stored, bool strict, Error* e) {
+                 JSVal stored, bool strict, Error* e) {
     if (JSEnv* current = GetEnv(env, name)) {
       current->SetMutableBinding(ctx_, name, stored, strict, e);
     } else {
@@ -253,13 +253,13 @@ class Operation {
   }
 
   void StoreHeap(JSEnv* env, Symbol name,
-                 const JSVal& stored, bool strict,
+                 JSVal stored, bool strict,
                  uint32_t offset, uint32_t scope_nest_count, Error* e) {
     GetHeapEnv(env, scope_nest_count)->SetByOffset(offset, stored, strict, e);
   }
 
-  void StoreElement(const JSVal& base, const JSVal& element,
-                    const JSVal& stored, bool strict, Error* e) {
+  void StoreElement(JSVal base, JSVal element,
+                    JSVal stored, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     // array fast path
     uint32_t index;
@@ -281,16 +281,16 @@ class Operation {
     StorePropImpl(base, s, stored, strict, e);
   }
 
-  void StoreProp(const JSVal& base, Symbol s,
-                 const JSVal& stored, bool strict, Error* e) {
+  void StoreProp(JSVal base, Symbol s,
+                 JSVal stored, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     StorePropImpl(base, s, stored, strict, e);
   }
 
-  void StoreProp(const JSVal& base,
+  void StoreProp(JSVal base,
                  Instruction* instr,
                  OP::Type generic,
-                 Symbol s, const JSVal& stored, bool strict, Error* e) {
+                 Symbol s, JSVal stored, bool strict, Error* e) {
     // opcode | (base | src | index) | nop | nop
     base.CheckObjectCoercible(CHECK);
     if (base.IsPrimitive()) {
@@ -323,8 +323,8 @@ class Operation {
     }
   }
 
-  void StorePropImpl(const JSVal& base, Symbol s,
-                     const JSVal& stored, bool strict, Error* e) {
+  void StorePropImpl(JSVal base, Symbol s,
+                     JSVal stored, bool strict, Error* e) {
     if (base.IsPrimitive()) {
       StorePropPrimitive(base, s, stored, strict, e);
     } else {
@@ -332,8 +332,8 @@ class Operation {
     }
   }
 
-  void StorePropPrimitive(const JSVal& base, Symbol s,
-                          const JSVal& stored, bool strict, Error* e) {
+  void StorePropPrimitive(JSVal base, Symbol s,
+                          JSVal stored, bool strict, Error* e) {
     assert(base.IsPrimitive());
     JSObject* const o = base.ToObject(ctx_, CHECK);
     if (!o->CanPut(ctx_, s)) {
@@ -368,7 +368,7 @@ class Operation {
 
 #define CHECK IV_LV5_ERROR_WITH(e, JSEmpty)
 
-  JSVal BinaryAdd(const JSVal& lhs, const JSVal& rhs, Error* e) const {
+  JSVal BinaryAdd(JSVal lhs, JSVal rhs, Error* e) const {
     if (lhs.IsNumber() && rhs.IsNumber()) {
       return lhs.number() + rhs.number();
     }
@@ -394,64 +394,64 @@ class Operation {
     return left + rprim.ToNumber(ctx_, e);
   }
 
-  JSVal BinarySub(const JSVal& lhs, const JSVal& rhs, Error* e) const {
+  JSVal BinarySub(JSVal lhs, JSVal rhs, Error* e) const {
     const double left = lhs.ToNumber(ctx_, CHECK);
     return left -  rhs.ToNumber(ctx_, e);
   }
 
-  JSVal BinaryMultiply(const JSVal& lhs, const JSVal& rhs, Error* e) const {
+  JSVal BinaryMultiply(JSVal lhs, JSVal rhs, Error* e) const {
     const double left = lhs.ToNumber(ctx_, CHECK);
     return left * rhs.ToNumber(ctx_, e);
   }
 
-  JSVal BinaryDivide(const JSVal& lhs, const JSVal& rhs, Error* e) const {
+  JSVal BinaryDivide(JSVal lhs, JSVal rhs, Error* e) const {
     const double left = lhs.ToNumber(ctx_, CHECK);
     return left / rhs.ToNumber(ctx_, e);
   }
 
-  JSVal BinaryModulo(const JSVal& lhs, const JSVal& rhs, Error* e) const {
+  JSVal BinaryModulo(JSVal lhs, JSVal rhs, Error* e) const {
     const double left = lhs.ToNumber(ctx_, CHECK);
     return core::math::Modulo(left, rhs.ToNumber(ctx_, e));
   }
 
-  JSVal BinaryLShift(const JSVal& lhs, const JSVal& rhs, Error* e) const {
+  JSVal BinaryLShift(JSVal lhs, JSVal rhs, Error* e) const {
     const int32_t left = lhs.ToInt32(ctx_, CHECK);
     return JSVal::Int32(left << (rhs.ToInt32(ctx_, e) & 0x1f));
   }
 
-  JSVal BinaryRShift(const JSVal& lhs, const JSVal& rhs, Error* e) const {
+  JSVal BinaryRShift(JSVal lhs, JSVal rhs, Error* e) const {
     const int32_t left = lhs.ToInt32(ctx_, CHECK);
     return JSVal::Int32(left >> (rhs.ToInt32(ctx_, e) & 0x1f));
   }
 
-  JSVal BinaryRShiftLogical(const JSVal& lhs,
-                            const JSVal& rhs, Error* e) const {
+  JSVal BinaryRShiftLogical(JSVal lhs,
+                            JSVal rhs, Error* e) const {
     const uint32_t left = lhs.ToUInt32(ctx_, CHECK);
     return JSVal::UInt32(left >> (rhs.ToInt32(ctx_, e) & 0x1f));
   }
 
-  bool BinaryCompareLT(const JSVal& lhs,
-                       const JSVal& rhs, Error* e) const {
+  bool BinaryCompareLT(JSVal lhs,
+                       JSVal rhs, Error* e) const {
     return JSVal::Compare<true>(ctx_, lhs, rhs, e) == CMP_TRUE;
   }
 
-  bool BinaryCompareLTE(const JSVal& lhs,
-                        const JSVal& rhs, Error* e) const {
+  bool BinaryCompareLTE(JSVal lhs,
+                        JSVal rhs, Error* e) const {
     return JSVal::Compare<false>(ctx_, rhs, lhs, e) == CMP_FALSE;
   }
 
-  bool BinaryCompareGT(const JSVal& lhs,
-                       const JSVal& rhs, Error* e) const {
+  bool BinaryCompareGT(JSVal lhs,
+                       JSVal rhs, Error* e) const {
     return JSVal::Compare<false>(ctx_, rhs, lhs, e) == CMP_TRUE;
   }
 
-  bool BinaryCompareGTE(const JSVal& lhs,
-                        const JSVal& rhs, Error* e) const {
+  bool BinaryCompareGTE(JSVal lhs,
+                        JSVal rhs, Error* e) const {
     return JSVal::Compare<true>(ctx_, lhs, rhs, e) == CMP_FALSE;
   }
 
-  bool BinaryInstanceof(const JSVal& lhs,
-                        const JSVal& rhs, Error* e) const {
+  bool BinaryInstanceof(JSVal lhs,
+                        JSVal rhs, Error* e) const {
     if (!rhs.IsObject()) {
       e->Report(Error::Type, "instanceof requires object");
       return false;
@@ -464,8 +464,8 @@ class Operation {
     return robj->AsCallable()->HasInstance(ctx_, lhs, e);
   }
 
-  bool BinaryIn(const JSVal& lhs,
-                const JSVal& rhs, Error* e) const {
+  bool BinaryIn(JSVal lhs,
+                JSVal rhs, Error* e) const {
     if (!rhs.IsObject()) {
       e->Report(Error::Type, "in requires object");
       return false;
@@ -474,40 +474,40 @@ class Operation {
     return rhs.object()->HasProperty(ctx_, s);
   }
 
-  bool BinaryEqual(const JSVal& lhs,
-                   const JSVal& rhs, Error* e) const {
+  bool BinaryEqual(JSVal lhs,
+                   JSVal rhs, Error* e) const {
     return JSVal::AbstractEqual(ctx_, lhs, rhs, e);
   }
 
-  bool BinaryStrictEqual(const JSVal& lhs,
-                         const JSVal& rhs) const {
+  bool BinaryStrictEqual(JSVal lhs,
+                         JSVal rhs) const {
     return JSVal::StrictEqual(lhs, rhs);
   }
 
-  bool BinaryNotEqual(const JSVal& lhs,
-                      const JSVal& rhs, Error* e) const {
+  bool BinaryNotEqual(JSVal lhs,
+                      JSVal rhs, Error* e) const {
     return !JSVal::AbstractEqual(ctx_, lhs, rhs, e);
   }
 
-  bool BinaryStrictNotEqual(const JSVal& lhs,
-                            const JSVal& rhs) const {
+  bool BinaryStrictNotEqual(JSVal lhs,
+                            JSVal rhs) const {
     return !JSVal::StrictEqual(lhs, rhs);
   }
 
-  int32_t BinaryBitAnd(const JSVal& lhs,
-                       const JSVal& rhs, Error* e) const {
+  int32_t BinaryBitAnd(JSVal lhs,
+                       JSVal rhs, Error* e) const {
     const int32_t left = lhs.ToInt32(ctx_, IV_LV5_ERROR_WITH(e, 0));
     return left & rhs.ToInt32(ctx_, e);
   }
 
-  int32_t BinaryBitXor(const JSVal& lhs,
-                       const JSVal& rhs, Error* e) const {
+  int32_t BinaryBitXor(JSVal lhs,
+                       JSVal rhs, Error* e) const {
     const int32_t left = lhs.ToInt32(ctx_, IV_LV5_ERROR_WITH(e, 0));
     return left ^ rhs.ToInt32(ctx_, e);
   }
 
-  int32_t BinaryBitOr(const JSVal& lhs,
-                      const JSVal& rhs, Error* e) const {
+  int32_t BinaryBitOr(JSVal lhs,
+                      JSVal rhs, Error* e) const {
     const int32_t left = lhs.ToInt32(ctx_, IV_LV5_ERROR_WITH(e, 0));
     return left | rhs.ToInt32(ctx_, e);
   }
@@ -584,8 +584,8 @@ class Operation {
   }
 
   template<int Target, std::size_t Returned>
-  JSVal IncrementElement(const JSVal& base,
-                         const JSVal& element, bool strict, Error* e) {
+  JSVal IncrementElement(JSVal base,
+                         JSVal element, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     const Symbol s = element.ToSymbol(ctx_, CHECK);
     const JSVal w = LoadPropImpl(base, s, strict, CHECK);
@@ -606,7 +606,7 @@ class Operation {
   }
 
   template<int Target, std::size_t Returned>
-  JSVal IncrementProp(const JSVal& base,
+  JSVal IncrementProp(JSVal base,
                       Symbol s, bool strict, Error* e) {
     base.CheckObjectCoercible(CHECK);
     const JSVal w = LoadPropImpl(base, s, strict, CHECK);

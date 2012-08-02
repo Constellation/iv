@@ -187,8 +187,7 @@ bool JSObject::DefineOwnProperty(Context* ctx,
   }
 }
 
-void JSObject::Put(Context* ctx,
-                   Symbol name, const JSVal& val, bool th, Error* e) {
+void JSObject::Put(Context* ctx, Symbol name, JSVal val, bool th, Error* e) {
   if (!CanPut(ctx, name)) {
     if (th) {
       e->Report(Error::Type, "put failed");
@@ -306,7 +305,7 @@ JSVal JSObject::GetBySlotOffset(Context* ctx, std::size_t n, Error* e) {
 }
 
 void JSObject::PutToSlotOffset(Context* ctx,
-                               std::size_t offset, const JSVal& val,
+                               std::size_t offset, JSVal val,
                                bool th, Error* e) {
   // not empty is already checked
   const PropertyDescriptor current = GetSlot(offset);

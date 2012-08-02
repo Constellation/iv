@@ -190,7 +190,7 @@ class JSCollator : public JSObject {
 
 class JSCollatorBoundFunction : public JSFunction {
  public:
-  virtual JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
+  virtual JSVal Call(Arguments* args, JSVal this_binding, Error* e) {
     return collator_->Compare(args->ctx(), args->At(0), args->At(1), e);
   }
 

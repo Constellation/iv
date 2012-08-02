@@ -24,8 +24,7 @@ namespace teleporter {
 
 class JSCodeFunction : public JSFunction {
  public:
-  JSVal Call(Arguments* args,
-             const JSVal& this_binding, Error* e) {
+  JSVal Call(Arguments* args, JSVal this_binding, Error* e) {
     Context* const ctx = static_cast<Context*>(args->ctx());
     args->set_this_binding(this_binding);
     ctx->interp()->Invoke(this, *args, e);

@@ -69,11 +69,11 @@ class Object : public Scope {
     return *this;
   }
 
-  Object& def(const core::StringPiece& string, const JSVal& val) {
+  Object& def(const core::StringPiece& string, JSVal val) {
     return def(context::Intern(ctx_, string), val);
   }
 
-  Object& def(const Symbol& name, const JSVal& val) {
+  Object& def(const Symbol& name, JSVal val) {
     obj_->DefineOwnProperty(
       ctx_, name,
       DataDescriptor(val, ATTR::NONE),
@@ -81,11 +81,11 @@ class Object : public Scope {
     return *this;
   }
 
-  Object& def(const core::StringPiece& string, const JSVal& val, int attr) {
+  Object& def(const core::StringPiece& string, JSVal val, int attr) {
     return def(context::Intern(ctx_, string), val, attr);
   }
 
-  Object& def(const Symbol& name, const JSVal& val, int attr) {
+  Object& def(const Symbol& name, JSVal val, int attr) {
     obj_->DefineOwnProperty(
       ctx_, name,
       DataDescriptor(val, attr),

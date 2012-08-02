@@ -24,7 +24,7 @@ inline JSVal BooleanConstructor(const Arguments& args, Error* e) {
 // section 15.6.4.2 Boolean.prototype.toString()
 inline JSVal BooleanToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Boolean.prototype.toString", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   bool b;
   if (!obj.IsBoolean()) {
     if (obj.IsObject() && obj.object()->IsClass<Class::Boolean>()) {
@@ -45,7 +45,7 @@ inline JSVal BooleanToString(const Arguments& args, Error* e) {
 // section 15.6.4.3 Boolean.prototype.valueOf()
 inline JSVal BooleanValueOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Boolean.prototype.valueOf", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsBoolean()) {
     return obj;
   }

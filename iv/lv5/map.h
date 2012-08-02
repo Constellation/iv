@@ -20,6 +20,11 @@ class MapBuilder;
 class Map : public radio::HeapObject<radio::POINTER> {
  public:
   friend class MapBuilder;
+
+  struct Entry {
+    uint32_t attributes;  // Property Descriptor's attributes
+  };
+
   typedef GCHashMap<Symbol, std::size_t>::type TargetTable;
 
   class Transitions {

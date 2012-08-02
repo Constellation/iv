@@ -44,20 +44,21 @@ AccessorDescriptor* PropertyDescriptor::AsAccessorDescriptor() {
   return core::BitCast<AccessorDescriptor*>(this);
 }
 
-void PropertyDescriptor::set_data_descriptor(const JSVal& value) {
+inline void PropertyDescriptor::set_data_descriptor(JSVal value) {
   attrs_ &= ~(ATTR::ACCESSOR | ATTR::UNDEF_VALUE);
   attrs_ |= ATTR::DATA | ATTR::UNDEF_GETTER | ATTR::UNDEF_SETTER;
   value_.data_ = value;
 }
 
-void PropertyDescriptor::set_accessor_descriptor(JSObject* get, JSObject* set) {
+inline void PropertyDescriptor::set_accessor_descriptor(JSObject* get,
+                                                        JSObject* set) {
   attrs_ &= ~(ATTR::DATA | ATTR::UNDEF_GETTER | ATTR::UNDEF_SETTER);
   attrs_ |= ATTR::ACCESSOR | ATTR::UNDEF_VALUE;
   value_.accessor_.getter_ = get;
   value_.accessor_.setter_ = set;
 }
 
-void PropertyDescriptor::set_accessor_descriptor_getter(JSObject* get) {
+inline void PropertyDescriptor::set_accessor_descriptor_getter(JSObject* get) {
   if (IsDataDescriptor()) {
     value_.accessor_.setter_ = NULL;
   }
@@ -66,7 +67,7 @@ void PropertyDescriptor::set_accessor_descriptor_getter(JSObject* get) {
   value_.accessor_.getter_ = get;
 }
 
-void PropertyDescriptor::set_accessor_descriptor_setter(JSObject* set) {
+inline void PropertyDescriptor::set_accessor_descriptor_setter(JSObject* set) {
   if (IsDataDescriptor()) {
     value_.accessor_.getter_ = NULL;
   }
@@ -75,7 +76,7 @@ void PropertyDescriptor::set_accessor_descriptor_setter(JSObject* set) {
   value_.accessor_.setter_ = set;
 }
 
-PropertyDescriptor PropertyDescriptor::SetDefault(
+inline PropertyDescriptor PropertyDescriptor::SetDefault(
     const PropertyDescriptor& prop) {
   this_type result(prop);
   if (prop.IsConfigurableAbsent()) {
@@ -106,7 +107,7 @@ PropertyDescriptor PropertyDescriptor::SetDefault(
 }
 
 // if desc merged to current and has no effect, return true
-bool PropertyDescriptor::MergeWithNoEffect(
+inline bool PropertyDescriptor::MergeWithNoEffect(
     const PropertyDescriptor& desc) const {
   if (!desc.IsConfigurableAbsent() &&
       desc.IsConfigurable() != IsConfigurable()) {
@@ -138,7 +139,7 @@ bool PropertyDescriptor::MergeWithNoEffect(
   }
 }
 
-PropertyDescriptor PropertyDescriptor::Merge(
+inline PropertyDescriptor PropertyDescriptor::Merge(
     const PropertyDescriptor& desc,
     const PropertyDescriptor& current) {
   PropertyDescriptor result(current);
@@ -167,13 +168,6 @@ PropertyDescriptor PropertyDescriptor::Merge(
     }
   }
   return result;
-}
-
-bool PropertyDescriptor::IsAbsent() const {
-  return
-      IsConfigurableAbsent() &&
-      IsEnumerableAbsent() &&
-      IsGenericDescriptor();
 }
 
 } }  // namespace iv::lv5

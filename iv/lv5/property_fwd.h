@@ -111,7 +111,12 @@ class PropertyDescriptor {
     return attrs_ & ATTR::UNDEF_CONFIGURABLE;
   }
 
-  inline bool IsAbsent() const;
+  bool IsAbsent() const {
+    return
+        IsConfigurableAbsent() &&
+        IsEnumerableAbsent() &&
+        IsGenericDescriptor();
+  }
 
   inline void set_configurable(bool val) {
     if (val) {
@@ -123,15 +128,10 @@ class PropertyDescriptor {
 
   inline JSVal Get(Context* ctx, JSVal this_binding, Error* e) const;
 
-  static inline this_type SetDefault(const PropertyDescriptor& prop);
-
-  inline void set_data_descriptor(const JSVal& value);
-  inline void set_data_descriptor();
-  inline void set_accessor_descriptor(JSObject* get, JSObject* set);
-  inline void set_accessor_descriptor_getter(JSObject* set);
-  inline void set_accessor_descriptor_setter(JSObject* set);
-
-  inline bool MergeWithNoEffect(const PropertyDescriptor& desc) const;
+  void set_data_descriptor(JSVal value);
+  void set_accessor_descriptor(JSObject* get, JSObject* set);
+  void set_accessor_descriptor_getter(JSObject* set);
+  void set_accessor_descriptor_setter(JSObject* set);
 
   inline friend void swap(this_type& lhs, this_type& rhs) {
     return lhs.swap(rhs);
@@ -143,12 +143,16 @@ class PropertyDescriptor {
     swap(value_, rhs.value_);
   }
 
-  static inline this_type Merge(const PropertyDescriptor& desc,
-                                const PropertyDescriptor& current);
+  bool MergeWithNoEffect(const PropertyDescriptor& desc) const;
+
+  static this_type SetDefault(const PropertyDescriptor& prop);
+
+  static this_type Merge(const PropertyDescriptor& desc,
+                         const PropertyDescriptor& current);
 
  protected:
   PropertyDescriptor(DataDescriptorTag tag,
-                     const JSVal& val, uint32_t attrs)
+                     JSVal val, uint32_t attrs)
     : attrs_(attrs | ATTR::DATA | ATTR::UNDEF_GETTER | ATTR::UNDEF_SETTER),
       value_() {
     value_.data_ = val;
@@ -218,7 +222,7 @@ class AccessorDescriptor : public PropertyDescriptor {
 
 class DataDescriptor: public PropertyDescriptor {
  public:
-  explicit DataDescriptor(const JSVal& value, uint32_t attrs)
+  explicit DataDescriptor(JSVal value, uint32_t attrs)
      : PropertyDescriptor(DATA_DESCRIPTOR, value, attrs) {
   }
   explicit DataDescriptor(uint32_t attrs)
@@ -228,7 +232,7 @@ class DataDescriptor: public PropertyDescriptor {
   JSVal value() const {
     return value_.data_;
   }
-  void set_value(const JSVal& val) {
+  void set_value(JSVal val) {
     value_.data_ = val;
   }
 

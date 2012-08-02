@@ -20,8 +20,8 @@ namespace detail {
 
 inline JSVal CompareFn(const Arguments& args, Error* e) {
   assert(args.size() == 2);  // always 2
-  const JSVal& lhs = args[0];
-  const JSVal& rhs = args[1];
+  const JSVal lhs = args[0];
+  const JSVal rhs = args[1];
   if (JSVal::StrictEqual(lhs, rhs)) {
     return JSVal::Int32(0);
   }
@@ -45,7 +45,7 @@ inline JSVal ArrayConstructor(const Arguments& args, Error* e) {
     return JSArray::New(ctx);
   }
   if (args_size == 1) {
-    const JSVal& first = args[0];
+    const JSVal first = args[0];
     if (first.IsNumber()) {
       const double val = first.ToNumber(ctx, IV_LV5_ERROR(e));
       const uint32_t len = core::DoubleToUInt32(val);
@@ -78,7 +78,7 @@ inline JSVal ArrayIsArray(const Arguments& args, Error* e) {
   if (args.empty()) {
     return JSFalse;
   }
-  const JSVal& val = args.front();
+  const JSVal val = args.front();
   if (!val.IsObject()) {
     return JSFalse;
   }

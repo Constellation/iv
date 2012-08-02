@@ -86,7 +86,7 @@ class Core : private core::Noncopyable<Core> {
 
   bool MarkCell(Cell* cell);
 
-  bool MarkValue(const JSVal& val);
+  bool MarkValue(JSVal val);
 
   bool MarkPropertyDescriptor(const PropertyDescriptor& desc);
 
@@ -106,7 +106,7 @@ class Core : private core::Noncopyable<Core> {
     void operator()(const PropertyDescriptor& desc) {
       core_->MarkPropertyDescriptor(desc);
     }
-    void operator()(const JSVal& val) {
+    void operator()(JSVal val) {
       core_->MarkValue(val);
     }
     Core* core_;

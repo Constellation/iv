@@ -15,7 +15,7 @@ namespace breaker {
 
 class JSFunction : public railgun::JSVMFunction {
  public:
-  virtual JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
+  virtual JSVal Call(Arguments* args, JSVal this_binding, Error* e) {
     args->set_this_binding(this_binding);
     return breaker::Execute(static_cast<Context*>(args->ctx()), args, this, e);
   }

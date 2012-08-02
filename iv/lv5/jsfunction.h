@@ -27,11 +27,11 @@ class JSFunction : public JSObject {
     return this;
   }
 
-  virtual JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) = 0;
+  virtual JSVal Call(Arguments* args, JSVal this_binding, Error* e) = 0;
 
   virtual JSVal Construct(Arguments* args, Error* e) = 0;
 
-  virtual bool HasInstance(Context* ctx, const JSVal& val, Error* e) {
+  virtual bool HasInstance(Context* ctx, JSVal val, Error* e) {
     if (!val.IsObject()) {
       return false;
     }
@@ -94,7 +94,7 @@ class JSFunction : public JSObject {
 
 class JSNativeFunction : public JSFunction {
  public:
-  virtual JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
+  virtual JSVal Call(Arguments* args, JSVal this_binding, Error* e) {
     args->set_this_binding(this_binding);
     return func_(*args, e);
   }
@@ -156,11 +156,11 @@ class JSBoundFunction : public JSFunction {
 
   JSFunction* target() const { return target_; }
 
-  const JSVal& this_binding() const { return this_binding_; }
+  JSVal this_binding() const { return this_binding_; }
 
   const JSVals& arguments() const { return arguments_; }
 
-  virtual JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
+  virtual JSVal Call(Arguments* args, JSVal this_binding, Error* e) {
     ScopedArguments args_list(args->ctx(),
                               args->size() + arguments_.size(),
                               IV_LV5_ERROR(e));
@@ -182,12 +182,12 @@ class JSBoundFunction : public JSFunction {
     return target_->Construct(&args_list, e);
   }
 
-  virtual bool HasInstance(Context* ctx, const JSVal& val, Error* e) {
+  virtual bool HasInstance(Context* ctx, JSVal val, Error* e) {
     return target_->HasInstance(ctx, val, e);
   }
 
   static JSBoundFunction* New(Context* ctx, JSFunction* target,
-                              const JSVal& this_binding,
+                              JSVal this_binding,
                               const Arguments& args) {
     return new JSBoundFunction(ctx, target, this_binding, args);
   }
@@ -203,7 +203,7 @@ class JSBoundFunction : public JSFunction {
  private:
   JSBoundFunction(Context* ctx,
                   JSFunction* target,
-                  const JSVal& this_binding,
+                  JSVal this_binding,
                   const Arguments& args)
     : JSFunction(ctx),
       target_(target),
@@ -256,7 +256,7 @@ class JSInlinedFunction : public JSFunction {
  public:
   typedef JSInlinedFunction<func, n> this_type;
 
-  virtual JSVal Call(Arguments* args, const JSVal& this_binding, Error* e) {
+  virtual JSVal Call(Arguments* args, JSVal this_binding, Error* e) {
     args->set_this_binding(this_binding);
     return func(*args, e);
   }

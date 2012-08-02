@@ -1441,12 +1441,12 @@ void Interpreter::Visit(const CaseClause* dummy) {
 
 
 // section 8.7.1 GetValue
-JSVal Interpreter::GetValue(const JSVal& val, Error* e) {
+JSVal Interpreter::GetValue(JSVal val, Error* e) {
   if (!val.IsReference()) {
     return val;
   }
   const JSReference* const ref = val.reference();
-  const JSVal& base = ref->base();
+  const JSVal base = ref->base();
   if (ref->IsUnresolvableReference()) {
     core::UStringBuilder builder;
     builder.Append('"');
@@ -1493,14 +1493,14 @@ JSVal Interpreter::GetValue(const JSVal& val, Error* e) {
 }
 
 // section 8.7.2 PutValue
-void Interpreter::PutValue(const JSVal& val, const JSVal& w, Error* e) {
+void Interpreter::PutValue(JSVal val, JSVal w, Error* e) {
   if (!val.IsReference()) {
     e->Report(Error::Reference,
               "target is not reference");
     return;
   }
   const JSReference* const ref = val.reference();
-  const JSVal& base = ref->base();
+  const JSVal base = ref->base();
   if (ref->IsUnresolvableReference()) {
     if (ref->IsStrictReference()) {
       e->Report(Error::Reference,

@@ -231,7 +231,7 @@ inline JSVal DateNow(const Arguments& args, Error* e) {
 // section 15.9.5.2 Date.prototype.toString()
 inline JSVal DateToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.toString", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double t = static_cast<JSDate*>(obj.object())->value();
@@ -277,7 +277,7 @@ inline JSVal DateToString(const Arguments& args, Error* e) {
 // section 15.9.5.3 Date.prototype.toDateString()
 inline JSVal DateToDateString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.toDateString", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double t = static_cast<JSDate*>(obj.object())->value();
@@ -305,7 +305,7 @@ inline JSVal DateToDateString(const Arguments& args, Error* e) {
 // section 15.9.5.4 Date.prototype.toTimeString()
 inline JSVal DateToTimeString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.toTimeString", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double t = static_cast<JSDate*>(obj.object())->value();
@@ -348,7 +348,7 @@ inline JSVal DateToTimeString(const Arguments& args, Error* e) {
 // section 15.9.5.5 Date.prototype.toLocaleString()
 inline JSVal DateToLocaleString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.toLocaleString", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double t = static_cast<JSDate*>(obj.object())->value();
@@ -395,7 +395,7 @@ inline JSVal DateToLocaleString(const Arguments& args, Error* e) {
 // section 15.9.5.6 Date.prototype.toLocaleDateString()
 inline JSVal DateToLocaleDateString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.toLocaleDateString", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double t = static_cast<JSDate*>(obj.object())->value();
@@ -423,7 +423,7 @@ inline JSVal DateToLocaleDateString(const Arguments& args, Error* e) {
 // section 15.9.5.7 Date.prototype.toLocaleTimeString()
 inline JSVal DateToLocaleTimeString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.toLocaleTimeString", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double t = static_cast<JSDate*>(obj.object())->value();
@@ -466,7 +466,7 @@ inline JSVal DateToLocaleTimeString(const Arguments& args, Error* e) {
 // section 15.9.5.8 Date.prototype.valueOf()
 inline JSVal DateValueOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.valueOf", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     return static_cast<JSDate*>(obj.object())->value();
@@ -479,7 +479,7 @@ inline JSVal DateValueOf(const Arguments& args, Error* e) {
 // section 15.9.5.9 Date.prototype.getTime()
 inline JSVal DateGetTime(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getTime", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     return static_cast<JSDate*>(obj.object())->value();
@@ -492,7 +492,7 @@ inline JSVal DateGetTime(const Arguments& args, Error* e) {
 // section 15.9.5.10 Date.prototype.getFullYear()
 inline JSVal DateGetFullYear(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getFullYear", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
@@ -509,7 +509,7 @@ inline JSVal DateGetFullYear(const Arguments& args, Error* e) {
 // section 15.9.5.11 Date.prototype.getUTCFullYear()
 inline JSVal DateGetUTCFullYear(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getUTCFullYear", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
@@ -526,7 +526,7 @@ inline JSVal DateGetUTCFullYear(const Arguments& args, Error* e) {
 // section 15.9.5.12 Date.prototype.getMonth()
 inline JSVal DateGetMonth(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getMonth", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
@@ -543,7 +543,7 @@ inline JSVal DateGetMonth(const Arguments& args, Error* e) {
 // section 15.9.5.13 Date.prototype.getUTCMonth()
 inline JSVal DateGetUTCMonth(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getUTCMonth", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
@@ -560,7 +560,7 @@ inline JSVal DateGetUTCMonth(const Arguments& args, Error* e) {
 // section 15.9.5.14 Date.prototype.getDate()
 inline JSVal DateGetDate(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getDate", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
@@ -577,7 +577,7 @@ inline JSVal DateGetDate(const Arguments& args, Error* e) {
 // section 15.9.5.15 Date.prototype.getUTCDate()
 inline JSVal DateGetUTCDate(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getUTCDate", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
@@ -594,7 +594,7 @@ inline JSVal DateGetUTCDate(const Arguments& args, Error* e) {
 // section 15.9.5.16 Date.prototype.getDay()
 inline JSVal DateGetDay(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getDay", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
@@ -611,7 +611,7 @@ inline JSVal DateGetDay(const Arguments& args, Error* e) {
 // section 15.9.5.17 Date.prototype.getUTCDay()
 inline JSVal DateGetUTCDay(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getUTCDay", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
@@ -628,7 +628,7 @@ inline JSVal DateGetUTCDay(const Arguments& args, Error* e) {
 // section 15.9.5.18 Date.prototype.getHours()
 inline JSVal DateGetHours(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getHours", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
@@ -645,7 +645,7 @@ inline JSVal DateGetHours(const Arguments& args, Error* e) {
 // section 15.9.5.19 Date.prototype.getUTCHours()
 inline JSVal DateGetUTCHours(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getUTCHours", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
@@ -662,7 +662,7 @@ inline JSVal DateGetUTCHours(const Arguments& args, Error* e) {
 // section 15.9.5.20 Date.prototype.getMinutes()
 inline JSVal DateGetMinutes(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getMinutes", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
@@ -679,7 +679,7 @@ inline JSVal DateGetMinutes(const Arguments& args, Error* e) {
 // section 15.9.5.21 Date.prototype.getUTCMinutes()
 inline JSVal DateGetUTCMinutes(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getUTCMinutes", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
@@ -696,7 +696,7 @@ inline JSVal DateGetUTCMinutes(const Arguments& args, Error* e) {
 // section 15.9.5.22 Date.prototype.getSeconds()
 inline JSVal DateGetSeconds(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getSeconds", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
@@ -713,7 +713,7 @@ inline JSVal DateGetSeconds(const Arguments& args, Error* e) {
 // section 15.9.5.23 Date.prototype.getUTCSeconds()
 inline JSVal DateGetUTCSeconds(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getUTCSeconds", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
@@ -730,7 +730,7 @@ inline JSVal DateGetUTCSeconds(const Arguments& args, Error* e) {
 // section 15.9.5.24 Date.prototype.getMilliseconds()
 inline JSVal DateGetMilliseconds(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getMilliseconds", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
@@ -747,7 +747,7 @@ inline JSVal DateGetMilliseconds(const Arguments& args, Error* e) {
 // section 15.9.5.25 Date.prototype.getUTCMilliseconds()
 inline JSVal DateGetUTCMilliseconds(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getUTCMilliseconds", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
@@ -764,7 +764,7 @@ inline JSVal DateGetUTCMilliseconds(const Arguments& args, Error* e) {
 // section 15.9.5.26 Date.prototype.getTimezoneOffset()
 inline JSVal DateGetTimezoneOffset(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getTimezoneOffset", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
@@ -781,7 +781,7 @@ inline JSVal DateGetTimezoneOffset(const Arguments& args, Error* e) {
 // section 15.9.5.27 Date.prototype.setTime(time)
 inline JSVal DateSetTime(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.setTime", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     double v = core::kNaN;
     if (!args.empty()) {
@@ -799,7 +799,7 @@ inline JSVal DateSetTime(const Arguments& args, Error* e) {
 // section 15.9.5.28 Date.prototype.setMilliseconds(ms)
 inline JSVal DateSetMilliseconds(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.setMilliseconds", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     const double t = core::date::LocalTime(
         static_cast<JSDate*>(obj.object())->value());
@@ -827,7 +827,7 @@ inline JSVal DateSetMilliseconds(const Arguments& args, Error* e) {
 // section 15.9.5.29 Date.prototype.setUTCMilliseconds(ms)
 inline JSVal DateSetUTCMilliseconds(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.setUTCMilliseconds", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     const double t = static_cast<JSDate*>(obj.object())->value();
     double ms = core::kNaN;
@@ -853,7 +853,7 @@ inline JSVal DateSetUTCMilliseconds(const Arguments& args, Error* e) {
 // section 15.9.5.30 Date.prototype.setSeconds(sec[, ms])
 inline JSVal DateSetSeconds(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.setSeconds", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     const double t = core::date::LocalTime(
         static_cast<JSDate*>(obj.object())->value());
@@ -891,7 +891,7 @@ inline JSVal DateSetSeconds(const Arguments& args, Error* e) {
 // section 15.9.5.31 Date.prototype.setUTCSeconds(sec[, ms])
 inline JSVal DateSetUTCSeconds(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.setUTCSeconds", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     const double t = static_cast<JSDate*>(obj.object())->value();
     const std::size_t args_size = args.size();
@@ -927,7 +927,7 @@ inline JSVal DateSetUTCSeconds(const Arguments& args, Error* e) {
 // section 15.9.5.32 Date.prototype.setMinutes(min[, sec[, ms]])
 inline JSVal DateSetMinutes(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.setMinutes", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     const double t = core::date::LocalTime(
         static_cast<JSDate*>(obj.object())->value());
@@ -973,7 +973,7 @@ inline JSVal DateSetMinutes(const Arguments& args, Error* e) {
 // section 15.9.5.33 Date.prototype.setUTCMinutes(min[, sec[, ms]])
 inline JSVal DateSetUTCMinutes(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.setUTCMinutes", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     const double t = static_cast<JSDate*>(obj.object())->value();
     const std::size_t args_size = args.size();
@@ -1017,7 +1017,7 @@ inline JSVal DateSetUTCMinutes(const Arguments& args, Error* e) {
 // section 15.9.5.34 Date.prototype.setHours(hour[, min[, sec[, ms]])
 inline JSVal DateSetHours(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.setHours", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     const double t = core::date::LocalTime(
         static_cast<JSDate*>(obj.object())->value());
@@ -1068,7 +1068,7 @@ inline JSVal DateSetHours(const Arguments& args, Error* e) {
 // section 15.9.5.35 Date.prototype.setUTCHours(hour[, min[, sec[, ms]])
 inline JSVal DateSetUTCHours(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.setUTCHours", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     const double t = static_cast<JSDate*>(obj.object())->value();
     const std::size_t args_size = args.size();
@@ -1117,7 +1117,7 @@ inline JSVal DateSetUTCHours(const Arguments& args, Error* e) {
 // section 15.9.5.36 Date.prototype.setDate(date)
 inline JSVal DateSetDate(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.setDate", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     const double t = core::date::LocalTime(
         static_cast<JSDate*>(obj.object())->value());
@@ -1144,7 +1144,7 @@ inline JSVal DateSetDate(const Arguments& args, Error* e) {
 // section 15.9.5.37 Date.prototype.setUTCDate(date)
 inline JSVal DateSetUTCDate(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.setUTCDate", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     const double t = static_cast<JSDate*>(obj.object())->value();
     double dt = core::kNaN;
@@ -1169,7 +1169,7 @@ inline JSVal DateSetUTCDate(const Arguments& args, Error* e) {
 // section 15.9.5.38 Date.prototype.setMonth(month[, date])
 inline JSVal DateSetMonth(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.setMonth", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     const double t = core::date::LocalTime(
         static_cast<JSDate*>(obj.object())->value());
@@ -1206,7 +1206,7 @@ inline JSVal DateSetMonth(const Arguments& args, Error* e) {
 // section 15.9.5.39 Date.prototype.setUTCMonth(month[, date])
 inline JSVal DateSetUTCMonth(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.setUTCMonth", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     const double t = static_cast<JSDate*>(obj.object())->value();
     const std::size_t args_size = args.size();
@@ -1241,7 +1241,7 @@ inline JSVal DateSetUTCMonth(const Arguments& args, Error* e) {
 // section 15.9.5.40 Date.prototype.setFullYear(year[, month[, date]])
 inline JSVal DateSetFullYear(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.setFullYear", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     double t = core::date::LocalTime(
         static_cast<JSDate*>(obj.object())->value());
@@ -1286,7 +1286,7 @@ inline JSVal DateSetFullYear(const Arguments& args, Error* e) {
 // section 15.9.5.41 Date.prototype.setUTCFullYear(year[, month[, date]])
 inline JSVal DateSetUTCFullYear(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.setUTCFullYear", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     double t = static_cast<JSDate*>(obj.object())->value();
     if (core::math::IsNaN(t)) {
@@ -1329,7 +1329,7 @@ inline JSVal DateSetUTCFullYear(const Arguments& args, Error* e) {
 // section 15.9.5.42 Date.prototype.toUTCString()
 inline JSVal DateToUTCString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.toUTCString", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
@@ -1359,7 +1359,7 @@ inline JSVal DateToUTCString(const Arguments& args, Error* e) {
 // section 15.9.5.43 Date.prototype.toISOString()
 inline JSVal DateToISOString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.toISOString", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
@@ -1416,7 +1416,7 @@ inline JSVal DateToJSON(const Arguments& args, Error* e) {
 // this method is deprecated.
 inline JSVal DateGetYear(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getYear", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     // this is date object
     const double time = static_cast<JSDate*>(obj.object())->value();
@@ -1434,7 +1434,7 @@ inline JSVal DateGetYear(const Arguments& args, Error* e) {
 // this method is deprecated.
 inline JSVal DateSetYear(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.setYear", args, e);
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
     JSDate* d = static_cast<JSDate*>(obj.object());
     double t = core::date::LocalTime(d->value());

@@ -52,7 +52,7 @@ inline bool Core::MarkCell(Cell* cell) {
   return false;
 }
 
-inline bool Core::MarkValue(const JSVal& val) {
+inline bool Core::MarkValue(JSVal val) {
   return (val.IsCell()) ? MarkCell(val.cell()) : false;
 }
 

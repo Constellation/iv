@@ -81,7 +81,7 @@ class Context : public iv::lv5::Context {
     return binding_;
   }
 
-  void set_this_binding(const JSVal& binding) {
+  void set_this_binding(JSVal binding) {
     binding_ = binding;
   }
 
@@ -115,7 +115,7 @@ class Context : public iv::lv5::Context {
     return &error_;
   }
 
-  const JSVal& ret() const {
+  JSVal ret() const {
     return ret_;
   }
 
@@ -123,7 +123,7 @@ class Context : public iv::lv5::Context {
     return ret_;
   }
 
-  void set_ret(const JSVal& ret) {
+  void set_ret(JSVal ret) {
     ret_ = ret;
   }
 
@@ -131,7 +131,7 @@ class Context : public iv::lv5::Context {
     ret_ = val;
   }
 
-  void SetStatement(Mode mode, const JSVal& val,
+  void SetStatement(Mode mode, JSVal val,
                     const BreakableStatement* target) {
     mode_ = mode;
     ret_ = val;

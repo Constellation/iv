@@ -53,7 +53,7 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
   bool CanPut(Context* ctx, Symbol name) const;
 
   virtual void Put(Context* context, Symbol name,
-                   const JSVal& val, bool th, Error* e);
+                   JSVal val, bool th, Error* e);
 
   virtual bool HasProperty(Context* ctx, Symbol name) const;
 
@@ -77,7 +77,7 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
   JSVal GetBySlotOffset(Context* ctx, std::size_t n, Error* e);
 
   void PutToSlotOffset(Context* ctx, std::size_t offset,
-                       const JSVal& val, bool th, Error* e);
+                       JSVal val, bool th, Error* e);
 
   virtual bool IsCallable() const {
     return false;

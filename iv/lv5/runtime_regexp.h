@@ -20,7 +20,7 @@ inline JSVal RegExpConstructor(const Arguments& args, Error* e) {
   if (args_count == 0) {
     return JSRegExp::New(ctx);
   } else {
-    const JSVal& first = args[0];
+    const JSVal first = args[0];
     if (first.IsObject() && first.object()->IsClass<Class::RegExp>()) {
       if (args_count > 1 && !args[1].IsUndefined()) {
         e->Report(Error::Type,
@@ -55,7 +55,7 @@ inline JSVal RegExpConstructor(const Arguments& args, Error* e) {
 inline JSVal RegExpExec(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("RegExp.prototype.exec", args, e);
   Context* const ctx = args.ctx();
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::RegExp>()) {
     JSString* string = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
     JSRegExp* const reg = static_cast<JSRegExp*>(obj.object());
@@ -69,7 +69,7 @@ inline JSVal RegExpExec(const Arguments& args, Error* e) {
 inline JSVal RegExpTest(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("RegExp.prototype.test", args, e);
   Context* const ctx = args.ctx();
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::RegExp>()) {
     JSString* string = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
     JSRegExp* const reg = static_cast<JSRegExp*>(obj.object());
@@ -84,7 +84,7 @@ inline JSVal RegExpTest(const Arguments& args, Error* e) {
 inline JSVal RegExpToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("RegExp.prototype.toString", args, e);
   Context* const ctx = args.ctx();
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::RegExp>()) {
     JSRegExp* const reg = static_cast<JSRegExp*>(obj.object());
     JSStringBuilder builder;
@@ -112,18 +112,18 @@ inline JSVal RegExpCompile(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("RegExp.prototype.compile", args, e);
   const uint32_t args_count = args.size();
   Context* const ctx = args.ctx();
-  const JSVal& obj = args.this_binding();
+  const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::RegExp>()) {
     core::UString pattern;
     core::UString flags;
     if (args_count != 0) {
-      const JSVal& first = args[0];
+      const JSVal first = args[0];
       if (!first.IsUndefined()) {
         JSString* str = first.ToString(ctx, IV_LV5_ERROR(e));
         pattern = str->GetUString();
       }
       if (args_count > 1) {
-        const JSVal& second = args[1];
+        const JSVal second = args[1];
         if (!second.IsUndefined()) {
           JSString* str = second.ToString(ctx, IV_LV5_ERROR(e));
           flags = str->GetUString();
