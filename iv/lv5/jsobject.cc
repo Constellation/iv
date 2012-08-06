@@ -8,7 +8,6 @@
 #include <iv/lv5/jsenv.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/class.h>
-#include <iv/lv5/object_utils.h>
 #include <iv/lv5/jsbooleanobject.h>
 #include <iv/lv5/jsnumberobject.h>
 #include <iv/lv5/map.h>

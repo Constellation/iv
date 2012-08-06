@@ -16,7 +16,6 @@
 #include <iv/lv5/class.h>
 #include <iv/lv5/storage.h>
 #include <iv/lv5/context_utils.h>
-#include <iv/lv5/object_utils.h>
 #include <iv/lv5/adapter/select1st.h>
 #include <iv/lv5/railgun/fwd.h>
 #include <iv/lv5/breaker/fwd.h>

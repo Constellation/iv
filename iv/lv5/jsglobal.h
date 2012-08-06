@@ -7,7 +7,6 @@
 #include <iv/lv5/jsfunction.h>
 #include <iv/lv5/class.h>
 #include <iv/lv5/arguments.h>
-#include <iv/lv5/object_utils.h>
 namespace iv {
 namespace lv5 {
 
