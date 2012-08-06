@@ -301,7 +301,7 @@ void JSObject::GetPropertyNames(Context* ctx,
 void JSObject::GetOwnPropertyNames(Context* ctx,
                                    PropertyNamesCollector* collector,
                                    EnumerationMode mode) const {
-  map_->GetOwnPropertyNames(ctx, collector, mode);
+  map_->GetOwnPropertyNames(collector, mode);
 }
 
 bool JSObject::GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
@@ -345,20 +345,6 @@ void JSObject::MarkChildren(radio::Core* core) {
   core->MarkCell(prototype_);
   core->MarkCell(map_);
   std::for_each(slots_.begin(), slots_.end(), radio::Core::Marker(core));
-}
-
-inline void Map::GetOwnPropertyNames(Context* ctx,
-                                     PropertyNamesCollector* collector,
-                                     JSObject::EnumerationMode mode) {
-  if (AllocateTableIfNeeded()) {
-    for (TargetTable::const_iterator it = table_->begin(),
-         last = table_->end(); it != last; ++it) {
-      if (mode == JSObject::INCLUDE_NOT_ENUMERABLE ||
-          it->second.attributes.IsEnumerable()) {
-        collector->Add(it->first, it->second.offset);
-      }
-    }
-  }
 }
 
 } }  // namespace iv::lv5
