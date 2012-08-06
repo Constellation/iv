@@ -3,8 +3,10 @@
 #include <iv/lv5/lv5.h>
 #include <iv/lv5/railgun/command.h>
 #include <iv/lv5/railgun/railgun.h>
+#if defined(IV_ENABLE_JIT)
 #include <iv/lv5/breaker/breaker.h>
 #include <iv/lv5/breaker/command.h>
+#endif  // defined(IV_ENABLE_JIT)
 using namespace iv;
 namespace {
 

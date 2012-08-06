@@ -829,7 +829,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
         const JSVal lhs = REG(instr[1].jump.i16[0]);
         const JSVal rhs = REG(instr[1].jump.i16[1]);
         if (lhs.IsInt32() && rhs.IsInt32()) {
-          if (lhs.int32() < rhs.int32()) {
+          if (lhs.int32() > rhs.int32()) {
             JUMPBY(instr[1].jump.to);
             DISPATCH_WITH_NO_INCREMENT();
           }
