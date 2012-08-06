@@ -151,11 +151,9 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     }
   }
   // step 9
-  if (attr & ATTR::ACCESSOR) {
-    if (attr & ATTR::DATA) {
-      e->Report(Error::Type, "invalid object for property descriptor");
-      return JSEmpty;
-    }
+  if (attr & ATTR::ACCESSOR && attr & ATTR::DATA) {
+    e->Report(Error::Type, "invalid object for property descriptor");
+    return JSEmpty;
   }
   if (attr & ATTR::ACCESSOR) {
     return AccessorDescriptor(getter, setter, attr);
