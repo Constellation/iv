@@ -21,8 +21,7 @@ class JSStringObject : public JSObject {
   bool GetOwnPropertySlot(Context* ctx,
                           Symbol name, Slot* slot) const {
     if (name == symbol::length()) {
-      slot->set_descriptor(
-          DataDescriptor(JSVal::UInt32(length_), ATTR::NONE));
+      slot->set(JSVal::UInt32(length_), Attributes::CreateData(ATTR::NONE));
       return true;
     }
     if (symbol::IsArrayIndexSymbol(name)) {
@@ -34,10 +33,7 @@ class JSStringObject : public JSObject {
       if (len <= index) {
         return false;
       }
-      slot->set_descriptor(
-          DataDescriptor(
-              JSString::NewSingle(ctx, value_->At(index)),
-              ATTR::ENUMERABLE));
+      slot->set(JSString::NewSingle(ctx, value_->At(index)), Attributes::CreateData(ATTR::ENUMERABLE));
       return true;
     } else {
       return JSObject::GetOwnPropertySlot(ctx, name, slot);

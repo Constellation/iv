@@ -30,7 +30,13 @@ class Storage {
   typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
   typedef Storage<T> this_type;
 
-  Storage(std::size_t n, value_type v = value_type())
+  Storage(pointer ptr, size_type n, size_type cap)
+    : data_(ptr),
+      size_(n),
+      capacity_(cap) {
+  }
+
+  Storage(size_type n, value_type v = value_type())
     : data_(NULL),
       size_(0),
       capacity_(0) {

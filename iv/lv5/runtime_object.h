@@ -257,7 +257,7 @@ inline JSVal ObjectFreeze(const Arguments& args, Error* e) {
            it != last; ++it) {
         const Symbol sym = *it;
         PropertyDescriptor desc = obj->GetOwnProperty(ctx, sym);
-        if (desc.IsDataDescriptor()) {
+        if (desc.IsData()) {
           desc.AsDataDescriptor()->set_writable(false);
         }
         if (desc.IsConfigurable()) {
@@ -331,7 +331,7 @@ inline JSVal ObjectIsFrozen(const Arguments& args, Error* e) {
            last = collector.names().end();
            it != last; ++it) {
         const PropertyDescriptor desc = obj->GetOwnProperty(ctx, *it);
-        if (desc.IsDataDescriptor() && desc.AsDataDescriptor()->IsWritable()) {
+        if (desc.IsData() && desc.AsDataDescriptor()->IsWritable()) {
           return JSFalse;
         }
         if (desc.IsConfigurable()) {

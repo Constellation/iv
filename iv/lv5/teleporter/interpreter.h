@@ -227,7 +227,7 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
                 ((configurable_bindings) ? ATTR::CONFIGURABLE : ATTR::NONE)),
             true, CHECK_IN_STMT);
       } else {
-        if (existing_prop.IsAccessorDescriptor()) {
+        if (existing_prop.IsAccessor()) {
           ctx_->error()->Report(Error::Type,
                                 "create mutable function binding failed");
           RETURN_STMT(Context::THROW, JSEmpty, NULL);
@@ -1464,10 +1464,10 @@ JSVal Interpreter::GetValue(JSVal val, Error* e) {
       if (desc.IsEmpty()) {
         return JSUndefined;
       }
-      if (desc.IsDataDescriptor()) {
+      if (desc.IsData()) {
         return desc.AsDataDescriptor()->value();
       } else {
-        assert(desc.IsAccessorDescriptor());
+        assert(desc.IsAccessor());
         const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
         if (ac->get()) {
           ScopedArguments a(ctx_, 0, IV_LV5_ERROR(e));
@@ -1522,7 +1522,7 @@ void Interpreter::PutValue(JSVal val, JSVal w, Error* e) {
         return;
       }
       const PropertyDescriptor own_desc = o->GetOwnProperty(ctx_, sym);
-      if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
+      if (!own_desc.IsEmpty() && own_desc.IsData()) {
         if (th) {
           e->Report(Error::Type,
                     "value to symbol defined and not data descriptor");
@@ -1530,7 +1530,7 @@ void Interpreter::PutValue(JSVal val, JSVal w, Error* e) {
         return;
       }
       const PropertyDescriptor desc = o->GetProperty(ctx_, sym);
-      if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
+      if (!desc.IsEmpty() && desc.IsAccessor()) {
         ScopedArguments a(ctx_, 1, IV_LV5_ERROR_VOID(e));
         a[0] = w;
         const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();

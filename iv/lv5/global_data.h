@@ -17,6 +17,7 @@
 #include <iv/lv5/jsstring_fwd.h>
 #include <iv/lv5/jsfunction.h>
 #include <iv/lv5/jsglobal.h>
+#include <iv/lv5/attributes.h>
 namespace iv {
 namespace lv5 {
 
@@ -60,11 +61,11 @@ class GlobalData {
       // RegExp Map
       // see also jsregexp.h, JSRegExp::FIELD
       MapBuilder builder(ctx);
-      builder.Add(symbol::source());
-      builder.Add(symbol::global());
-      builder.Add(symbol::ignoreCase());
-      builder.Add(symbol::multiline());
-      builder.Add(symbol::lastIndex());
+      builder.Add(symbol::source(), ATTR::CreateData(ATTR::N));
+      builder.Add(symbol::global(), ATTR::CreateData(ATTR::N));
+      builder.Add(symbol::ignoreCase(), ATTR::CreateData(ATTR::N));
+      builder.Add(symbol::multiline(), ATTR::CreateData(ATTR::N));
+      builder.Add(symbol::lastIndex(), ATTR::CreateData(ATTR::W));
       regexp_map_ = builder.Build();
     }
   }

@@ -7,6 +7,7 @@
 #include <iv/lv5/breaker/assembler.h>
 #include <iv/lv5/breaker/jsfunction.h>
 #include <iv/lv5/breaker/context.h>
+#include <iv/lv5/accessor.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {
@@ -305,17 +306,17 @@ inline Rep LOAD_GLOBAL(Frame* stack,
   JSGlobal* global = ctx->global_obj();
   if (instr[2].map == global->map()) {
     // map is cached, so use previous index code
-    const JSVal res = global->GetBySlotOffset(ctx, instr[3].u32[0], ERR);
-    return Extract(res);
+    return Extract(global->GetSlot(instr[3].u32[0]));
   } else {
     Slot slot;
     if (global->GetOwnPropertySlot(ctx, name, &slot)) {
       // now Own Property Pattern only implemented
-      assert(slot.IsCacheable());
-      instr[2].map = global->map();
-      instr[3].u32[0] = slot.offset();
-      const JSVal res = slot.Get(ctx, global, ERR);
-      return Extract(res);
+      if (slot.IsLoadCacheable()) {
+        instr[2].map = global->map();
+        instr[3].u32[0] = slot.offset();
+        return Extract(slot.value());
+      }
+      return Extract(slot.value());
     } else {
       instr[2].map = NULL;
       if (JSEnv* current = GetEnv(ctx, ctx->global_env(), name)) {
@@ -338,13 +339,17 @@ inline Rep STORE_GLOBAL(Frame* stack,
   JSGlobal* global = ctx->global_obj();
   if (instr[2].map == global->map()) {
     // map is cached, so use previous index code
-    global->PutToSlotOffset(ctx, instr[3].u32[0], src, STRICT, ERR);
+    global->GetSlot(instr[3].u32[0]) = src;
   } else {
     Slot slot;
     if (global->GetOwnPropertySlot(ctx, name, &slot)) {
-      instr[2].map = global->map();
-      instr[3].u32[0] = slot.offset();
-      global->PutToSlotOffset(ctx, instr[3].u32[0], src, STRICT, ERR);
+      if (slot.IsStoreCacheable()) {
+        instr[2].map = global->map();
+        instr[3].u32[0] = slot.offset();
+        global->GetSlot(slot.offset()) = src;
+      } else {
+        global->Put(ctx, name, src, STRICT, ERR);
+      }
     } else {
       instr[2].map = NULL;
       if (JSEnv* current = GetEnv(ctx, ctx->global_env(), name)) {
@@ -446,21 +451,21 @@ inline Rep INCREMENT_NAME(Frame* stack, JSEnv* env, Symbol name) {
 template<int Target, std::size_t Returned, bool STRICT>
 inline JSVal IncrementGlobal(Context* ctx,
                              JSGlobal* global,
-                             std::size_t slot, Error* e) {
-  const JSVal w = global->GetBySlotOffset(ctx, slot, e);
+                             uint32_t offset, Error* e) {
+  const JSVal w = global->GetSlot(offset);
   if (w.IsInt32() &&
       railgun::detail::IsIncrementOverflowSafe<Target>(w.int32())) {
     std::tuple<JSVal, JSVal> results;
     const int32_t target = w.int32();
     std::get<0>(results) = w;
     std::get<1>(results) = JSVal::Int32(target + Target);
-    global->PutToSlotOffset(ctx, slot, std::get<1>(results), STRICT, e);
+    global->GetSlot(offset) = std::get<1>(results);
     return std::get<Returned>(results);
   } else {
     std::tuple<double, double> results;
     std::get<0>(results) = w.ToNumber(ctx, IV_LV5_ERROR(e));
     std::get<1>(results) = std::get<0>(results) + Target;
-    global->PutToSlotOffset(ctx, slot, std::get<1>(results), STRICT, e);
+    global->GetSlot(offset) = std::get<1>(results);
     return std::get<Returned>(results);
   }
 }
@@ -480,7 +485,7 @@ inline Rep INCREMENT_GLOBAL(Frame* stack,
     return Extract(res);
   } else {
     Slot slot;
-    if (global->GetOwnPropertySlot(ctx, s, &slot)) {
+    if (global->GetOwnPropertySlot(ctx, s, &slot) && slot.IsStoreCacheable()) {
       instr[2].map = global->map();
       instr[3].u32[0] = slot.offset();
       const JSVal res =
@@ -681,50 +686,14 @@ inline Rep TO_PRIMITIVE_AND_TO_STRING(Frame* stack, JSVal src) {
   return Extract(str);
 }
 
-template<bool MERGED>
-inline void STORE_OBJECT_DATA(JSVal target, JSVal item, uint32_t offset) {
+inline void STORE_OBJECT_GET(Context* ctx, JSVal target, JSVal item, uint32_t offset) {
   JSObject* obj = target.object();
-  if (MERGED) {
-    obj->GetSlot(offset) =
-        PropertyDescriptor::Merge(
-            DataDescriptor(item, ATTR::W | ATTR::E | ATTR::C),
-        obj->GetSlot(offset));
-  } else {
-    obj->GetSlot(offset) =
-        DataDescriptor(item, ATTR::W | ATTR::E | ATTR::C);
-  }
+  obj->GetSlot(offset) = JSVal::Cell(Accessor::New(ctx, item.object(), NULL));
 }
 
-template<bool MERGED>
-inline void STORE_OBJECT_GET(JSVal target, JSVal item, uint32_t offset) {
+inline void STORE_OBJECT_SET(Context* ctx, JSVal target, JSVal item, uint32_t offset) {
   JSObject* obj = target.object();
-  if (MERGED) {
-    obj->GetSlot(offset) =
-        PropertyDescriptor::Merge(
-            AccessorDescriptor(item.object(), NULL,
-                               ATTR::E | ATTR::C | ATTR::UNDEF_SETTER),
-        obj->GetSlot(offset));
-  } else {
-    obj->GetSlot(offset) =
-        AccessorDescriptor(item.object(), NULL,
-                           ATTR::E | ATTR::C | ATTR::UNDEF_SETTER);
-  }
-}
-
-template<bool MERGED>
-inline void STORE_OBJECT_SET(JSVal target, JSVal item, uint32_t offset) {
-  JSObject* obj = target.object();
-  if (MERGED) {
-    obj->GetSlot(offset) =
-        PropertyDescriptor::Merge(
-            AccessorDescriptor(NULL, item.object(),
-                               ATTR::E | ATTR::C | ATTR::UNDEF_GETTER),
-        obj->GetSlot(offset));
-  } else {
-    obj->GetSlot(offset) =
-        AccessorDescriptor(NULL, item.object(),
-                           ATTR::E | ATTR::C | ATTR::UNDEF_GETTER);
-  }
+  obj->GetSlot(offset) = JSVal::Cell(Accessor::New(ctx, NULL, item.object()));
 }
 
 inline void INIT_VECTOR_ARRAY_ELEMENT(
@@ -757,7 +726,7 @@ inline Rep INSTANTIATE_DECLARATION_BINDING(Frame* stack, JSEnv* env, Symbol name
               ((CONFIGURABLE) ? ATTR::C : ATTR::NONE)),
           true, ERR);
     } else {
-      if (existing_prop.IsAccessorDescriptor()) {
+      if (existing_prop.IsAccessor()) {
         stack->error->Report(Error::Type,
                              "create mutable function binding failed");
         RAISE();
@@ -964,7 +933,7 @@ void StorePropPrimitive(Context* ctx,
     return;
   }
   const PropertyDescriptor own_desc = o->GetOwnProperty(ctx, name);
-  if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
+  if (!own_desc.IsEmpty() && own_desc.IsData()) {
     if (STRICT) {
       e->Report(Error::Type,
                 "value to symbol defined and not data descriptor");
@@ -972,7 +941,7 @@ void StorePropPrimitive(Context* ctx,
     return;
   }
   const PropertyDescriptor desc = o->GetProperty(ctx, name);
-  if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
+  if (!desc.IsEmpty() && desc.IsAccessor()) {
     ScopedArguments a(ctx, 1, IV_LV5_ERROR_VOID(e));
     a[0] = stored;
     const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
@@ -1086,61 +1055,6 @@ inline Rep LOAD_PROP_GENERIC(Frame* stack,
 }
 
 template<bool STRICT>
-inline Rep LOAD_PROP_OWN_MEGAMORPHIC(Frame* stack,
-                                     JSVal base, Symbol name,
-                                     railgun::Instruction* instr) {
-  Context* ctx = stack->ctx;
-  JSObject* obj = NULL;
-  if (base.IsPrimitive()) {
-    // primitive prototype cache
-    JSVal res;
-    if (GetPrimitiveOwnProperty(ctx, base, name, &res)) {
-      return Extract(res);
-    } else {
-      obj = base.GetPrimitiveProto(ctx);
-    }
-  } else {
-    obj = base.object();
-  }
-  assert(obj);
-  const std::size_t hash =
-      (std::hash<Map*>()(obj->map()) + std::hash<Symbol>()(name)) %
-      Context::kGlobalMapCacheSize;
-  const Context::MapCacheEntry& value =
-      (*ctx->global_map_cache())[hash];
-  if (value.first.first == obj->map() && value.first.second == name) {
-    // cache hit
-    const JSVal res = obj->GetSlot(value.second).Get(ctx, base, ERR);
-    return Extract(res);
-  } else {
-    Slot slot;
-    if (obj->GetPropertySlot(ctx, name, &slot)) {
-      // property found
-      if (!slot.IsCacheable()) {
-        // uncache
-        instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
-        Assembler::RepatchSite::RepatchAfterCall(
-            stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP<STRICT>));
-        const JSVal res = slot.Get(ctx, base, ERR);
-        return Extract(res);
-      }
-      if (slot.base() == obj) {
-        // own property => register it to map cache
-        (*ctx->global_map_cache())[hash] =
-            Context::MapCacheEntry(
-                Context::MapCacheKey(obj->map(), name), slot.offset());
-        const JSVal res = slot.Get(ctx, base, ERR);
-        return Extract(res);
-      }
-      const JSVal res = slot.Get(ctx, base, ERR);
-      return Extract(res);
-    } else {
-      return Extract(JSUndefined);
-    }
-  }
-}
-
-template<bool STRICT>
 inline Rep LOAD_PROP_OWN(Frame* stack,
                          JSVal base, Symbol name,
                          railgun::Instruction* instr) {
@@ -1160,64 +1074,21 @@ inline Rep LOAD_PROP_OWN(Frame* stack,
   assert(obj);
   if (instr[2].map == obj->map()) {
     // cache hit
-    const JSVal res = obj->GetSlot(instr[3].u32[0]).Get(ctx, base, ERR);
-    return Extract(res);
+    return Extract(obj->GetSlot(instr[3].u32[0]));
   } else {
-    // cache miss
-    // search megamorphic cache table
-    const std::size_t hash =
-        (std::hash<Map*>()(obj->map()) + std::hash<Symbol>()(name)) %
-        Context::kGlobalMapCacheSize;
-    const Context::MapCacheEntry& value = (*ctx->global_map_cache())[hash];
-    if (value.first.first == obj->map() && value.first.second == name) {
-      // cache hit
-      const JSVal res = obj->GetSlot(value.second).Get(ctx, base, ERR);
-      return Extract(res);
+    // not found => uncache
+    Slot slot;
+    if (obj->GetPropertySlot(ctx, name, &slot)) {
+      instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
+      Assembler::RepatchSite::RepatchAfterCall(
+          stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP<STRICT>));
+      const JSVal ret = slot.Get(ctx, obj, ERR);
+      return Extract(ret);
     } else {
-      Slot slot;
-      if (obj->GetPropertySlot(ctx, name, &slot)) {
-        // property found
-        if (!slot.IsCacheable()) {
-          // uncacheable => uncache
-          instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
-          Assembler::RepatchSite::RepatchAfterCall(
-              stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP<STRICT>));
-          const JSVal res = slot.Get(ctx, base, ERR);
-          return Extract(res);
-        }
-
-        if (slot.base() == obj) {
-          // own property => register it to map cache
-          instr[0] =
-              railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP_OWN_MEGAMORPHIC);
-          Assembler::RepatchSite::RepatchAfterCall(
-              stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP_OWN_MEGAMORPHIC<STRICT>));
-          (*ctx->global_map_cache())[hash] =
-              Context::MapCacheEntry(
-                  Context::MapCacheKey(obj->map(), name), slot.offset());
-          (*ctx->global_map_cache())[
-              (std::hash<Map*>()(instr[2].map) +
-               std::hash<Symbol>()(name)) % Context::kGlobalMapCacheSize
-              ] =
-              Context::MapCacheEntry(
-                  Context::MapCacheKey(instr[2].map, name),
-                  instr[3].u32[0]);
-          const JSVal res = slot.Get(ctx, base, ERR);
-          return Extract(res);
-        }
-
-        instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
-        Assembler::RepatchSite::RepatchAfterCall(
-            stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP<STRICT>));
-        const JSVal res = slot.Get(ctx, base, ERR);
-        return Extract(res);
-      } else {
-        // not found => uncache
-        instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
-        Assembler::RepatchSite::RepatchAfterCall(
-            stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP<STRICT>));
-        return Extract(JSUndefined);
-      }
+      instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
+      Assembler::RepatchSite::RepatchAfterCall(
+          stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP<STRICT>));
+      return Extract(JSUndefined);
     }
   }
 }
@@ -1242,8 +1113,7 @@ inline Rep LOAD_PROP_PROTO(Frame* stack,
   JSObject* proto = obj->prototype();
   if (instr[2].map == obj->map() && proto && instr[3].map == proto->map()) {
     // cache hit
-    const JSVal res = proto->GetSlot(instr[4].u32[0]).Get(ctx, base, ERR);
-    return Extract(res);
+    return Extract(proto->GetSlot(instr[4].u32[0]));
   } else {
     // uncache
     instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
@@ -1273,8 +1143,7 @@ inline Rep LOAD_PROP_CHAIN(Frame* stack,
   }
   if (JSObject* cached = instr[2].chain->Validate(obj, instr[3].map)) {
     // cache hit
-    const JSVal res = cached->GetSlot(instr[4].u32[0]).Get(ctx, base, ERR);
-    return Extract(res);
+    return Extract(cached->GetSlot(instr[4].u32[0]));
   } else {
     // uncache
     instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
@@ -1307,7 +1176,7 @@ inline Rep LOAD_PROP(Frame* stack,
   Slot slot;
   if (obj->GetPropertySlot(ctx, name, &slot)) {
     // property found
-    if (!slot.IsCacheable()) {
+    if (!slot.IsLoadCacheable()) {
       // bailout to generic
       instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP_GENERIC);
       Assembler::RepatchSite::RepatchAfterCall(
@@ -1325,8 +1194,7 @@ inline Rep LOAD_PROP(Frame* stack,
           stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP_OWN<STRICT>));
       instr[2].map = obj->map();
       instr[3].u32[0] = slot.offset();
-      const JSVal res = slot.Get(ctx, base, ERR);
-      return Extract(res);
+      return Extract(slot.value());
     }
 
     if (slot.base() == obj->prototype()) {
@@ -1338,8 +1206,7 @@ inline Rep LOAD_PROP(Frame* stack,
       instr[2].map = obj->map();
       instr[3].map = slot.base()->map();
       instr[4].u32[0] = slot.offset();
-      const JSVal res = slot.Get(ctx, base, ERR);
-      return Extract(res);
+      return Extract(slot.value());
     }
 
     // chain property
@@ -1349,8 +1216,7 @@ inline Rep LOAD_PROP(Frame* stack,
     instr[2].chain = Chain::New(obj, slot.base());
     instr[3].map = slot.base()->map();
     instr[4].u32[0] = slot.offset();
-    const JSVal res = slot.Get(ctx, base, ERR);
-    return Extract(res);
+    return Extract(slot.value());
   }
   return Extract(JSUndefined);
 }
@@ -1367,14 +1233,14 @@ inline Rep STORE_PROP(Frame* stack,
     JSObject* obj = base.object();
     if (instr[2].map == obj->map()) {
       // map is cached, so use previous index code
-      obj->PutToSlotOffset(ctx, instr[3].u32[0], src, STRICT, ERR);
+      obj->GetSlot(instr[3].u32[0]) = src;
     } else {
       Slot slot;
       if (obj->GetOwnPropertySlot(ctx, name, &slot)) {
-        if (slot.IsCacheable()) {
+        if (slot.IsStoreCacheable()) {
           instr[2].map = obj->map();
           instr[3].u32[0] = slot.offset();
-          obj->PutToSlotOffset(ctx, slot.offset(), src, STRICT, ERR);
+          obj->GetSlot(slot.offset()) = src;
         } else {
           // dispatch generic path
           obj->Put(ctx, name, src, STRICT, ERR);

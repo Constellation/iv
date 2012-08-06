@@ -272,7 +272,6 @@ class DisAssembler : private core::Noncopyable<> {
       case OP::DELETE_PROP:
       case OP::STORE_PROP_GENERIC:
       case OP::LOAD_PROP_GENERIC:
-      case OP::LOAD_PROP_OWN_MEGAMORPHIC:
       case OP::LOAD_PROP: {
         const int r0 = instr[1].ssw.i16[0], r1 = instr[1].ssw.i16[1];
         const unsigned int name = instr[1].ssw.u32;

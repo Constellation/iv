@@ -27,6 +27,8 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
 
   friend class breaker::Compiler;
 
+  typedef Storage<JSVal> Slots;
+
   enum EnumerationMode {
     EXCLUDE_NOT_ENUMERABLE,
     INCLUDE_NOT_ENUMERABLE
@@ -73,11 +75,6 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
   virtual void GetOwnPropertyNames(Context* ctx,
                                    PropertyNamesCollector* collector,
                                    EnumerationMode mode) const;
-
-  JSVal GetBySlotOffset(Context* ctx, std::size_t n, Error* e);
-
-  void PutToSlotOffset(Context* ctx, std::size_t offset,
-                       JSVal val, bool th, Error* e);
 
   virtual bool IsCallable() const {
     return false;
@@ -134,19 +131,17 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
 
   Map* FlattenMap() const;
 
-  const PropertyDescriptor& GetSlot(std::size_t n) const {
+  inline const JSVal& GetSlot(std::size_t n) const {
     assert(slots_.size() > n);
     return slots_[n];
   }
 
-  PropertyDescriptor& GetSlot(std::size_t n) {
+  inline JSVal& GetSlot(std::size_t n) {
     assert(slots_.size() > n);
     return slots_[n];
   }
 
-  Map* map() const {
-    return map_;
-  }
+  Map* map() const { return map_; }
 
   void MarkChildren(radio::Core* core);
 
@@ -159,7 +154,7 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
   JSObject* prototype_;
   bool extensible_;
   Map* map_;
-  Storage<PropertyDescriptor> slots_;
+  Slots slots_;
 };
 
 } }  // namespace iv::lv5

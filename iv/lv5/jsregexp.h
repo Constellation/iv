@@ -92,14 +92,11 @@ class JSRegExp : public JSObject {
   bool sticky() const { return impl_->sticky(); }
 
   int LastIndex(Context* ctx, Error* e) {
-    // because not configurable
-    assert(GetSlot(FIELD_LAST_INDEX).IsDataDescriptor());
-    return
-        GetSlot(FIELD_LAST_INDEX).AsDataDescriptor()->value().ToInt32(ctx, e);
+    return GetSlot(FIELD_LAST_INDEX).ToInt32(ctx, e);
   }
 
   void SetLastIndex(Context* ctx, int i, Error* e) {
-    PutToSlotOffset(ctx, FIELD_LAST_INDEX, JSVal::Int32(i), true, e);
+    Put(ctx, symbol::lastIndex(), JSVal::Int32(i), true, e);
   }
 
   JSVal ExecGlobal(Context* ctx, JSString* str, Error* e) {
@@ -180,18 +177,11 @@ class JSRegExp : public JSObject {
   explicit JSRegExp(Context* ctx, Map* map)
     : JSObject(map),
       impl_(new JSRegExpImpl(ctx->regexp_allocator())) {
-    // TODO(Constellation) cleanup logic
-    bind::Object(ctx, this)
-        .def(symbol::source(),
-             JSString::NewAsciiString(ctx, "(?:)"),
-             ATTR::NONE)
-        .def(symbol::global(),
-             JSVal::Bool(impl_->global()), ATTR::NONE)
-        .def(symbol::ignoreCase(),
-             JSVal::Bool(impl_->ignore()), ATTR::NONE)
-        .def(symbol::multiline(),
-             JSVal::Bool(impl_->multiline()), ATTR::NONE)
-        .def(symbol::lastIndex(), 0.0, ATTR::W);
+    GetSlot(FIELD_SOURCE) = JSString::NewAsciiString(ctx, "(?:)");
+    GetSlot(FIELD_GLOBAL) = JSVal::Bool(impl_->global());
+    GetSlot(FIELD_IGNORE_CASE) = JSVal::Bool(impl_->ignore());
+    GetSlot(FIELD_MULTILINE) = JSVal::Bool(impl_->multiline());
+    GetSlot(FIELD_LAST_INDEX) = JSVal::Int32(0);
   }
 
   static JSString* Escape(Context* ctx, JSString* str) {
@@ -220,18 +210,11 @@ class JSRegExp : public JSObject {
   }
 
   void InitializeProperty(Context* ctx, JSString* src) {
-    GetSlot(FIELD_SOURCE) =
-        DataDescriptor(
-            src->empty() ? JSString::NewAsciiString(ctx, "(?:)") : src,
-            ATTR::NONE);
-    GetSlot(FIELD_GLOBAL) =
-        DataDescriptor(JSVal::Bool(impl_->global()), ATTR::NONE);
-    GetSlot(FIELD_IGNORE_CASE) =
-        DataDescriptor(JSVal::Bool(impl_->ignore()), ATTR::NONE);
-    GetSlot(FIELD_MULTILINE) =
-        DataDescriptor(JSVal::Bool(impl_->multiline()), ATTR::NONE);
-    GetSlot(FIELD_LAST_INDEX) =
-        DataDescriptor(JSVal::Int32(0), ATTR::W);
+    GetSlot(FIELD_SOURCE) = src->empty() ? JSString::NewAsciiString(ctx, "(?:)") : src;
+    GetSlot(FIELD_GLOBAL) = JSVal::Bool(impl_->global());
+    GetSlot(FIELD_IGNORE_CASE) = JSVal::Bool(impl_->ignore());
+    GetSlot(FIELD_MULTILINE) = JSVal::Bool(impl_->multiline());
+    GetSlot(FIELD_LAST_INDEX) = JSVal::Int32(0);
   }
 
   template<typename FiberType>

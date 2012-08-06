@@ -57,10 +57,10 @@ inline bool Core::MarkValue(JSVal val) {
 }
 
 inline bool Core::MarkPropertyDescriptor(const PropertyDescriptor& desc) {
-  if (desc.IsDataDescriptor()) {
+  if (desc.IsData()) {
     return MarkValue(desc.AsDataDescriptor()->value());
   } else {
-    assert(desc.IsAccessorDescriptor());
+    assert(desc.IsAccessor());
     const AccessorDescriptor* accs = desc.AsAccessorDescriptor();
     bool res = false;
     if (accs->get()) {

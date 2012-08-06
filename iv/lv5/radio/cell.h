@@ -17,7 +17,8 @@ enum CellTag {
   ENVIRONMENT = 3,
   POINTER = 4,
   POINTER_CLEANUP = 5,
-  NATIVE_ITERATOR = 6
+  NATIVE_ITERATOR = 6,
+  ACCESSOR = 7
 };
 
 

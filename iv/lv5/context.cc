@@ -882,7 +882,7 @@ void Context::InitDate(const ClassSlot& func_cls,
 void Context::InitRegExp(const ClassSlot& func_cls,
                          JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.10 RegExp
-  JSObject* const proto = JSRegExp::NewPlain(this, Map::NewUniqueMap(this));
+  JSObject* const proto = JSRegExp::NewPlain(this, Map::NewFromPoint(this, global_data()->GetRegExpMap()));
   // section 15.10.4 The RegExp Constructor
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::RegExpConstructor, 2>::NewPlain(

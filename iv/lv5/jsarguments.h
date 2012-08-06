@@ -84,10 +84,7 @@ class JSNormalArguments : public JSObject {
         if (mapped != symbol::kDummySymbol) {
           Error::Dummy dummy;
           const JSVal val = env_->GetBindingValue(ctx, mapped, false, &dummy);
-          slot->set_descriptor(
-              DataDescriptor(
-                  val,
-                  slot->desc().attrs() & ATTR::DATA_ATTR_MASK));
+          slot->set(val, slot->attributes());
           return true;
         }
       }
@@ -103,21 +100,24 @@ class JSNormalArguments : public JSObject {
     Slot slot;
     if (JSObject::GetOwnPropertySlot(ctx, name, &slot)) {
       // found
-      const PropertyDescriptor current = slot.desc();
-      assert(!current.IsEmpty());
       bool returned = false;
-      if (IsDefineOwnPropertyAccepted(current, desc, th, &returned, e)) {
-        if (slot.IsCacheable()) {
-          GetSlot(slot.offset()) = PropertyDescriptor::Merge(desc, current);
+      if (slot.IsDefineOwnPropertyAccepted(desc, th, &returned, e)) {
+        if (slot.HasOffset()) {
+          const Attributes::Safe old(slot.attributes());
+          slot.Merge(ctx, desc);
+          if (old != slot.attributes()) {
+            map_ = map_->ChangeAttributesTransition(ctx, name, slot.attributes());
+          }
+          GetSlot(slot.offset()) = slot.value();
         } else {
           // add property transition
-          // searching already created maps
-          // and if this is available, move to this
-          std::size_t offset;
-          map_ = map_->AddPropertyTransition(ctx, name, &offset);
+          // searching already created maps and if this is available, move to this
+          uint32_t offset;
+          slot.Merge(ctx, desc);
+          map_ = map_->AddPropertyTransition(ctx, name, slot.attributes(), &offset);
           slots_.resize(map_->GetSlotsSize(), JSEmpty);
           // set newly created property
-          GetSlot(offset) = PropertyDescriptor::Merge(desc, current);
+          GetSlot(offset) = slot.value();
         }
       }
       return returned;
@@ -131,11 +131,12 @@ class JSNormalArguments : public JSObject {
       } else {
         // add property transition
         // searching already created maps and if this is available, move to this
-        std::size_t offset;
-        map_ = map_->AddPropertyTransition(ctx, name, &offset);
+        uint32_t offset;
+        const StoredSlot slot(ctx, desc);
+        map_ = map_->AddPropertyTransition(ctx, name, slot.attributes(), &offset);
         slots_.resize(map_->GetSlotsSize(), JSEmpty);
         // set newly created property
-        GetSlot(offset) = PropertyDescriptor::SetDefault(desc);
+        GetSlot(offset) = slot.value();
         return true;
       }
     }
@@ -149,8 +150,7 @@ class JSNormalArguments : public JSObject {
     const bool allowed = DefineOwnPropertyPatching(ctx, name, desc, false, e);
     if (!allowed) {
       if (th) {
-        e->Report(Error::Type,
-                  "[[DefineOwnProperty]] failed");
+        e->Report(Error::Type, "[[DefineOwnProperty]] failed");
       }
       return false;
     }
@@ -159,10 +159,10 @@ class JSNormalArguments : public JSObject {
       if (mapping_.size() > index) {
         const Symbol mapped = mapping_[index];
         if (mapped != symbol::kDummySymbol) {
-          if (desc.IsAccessorDescriptor()) {
+          if (desc.IsAccessor()) {
             mapping_[index] = symbol::kDummySymbol;
           } else {
-            if (desc.IsDataDescriptor()) {
+            if (desc.IsData()) {
               const DataDescriptor* const data = desc.AsDataDescriptor();
               if (!data->IsValueAbsent()) {
                 env_->SetMutableBinding(ctx, mapped, data->value(),
@@ -180,8 +180,8 @@ class JSNormalArguments : public JSObject {
   }
 
   bool Delete(Context* ctx, Symbol name, bool th, Error* e) {
-    const bool result = JSObject::Delete(ctx, name, th,
-                                         IV_LV5_ERROR_WITH(e, result));
+    const bool result =
+        JSObject::Delete(ctx, name, th, IV_LV5_ERROR_WITH(e, result));
     if (result) {
       if (symbol::IsArrayIndexSymbol(name)) {
         const uint32_t index = symbol::GetIndexFromSymbol(name);

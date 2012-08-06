@@ -396,7 +396,6 @@ class Compiler {
           break;
         case r::OP::LOAD_PROP_GENERIC:
         case r::OP::LOAD_PROP_OWN:
-        case r::OP::LOAD_PROP_OWN_MEGAMORPHIC:
         case r::OP::LOAD_PROP_PROTO:
         case r::OP::LOAD_PROP_CHAIN:
           UNREACHABLE();
@@ -1331,14 +1330,13 @@ class Compiler {
     const register_t obj = Reg(instr[1].i16[0]);
     const register_t item = Reg(instr[1].i16[1]);
     const uint32_t offset = instr[2].u32[0];
-    const uint32_t merged = instr[2].u32[1];
-    LoadVRs(asm_->rdi, obj, asm_->rsi, item);
-    asm_->mov(asm_->edx, offset);
-    if (merged) {
-      asm_->Call(&stub::STORE_OBJECT_DATA<true>);
-    } else {
-      asm_->Call(&stub::STORE_OBJECT_DATA<false>);
-    }
+    LoadVRs(asm_->rdi, obj, asm_->rax, item);
+    const std::ptrdiff_t data_offset =
+        IV_CAST_OFFSET(radio::Cell*, JSObject*) +
+        IV_OFFSETOF(JSObject, slots_) +
+        IV_OFFSETOF(JSObject::Slots, data_);
+    asm_->mov(asm_->rdi, asm_->qword[asm_->rdi + data_offset]);
+    asm_->mov(asm_->qword[asm_->rdi + kJSValSize * offset], asm_->rax);
   }
 
   // opcode | (obj | item) | (offset | merged)
@@ -1347,12 +1345,29 @@ class Compiler {
     const register_t item = Reg(instr[1].i16[1]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t merged = instr[2].u32[1];
-    LoadVRs(asm_->rdi, obj, asm_->rsi, item);
-    asm_->mov(asm_->edx, offset);
     if (merged) {
-      asm_->Call(&stub::STORE_OBJECT_GET<true>);
+      LoadVRs(asm_->rdi, obj, asm_->rax, item);
+      const std::ptrdiff_t data_offset =
+          IV_CAST_OFFSET(radio::Cell*, JSObject*) +
+          IV_OFFSETOF(JSObject, slots_) +
+          IV_OFFSETOF(JSObject::Slots, data_);
+      asm_->mov(asm_->rdi, asm_->qword[asm_->rdi + data_offset]);
+      asm_->mov(asm_->rdi, asm_->qword[asm_->rdi + kJSValSize * offset]);
+      // rdi is Accessor Cell
+      const std::ptrdiff_t getter_offset =
+          IV_CAST_OFFSET(radio::Cell*, Accessor*) +
+          IV_OFFSETOF(Accessor, getter_);
+      const std::ptrdiff_t cell_to_jsobject =
+          IV_CAST_OFFSET(radio::Cell*, JSObject*);
+      if (cell_to_jsobject != 0) {
+        asm_->add(asm_->rax, cell_to_jsobject);
+      }
+      asm_->mov(asm_->qword[asm_->rdi + getter_offset], asm_->rax);
     } else {
-      asm_->Call(&stub::STORE_OBJECT_GET<false>);
+      LoadVRs(asm_->rsi, obj, asm_->rdx, item);
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->ecx, offset);
+      asm_->Call(&stub::STORE_OBJECT_GET);
     }
   }
 
@@ -1362,12 +1377,29 @@ class Compiler {
     const register_t item = Reg(instr[1].i16[1]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t merged = instr[2].u32[1];
-    LoadVRs(asm_->rdi, obj, asm_->rsi, item);
-    asm_->mov(asm_->edx, offset);
     if (merged) {
-      asm_->Call(&stub::STORE_OBJECT_SET<true>);
+      LoadVRs(asm_->rdi, obj, asm_->rax, item);
+      const std::ptrdiff_t data_offset =
+          IV_CAST_OFFSET(radio::Cell*, JSObject*) +
+          IV_OFFSETOF(JSObject, slots_) +
+          IV_OFFSETOF(JSObject::Slots, data_);
+      asm_->mov(asm_->rdi, asm_->qword[asm_->rdi + data_offset]);
+      asm_->mov(asm_->rdi, asm_->qword[asm_->rdi + kJSValSize * offset]);
+      // rdi is Accessor Cell
+      const std::ptrdiff_t getter_offset =
+          IV_CAST_OFFSET(radio::Cell*, Accessor*) +
+          IV_OFFSETOF(Accessor, setter_);
+      const std::ptrdiff_t cell_to_jsobject =
+          IV_CAST_OFFSET(radio::Cell*, JSObject*);
+      if (cell_to_jsobject != 0) {
+        asm_->add(asm_->rax, cell_to_jsobject);
+      }
+      asm_->mov(asm_->qword[asm_->rdi + getter_offset], asm_->rax);
     } else {
-      asm_->Call(&stub::STORE_OBJECT_SET<false>);
+      LoadVRs(asm_->rsi, obj, asm_->rdx, item);
+      asm_->mov(asm_->rdi, asm_->r12);
+      asm_->mov(asm_->ecx, offset);
+      asm_->Call(&stub::STORE_OBJECT_SET);
     }
   }
 

@@ -17,6 +17,7 @@
 #include <iv/lv5/internal.h>
 #include <iv/lv5/slot.h>
 #include <iv/lv5/chain.h>
+#include <iv/lv5/accessor.h>
 #include <iv/lv5/railgun/native_iterator.h>
 #include <iv/lv5/railgun/fwd.h>
 #include <iv/lv5/railgun/vm_fwd.h>
@@ -357,7 +358,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
                     ((configurable) ? ATTR::C : ATTR::NONE)),
                 true, ERR);
           } else {
-            if (existing_prop.IsAccessorDescriptor()) {
+            if (existing_prop.IsAccessor()) {
               e->Report(Error::Type, "create mutable function binding failed");
               DISPATCH_ERROR();
             }
@@ -489,122 +490,22 @@ JSVal VM::Execute(Frame* start, Error* e) {
         assert(obj);
         if (instr[2].map == obj->map()) {
           // cache hit
-          const JSVal res = obj->GetSlot(instr[3].u32[0]).Get(ctx(), base, ERR);
-          REG(instr[1].ssw.i16[0]) = res;
+          REG(instr[1].ssw.i16[0]) = obj->GetSlot(instr[3].u32[0]);
           DISPATCH(LOAD_PROP_OWN);
         } else {
-          // cache miss
-          // search megamorphic cache table
-          const Symbol name = frame->GetName(instr[1].ssw.u32);
-
-          const std::size_t hash =
-              (std::hash<Map*>()(obj->map()) + std::hash<Symbol>()(name)) %
-              Context::kGlobalMapCacheSize;
-          const Context::MapCacheEntry& value =
-              (*ctx()->global_map_cache())[hash];
-          if (value.first.first == obj->map() && value.first.second == name) {
-            // cache hit
-            const JSVal res = obj->GetSlot(value.second).Get(ctx(), base, ERR);
-            REG(instr[1].ssw.i16[0]) = res;
-          } else {
-            Slot slot;
-            if (obj->GetPropertySlot(ctx(), name, &slot)) {
-              // property found
-              if (!slot.IsCacheable()) {
-                // uncacheable => uncache
-                instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
-                const JSVal res = slot.Get(ctx(), base, ERR);
-                REG(instr[1].ssw.i16[0]) = res;
-                DISPATCH(LOAD_PROP_OWN);
-              }
-
-              if (slot.base() == obj) {
-                // own property => register it to map cache
-                instr[0] =
-                    Instruction::GetOPInstruction(
-                        OP::LOAD_PROP_OWN_MEGAMORPHIC);
-                (*ctx()->global_map_cache())[hash] =
-                    Context::MapCacheEntry(
-                        Context::MapCacheKey(obj->map(), name), slot.offset());
-                (*ctx()->global_map_cache())[
-                    (std::hash<Map*>()(instr[2].map) +
-                     std::hash<Symbol>()(name)) % Context::kGlobalMapCacheSize
-                    ] =
-                    Context::MapCacheEntry(
-                        Context::MapCacheKey(instr[2].map, name),
-                        instr[3].u32[0]);
-                const JSVal res = slot.Get(ctx(), base, ERR);
-                REG(instr[1].ssw.i16[0]) = res;
-                DISPATCH(LOAD_PROP_OWN);
-              }
-
-              instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
-              const JSVal res = slot.Get(ctx(), base, ERR);
-              REG(instr[1].ssw.i16[0]) = res;
-            } else {
-              // not found => uncache
-              instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
-              REG(instr[1].ssw.i16[0]) = JSUndefined;
-            }
-          }
-        }
-        DISPATCH(LOAD_PROP_OWN);
-      }
-
-      DEFINE_OPCODE(LOAD_PROP_OWN_MEGAMORPHIC) {
-        const JSVal base = REG(instr[1].ssw.i16[1]);
-        base.CheckObjectCoercible(ERR);
-        JSObject* obj = NULL;
-        const Symbol name = frame->GetName(instr[1].ssw.u32);
-        if (base.IsPrimitive()) {
-          // primitive prototype cache
-          JSVal res;
-          if (GetPrimitiveOwnProperty(base, name, &res)) {
-            REG(instr[1].ssw.i16[0]) = res;
-            DISPATCH(LOAD_PROP_OWN_MEGAMORPHIC);
-          } else {
-            obj = base.GetPrimitiveProto(ctx());
-          }
-        } else {
-          obj = base.object();
-        }
-        assert(obj);
-        const std::size_t hash =
-            (std::hash<Map*>()(obj->map()) + std::hash<Symbol>()(name)) %
-            Context::kGlobalMapCacheSize;
-        const Context::MapCacheEntry& value =
-            (*ctx()->global_map_cache())[hash];
-        if (value.first.first == obj->map() && value.first.second == name) {
-          // cache hit
-          const JSVal res = obj->GetSlot(value.second).Get(ctx(), base, ERR);
-          REG(instr[1].ssw.i16[0]) = res;
-        } else {
+          // not found => uncache
           Slot slot;
+          const Symbol name = frame->GetName(instr[1].ssw.u32);
           if (obj->GetPropertySlot(ctx(), name, &slot)) {
-            // property found
-            if (!slot.IsCacheable()) {
-              // uncache
-              instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
-              const JSVal res = slot.Get(ctx(), base, ERR);
-              REG(instr[1].ssw.i16[0]) = res;
-              DISPATCH(LOAD_PROP_OWN_MEGAMORPHIC);
-            }
-            if (slot.base() == obj) {
-              // own property => register it to map cache
-              (*ctx()->global_map_cache())[hash] =
-                  Context::MapCacheEntry(
-                      Context::MapCacheKey(obj->map(), name), slot.offset());
-              const JSVal res = slot.Get(ctx(), base, ERR);
-              REG(instr[1].ssw.i16[0]) = res;
-              DISPATCH(LOAD_PROP_OWN_MEGAMORPHIC);
-            }
-            const JSVal res = slot.Get(ctx(), base, ERR);
-            REG(instr[1].ssw.i16[0]) = res;
+            instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
+            const JSVal ret = slot.Get(ctx(), obj, ERR);
+            REG(instr[1].ssw.i16[0]) = ret;
           } else {
+            instr[0] = Instruction::GetOPInstruction(OP::LOAD_PROP);
             REG(instr[1].ssw.i16[0]) = JSUndefined;
           }
         }
-        DISPATCH(LOAD_PROP_OWN_MEGAMORPHIC);
+        DISPATCH(LOAD_PROP_OWN);
       }
 
       DEFINE_OPCODE(LOAD_PROP_PROTO) {
@@ -629,9 +530,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
         if (instr[2].map == obj->map() &&
             proto && instr[3].map == proto->map()) {
           // cache hit
-          const JSVal res =
-              proto->GetSlot(instr[4].u32[0]).Get(ctx(), base, ERR);
-          REG(instr[1].ssw.i16[0]) = res;
+          REG(instr[1].ssw.i16[0]) = proto->GetSlot(instr[4].u32[0]);
         } else {
           // uncache
           const Symbol name = frame->GetName(instr[1].ssw.u32);
@@ -662,9 +561,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
         }
         if (JSObject* cached = instr[2].chain->Validate(obj, instr[3].map)) {
           // cache hit
-          const JSVal res =
-              cached->GetSlot(instr[4].u32[0]).Get(ctx(), base, ERR);
-          REG(instr[1].ssw.i16[0]) = res;
+          REG(instr[1].ssw.i16[0]) = cached->GetSlot(instr[4].u32[0]);
         } else {
           // uncache
           const Symbol name = frame->GetName(instr[1].ssw.u32);
@@ -707,14 +604,14 @@ JSVal VM::Execute(Frame* start, Error* e) {
         JSGlobal* global = ctx()->global_obj();
         if (instr[2].map == global->map()) {
           // map is cached, so use previous index code
-          global->PutToSlotOffset(ctx(), instr[3].u32[0], src, strict, ERR);
+          global->GetSlot(instr[3].u32[0]) = src;
         } else {
           const Symbol name = frame->GetName(instr[1].ssw.u32);
           Slot slot;
-          if (global->GetOwnPropertySlot(ctx(), name, &slot)) {
+          if (global->GetOwnPropertySlot(ctx(), name, &slot) && slot.IsStoreCacheable()) {
             instr[2].map = global->map();
             instr[3].u32[0] = slot.offset();
-            global->PutToSlotOffset(ctx(), instr[3].u32[0], src, strict, ERR);
+            global->GetSlot(slot.offset()) = src;
           } else {
             instr[2].map = NULL;
             StoreName(ctx()->global_env(), name, src, strict, ERR);
@@ -2036,17 +1933,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
         // opcode | (obj | item) | (offset | merged)
         assert(REG(instr[1].i16[0]).IsObject());
         JSObject* const obj = REG(instr[1].i16[0]).object();
-        const JSVal value = REG(instr[1].i16[1]);
-        if (instr[2].u32[1]) {
-          obj->GetSlot(instr[2].u32[0]) =
-              PropertyDescriptor::Merge(
-                  DataDescriptor(value, ATTR::W | ATTR::E | ATTR::C),
-              obj->GetSlot(instr[2].u32[0]));
-        } else {
-          obj->GetSlot(instr[2].u32[0]) =
-              DataDescriptor(value, ATTR::W | ATTR::E | ATTR::C);
-        }
-        assert(!*e);
+        obj->GetSlot(instr[2].u32[0]) = REG(instr[1].i16[1]);
         DISPATCH(STORE_OBJECT_DATA);
       }
 
@@ -2055,17 +1942,11 @@ JSVal VM::Execute(Frame* start, Error* e) {
         JSObject* const obj = REG(instr[1].i16[0]).object();
         const JSVal value = REG(instr[1].i16[1]);
         if (instr[2].u32[1]) {
-          obj->GetSlot(instr[2].u32[0]) =
-              PropertyDescriptor::Merge(
-                  AccessorDescriptor(value.object(), NULL,
-                                     ATTR::E | ATTR::C | ATTR::UNDEF_SETTER),
-              obj->GetSlot(instr[2].u32[0]));
+          Accessor* ac = static_cast<Accessor*>(obj->GetSlot(instr[2].u32[0]).cell());
+          ac->set_getter(value.object());
         } else {
-          obj->GetSlot(instr[2].u32[0]) =
-              AccessorDescriptor(value.object(), NULL,
-                                 ATTR::E | ATTR::C | ATTR::UNDEF_SETTER);
+          obj->GetSlot(instr[2].u32[0]) = JSVal::Cell(Accessor::New(ctx(), value.object(), NULL));
         }
-        assert(!*e);
         DISPATCH(STORE_OBJECT_GET);
       }
 
@@ -2074,17 +1955,11 @@ JSVal VM::Execute(Frame* start, Error* e) {
         JSObject* const obj = REG(instr[1].i16[0]).object();
         const JSVal value = REG(instr[1].i16[1]);
         if (instr[2].u32[1]) {
-          obj->GetSlot(instr[2].u32[0]) =
-              PropertyDescriptor::Merge(
-                  AccessorDescriptor(NULL, value.object(),
-                                     ATTR::E | ATTR::C | ATTR::UNDEF_GETTER),
-              obj->GetSlot(instr[2].u32[0]));
+          Accessor* ac = static_cast<Accessor*>(obj->GetSlot(instr[2].u32[0]).cell());
+          ac->set_setter(value.object());
         } else {
-          obj->GetSlot(instr[2].u32[0]) =
-              AccessorDescriptor(NULL, value.object(),
-                                 ATTR::E | ATTR::C | ATTR::UNDEF_GETTER);
+          obj->GetSlot(instr[2].u32[0]) = JSVal::Cell(Accessor::New(ctx(), NULL, value.object()));
         }
-        assert(!*e);
         DISPATCH(STORE_OBJECT_SET);
       }
 

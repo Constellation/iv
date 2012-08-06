@@ -151,7 +151,7 @@ class Operation {
     Slot slot;
     if (obj->GetPropertySlot(ctx_, s, &slot)) {
       // property found
-      if (!slot.IsCacheable()) {
+      if (!slot.IsLoadCacheable()) {
         // bailout to generic
         instr[0] = Instruction::GetOPInstruction(generic);
         return slot.Get(ctx_, base, e);
@@ -164,7 +164,7 @@ class Operation {
         instr[0] = Instruction::GetOPInstruction(own);
         instr[2].map = obj->map();
         instr[3].u32[0] = slot.offset();
-        return slot.Get(ctx_, base, e);
+        return slot.value();
       }
 
       if (slot.base() == obj->prototype()) {
@@ -174,7 +174,7 @@ class Operation {
         instr[2].map = obj->map();
         instr[3].map = slot.base()->map();
         instr[4].u32[0] = slot.offset();
-        return slot.Get(ctx_, base, e);
+        return slot.value();
       }
 
       // chain property
@@ -182,7 +182,7 @@ class Operation {
       instr[2].chain = Chain::New(obj, slot.base());
       instr[3].map = slot.base()->map();
       instr[4].u32[0] = slot.offset();
-      return slot.Get(ctx_, base, e);
+      return slot.value();
     } else {
       return JSUndefined;
     }
@@ -300,14 +300,16 @@ class Operation {
       JSObject* obj = base.object();
       if (instr[2].map == obj->map()) {
         // map is cached, so use previous index code
-        return obj->PutToSlotOffset(ctx_, instr[3].u32[0], stored, strict, e);
+        obj->GetSlot(instr[3].u32[0]) = stored;
+        return;
       } else {
         Slot slot;
         if (obj->GetOwnPropertySlot(ctx_, s, &slot)) {
-          if (slot.IsCacheable()) {
+          // only data property
+          if (slot.IsStoreCacheable()) {
             instr[2].map = obj->map();
             instr[3].u32[0] = slot.offset();
-            obj->PutToSlotOffset(ctx_, instr[3].u32[0], stored, strict, e);
+            obj->GetSlot(slot.offset()) = stored;
           } else {
             // dispatch generic path
             obj->Put(ctx_, s, stored, strict, e);
@@ -343,7 +345,7 @@ class Operation {
       return;
     }
     const PropertyDescriptor own_desc = o->GetOwnProperty(ctx_, s);
-    if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
+    if (!own_desc.IsEmpty() && own_desc.IsData()) {
       if (strict) {
         e->Report(Error::Type,
                   "value to symbol defined and not data descriptor");
@@ -351,7 +353,7 @@ class Operation {
       return;
     }
     const PropertyDescriptor desc = o->GetProperty(ctx_, s);
-    if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
+    if (!desc.IsEmpty() && desc.IsAccessor()) {
       ScopedArguments a(ctx_, 1, CHECK);
       a[0] = stored;
       const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
@@ -562,23 +564,20 @@ class Operation {
 
   template<int Target, std::size_t Returned>
   JSVal IncrementGlobal(JSGlobal* global,
-                        std::size_t slot, bool strict, Error* e) {
-    const JSVal w = global->GetBySlotOffset(ctx_, slot, e);
+                        uint32_t offset, bool strict, Error* e) {
+    const JSVal w = global->GetSlot(offset);
     if (w.IsInt32() && detail::IsIncrementOverflowSafe<Target>(w.int32())) {
       std::tuple<JSVal, JSVal> results;
       const int32_t target = w.int32();
       std::get<0>(results) = w;
       std::get<1>(results) = JSVal::Int32(target + Target);
-      global->PutToSlotOffset(
-          ctx_, slot,
-          std::get<1>(results), strict, e);
+      global->GetSlot(offset) = std::get<1>(results);
       return std::get<Returned>(results);
     } else {
       std::tuple<double, double> results;
       std::get<0>(results) = w.ToNumber(ctx_, CHECK);
       std::get<1>(results) = std::get<0>(results) + Target;
-      global->PutToSlotOffset(ctx_, slot,
-                              std::get<1>(results), strict, e);
+      global->GetSlot(offset) = std::get<1>(results);
       return std::get<Returned>(results);
     }
   }
@@ -633,15 +632,14 @@ class Operation {
     // opcode | (dst | name) | nop | nop
     if (instr[2].map == global->map()) {
       // map is cached, so use previous index code
-      return IncrementGlobal<Target, Returned>(global,
-                                               instr[3].u32[0], strict, e);
+      return IncrementGlobal<Target, Returned>(global, instr[3].u32[0], strict, e);
     } else {
+      // TODO(Constellation) fix this
       Slot slot;
-      if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
-        instr[2].map = global->map();
-        instr[3].u32[0] = slot.offset();
-        return IncrementGlobal<Target, Returned>(global,
-                                                 instr[3].u32[0], strict, e);
+      if (global->GetOwnPropertySlot(ctx_, s, &slot) && slot.IsStoreCacheable()) {
+          instr[2].map = global->map();
+          instr[3].u32[0] = slot.offset();
+          return IncrementGlobal<Target, Returned>(global, instr[3].u32[0], strict, e);
       } else {
         instr[2].map = NULL;
         return IncrementName<Target, Returned>(ctx_->global_env(), s, strict, e);
@@ -654,14 +652,16 @@ class Operation {
     // opcode | (dst | index) | nop | nop
     if (instr[2].map == global->map()) {
       // map is cached, so use previous index code
-      return global->GetBySlotOffset(ctx_, instr[3].u32[0], e);
+      return global->GetSlot(instr[3].u32[0]);
     } else {
+      // now Own Property Pattern only implemented
       Slot slot;
       if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
-        // now Own Property Pattern only implemented
-        assert(slot.IsCacheable());
-        instr[2].map = global->map();
-        instr[3].u32[0] = slot.offset();
+        if (slot.IsLoadCacheable()) {
+          instr[2].map = global->map();
+          instr[3].u32[0] = slot.offset();
+          return slot.value();
+        }
         return slot.Get(ctx_, global, e);
       } else {
         instr[2].map = NULL;

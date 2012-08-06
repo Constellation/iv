@@ -66,29 +66,18 @@ JSVal JSObject::DefaultValue(Context* ctx, Hint::Object hint, Error* e) {
 #undef TRY
 
 JSVal JSObject::Get(Context* ctx, Symbol name, Error* e) {
-  const PropertyDescriptor desc = GetProperty(ctx, name);
-  if (desc.IsEmpty()) {
-    return JSUndefined;
+  Slot slot;
+  if (GetPropertySlot(ctx, name, &slot)) {
+    return slot.Get(ctx, this, e);
   }
-  if (desc.IsDataDescriptor()) {
-    return desc.AsDataDescriptor()->value();
-  } else {
-    assert(desc.IsAccessorDescriptor());
-    JSObject* const getter = desc.AsAccessorDescriptor()->get();
-    if (getter) {
-      ScopedArguments a(ctx, 0, IV_LV5_ERROR(e));
-      return getter->AsCallable()->Call(&a, this, e);
-    } else {
-      return JSUndefined;
-    }
-  }
+  return JSUndefined;
 }
 
 // not recursion
 PropertyDescriptor JSObject::GetProperty(Context* ctx, Symbol name) const {
   Slot slot;
   if (GetPropertySlot(ctx, name, &slot)) {
-    return slot.desc();
+    return slot.ToDescriptor();
   }
   return JSEmpty;
 }
@@ -97,7 +86,7 @@ bool JSObject::GetPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
   const JSObject* obj = this;
   do {
     if (obj->GetOwnPropertySlot(ctx, name, slot)) {
-      assert(!slot->desc().IsEmpty());
+      assert(!slot->IsNotFound());
       return true;
     }
     obj = obj->prototype();
@@ -108,35 +97,39 @@ bool JSObject::GetPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
 PropertyDescriptor JSObject::GetOwnProperty(Context* ctx, Symbol name) const {
   Slot slot;
   if (GetOwnPropertySlot(ctx, name, &slot)) {
-    assert(!slot.desc().IsEmpty());
-    return slot.desc();
+    assert(!slot.IsNotFound());
+    return slot.ToDescriptor();
   } else {
     return JSEmpty;
   }
 }
 
 bool JSObject::CanPut(Context* ctx, Symbol name) const {
-  const PropertyDescriptor desc = GetOwnProperty(ctx, name);
-  if (!desc.IsEmpty()) {
-    if (desc.IsAccessorDescriptor()) {
-      return desc.AsAccessorDescriptor()->set();
-    } else {
-      assert(desc.IsDataDescriptor());
-      return desc.AsDataDescriptor()->IsWritable();
+  {
+    Slot slot;
+    if (GetOwnPropertySlot(ctx, name, &slot)) {
+      if (slot.attributes().IsAccessor()) {
+        return slot.accessor()->setter();
+      } else {
+        assert(slot.attributes().IsData());
+        return slot.attributes().IsWritable();
+      }
     }
   }
   if (!prototype_) {
-    return extensible_;
+    return IsExtensible();
   }
-  const PropertyDescriptor inherited = prototype_->GetProperty(ctx, name);
-  if (inherited.IsEmpty()) {
-    return extensible_;
-  } else {
-    if (inherited.IsAccessorDescriptor()) {
-      return inherited.AsAccessorDescriptor()->set();
+  {
+    Slot inherited;
+    if (prototype_->GetPropertySlot(ctx, name, &inherited)) {
+      if (inherited.attributes().IsAccessor()) {
+        return inherited.accessor()->setter();
+      } else {
+        assert(inherited.attributes().IsData());
+        return inherited.attributes().IsWritable();
+      }
     } else {
-      assert(inherited.IsDataDescriptor());
-      return inherited.AsDataDescriptor()->IsWritable();
+      return IsExtensible();
     }
   }
 }
@@ -150,20 +143,24 @@ bool JSObject::DefineOwnProperty(Context* ctx,
   Slot slot;
   if (GetOwnPropertySlot(ctx, name, &slot)) {
     // found
-    const PropertyDescriptor current = slot.desc();
-    assert(!current.IsEmpty());
     bool returned = false;
-    if (IsDefineOwnPropertyAccepted(current, desc, th, &returned, e)) {
-      if (slot.IsCacheable()) {
-        GetSlot(slot.offset()) = PropertyDescriptor::Merge(desc, current);
+    if (slot.IsDefineOwnPropertyAccepted(desc, th, &returned, e)) {
+      if (slot.HasOffset()) {
+        const Attributes::Safe old(slot.attributes());
+        slot.Merge(ctx, desc);
+        if (old != slot.attributes()) {
+          map_ = map_->ChangeAttributesTransition(ctx, name, slot.attributes());
+        }
+        GetSlot(slot.offset()) = slot.value();
       } else {
         // add property transition
         // searching already created maps and if this is available, move to this
-        std::size_t offset;
-        map_ = map_->AddPropertyTransition(ctx, name, &offset);
+        uint32_t offset;
+        slot.Merge(ctx, desc);
+        map_ = map_->AddPropertyTransition(ctx, name, slot.attributes(), &offset);
         slots_.resize(map_->GetSlotsSize(), JSEmpty);
         // set newly created property
-        GetSlot(offset) = PropertyDescriptor::Merge(desc, current);
+        GetSlot(offset) = slot.value();
       }
     }
     return returned;
@@ -176,12 +173,13 @@ bool JSObject::DefineOwnProperty(Context* ctx,
       return false;
     } else {
       // add property transition
-      // searching already created maps and if this is available, move to this
-      std::size_t offset;
-      map_ = map_->AddPropertyTransition(ctx, name, &offset);
-      slots_.resize(map_->GetSlotsSize(), JSEmpty);
       // set newly created property
-      GetSlot(offset) = PropertyDescriptor::SetDefault(desc);
+      // searching already created maps and if this is available, move to this
+      uint32_t offset;
+      const StoredSlot stored(ctx, desc);
+      map_ = map_->AddPropertyTransition(ctx, name, stored.attributes(), &offset);
+      slots_.resize(map_->GetSlotsSize(), JSEmpty);
+      GetSlot(offset) = stored.value();
       return true;
     }
   }
@@ -194,44 +192,51 @@ void JSObject::Put(Context* ctx, Symbol name, JSVal val, bool th, Error* e) {
     }
     return;
   }
-  const PropertyDescriptor own_desc = GetOwnProperty(ctx, name);
-  if (!own_desc.IsEmpty() && own_desc.IsDataDescriptor()) {
-    DefineOwnProperty(
-        ctx,
-        name,
-        DataDescriptor(val,
-                       ATTR::UNDEF_ENUMERABLE |
-                       ATTR::UNDEF_CONFIGURABLE |
-                       ATTR::UNDEF_WRITABLE),
-        th, e);
-    return;
+
+  {
+    Slot slot;
+    if (GetOwnPropertySlot(ctx, name, &slot) && slot.attributes().IsData()) {
+      DefineOwnProperty(
+          ctx,
+          name,
+          DataDescriptor(val,
+                         ATTR::UNDEF_ENUMERABLE |
+                         ATTR::UNDEF_CONFIGURABLE |
+                         ATTR::UNDEF_WRITABLE),
+          th, e);
+      return;
+    }
   }
-  const PropertyDescriptor desc = GetProperty(ctx, name);
-  if (!desc.IsEmpty() && desc.IsAccessorDescriptor()) {
-    const AccessorDescriptor* const accs = desc.AsAccessorDescriptor();
-    assert(accs->set());
-    ScopedArguments args(ctx, 1, IV_LV5_ERROR_VOID(e));
-    args[0] = val;
-    accs->set()->AsCallable()->Call(&args, this, e);
-  } else {
-    DefineOwnProperty(ctx, name,
-                      DataDescriptor(val, ATTR::W | ATTR::E | ATTR::C),
-                      th, e);
+
+  {
+    Slot slot;
+    if (GetPropertySlot(ctx, name, &slot) && slot.attributes().IsAccessor()) {
+      const Accessor* ac = slot.accessor();
+      assert(ac->setter());
+      ScopedArguments args(ctx, 1, IV_LV5_ERROR_VOID(e));
+      args[0] = val;
+      ac->setter()->AsCallable()->Call(&args, this, e);
+    } else {
+      DefineOwnProperty(ctx, name,
+                        DataDescriptor(val, ATTR::W | ATTR::E | ATTR::C),
+                        th, e);
+    }
   }
 }
 
 bool JSObject::HasProperty(Context* ctx, Symbol name) const {
-  return !GetProperty(ctx, name).IsEmpty();
+  Slot slot;
+  return GetPropertySlot(ctx, name, &slot);
 }
 
 // Delete direct doesn't lookup by GetOwnPropertySlot.
 // Simple, lookup from map and delete it
 bool JSObject::DeleteDirect(Context* ctx, Symbol name, bool th, Error* e) {
-  const std::size_t offset = map_->Get(ctx, name);
-  if (offset == core::kNotFound) {
+  const Map::Entry entry = map_->Get(ctx, name);
+  if (entry.IsNotFound()) {
     return true;  // not found
   }
-  if (!GetSlot(offset).IsConfigurable()) {
+  if (!entry.attributes.IsConfigurable()) {
     if (th) {
       e->Report(Error::Type, "delete failed");
     }
@@ -243,7 +248,7 @@ bool JSObject::DeleteDirect(Context* ctx, Symbol name, bool th, Error* e) {
   // and if that is not avaiable, create new map and move to it.
   // newly created slots size is always smaller than before
   map_ = map_->DeletePropertyTransition(ctx, name);
-  GetSlot(offset) = JSEmpty;
+  GetSlot(entry.offset) = JSEmpty;
   return true;
 }
 
@@ -254,8 +259,7 @@ bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* e) {
     return true;
   }
 
-  assert(!slot.desc().IsEmpty());
-  if (!slot.desc().IsConfigurable()) {
+  if (!slot.attributes().IsConfigurable()) {
     if (th) {
       e->Report(Error::Type, "delete failed");
     }
@@ -264,14 +268,15 @@ bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* e) {
 
   // If target is JSNormalArguments,
   // Descriptor maybe configurable but not cacheable.
-  std::size_t offset;
-  if (slot.IsCacheable()) {
+  uint32_t offset;
+  if (slot.HasOffset()) {
     offset = slot.offset();
   } else {
-    offset = map_->Get(ctx, name);
-    if (offset == core::kNotFound) {
+    const Map::Entry entry = map_->Get(ctx, name);
+    if (entry.IsNotFound()) {
       return true;
     }
+    offset = entry.offset;
   }
 
   // delete property transition
@@ -297,52 +302,13 @@ void JSObject::GetPropertyNames(Context* ctx,
 void JSObject::GetOwnPropertyNames(Context* ctx,
                                    PropertyNamesCollector* collector,
                                    EnumerationMode mode) const {
-  map_->GetOwnPropertyNames(this, ctx, collector, mode);
-}
-
-JSVal JSObject::GetBySlotOffset(Context* ctx, std::size_t n, Error* e) {
-  return GetSlot(n).Get(ctx, this, e);
-}
-
-void JSObject::PutToSlotOffset(Context* ctx,
-                               std::size_t offset, JSVal val,
-                               bool th, Error* e) {
-  // not empty is already checked
-  const PropertyDescriptor current = GetSlot(offset);
-  // can put check
-  if ((current.IsAccessorDescriptor() &&
-       !current.AsAccessorDescriptor()->set()) ||
-      (current.IsDataDescriptor() &&
-       !current.AsDataDescriptor()->IsWritable())) {
-    if (th) {
-      e->Report(Error::Type, "put failed");
-    }
-    return;
-  }
-  assert(!current.IsEmpty());
-  if (current.IsDataDescriptor()) {
-    const DataDescriptor desc(
-        val,
-        ATTR::UNDEF_ENUMERABLE |
-        ATTR::UNDEF_CONFIGURABLE |
-        ATTR::UNDEF_WRITABLE);
-    bool returned = false;
-    if (IsDefineOwnPropertyAccepted(current, desc, th, &returned, e)) {
-      GetSlot(offset) = PropertyDescriptor::Merge(desc, current);
-    }
-  } else {
-    const AccessorDescriptor* const accs = current.AsAccessorDescriptor();
-    assert(accs->set());
-    ScopedArguments args(ctx, 1, IV_LV5_ERROR_VOID(e));
-    args[0] = val;
-    accs->set()->AsCallable()->Call(&args, this, e);
-  }
+  map_->GetOwnPropertyNames(ctx, collector, mode);
 }
 
 bool JSObject::GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
-  const std::size_t offset = map()->Get(ctx, name);
-  if (offset != core::kNotFound) {
-    slot->set_descriptor(GetSlot(offset), this, offset);
+  const Map::Entry entry = map()->Get(ctx, name);
+  if (!entry.IsNotFound()) {
+    slot->set(GetSlot(entry.offset), entry.attributes, this, entry.offset);
     return true;
   }
   return false;
@@ -382,20 +348,18 @@ void JSObject::MarkChildren(radio::Core* core) {
   std::for_each(slots_.begin(), slots_.end(), radio::Core::Marker(core));
 }
 
-void Map::GetOwnPropertyNames(const JSObject* obj,
-                              Context* ctx,
-                              PropertyNamesCollector* collector,
-                              JSObject::EnumerationMode mode) {
+inline void Map::GetOwnPropertyNames(Context* ctx,
+                                     PropertyNamesCollector* collector,
+                                     JSObject::EnumerationMode mode) {
   if (AllocateTableIfNeeded()) {
     for (TargetTable::const_iterator it = table_->begin(),
          last = table_->end(); it != last; ++it) {
       if (mode == JSObject::INCLUDE_NOT_ENUMERABLE ||
-          obj->GetSlot(it->second).IsEnumerable()) {
-        collector->Add(it->first, it->second);
+          it->second.attributes.IsEnumerable()) {
+        collector->Add(it->first, it->second.offset);
       }
     }
   }
 }
-
 
 } }  // namespace iv::lv5

@@ -21,7 +21,7 @@ inline JSVal FromPropertyDescriptor(Context* ctx,
     return JSUndefined;
   }
   JSObject* const obj = JSObject::New(ctx);
-  if (desc.IsDataDescriptor()) {
+  if (desc.IsData()) {
     const DataDescriptor* const data = desc.AsDataDescriptor();
     obj->DefineOwnProperty(
         ctx, symbol::value(),
@@ -33,7 +33,7 @@ inline JSVal FromPropertyDescriptor(Context* ctx,
                        ATTR::W | ATTR::E | ATTR::C),
         false, NULL);
   } else {
-    assert(desc.IsAccessorDescriptor());
+    assert(desc.IsAccessor());
     const AccessorDescriptor* const accs = desc.AsAccessorDescriptor();
     const JSVal getter = (accs->get()) ? accs->get() : JSVal(JSUndefined);
     obj->DefineOwnProperty(
@@ -65,7 +65,7 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
     e->Report(Error::Type, "ToPropertyDescriptor requires Object argument");
     return JSEmpty;
   }
-  int attr = ATTR::DEFAULT;
+  Attributes::Raw attr = ATTR::DEFAULT;
   JSObject* const obj = target.object();
   JSVal value = JSUndefined;
   JSObject* getter = NULL;

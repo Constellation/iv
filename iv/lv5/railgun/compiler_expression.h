@@ -953,13 +953,18 @@ inline void Compiler::Visit(const ObjectLiteral* lit) {
 
     uint32_t merged = 0;
     uint32_t position = 0;
-    const std::size_t index = builder.Find(name);
-    if (index != core::kNotFound) {
-      merged = 1;  // already defined property
-      position = index;
+    Attributes::Safe attributes =
+        (type == ObjectLiteral::DATA) ?
+        ATTR::Object::Data() : ATTR::Object::Accessor();
+
+    const Map::Entry entry = builder.Find(name);
+    if (entry.IsNotFound()) {
+      position = builder.Add(name, attributes).offset;
     } else {
-      position = builder.Add(name);
+      position = entry.offset;
+      merged = 1;  // already defined property
     }
+
     RegisterID item = EmitExpression(std::get<2>(prop));
     if (type == ObjectLiteral::DATA) {
       Emit<OP::STORE_OBJECT_DATA>(

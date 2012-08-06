@@ -13,8 +13,8 @@ namespace lv5 {
 namespace railgun {
 namespace detail {
 
-Code* Compile(Context* ctx,
-              std::shared_ptr<core::FileSource> src) {
+inline Code* Compile(Context* ctx,
+                     std::shared_ptr<core::FileSource> src) {
   AstFactory factory(ctx);
   core::Parser<
       iv::lv5::AstFactory,

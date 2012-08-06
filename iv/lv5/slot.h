@@ -2,71 +2,76 @@
 // this is holder for lookup Map and determine making this lookup to PIC or not
 //
 // see also map.h
-//
 #ifndef IV_LV5_SLOT_H_
 #define IV_LV5_SLOT_H_
 #include <iv/notfound.h>
 #include <iv/lv5/property.h>
+#include <iv/lv5/attributes.h>
 #include <iv/lv5/arguments.h>
+#include <iv/lv5/accessor.h>
 #include <iv/lv5/jsval_fwd.h>
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsfunction.h>
 namespace iv {
 namespace lv5 {
 
-class Slot {
+class Slot : public StoredSlot {
  public:
   Slot()
-    : cacheable_(true),
+    : StoredSlot(JSEmpty, Attributes::Safe::NotFound()),
+      cacheable_(true),
       base_(NULL),
-      desc_(JSEmpty),
       offset_(core::kNotFound) {
   }
 
-  bool IsCacheable() const {
-    return cacheable_;
+  bool IsNotFound() const {
+    return attributes().IsNotFound();
   }
 
-  void set_descriptor(const PropertyDescriptor& desc) {
+  bool HasOffset() const {
+    return offset_ != UINT32_MAX;
+  }
+
+  bool IsStoreCacheable() const {
+    return IsCacheable() && attributes().IsSimpleData();
+  }
+
+  bool IsLoadCacheable() const {
+    return IsCacheable() && attributes().IsData();
+  }
+
+  void set(JSVal value, Attributes::Safe attributes) {
+    StoredSlot::set(value, attributes);
     cacheable_ = false;
     base_ = NULL;
-    desc_ = desc;
-    offset_ = core::kNotFound;
+    offset_ = UINT32_MAX;
   }
 
-  void set_descriptor(const PropertyDescriptor& desc,
-                      const JSObject* obj, std::size_t offset) {
+  void set(JSVal value,
+           Attributes::Safe attributes,
+           const JSObject* obj, uint32_t offset) {
+    StoredSlot::set(value, attributes);
     cacheable_ = cacheable_ && true;
     base_ = obj;
-    desc_ = desc;
     offset_ = offset;
   }
 
-  JSVal Get(Context* ctx, JSVal this_binding, Error* e) const {
-    return desc_.Get(ctx, this_binding, e);
-  }
+  const JSObject* base() const { return base_; }
 
-  const JSObject* base() const {
-    return base_;
-  }
-
-  const PropertyDescriptor& desc() const {
-    return desc_;
-  }
-
-  std::size_t offset() const {
-    return offset_;
-  }
+  uint32_t offset() const { return offset_; }
 
   inline void MakeUnCacheable() {
     cacheable_ = false;
   }
 
  private:
+  bool IsCacheable() const {
+    return cacheable_;
+  }
+
   bool cacheable_;
   const JSObject* base_;
-  PropertyDescriptor desc_;
-  std::size_t offset_;
+  uint32_t offset_;
 };
 
 } }  // namespace iv::lv5

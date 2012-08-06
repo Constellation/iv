@@ -34,23 +34,14 @@ static bool IsAbsentDescriptor(const PropertyDescriptor& desc) {
     // explicitly not configurable
     return false;
   }
-  if (desc.IsAccessorDescriptor()) {
+  if (desc.IsAccessor()) {
     return false;
   }
-  if (desc.IsDataDescriptor()) {
+  if (desc.IsData()) {
     const DataDescriptor* const data = desc.AsDataDescriptor();
     return data->IsWritable() || data->IsWritableAbsent();
   }
   return true;
-}
-
-static DescriptorSlot::Data<uint32_t>
-DescriptorToArrayLengthSlot(const PropertyDescriptor& desc) {
-  assert(desc.IsDataDescriptor());
-  const JSVal val = desc.AsDataDescriptor()->value();
-  assert(val.IsNumber());
-  const uint32_t res = val.GetUInt32();
-  return DescriptorSlot::Data<uint32_t>(res, desc.attrs());
 }
 
 template<typename T = void>
@@ -77,7 +68,11 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
   typedef GCHashMap<uint32_t, JSVal>::type SparseArray;
   typedef Storage<JSVal> JSValVector;
 
-  uint32_t GetLength() const { return length_.value(); }
+  uint32_t GetLength() const {
+    uint32_t length;
+    length_.value().GetUInt32(&length);
+    return length;
+  }
 
   static JSArray* New(Context* ctx) {
     JSArray* const ary = new JSArray(ctx, 0u);
@@ -139,8 +134,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
         const JSVal val = vector_[index];
         if (!val.IsEmpty()) {
           // current is target
-          slot->set_descriptor(
-              DataDescriptor(val, ATTR::W | ATTR::E | ATTR::C));
+          slot->set(val, Attributes::CreateData(ATTR::W | ATTR::E | ATTR::C));
           return true;
         }
         return false;
@@ -152,8 +146,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
           const SparseArray::const_iterator it = map_->find(index);
           if (it != map_->end()) {
             // target is found
-            slot->set_descriptor(
-                DataDescriptor(it->second, ATTR::W | ATTR::E | ATTR::C));
+            slot->set(it->second, Attributes::CreateData(ATTR::W | ATTR::E | ATTR::C));
             return true;
           }
         }
@@ -161,7 +154,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
       return false;
     }
     if (name == symbol::length()) {
-      slot->set_descriptor(length_);
+      slot->set(length_.value(), length_.attributes());
       return true;
     }
     return JSObject::GetOwnPropertySlot(ctx, name, slot);
@@ -224,7 +217,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
   void GetOwnPropertyNames(Context* ctx,
                            PropertyNamesCollector* collector,
                            EnumerationMode mode) const {
-    if (length_.IsEnumerable() || (mode == INCLUDE_NOT_ENUMERABLE)) {
+    if (length_.attributes().IsEnumerable() || (mode == INCLUDE_NOT_ENUMERABLE)) {
       collector->Add(symbol::length(), 0);
     }
 
@@ -286,7 +279,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
       vector_((len <= kMaxVectorSize) ? len : 4, JSEmpty),
       map_(NULL),
       dense_(true),
-      length_(len, ATTR::WRITABLE) {
+      length_(len, Attributes::CreateData(ATTR::WRITABLE)) {
   }
 
   JSArray(Context* ctx, Map* map, uint32_t len)
@@ -294,7 +287,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
       vector_((len <= kMaxVectorSize) ? len : 4, JSEmpty),
       map_(NULL),
       dense_(true),
-      length_(len, ATTR::WRITABLE) {
+      length_(len, Attributes::CreateData(ATTR::WRITABLE)) {
   }
 
   JSArray(Context* ctx, JSArray* array)
@@ -320,9 +313,9 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
                                 bool th, Error* e) {
     // 15.4.5.1 step 4-a
     const uint32_t index = symbol::GetIndexFromSymbol(name);
-    const uint32_t old_len = length_.value();
+    const uint32_t old_len = GetLength();
     // 15.4.5.1 step 4-b
-    if (index >= old_len && !length_.IsWritable()) {
+    if (index >= old_len && !length_.attributes().IsWritable()) {
       REJECT("adding an element to the array "
              "which length is not writable is rejected");
     }
@@ -350,7 +343,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
             // Object.defineProperty(ary, '0', { });
             //
           } else {
-            if (desc.IsDataDescriptor() &&
+            if (desc.IsData() &&
                 !desc.AsDataDescriptor()->IsValueAbsent()) {
               vector_[index] = desc.AsDataDescriptor()->value();
             }
@@ -381,7 +374,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
         } else {
           SparseArray::iterator it = map_->find(index);
           if (it != map_->end()) {
-            if (desc.IsDataDescriptor() &&
+            if (desc.IsData() &&
                 !desc.AsDataDescriptor()->IsValueAbsent()) {
               (*map_)[index] = desc.AsDataDescriptor()->value();
             }
@@ -430,7 +423,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
   bool DefineLengthProperty(Context* ctx,
                             const PropertyDescriptor& desc,
                             bool th, Error* e) {
-    if (desc.IsDataDescriptor()) {
+    if (desc.IsData()) {
       const DataDescriptor* const data = desc.AsDataDescriptor();
       if (data->IsValueAbsent()) {
         // GenericDescriptor
@@ -440,10 +433,8 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
         // length value is always not empty, so use
         // GetDefineOwnPropertyResult
         bool returned = false;
-        if (IsDefineOwnPropertyAccepted(length_, desc, th, &returned, e)) {
-          length_ =
-              jsarray_detail::DescriptorToArrayLengthSlot(
-                  PropertyDescriptor::Merge(desc, length_));
+        if (length_.IsDefineOwnPropertyAccepted(desc, th, &returned, e)) {
+          length_.Merge(ctx, desc);
         }
         return returned;
       }
@@ -455,19 +446,17 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
         e->Report(Error::Range, "invalid array length");
         return false;
       }
-      DataDescriptor new_len_desc(JSVal::UInt32(new_len), data->attrs());
-      uint32_t old_len = length_.value();
+      DataDescriptor new_len_desc = *data;
+      new_len_desc.set_value(JSVal::UInt32(new_len));
+      uint32_t old_len = GetLength();
       if (new_len >= old_len) {
         bool returned = false;
-        if (IsDefineOwnPropertyAccepted(length_,
-                                        new_len_desc, th, &returned, e)) {
-          length_ =
-              jsarray_detail::DescriptorToArrayLengthSlot(
-                  PropertyDescriptor::Merge(new_len_desc, length_));
+        if (length_.IsDefineOwnPropertyAccepted(new_len_desc, th, &returned, e)) {
+          length_.Merge(ctx, new_len_desc);
         }
         return returned;
       }
-      if (!length_.IsWritable()) {
+      if (!length_.attributes().IsWritable()) {
         REJECT("\"length\" not writable");
       }
       const bool new_writable =
@@ -477,11 +466,8 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
         new_len_desc.set_writable(true);
       }
       bool succeeded = false;
-      if (IsDefineOwnPropertyAccepted(length_,
-                                      new_len_desc, th, &succeeded, e)) {
-        length_ =
-            jsarray_detail::DescriptorToArrayLengthSlot(
-                PropertyDescriptor::Merge(new_len_desc, length_));
+      if (length_.IsDefineOwnPropertyAccepted(new_len_desc, th, &succeeded, e)) {
+        length_.Merge(ctx, new_len_desc);
       }
       if (!succeeded) {
         return false;
@@ -504,12 +490,8 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
                 new_len_desc.set_writable(false);
               }
               bool wasted = false;
-              if (IsDefineOwnPropertyAccepted(length_,
-                                              new_len_desc,
-                                              false, &wasted, e)) {
-                length_ =
-                    jsarray_detail::DescriptorToArrayLengthSlot(
-                        PropertyDescriptor::Merge(new_len_desc, length_));
+              if (length_.IsDefineOwnPropertyAccepted(new_len_desc, false, &wasted, e)) {
+                length_.Merge(ctx, new_len_desc);
               }
               IV_LV5_ERROR_GUARD_WITH(e, false);
               REJECT("shrink array failed");
@@ -545,12 +527,8 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
                 new_len_desc.set_writable(false);
               }
               bool wasted = false;
-              if (IsDefineOwnPropertyAccepted(length_,
-                                              new_len_desc,
-                                              false, &wasted, e)) {
-                length_ =
-                    jsarray_detail::DescriptorToArrayLengthSlot(
-                        PropertyDescriptor::Merge(new_len_desc, length_));
+              if (length_.IsDefineOwnPropertyAccepted(new_len_desc, false, &wasted, e)) {
+                length_.Merge(ctx, new_len_desc);
               }
               IV_LV5_ERROR_GUARD_WITH(e, false);
               REJECT("shrink array failed");
@@ -564,10 +542,8 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
             ATTR::UNDEF_ENUMERABLE |
             ATTR::UNDEF_CONFIGURABLE);
         bool wasted = false;
-        if (IsDefineOwnPropertyAccepted(length_, target, false, &wasted, e)) {
-          length_ =
-              jsarray_detail::DescriptorToArrayLengthSlot(
-                  PropertyDescriptor::Merge(target, length_));
+        if (length_.IsDefineOwnPropertyAccepted(target, false, &wasted, e)) {
+          length_.Merge(ctx, target);
         }
       }
       return true;
@@ -575,7 +551,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
       // length is not configurable
       // so length is not changed
       bool returned = false;
-      IsDefineOwnPropertyAccepted(length_, desc, th, &returned, e);
+      length_.IsDefineOwnPropertyAccepted(desc, th, &returned, e);
       return returned;
     }
   }
@@ -649,7 +625,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
  private:
   bool FixUpLength(uint32_t old_len, uint32_t index) {
     if (index >= old_len) {
-      length_.set_value(index + 1);
+      length_.set_value(JSVal::UInt32(index + 1));
     }
     return true;
   }
@@ -657,7 +633,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
   JSValVector vector_;
   SparseArray* map_;
   bool dense_;
-  DescriptorSlot::Data<uint32_t> length_;
+  StoredSlot length_;
 };
 
 } }  // namespace iv::lv5

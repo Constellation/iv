@@ -4,170 +4,254 @@
 #include <iv/lv5/property_fwd.h>
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsfunction.h>
+#include <iv/lv5/accessor.h>
 #include <iv/lv5/arguments.h>
 namespace iv {
 namespace lv5 {
 
-JSVal PropertyDescriptor::Get(Context* ctx,
-                              JSVal this_binding, Error* e) const {
-  if (IsDataDescriptor()) {
-    return AsDataDescriptor()->value();
+inline  Accessor* StoredSlot::accessor() const {
+  assert(attributes_.IsAccessor());
+  return static_cast<Accessor*>(value_.cell());
+}
+
+inline JSVal StoredSlot::Get(Context* ctx, JSVal this_binding, Error* e) const {
+  if (attributes_.IsData()) {
+    return value_;
+  }
+  return accessor()->InvokeGetter(ctx, this_binding, e);
+}
+
+inline PropertyDescriptor StoredSlot::ToDescriptor() const {
+  PropertyDescriptor::PropertyLayout layout;
+  if (attributes().IsData()) {
+    layout.data_ = value();
+    return PropertyDescriptor(layout, attributes());
   } else {
-    assert(IsAccessorDescriptor());
-    JSObject* const getter = AsAccessorDescriptor()->get();
-    if (getter) {
-      ScopedArguments a(ctx, 0, IV_LV5_ERROR(e));
-      return getter->AsCallable()->Call(&a, this_binding, e);
-    } else {
-      return JSUndefined;
+    assert(attributes_.IsAccessor());
+    Accessor* ac = accessor();
+    layout.accessor_.getter_ = ac->getter();
+    layout.accessor_.setter_ = ac->setter();
+    return PropertyDescriptor(layout, attributes());
+  }
+}
+
+// ECMA262 section 8.12.9 [[DefineOwnProperty]] step 5 and after
+// this returns [[DefineOwnProperty]] descriptor is accepted or not,
+// if you see return value of [[DefineOwnProperty]],
+// see bool argument returned
+//
+// current is currently set PropertyDescriptor, and desc is which we try to set.
+inline bool StoredSlot::IsDefineOwnPropertyAccepted(
+    const PropertyDescriptor& desc, bool th, bool* returned, Error* e) const {
+#define REJECT(str)\
+  do {\
+    if (th) {\
+      e->Report(Error::Type, str);\
+    }\
+    *returned = false;\
+    return false;\
+  } while (0)
+
+  // step 5
+  if (desc.IsAbsent()) {
+    *returned = true;
+    return false;
+  }
+
+  // step 6
+  if (MergeWithNoEffect(desc)) {
+    *returned = true;
+    return false;
+  }
+
+  // step 7
+  if (!attributes().IsConfigurable()) {
+    if (desc.IsConfigurable()) {
+      REJECT(
+          "changing [[Configurable]] of unconfigurable property not allowed");
+    }
+    if (!desc.IsEnumerableAbsent() &&
+        attributes().IsEnumerable() != desc.IsEnumerable()) {
+      REJECT("changing [[Enumerable]] of unconfigurable property not allowed");
     }
   }
-}
 
-const DataDescriptor* PropertyDescriptor::AsDataDescriptor() const {
-  assert(IsDataDescriptor());
-  return core::BitCast<const DataDescriptor* const>(this);
-}
-
-DataDescriptor* PropertyDescriptor::AsDataDescriptor() {
-  assert(IsDataDescriptor());
-  return core::BitCast<DataDescriptor*>(this);
-}
-
-const AccessorDescriptor* PropertyDescriptor::AsAccessorDescriptor() const {
-  assert(IsAccessorDescriptor());
-  return core::BitCast<const AccessorDescriptor*>(this);
-}
-
-AccessorDescriptor* PropertyDescriptor::AsAccessorDescriptor() {
-  assert(IsAccessorDescriptor());
-  return core::BitCast<AccessorDescriptor*>(this);
-}
-
-inline void PropertyDescriptor::set_data_descriptor(JSVal value) {
-  attrs_ &= ~(ATTR::ACCESSOR | ATTR::UNDEF_VALUE);
-  attrs_ |= ATTR::DATA | ATTR::UNDEF_GETTER | ATTR::UNDEF_SETTER;
-  value_.data_ = value;
-}
-
-inline void PropertyDescriptor::set_accessor_descriptor(JSObject* get,
-                                                        JSObject* set) {
-  attrs_ &= ~(ATTR::DATA | ATTR::UNDEF_GETTER | ATTR::UNDEF_SETTER);
-  attrs_ |= ATTR::ACCESSOR | ATTR::UNDEF_VALUE;
-  value_.accessor_.getter_ = get;
-  value_.accessor_.setter_ = set;
-}
-
-inline void PropertyDescriptor::set_accessor_descriptor_getter(JSObject* get) {
-  if (IsDataDescriptor()) {
-    value_.accessor_.setter_ = NULL;
-  }
-  attrs_ &= ~(ATTR::DATA | ATTR::UNDEF_GETTER | ATTR::UNDEF_SETTER);
-  attrs_ |= ATTR::ACCESSOR | ATTR::UNDEF_VALUE;
-  value_.accessor_.getter_ = get;
-}
-
-inline void PropertyDescriptor::set_accessor_descriptor_setter(JSObject* set) {
-  if (IsDataDescriptor()) {
-    value_.accessor_.getter_ = NULL;
-  }
-  attrs_ &= ~(ATTR::DATA | ATTR::UNDEF_GETTER | ATTR::UNDEF_SETTER);
-  attrs_ |= ATTR::ACCESSOR | ATTR::UNDEF_VALUE;
-  value_.accessor_.setter_ = set;
-}
-
-inline PropertyDescriptor PropertyDescriptor::SetDefault(
-    const PropertyDescriptor& prop) {
-  this_type result(prop);
-  if (prop.IsConfigurableAbsent()) {
-    result.set_configurable(false);
-  }
-  if (prop.IsEnumerableAbsent()) {
-    result.set_enumerable(false);
-  }
-  if (prop.IsDataDescriptor()) {
-    const DataDescriptor* const data = prop.AsDataDescriptor();
-    if (data->IsValueAbsent()) {
-      result.set_data_descriptor(JSUndefined);
-    } else {
-      result.set_data_descriptor(data->value());
+  // step 9
+  if (desc.IsGeneric()) {
+    // no further validation
+  } else if (attributes().IsData() != desc.IsData()) {
+    if (!attributes().IsConfigurable()) {
+      REJECT("changing descriptor type of unconfigurable property not allowed");
     }
-    if (data->IsWritableAbsent()) {
-      result.AsDataDescriptor()->set_writable(false);
-    }
-  } else if (prop.IsAccessorDescriptor()) {
-    const AccessorDescriptor* const accs = prop.AsAccessorDescriptor();
-    result.set_accessor_descriptor(accs->get(), accs->set());
+    assert(attributes().IsData() ? desc.IsAccessor() : desc.IsData());
   } else {
-    assert(prop.IsGenericDescriptor());
-    result.set_data_descriptor(JSUndefined);
-    result.AsDataDescriptor()->set_writable(false);
+    // step 10
+    if (attributes().IsData()) {
+      assert(desc.IsData());
+      if (!attributes().IsConfigurable()) {
+        if (!attributes().IsWritable()) {
+          const DataDescriptor* const data = desc.AsDataDescriptor();
+          if (data->IsWritable()) {
+            REJECT(
+                "changing [[Writable]] of unconfigurable property not allowed");
+          }
+          // Value:Absent and Configurable/Enumerable/Writable test passed
+          // Descriptor is unreachable because MergeWithNoEffect returns true
+          assert(!data->IsValueAbsent());
+          if (!JSVal::SameValue(value(), data->value())) {
+            REJECT("changing [[Value]] of readonly property not allowed");
+          }
+        }
+      }
+    } else {
+      // step 11
+      assert(attributes().IsAccessor());
+      assert(desc.IsAccessor());
+      if (!attributes().IsConfigurable()) {
+        Accessor* lhs = accessor();
+        const AccessorDescriptor* const rhs = desc.AsAccessorDescriptor();
+        if ((!rhs->IsSetterAbsent() && (lhs->setter() != rhs->set())) ||
+            (!rhs->IsGetterAbsent() && (lhs->getter() != rhs->get()))) {
+          REJECT("changing [[Set]] or [[Get]] "
+                 "of unconfigurable property not allowed");
+        }
+      }
+    }
   }
-  return result;
+  *returned = true;
+  return true;
+#undef REJECT
 }
 
 // if desc merged to current and has no effect, return true
-inline bool PropertyDescriptor::MergeWithNoEffect(
+inline bool StoredSlot::MergeWithNoEffect(
     const PropertyDescriptor& desc) const {
   if (!desc.IsConfigurableAbsent() &&
-      desc.IsConfigurable() != IsConfigurable()) {
+      desc.IsConfigurable() != attributes().IsConfigurable()) {
     return false;
   }
-  if (!desc.IsEnumerableAbsent() && desc.IsEnumerable() != IsEnumerable()) {
+  if (!desc.IsEnumerableAbsent() && desc.IsEnumerable() != attributes().IsEnumerable()) {
     return false;
   }
-  if (desc.type() != type()) {
+  if (desc.type() != attributes().type()) {
     return false;
   }
-  if (desc.IsDataDescriptor()) {
+  if (desc.IsData()) {
     const DataDescriptor* data = desc.AsDataDescriptor();
     if (!data->IsWritableAbsent() &&
-        data->IsWritable() != AsDataDescriptor()->IsWritable()) {
+        data->IsWritable() != attributes().IsWritable()) {
       return false;
     }
     if (data->IsValueAbsent()) {
       return true;
-    } else {
-      return JSVal::SameValue(data->value(), value_.data_);
     }
-  } else if (desc.IsAccessorDescriptor()) {
-    return desc.value_.accessor_.getter_ == value_.accessor_.getter_ &&
-        desc.value_.accessor_.setter_ == value_.accessor_.setter_;
+    return JSVal::SameValue(data->value(), value());
+  } else if (desc.IsAccessor()) {
+    Accessor* ac = accessor();
+    return desc.value_.accessor_.getter_ == ac->getter() &&
+        desc.value_.accessor_.setter_ == ac->setter();
   } else {
-    assert(desc.IsGenericDescriptor());
+    assert(desc.IsGeneric());
     return true;
   }
 }
 
-inline PropertyDescriptor PropertyDescriptor::Merge(
-    const PropertyDescriptor& desc,
-    const PropertyDescriptor& current) {
-  PropertyDescriptor result(current);
+
+inline void StoredSlot::Merge(Context* ctx, const PropertyDescriptor& desc) {
+  Attributes::Interface attr(attributes().raw());
+
   if (!desc.IsConfigurableAbsent()) {
-    result.set_configurable(desc.IsConfigurable());
+    attr.set_configurable(desc.IsConfigurable());
   }
   if (!desc.IsEnumerableAbsent()) {
-    result.set_enumerable(desc.IsEnumerable());
+    attr.set_enumerable(desc.IsEnumerable());
   }
-  if (desc.IsDataDescriptor()) {
+
+  if (desc.IsGeneric()) {
+    attributes_ = Attributes::Safe::UnSafe(attr);
+    return;
+  }
+
+  if (desc.IsData()) {
+    attr.set_data();
     const DataDescriptor* const data = desc.AsDataDescriptor();
     if (!data->IsValueAbsent()) {
-      result.set_data_descriptor(data->value());
+      value_ = data->value();
     }
     if (!data->IsWritableAbsent()) {
-      result.AsDataDescriptor()->set_writable(data->IsWritable());
+      attr.set_writable(data->IsWritable());
     }
-  } else if (desc.IsAccessorDescriptor()) {
+    attributes_ = Attributes::Safe::UnSafe(attr);
+  } else {
+    assert(desc.IsAccessor());
+    attr.set_accessor();
     const AccessorDescriptor* const accs = desc.AsAccessorDescriptor();
-    if (accs->IsGetterAbsent()) {
-      result.set_accessor_descriptor_setter(accs->set());
-    } else if (accs->IsSetterAbsent()) {
-      result.set_accessor_descriptor_getter(accs->get());
+
+    Accessor* ac = NULL;
+    if (attributes().IsAccessor()) {
+      ac = accessor();
     } else {
-      result.set_accessor_descriptor(accs->get(), accs->set());
+      ac = Accessor::New(ctx, NULL, NULL);
+      value_ = JSVal::Cell(ac);
     }
+
+    if (accs->IsGetterAbsent()) {
+      // Accessor Descriptor should have get or set
+      assert(!accs->IsSetterAbsent());
+      ac->set_setter(accs->set());
+    } else if (accs->IsSetterAbsent()) {
+      assert(!accs->IsGetterAbsent());
+      ac->set_getter(accs->get());
+    } else {
+      ac->set_getter(accs->get());
+      ac->set_setter(accs->set());
+    }
+    attributes_ = Attributes::Safe::UnSafe(attr);
   }
-  return result;
+}
+
+const DataDescriptor* PropertyDescriptor::AsDataDescriptor() const {
+  assert(IsData());
+  return core::BitCast<const DataDescriptor* const>(this);
+}
+
+DataDescriptor* PropertyDescriptor::AsDataDescriptor() {
+  assert(IsData());
+  return core::BitCast<DataDescriptor*>(this);
+}
+
+const AccessorDescriptor* PropertyDescriptor::AsAccessorDescriptor() const {
+  assert(IsAccessor());
+  return core::BitCast<const AccessorDescriptor*>(this);
+}
+
+AccessorDescriptor* PropertyDescriptor::AsAccessorDescriptor() {
+  assert(IsAccessor());
+  return core::BitCast<AccessorDescriptor*>(this);
+}
+
+inline StoredSlot::StoredSlot(Context* ctx, const PropertyDescriptor& desc)
+    : value_(JSUndefined),
+      attributes_(Attributes::Safe::NotFound()) {
+  Attributes::Interface interface(ATTR::NONE);
+  interface.set_configurable(desc.IsConfigurable());
+  interface.set_enumerable(desc.IsEnumerable());
+  if (desc.IsData()) {
+    const DataDescriptor* const data = desc.AsDataDescriptor();
+    if (!data->IsValueAbsent()) {
+      value_ = data->value();
+    }
+    interface.set_writable(data->IsWritable());
+    attributes_ = Attributes::CreateData(interface);
+  } else if (desc.IsAccessor()) {
+    const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
+    Accessor* accessor = Accessor::New(ctx, ac->get(), ac->set());
+    value_ = JSVal::Cell(accessor);
+    attributes_ = Attributes::CreateAccessor(interface);
+  } else {
+    assert(desc.IsGeneric());
+    attributes_ = Attributes::CreateData(interface);
+  }
 }
 
 } }  // namespace iv::lv5
