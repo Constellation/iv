@@ -134,8 +134,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   };
 
   class ConstantPool {
-    // TODO(Constellation) not boxed constants...
-    //
     // Bytecode register size is very limited.
     // So probably, constant register may be overflown sometimes.
     // When constant register is overflown, we can use LOAD_CONST instead of
