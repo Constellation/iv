@@ -16,6 +16,7 @@ template<typename T>
 class Storage {
  public:
   friend class breaker::Compiler;
+  friend class breaker::MonoIC;
 
   typedef std::size_t size_type;
   typedef T value_type;

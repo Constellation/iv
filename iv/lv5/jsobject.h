@@ -26,6 +26,7 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
   IV_LV5_DEFINE_JSCLASS(Object)
 
   friend class breaker::Compiler;
+  friend class breaker::MonoIC;
 
   typedef Storage<JSVal> Slots;
 

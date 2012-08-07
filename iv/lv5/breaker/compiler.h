@@ -76,7 +76,7 @@ class Compiler {
       last_used_(kInvalidUsedOffset),
       last_used_candidate_(),
       type_record_() {
-    top_->core_data()->set_asm(asm_);
+    top_->core_data()->set_assembler(asm_);
   }
 
   static uint64_t RotateLeft64(uint64_t val, uint64_t amount) {
@@ -1958,14 +1958,9 @@ class Compiler {
       asm_->mov(asm_->rax, Extract(iv::core::math::kInfinity));
       dst_entry = TypeEntry(iv::core::math::kInfinity);
     } else {
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->mov(asm_->rsi, core::BitCast<uint64_t>(name));
-      asm_->mov(asm_->rdx, core::BitCast<uint64_t>(instr));
-      if (code_->strict()) {
-        asm_->Call(&stub::LOAD_GLOBAL<true>);
-      } else {
-        asm_->Call(&stub::LOAD_GLOBAL<false>);
-      }
+      std::shared_ptr<MonoIC> ic(new MonoIC());
+      ic->LoadCompile(asm_, ctx_->global_obj(), code_, name);
+      asm_->BindIC(ic);
     }
 
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);

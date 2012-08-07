@@ -108,6 +108,7 @@ inline void CoreData::MarkChildren(radio::Core* core) {
       }
       n += instr.GetLength();
     }
+    assembler_->MarkChildren(core);
   }
 }
 

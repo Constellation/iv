@@ -1,5 +1,6 @@
 #ifndef IV_BREAKER_IC_H_
 #define IV_BREAKER_IC_H_
+#include <iv/lv5/radio/core_fwd.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {
@@ -15,6 +16,13 @@ class IC {
     : type_(type) {
   }
 
+  virtual void MarkChildren(radio::Core* core) { }
+  virtual GC_ms_entry* MarkChildren(GC_word* top,
+                                    GC_ms_entry* entry,
+                                    GC_ms_entry* mark_sp_limit,
+                                    GC_word env) {
+    return entry;
+  }
  private:
   Type type_;
 };

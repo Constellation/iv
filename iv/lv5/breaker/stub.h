@@ -7,6 +7,7 @@
 #include <iv/lv5/breaker/assembler.h>
 #include <iv/lv5/breaker/jsfunction.h>
 #include <iv/lv5/breaker/context.h>
+#include <iv/lv5/breaker/mono_ic.h>
 #include <iv/lv5/accessor.h>
 namespace iv {
 namespace lv5 {
@@ -298,35 +299,27 @@ inline JSEnv* GetEnv(Context* ctx, JSEnv* env, Symbol name) {
 }
 
 template<bool STRICT>
-inline Rep LOAD_GLOBAL(Frame* stack,
-                       Symbol name,
-                       railgun::Instruction* instr) {
+inline Rep LOAD_GLOBAL(Frame* stack, Symbol name, MonoIC* ic, Assembler* as) {
   // opcode | (dst | index) | nop | nop
   Context* ctx = stack->ctx;
   JSGlobal* global = ctx->global_obj();
-  if (instr[2].map == global->map()) {
-    // map is cached, so use previous index code
-    return Extract(global->GetSlot(instr[3].u32[0]));
-  } else {
-    Slot slot;
-    if (global->GetOwnPropertySlot(ctx, name, &slot)) {
-      // now Own Property Pattern only implemented
-      if (slot.IsLoadCacheable()) {
-        instr[2].map = global->map();
-        instr[3].u32[0] = slot.offset();
-        return Extract(slot.value());
-      }
+  Slot slot;
+  if (global->GetOwnPropertySlot(ctx, name, &slot)) {
+    // now Own Property Pattern only implemented
+    if (slot.IsLoadCacheable()) {
+      ic->LoadRepatch(as, global->map(), slot.offset());
       return Extract(slot.value());
-    } else {
-      instr[2].map = NULL;
-      if (JSEnv* current = GetEnv(ctx, ctx->global_env(), name)) {
-        const JSVal res = current->GetBindingValue(ctx, name, STRICT, ERR);
-        return Extract(res);
-      }
-      RaiseReferenceError(name, stack->error);
-      RAISE();
-      return 0;
     }
+    const JSVal ret = slot.Get(ctx, global, ERR);
+    return Extract(ret);
+  } else {
+    if (ctx->global_env()->HasBinding(ctx, name)) {
+      const JSVal res = ctx->global_env()->GetBindingValue(ctx, name, STRICT, ERR);
+      return Extract(res);
+    }
+    RaiseReferenceError(name, stack->error);
+    RAISE();
+    return 0;
   }
 }
 

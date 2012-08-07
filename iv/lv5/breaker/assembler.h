@@ -206,6 +206,24 @@ class Assembler : public Xbyak::CodeGenerator {
 
   std::size_t size() const { return getSize(); }
 
+  void MarkChildren(radio::Core* core) {
+    for (ICVector::const_iterator it = ics_.begin(),
+         last = ics_.end(); it != last; ++it) {
+      (*it)->MarkChildren(core);
+    }
+  }
+
+  GC_ms_entry* MarkChildren(GC_word* top,
+                            GC_ms_entry* entry,
+                            GC_ms_entry* mark_sp_limit,
+                            GC_word env) {
+    for (ICVector::const_iterator it = ics_.begin(),
+         last = ics_.end(); it != last; ++it) {
+      entry = (*it)->MarkChildren(top, entry, mark_sp_limit, env);
+    }
+    return entry;
+  }
+
  private:
   BytecodeOffsets bytecode_offsets_;
   ICVector ics_;

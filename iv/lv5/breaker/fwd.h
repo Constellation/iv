@@ -47,9 +47,11 @@ class JSVMFunction;
 namespace breaker {
 
 static const int k64Size = sizeof(uint64_t);  // NOLINT
+static const int k32Size = sizeof(uint32_t);  // NOLINT
 
 class Context;
 class Compiler;
+class MonoIC;
 class Assembler;
 class JSFunction;
 class IC;
@@ -92,5 +94,10 @@ JSVal DirectCallToEval(const Arguments& args, railgun::Frame* frame, Error* e);
 
 typedef int32_t register_t;
 
-} } }  // namespace iv::lv5::breaker
+namespace stub {
+
+template<bool STRICT>
+Rep LOAD_GLOBAL(Frame* stack, Symbol name, MonoIC* ic, Assembler* as);
+
+} } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_FWD_H_
