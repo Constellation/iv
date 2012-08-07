@@ -139,10 +139,6 @@ V(TYPEOF_NAME, 2)\
 V(LOAD_GLOBAL, 4)\
 V(STORE_GLOBAL, 4)\
 V(DELETE_GLOBAL, 4)\
-V(INCREMENT_GLOBAL, 4)\
-V(DECREMENT_GLOBAL, 4)\
-V(POSTFIX_INCREMENT_GLOBAL, 4)\
-V(POSTFIX_DECREMENT_GLOBAL, 4)\
 V(TYPEOF_GLOBAL, 4)\
 \
 V(LOAD_HEAP, 3)\
@@ -212,11 +208,6 @@ struct OP {
 
   static const int kJumpOPStart = JUMP_BY;
   static const int kJumpOPEnd = FORIN_ENUMERATE;
-
-  static OP::Type ToGlobal(uint8_t op) {
-    assert(IsNameLookup(static_cast<OP::Type>(op)));
-    return static_cast<OP::Type>(op + (OP::LOAD_GLOBAL - OP::LOAD_NAME));
-  }
 
   static OP::Type ToHeap(uint8_t op) {
     assert(IsNameLookup(static_cast<OP::Type>(op)));

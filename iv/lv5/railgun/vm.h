@@ -1347,46 +1347,6 @@ JSVal VM::Execute(Frame* start, Error* e) {
         DISPATCH(POSTFIX_INCREMENT_HEAP);
       }
 
-      DEFINE_OPCODE(DECREMENT_GLOBAL) {
-        // opcode | (dst | imm | name) | nop | nop
-        JSGlobal* global = ctx()->global_obj();
-        const Symbol name = frame->GetName(instr[1].ssw.u32);
-        const JSVal res =
-            IncrementGlobal<-1, 1>(global, instr, name, strict, ERR);
-        REG(instr[1].ssw.i16[0]) = res;
-        DISPATCH(DECREMENT_GLOBAL);
-      }
-
-      DEFINE_OPCODE(POSTFIX_DECREMENT_GLOBAL) {
-        // opcode | (dst | name) | nop | nop
-        JSGlobal* global = ctx()->global_obj();
-        const Symbol name = frame->GetName(instr[1].ssw.u32);
-        const JSVal res =
-            IncrementGlobal<-1, 0>(global, instr, name, strict, ERR);
-        REG(instr[1].ssw.i16[0]) = res;
-        DISPATCH(POSTFIX_DECREMENT_GLOBAL);
-      }
-
-      DEFINE_OPCODE(INCREMENT_GLOBAL) {
-        // opcode | (dst | name) | nop | nop
-        JSGlobal* global = ctx()->global_obj();
-        const Symbol name = frame->GetName(instr[1].ssw.u32);
-        const JSVal res =
-            IncrementGlobal<1, 1>(global, instr, name, strict, ERR);
-        REG(instr[1].ssw.i16[0]) = res;
-        DISPATCH(INCREMENT_GLOBAL);
-      }
-
-      DEFINE_OPCODE(POSTFIX_INCREMENT_GLOBAL) {
-        // opcode | (dst | name) | nop | nop
-        JSGlobal* global = ctx()->global_obj();
-        const Symbol name = frame->GetName(instr[1].ssw.u32);
-        const JSVal res =
-            IncrementGlobal<1, 0>(global, instr, name, strict, ERR);
-        REG(instr[1].ssw.i16[0]) = res;
-        DISPATCH(POSTFIX_INCREMENT_GLOBAL);
-      }
-
       DEFINE_OPCODE(DECREMENT_ELEMENT) {
         // opcode | (dst | base | element)
         const JSVal base = REG(instr[1].i16[1]);

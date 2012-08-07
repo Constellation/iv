@@ -37,9 +37,41 @@ inline RegisterID Compiler::EmitOptimizedLookup(OP::Type op,
     }
     case LookupInfo::GLOBAL: {
       // last 2 zeros are placeholders for PIC
-      thunkpool_.Spill(dst);
-      EmitUnsafe(OP::ToGlobal(op), Instruction::SW(dst, index), 0u, 0u);
-      return dst;
+      switch (op) {
+        case OP::DECREMENT_NAME:
+        case OP::INCREMENT_NAME: {
+          const OP::Type o =
+              (op == OP::DECREMENT_NAME) ? OP::DECREMENT : OP::INCREMENT;
+          thunkpool_.Spill(dst);
+          Emit<OP::LOAD_GLOBAL>(Instruction::SW(dst, index), 0u, 0u);
+          EmitUnsafe(o, dst);
+          Emit<OP::STORE_GLOBAL>(Instruction::SW(dst, index), 0u, 0u);
+          return dst;
+        }
+
+        case OP::POSTFIX_DECREMENT_NAME:
+        case OP::POSTFIX_INCREMENT_NAME: {
+          const OP::Type o =
+              (op == OP::POSTFIX_DECREMENT_NAME) ?
+              OP::POSTFIX_DECREMENT : OP::POSTFIX_INCREMENT;
+          RegisterID tmp = Temporary();
+          Emit<OP::LOAD_GLOBAL>(Instruction::SW(tmp, index), 0u, 0u);
+          thunkpool_.Spill(dst);
+          EmitUnsafe(o, Instruction::SSW(dst, tmp, 0));
+          Emit<OP::STORE_GLOBAL>(Instruction::SW(tmp, index), 0u, 0u);
+          return dst;
+        }
+
+        default: {
+          const OP::Type o =
+              (op == OP::LOAD_NAME) ? OP::LOAD_GLOBAL :
+              (op == OP::STORE_NAME) ? OP::STORE_GLOBAL :
+              (op == OP::DELETE_NAME) ? OP::DELETE_GLOBAL : OP::TYPEOF_GLOBAL;
+          thunkpool_.Spill(dst);
+          EmitUnsafe(o, Instruction::SW(dst, index), 0u, 0u);
+          return dst;
+        }
+      }
     }
     case LookupInfo::LOOKUP: {
       thunkpool_.Spill(dst);

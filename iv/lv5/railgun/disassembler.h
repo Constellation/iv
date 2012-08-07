@@ -189,10 +189,6 @@ class DisAssembler : private core::Noncopyable<> {
             op, ExtractReg(r0).c_str(), (imm) ? "immutable" : "mutable", name, offset, nest);
         break;
       }
-      case OP::POSTFIX_INCREMENT_GLOBAL:
-      case OP::POSTFIX_DECREMENT_GLOBAL:
-      case OP::INCREMENT_GLOBAL:
-      case OP::DECREMENT_GLOBAL:
       case OP::TYPEOF_GLOBAL:
       case OP::DELETE_GLOBAL:
       case OP::STORE_GLOBAL:

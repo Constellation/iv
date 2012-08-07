@@ -433,62 +433,6 @@ inline Rep INCREMENT_NAME(Frame* stack, JSEnv* env, Symbol name) {
   return Extract(res);
 }
 
-template<int Target, std::size_t Returned, bool STRICT>
-inline JSVal IncrementGlobal(Context* ctx,
-                             JSGlobal* global,
-                             uint32_t offset, Error* e) {
-  const JSVal w = global->GetSlot(offset);
-  if (w.IsInt32() &&
-      railgun::detail::IsIncrementOverflowSafe<Target>(w.int32())) {
-    std::tuple<JSVal, JSVal> results;
-    const int32_t target = w.int32();
-    std::get<0>(results) = w;
-    std::get<1>(results) = JSVal::Int32(target + Target);
-    global->GetSlot(offset) = std::get<1>(results);
-    return std::get<Returned>(results);
-  } else {
-    std::tuple<double, double> results;
-    std::get<0>(results) = w.ToNumber(ctx, IV_LV5_ERROR(e));
-    std::get<1>(results) = std::get<0>(results) + Target;
-    global->GetSlot(offset) = std::get<1>(results);
-    return std::get<Returned>(results);
-  }
-}
-
-template<int Target, std::size_t Returned, bool STRICT>
-inline Rep INCREMENT_GLOBAL(Frame* stack,
-                            railgun::Instruction* instr, Symbol s) {
-  // opcode | (dst | name) | nop | nop
-  Context* ctx = stack->ctx;
-  JSGlobal* global = ctx->global_obj();
-  if (instr[2].map == global->map()) {
-    // map is cached, so use previous index code
-    const JSVal res =
-        IncrementGlobal<Target,
-                        Returned,
-                        STRICT>(ctx, global, instr[3].u32[0], ERR);
-    return Extract(res);
-  } else {
-    Slot slot;
-    if (global->GetOwnPropertySlot(ctx, s, &slot) && slot.IsStoreCacheable()) {
-      instr[2].map = global->map();
-      instr[3].u32[0] = slot.offset();
-      const JSVal res =
-          IncrementGlobal<Target,
-                          Returned,
-                          STRICT>(ctx, global, instr[3].u32[0], ERR);
-      return Extract(res);
-    } else {
-      instr[2].map = NULL;
-      const JSVal res =
-          IncrementName<Target,
-                        Returned,
-                        STRICT>(ctx, ctx->global_env(), s, ERR);
-      return Extract(res);
-    }
-  }
-}
-
 inline Rep CALL(Frame* stack,
                 JSVal callee,
                 JSVal* offset,

@@ -26,11 +26,7 @@ inline GC_ms_entry* CoreData::MarkChildren(GC_word* top,
       // check global opcodes
       if (VM::IsOP<OP::LOAD_GLOBAL>(instr) ||
           VM::IsOP<OP::STORE_GLOBAL>(instr) ||
-          VM::IsOP<OP::DELETE_GLOBAL>(instr) ||
-          VM::IsOP<OP::INCREMENT_GLOBAL>(instr) ||
-          VM::IsOP<OP::DECREMENT_GLOBAL>(instr) ||
-          VM::IsOP<OP::POSTFIX_INCREMENT_GLOBAL>(instr) ||
-          VM::IsOP<OP::POSTFIX_DECREMENT_GLOBAL>(instr)) {
+          VM::IsOP<OP::DELETE_GLOBAL>(instr)) {
         // opcode | (dst | index) | map | offset
         entry = GC_MARK_AND_PUSH(
             data_[n + 2].map,
@@ -81,11 +77,7 @@ inline void CoreData::MarkChildren(radio::Core* core) {
       // check global opcodes
       if (VM::IsOP<OP::LOAD_GLOBAL>(instr) ||
           VM::IsOP<OP::STORE_GLOBAL>(instr) ||
-          VM::IsOP<OP::DELETE_GLOBAL>(instr) ||
-          VM::IsOP<OP::INCREMENT_GLOBAL>(instr) ||
-          VM::IsOP<OP::DECREMENT_GLOBAL>(instr) ||
-          VM::IsOP<OP::POSTFIX_INCREMENT_GLOBAL>(instr) ||
-          VM::IsOP<OP::POSTFIX_DECREMENT_GLOBAL>(instr)) {
+          VM::IsOP<OP::DELETE_GLOBAL>(instr)) {
         // opcode | (dst | index) | map | offset
         core->MarkCell(data_[n + 2].map);
       } else if (VM::IsOP<OP::LOAD_OBJECT>(instr)) {
