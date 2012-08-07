@@ -133,7 +133,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
         const JSVal val = vector_[index];
         if (!val.IsEmpty()) {
           // current is target
-          slot->set(val, Attributes::CreateData(ATTR::W | ATTR::E | ATTR::C));
+          slot->set(val, Attributes::CreateData(ATTR::W | ATTR::E | ATTR::C), this);
           return true;
         }
         return false;
@@ -145,7 +145,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
           const SparseArray::const_iterator it = map_->find(index);
           if (it != map_->end()) {
             // target is found
-            slot->set(it->second, Attributes::CreateData(ATTR::W | ATTR::E | ATTR::C));
+            slot->set(it->second, Attributes::CreateData(ATTR::W | ATTR::E | ATTR::C), this);
             return true;
           }
         }
@@ -153,7 +153,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
       return false;
     }
     if (name == symbol::length()) {
-      slot->set(length_.value(), length_.attributes());
+      slot->set(length_.value(), length_.attributes(), this);
       return true;
     }
     return JSObject::GetOwnPropertySlot(ctx, name, slot);

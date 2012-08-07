@@ -192,9 +192,10 @@ void JSObject::Put(Context* ctx, Symbol name, JSVal val, bool th, Error* e) {
     return;
   }
 
-  {
-    Slot slot;
-    if (GetOwnPropertySlot(ctx, name, &slot) && slot.attributes().IsData()) {
+  Slot slot;
+  if (GetPropertySlot(ctx, name, &slot)) {
+    // own property and attributes is data
+    if (slot.base() == this && slot.attributes().IsData()) {
       DefineOwnProperty(
           ctx,
           name,
@@ -205,22 +206,22 @@ void JSObject::Put(Context* ctx, Symbol name, JSVal val, bool th, Error* e) {
           th, e);
       return;
     }
-  }
 
-  {
-    Slot slot;
-    if (GetPropertySlot(ctx, name, &slot) && slot.attributes().IsAccessor()) {
+    // accessor is found
+    if (slot.attributes().IsAccessor()) {
       const Accessor* ac = slot.accessor();
       assert(ac->setter());
       ScopedArguments args(ctx, 1, IV_LV5_ERROR_VOID(e));
       args[0] = val;
       ac->setter()->AsCallable()->Call(&args, this, e);
-    } else {
-      DefineOwnProperty(ctx, name,
-                        DataDescriptor(val, ATTR::W | ATTR::E | ATTR::C),
-                        th, e);
+      return;
     }
   }
+  // not found or found but data property.
+  // create or modify data property
+  DefineOwnProperty(
+      ctx, name,
+      DataDescriptor(val, ATTR::W | ATTR::E | ATTR::C), th, e);
 }
 
 bool JSObject::HasProperty(Context* ctx, Symbol name) const {

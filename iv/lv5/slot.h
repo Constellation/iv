@@ -40,10 +40,10 @@ class Slot : public StoredSlot {
     return IsCacheable() && attributes().IsData();
   }
 
-  void set(JSVal value, Attributes::Safe attributes) {
+  void set(JSVal value, Attributes::Safe attributes, const JSObject* obj) {
     StoredSlot::set(value, attributes);
     cacheable_ = false;
-    base_ = NULL;
+    base_ = obj;
     offset_ = UINT32_MAX;
   }
 

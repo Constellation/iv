@@ -84,7 +84,7 @@ class JSNormalArguments : public JSObject {
         if (mapped != symbol::kDummySymbol) {
           Error::Dummy dummy;
           const JSVal val = env_->GetBindingValue(ctx, mapped, false, &dummy);
-          slot->set(val, slot->attributes());
+          slot->set(val, slot->attributes(), this);
           return true;
         }
       }
