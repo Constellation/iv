@@ -97,7 +97,6 @@ inline JSVal ArrayIsArray(const Arguments& args, Error* e) {
 
 // section 15.4.3.3 Array.of(...items)
 inline JSVal ArrayOf(const Arguments& args, Error* e) {
-  // TODO(Constellation) fix this
   IV_LV5_CONSTRUCTOR_CHECK("Array.of", args, e);
   return JSArray::New(args.ctx(), args.begin(), args.end());
 }
