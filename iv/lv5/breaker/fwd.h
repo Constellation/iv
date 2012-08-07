@@ -99,5 +99,9 @@ namespace stub {
 template<bool STRICT>
 Rep LOAD_GLOBAL(Frame* stack, Symbol name, MonoIC* ic, Assembler* as);
 
+template<bool STRICT>
+Rep STORE_GLOBAL(Frame* stack, Symbol name,
+                 MonoIC* ic, Assembler* as, JSVal src);
+
 } } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_FWD_H_

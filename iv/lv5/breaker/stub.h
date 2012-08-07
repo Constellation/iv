@@ -307,7 +307,7 @@ inline Rep LOAD_GLOBAL(Frame* stack, Symbol name, MonoIC* ic, Assembler* as) {
   if (global->GetOwnPropertySlot(ctx, name, &slot)) {
     // now Own Property Pattern only implemented
     if (slot.IsLoadCacheable()) {
-      ic->LoadRepatch(as, global->map(), slot.offset());
+      ic->Repatch(as, global->map(), slot.offset());
       return Extract(slot.value());
     }
     const JSVal ret = slot.Get(ctx, global, ERR);
@@ -324,38 +324,30 @@ inline Rep LOAD_GLOBAL(Frame* stack, Symbol name, MonoIC* ic, Assembler* as) {
 }
 
 template<bool STRICT>
-inline Rep STORE_GLOBAL(Frame* stack,
-                        JSVal src,
-                        Symbol name, railgun::Instruction* instr) {
+inline Rep STORE_GLOBAL(Frame* stack, Symbol name,
+                        MonoIC* ic, Assembler* as, JSVal src) {
   // opcode | (src | name) | nop | nop
   Context* ctx = stack->ctx;
   JSGlobal* global = ctx->global_obj();
-  if (instr[2].map == global->map()) {
-    // map is cached, so use previous index code
-    global->GetSlot(instr[3].u32[0]) = src;
-  } else {
-    Slot slot;
-    if (global->GetOwnPropertySlot(ctx, name, &slot)) {
-      if (slot.IsStoreCacheable()) {
-        instr[2].map = global->map();
-        instr[3].u32[0] = slot.offset();
-        global->GetSlot(slot.offset()) = src;
-      } else {
-        global->Put(ctx, name, src, STRICT, ERR);
-      }
+  Slot slot;
+  if (global->GetOwnPropertySlot(ctx, name, &slot)) {
+    if (slot.IsStoreCacheable()) {
+      ic->Repatch(as, global->map(), slot.offset());
+      global->GetSlot(slot.offset()) = src;
     } else {
-      instr[2].map = NULL;
-      if (JSEnv* current = GetEnv(ctx, ctx->global_env(), name)) {
-        current->SetMutableBinding(ctx, name, src, STRICT, ERR);
+      global->Put(ctx, name, src, STRICT, ERR);
+    }
+  } else {
+    if (ctx->global_env()->HasBinding(ctx, name)) {
+      ctx->global_env()->SetMutableBinding(ctx, name, src, STRICT, ERR);
+    } else {
+      if (STRICT) {
+        stack->error->Report(Error::Reference,
+                  "putting to unresolvable reference "
+                  "not allowed in strict reference");
+        RAISE();
       } else {
-        if (STRICT) {
-          stack->error->Report(Error::Reference,
-                    "putting to unresolvable reference "
-                    "not allowed in strict reference");
-          RAISE();
-        } else {
-          ctx->global_obj()->Put(ctx, name, src, STRICT, ERR);
-        }
+        ctx->global_obj()->Put(ctx, name, src, STRICT, ERR);
       }
     }
   }

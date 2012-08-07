@@ -1959,7 +1959,7 @@ class Compiler {
       dst_entry = TypeEntry(iv::core::math::kInfinity);
     } else {
       std::shared_ptr<MonoIC> ic(new MonoIC());
-      ic->LoadCompile(asm_, ctx_->global_obj(), code_, name);
+      ic->CompileLoad(asm_, ctx_->global_obj(), code_, name);
       asm_->BindIC(ic);
     }
 
@@ -1972,15 +1972,10 @@ class Compiler {
   void EmitSTORE_GLOBAL(const Instruction* instr) {
     const register_t src = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    asm_->mov(asm_->rdi, asm_->r14);
-    LoadVR(asm_->rsi, src);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
-    asm_->mov(asm_->rcx, core::BitCast<uint64_t>(instr));
-    if (code_->strict()) {
-      asm_->Call(&stub::STORE_GLOBAL<true>);
-    } else {
-      asm_->Call(&stub::STORE_GLOBAL<false>);
-    }
+    LoadVR(asm_->rax, src);
+    std::shared_ptr<MonoIC> ic(new MonoIC());
+    ic->CompileStore(asm_, ctx_->global_obj(), code_, name);
+    asm_->BindIC(ic);
   }
 
   // opcode | (dst | name) | nop | nop
