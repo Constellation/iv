@@ -14,7 +14,31 @@ namespace lv5 {
 namespace runtime {
 
 inline JSVal MapConstructor(const Arguments& args, Error* e) {
-  return JSMap::New(args.ctx());
+  Context* ctx = args.ctx();
+  JSMap* map = JSMap::New(ctx);
+
+  const JSVal first = args.At(0);
+  if (first.IsNullOrUndefined()) {
+    return map;
+  }
+
+  JSObject* const obj = first.ToObject(ctx, IV_LV5_ERROR(e));
+  PropertyNamesCollector collector;
+  obj->GetOwnPropertyNames(ctx, &collector,
+                           JSObject::EXCLUDE_NOT_ENUMERABLE);
+  for (PropertyNamesCollector::Names::const_iterator
+       it = collector.names().begin(),
+       last = collector.names().end();
+       it != last; ++it) {
+    const JSVal v = obj->Get(ctx, (*it), IV_LV5_ERROR(e));
+    JSObject* item = v.ToObject(ctx, IV_LV5_ERROR(e));
+    const JSVal key =
+        item->Get(ctx, symbol::MakeSymbolFromIndex(0), IV_LV5_ERROR(e));
+    const JSVal value =
+        item->Get(ctx, symbol::MakeSymbolFromIndex(1), IV_LV5_ERROR(e));
+    map->SetValue(key, value);
+  }
+  return map;
 }
 
 inline JSVal MapGet(const Arguments& args, Error* e) {

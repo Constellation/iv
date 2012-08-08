@@ -14,7 +14,26 @@ namespace lv5 {
 namespace runtime {
 
 inline JSVal SetConstructor(const Arguments& args, Error* e) {
-  return JSSet::New(args.ctx());
+  Context* ctx = args.ctx();
+  JSSet* set = JSSet::New(ctx);
+
+  const JSVal first = args.At(0);
+  if (first.IsNullOrUndefined()) {
+    return set;
+  }
+
+  JSObject* const obj = first.ToObject(ctx, IV_LV5_ERROR(e));
+  PropertyNamesCollector collector;
+  obj->GetOwnPropertyNames(ctx, &collector,
+                           JSObject::EXCLUDE_NOT_ENUMERABLE);
+  for (PropertyNamesCollector::Names::const_iterator
+       it = collector.names().begin(),
+       last = collector.names().end();
+       it != last; ++it) {
+    const JSVal key = obj->Get(ctx, (*it), IV_LV5_ERROR(e));
+    set->AddKey(key);
+  }
+  return set;
 }
 
 inline JSVal SetHas(const Arguments& args, Error* e) {
