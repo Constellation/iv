@@ -212,7 +212,7 @@ inline void StoredSlot::Merge(Context* ctx, const PropertyDescriptor& desc) {
 
 const DataDescriptor* PropertyDescriptor::AsDataDescriptor() const {
   assert(IsData());
-  return core::BitCast<const DataDescriptor* const>(this);
+  return core::BitCast<const DataDescriptor*>(this);
 }
 
 DataDescriptor* PropertyDescriptor::AsDataDescriptor() {
