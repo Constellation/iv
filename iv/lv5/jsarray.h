@@ -68,7 +68,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
   typedef Storage<JSVal> JSValVector;
 
   uint32_t GetLength() const {
-    uint32_t length;
+    uint32_t length = 0;  // makes compiler happy
     length_.value().GetUInt32(&length);
     return length;
   }
