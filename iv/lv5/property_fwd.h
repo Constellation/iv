@@ -144,7 +144,9 @@ class PropertyDescriptor : protected Attributes::Interface {
   // raw
   PropertyDescriptor(PropertyLayout layout, Attributes::Safe attributes)
     : Attributes::Interface(attributes.raw()),
-      value_(layout) { }
+      value_() {
+    value_ = layout;
+  }
 
   PropertyLayout value_;
 };
