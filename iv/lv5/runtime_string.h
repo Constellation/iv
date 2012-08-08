@@ -491,8 +491,7 @@ inline JSVal StringFromCodePoint(const Arguments& args, Error* e) {
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
     const double nextCP = it->ToNumber(ctx, IV_LV5_ERROR(e));
-    // FIXME spec. SaveValue not. SameValue
-    if (!JSVal::SameNumber(nextCP, core::DoubleToInteger(nextCP)) ||
+    if (!JSVal::SameValue(nextCP, core::DoubleToInteger(nextCP)) ||
         nextCP < 0 ||
         nextCP > 0x10FFFF) {
       e->Report(Error::Range, "code point out of range");
@@ -637,7 +636,6 @@ inline JSVal StringCodePointAt(const Arguments& args, Error* e) {
     return JSVal::UInt16(first);
   }
   const uint16_t second = str->At(pos + 1);
-  // FIXME typo. first isn't. second
   if (second < 0xDC00 || second > 0xDFFF) {
     return JSVal::UInt16(first);
   }

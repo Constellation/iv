@@ -247,7 +247,13 @@ bool JSLayout::SameValue(this_type lhs, this_type rhs) {
     if (rhs.IsInt32() || !rhs.IsNumber()) {
       return false;
     }
-    return SameNumber(lhs.number(), rhs.number());
+    const double lhsn = lhs.number();
+    const double rhsn = rhs.number();
+    // because lhs and rhs are double, so +0 and -0 cannot come here.
+    if (lhsn == rhsn) {
+      return true;
+    }
+    return core::math::IsNaN(lhsn) && core::math::IsNaN(rhsn);
   }
 
   // if not cell, check bit pattern
@@ -522,7 +528,12 @@ bool JSLayout::SameValue(this_type lhs, this_type rhs) {
     return true;
   }
   if (lhs.IsNumber()) {
-    return SameNumber(lhs.number(), rhs.number());
+    const double lhsn = lhs.number();
+    const double rhsn = rhs.number();
+    if (lhsn == rhsn) {
+      return core::math::Signbit(lhsn) == core::math::Signbit(rhsn);
+    }
+    return core::math::IsNaN(lhsn) && core::math::IsNaN(rhsn);
   }
   if (lhs.IsString()) {
     return *(lhs.string()) == *(rhs.string());

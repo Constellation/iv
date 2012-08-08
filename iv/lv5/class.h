@@ -37,7 +37,9 @@ class JSString;
   V(Collator, 23)\
   V(NumberFormat, 24)\
   V(DateTimeFormat, 25)\
-  V(NOT_CACHED, 26)
+  /* added by lv5 */\
+  V(Iterator, 26)\
+  V(NOT_CACHED, 27)
 
 struct Class {
   enum JSClassType {

@@ -311,14 +311,6 @@ class JSLayout {
 
   static inline bool SameValue(this_type lhs, this_type rhs);
 
-  static inline bool SameNumber(double lhs, double rhs) {
-    if (lhs == rhs) {
-      // when control flow comes to here, lhs and rhs is -0 and -0
-      return true;
-    }
-    return core::math::IsNaN(lhs) && core::math::IsNaN(rhs);
-  }
-
   static inline bool StrictEqual(this_type lhs, this_type rhs);
 
   value_type value_;
