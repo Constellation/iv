@@ -22,16 +22,12 @@ inline JSVal StoredSlot::Get(Context* ctx, JSVal this_binding, Error* e) const {
 }
 
 inline PropertyDescriptor StoredSlot::ToDescriptor() const {
-  PropertyDescriptor::PropertyLayout layout;
   if (attributes().IsData()) {
-    layout.data_ = value();
-    return PropertyDescriptor(layout, attributes());
+    return PropertyDescriptor(value(), attributes());
   } else {
     assert(attributes_.IsAccessor());
     Accessor* ac = accessor();
-    layout.accessor_.getter_ = ac->getter();
-    layout.accessor_.setter_ = ac->setter();
-    return PropertyDescriptor(layout, attributes());
+    return PropertyDescriptor(ac->getter(), ac->setter(), attributes());
   }
 }
 

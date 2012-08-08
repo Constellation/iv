@@ -142,10 +142,18 @@ class PropertyDescriptor : protected Attributes::Interface {
   }
 
   // raw
-  PropertyDescriptor(PropertyLayout layout, Attributes::Safe attributes)
+  PropertyDescriptor(JSVal value, Attributes::Safe attributes)
     : Attributes::Interface(attributes.raw()),
       value_() {
-    value_ = layout;
+    value_.data_ = value;
+  }
+
+  // raw
+  PropertyDescriptor(JSObject* getter, JSObject* setter, Attributes::Safe attributes)
+    : Attributes::Interface(attributes.raw()),
+      value_() {
+    value_.accessor_.getter_ = getter;
+    value_.accessor_.setter_ = setter;
   }
 
   PropertyLayout value_;
