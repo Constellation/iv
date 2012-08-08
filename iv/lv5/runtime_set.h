@@ -18,11 +18,16 @@ inline JSVal SetConstructor(const Arguments& args, Error* e) {
   JSSet* set = JSSet::New(ctx);
 
   const JSVal first = args.At(0);
-  if (first.IsNullOrUndefined()) {
+  if (first.IsUndefined()) {
     return set;
   }
 
-  JSObject* const obj = first.ToObject(ctx, IV_LV5_ERROR(e));
+  if (!first.IsObject()) {
+    e->Report(Error::Type, "first argument is not iterable");
+    return JSEmpty;
+  }
+
+  JSObject* const obj = first.object();
   PropertyNamesCollector collector;
   obj->GetOwnPropertyNames(ctx, &collector,
                            JSObject::EXCLUDE_NOT_ENUMERABLE);

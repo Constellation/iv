@@ -65,6 +65,15 @@ static const char* kSpecFileNames[] = {
   "test/lv5/suite/spec/string/string-fromcodepoint.js",
   "test/lv5/suite/spec/string/string-raw.js",
   "test/lv5/suite/spec/string/string-codepointat.js",
+  "test/lv5/suite/spec/map/map-constructor.js",
+  "test/lv5/suite/spec/map/map-has.js",
+  "test/lv5/suite/spec/map/map-get.js",
+  "test/lv5/suite/spec/map/map-set.js",
+  "test/lv5/suite/spec/map/map-delete.js",
+  "test/lv5/suite/spec/set/set-constructor.js",
+  "test/lv5/suite/spec/set/set-has.js",
+  "test/lv5/suite/spec/set/set-add.js",
+  "test/lv5/suite/spec/set/set-delete.js",
 };
 static const std::size_t kSpecFileNamesSize =
   sizeof(kSpecFileNames) / sizeof(const char*);
