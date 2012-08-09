@@ -1263,36 +1263,6 @@ void Context::InitIntl(const ClassSlot& func_cls,
         .cls(cls.cls)
         .prototype(obj_proto);
 
-  {
-    // LocaleList
-    JSObject* const proto =
-        JSLocaleList::NewPlain(this, Map::NewUniqueMap(this));
-    JSFunction* const constructor =
-        JSInlinedFunction<&runtime::LocaleListConstructor, 1>::NewPlain(
-            this,
-            context::Intern(this, "LocaleList"));
-
-    struct ClassSlot cls = {
-      JSLocaleList::GetClass(),
-      context::Intern(this, "LocaleList"),
-      JSString::NewAsciiString(this, "LocaleList"),
-      constructor,
-      proto
-    };
-    global_data_.RegisterClass<Class::LocaleList>(cls);
-    intl_binder.def(cls.name, constructor, ATTR::W | ATTR::C);
-
-    bind::Object(this, constructor)
-        .cls(func_cls.cls)
-        .prototype(func_cls.prototype)
-        .def(symbol::prototype(), proto, ATTR::NONE);
-
-    bind::Object(this, proto)
-        .cls(cls.cls)
-        .prototype(obj_proto)
-        .def(symbol::constructor(), constructor, ATTR::W | ATTR::C);
-  }
-
 #ifdef IV_ENABLE_I18N
   // Currently, Collator, NumberFormat, DateTimeFormat need ICU
   {

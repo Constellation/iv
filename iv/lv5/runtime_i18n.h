@@ -11,11 +11,6 @@ namespace iv {
 namespace lv5 {
 namespace runtime {
 
-
-inline JSVal LocaleListConstructor(const Arguments& args, Error* e) {
-  return JSLocaleList::CreateLocaleList(args.ctx(), args.At(0), e);
-}
-
 #ifdef IV_ENABLE_I18N
 inline JSVal CollatorConstructor(const Arguments& args, Error* e) {
   Context* ctx = args.ctx();
@@ -80,11 +75,14 @@ inline JSVal CollatorResolvedOptionsGetter(const Arguments& args, Error* e) {
 }
 
 inline JSVal CollatorSupportedLocalesOf(const Arguments& args, Error* e) {
+  Context* ctx = args.ctx();
+  JSVector* requested =
+      CanonicalizeLocaleList(ctx, args.At(0), IV_LV5_ERROR(e));
   return detail_i18n::SupportedLocales(
       args.ctx(),
       ICUStringIteration(icu::Collator::getAvailableLocales()),
       ICUStringIteration(),
-      args.At(0), args.At(1), e);
+      requested, args.At(1), e);
 }
 #endif  // IV_ENABLE_I18N
 
@@ -158,7 +156,8 @@ inline JSVal NumberFormatResolvedOptionsGetter(
 }
 
 inline JSVal NumberFormatSupportedLocalesOf(const Arguments& args, Error* e) {
-  return JSNumberFormat::SupportedLocalesOf(args.ctx(), args.At(0), args.At(1), e);
+  return JSNumberFormat::SupportedLocalesOf(args.ctx(),
+                                            args.At(0), args.At(1), e);
 }
 
 #ifdef IV_ENABLE_I18N
@@ -247,18 +246,21 @@ inline JSVal DateTimeFormatResolvedOptionsGetter(
 
 inline JSVal DateTimeFormatSupportedLocalesOf(const Arguments& args, Error* e) {
   int32_t num = 0;
+  Context* ctx = args.ctx();
   const icu::Locale* avail = icu::DateFormat::getAvailableLocales(num);
   std::vector<std::string> vec(num);
   for (int32_t i = 0; i < num; ++i) {
     vec[i] = avail[i].getName();
   }
+  JSVector* requested =
+      CanonicalizeLocaleList(ctx, args.At(0), IV_LV5_ERROR(e));
   return detail_i18n::SupportedLocales(
       args.ctx(),
       vec.begin(),
       vec.end(),
-      args.At(0), args.At(1), e);
+      requested, args.At(1), e);
 }
-#endif  // IV_ENABLE_I18N_H_
+#endif  // IV_ENABLE_I18N
 
 } } }  // namespace iv::lv5::runtime
 #endif  // IV_LV5_RUNTIME_I18N_H_

@@ -141,7 +141,7 @@ class JSCollator : public JSObject {
 
   static JSCollator* NewPlain(Context* ctx, Map* map) {
     JSCollator* obj = new JSCollator(ctx, map);
-    Error e;
+    Error::Dummy e;
     JSCollator::Initialize(ctx, obj, JSUndefined, JSUndefined, &e);
     return obj;
   }
@@ -309,7 +309,7 @@ class JSNumberFormat : public JSObject {
 
   static JSNumberFormat* NewPlain(Context* ctx, Map* map) {
     JSNumberFormat* obj = new JSNumberFormat(ctx, map);
-    Error e;
+    Error::Dummy e;
     JSNumberFormat::Initialize(ctx, obj, JSUndefined, JSUndefined, &e);
     return obj;
   }
@@ -404,7 +404,7 @@ class JSDateTimeFormat : public JSObject {
 
   static JSDateTimeFormat* NewPlain(Context* ctx, Map* map) {
     JSDateTimeFormat* obj = new JSDateTimeFormat(ctx, map);
-    Error e;
+    Error::Dummy e;
     JSDateTimeFormat::Initialize(ctx, obj, JSUndefined, JSUndefined, &e);
     return obj;
   }
@@ -585,9 +585,12 @@ inline JSObject* BestFitFormatMatch(Context* ctx,
 
 inline JSVal JSCollator::Initialize(Context* ctx,
                                     JSCollator* obj,
-                                    JSVal requested_locales,
+                                    JSVal req,
                                     JSVal op,
                                     Error* e) {
+  JSVector* requested =
+      CanonicalizeLocaleList(ctx, req, IV_LV5_ERROR(e));
+
   JSObject* options = NULL;
   if (op.IsUndefined()) {
     options = JSObject::New(ctx);
@@ -616,7 +619,7 @@ inline JSVal JSCollator::Initialize(Context* ctx,
           ctx,
           ICUStringIteration(icu::NumberFormat::getAvailableLocales()),
           ICUStringIteration(),
-          requested_locales,
+          requested,
           options,
           IV_LV5_ERROR(e));
   obj->SetField(JSCollator::LOCALE,
@@ -798,9 +801,12 @@ inline JSVal JSCollator::Initialize(Context* ctx,
 
 inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
                                           JSDateTimeFormat* obj,
-                                          JSVal requested_locales,
+                                          JSVal req,
                                           JSVal op,
                                           Error* e) {
+  JSVector* requested =
+      CanonicalizeLocaleList(ctx, req, IV_LV5_ERROR(e));
+
   JSObject* options =
       detail_i18n::ToDateTimeOptions(ctx, op, true, false, IV_LV5_ERROR(e));
 
@@ -817,7 +823,7 @@ inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
           ctx,
           vec.begin(),
           vec.end(),
-          requested_locales,
+          requested,
           JSObject::New(ctx),
           IV_LV5_ERROR(e));
   obj->SetField(JSDateTimeFormat::LOCALE,
@@ -1081,9 +1087,13 @@ inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
 
 inline JSVal JSNumberFormat::Initialize(Context* ctx,
                                         JSNumberFormat* obj,
-                                        JSVal requested_locales,
+                                        JSVal req,
                                         JSVal op,
                                         Error* e) {
+  JSVector* requested =
+      CanonicalizeLocaleList(ctx, req, IV_LV5_ERROR(e));
+
+
   JSObject* options = NULL;
   if (op.IsUndefined()) {
     options = JSObject::New(ctx);
@@ -1098,7 +1108,7 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
           ctx,
           ICUStringIteration(icu::NumberFormat::getAvailableLocales()),
           ICUStringIteration(),
-          requested_locales,
+          requested,
           options,
           IV_LV5_ERROR(e));
   obj->SetField(JSNumberFormat::LOCALE,
@@ -1290,7 +1300,11 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
   return obj;
 }
 
-inline JSVal JSNumberFormat::SupportedLocalesOf(Context* ctx, JSVal requested, JSVal options, Error* e) {
+inline JSVal JSNumberFormat::SupportedLocalesOf(Context* ctx,
+                                                JSVal val,
+                                                JSVal options, Error* e) {
+  JSVector* requested =
+      CanonicalizeLocaleList(ctx, val, IV_LV5_ERROR(e));
   return detail_i18n::SupportedLocales(
       ctx,
       ICUStringIteration(icu::NumberFormat::getAvailableLocales()),

@@ -12,6 +12,8 @@
 #include <iv/lv5/map.h>
 #include <iv/lv5/class.h>
 #include <iv/lv5/internal.h>
+#include <iv/lv5/runtime_fwd.h>
+#include <iv/lv5/jsvector.h>
 namespace iv {
 namespace lv5 {
 
@@ -26,162 +28,103 @@ class JSIntl : public JSObject {
   IV_LV5_DEFINE_JSCLASS(Intl)
 };
 
-class JSLocaleList : public JSObject {
- public:
-  IV_LV5_DEFINE_JSCLASS(LocaleList)
-
-  explicit JSLocaleList(Context* ctx)
-    : JSObject(Map::NewUniqueMap(ctx)) {
+inline JSVector* CanonicalizeLocaleList(Context* ctx, JSVal locales, Error* e) {
+  if (locales.IsUndefined()) {
+    return JSVector::New(ctx);
   }
 
-  JSLocaleList(Context* ctx, Map* map)
-    : JSObject(map) {
-  }
-
-  static JSLocaleList* New(Context* ctx) {
-    JSLocaleList* const localelist = new JSLocaleList(ctx);
-    localelist->set_cls(JSLocaleList::GetClass());
-    localelist->set_prototype(
-        context::GetClassSlot(ctx, Class::LocaleList).prototype);
-    return localelist;
-  }
-
-  // i18n draft CreateLocaleList abstract operation
-  static JSLocaleList* CreateLocaleList(Context* ctx, JSVal target, Error* e);
-};
-
-inline JSLocaleList* JSLocaleList::CreateLocaleList(Context* ctx,
-                                                    JSVal target, Error* e) {
-  std::vector<std::string> list;
-  if (target.IsUndefined()) {
-    list.push_back(ctx->i18n()->DefaultLocale());
-  } else {
-    JSObject* obj = target.ToObject(ctx, IV_LV5_ERROR_WITH(e, NULL));
-    const uint32_t len =
-        internal::GetLength(ctx, obj, IV_LV5_ERROR_WITH(e, NULL));
-    for (uint32_t k = 0; k < len; ++k) {
-      const Symbol name = symbol::MakeSymbolFromIndex(k);
-      if (obj->HasProperty(ctx, name)) {
-        const JSVal value = obj->Get(ctx, name, IV_LV5_ERROR_WITH(e, NULL));
-        if (!(value.IsString() || value.IsObject())) {
-          e->Report(Error::Type, "locale should be string or object");
-          return NULL;
-        }
-        JSString* tag = value.ToString(ctx, IV_LV5_ERROR_WITH(e, NULL));
-        core::i18n::LanguageTagScanner scanner(tag->begin(), tag->end());
-        if (!scanner.IsStructurallyValid()) {
-          e->Report(Error::Range, "locale pattern is not well formed");
-          return NULL;
-        }
-        const std::string canonicalized = scanner.Canonicalize();
-        if (std::find(list.begin(), list.end(), canonicalized) == list.end()) {
-          list.push_back(canonicalized);
-        }
+  JSVector* seen = JSVector::New(ctx);
+  std::unordered_set<std::string> checker;
+  JSObject* obj = locales.ToObject(ctx, IV_LV5_ERROR_WITH(e, NULL));
+  const uint32_t len =
+      internal::GetLength(ctx, obj, IV_LV5_ERROR_WITH(e, NULL));
+  for (uint32_t k = 0; k < len; ++k) {
+    const Symbol pk = symbol::MakeSymbolFromIndex(k);
+    if (obj->HasProperty(ctx, pk)) {
+      const JSVal value = obj->Get(ctx, pk, IV_LV5_ERROR_WITH(e, NULL));
+      if (!(value.IsString() || value.IsObject())) {
+        e->Report(Error::Type, "locale should be string or object");
+        return NULL;
+      }
+      JSString* tag = value.ToString(ctx, IV_LV5_ERROR_WITH(e, NULL));
+      core::i18n::LanguageTagScanner scanner(tag->begin(), tag->end());
+      if (!scanner.IsStructurallyValid()) {
+        e->Report(Error::Range, "locale pattern is not well formed");
+        return NULL;
+      }
+      const std::string canonicalized = scanner.Canonicalize();
+      if (checker.find(canonicalized) == checker.end()) {
+        checker.insert(canonicalized);
+        seen->push_back(JSString::NewAsciiString(ctx, canonicalized));
       }
     }
   }
-
-  JSLocaleList* localelist = JSLocaleList::New(ctx);
-
-  uint32_t index = 0;
-  for (std::vector<std::string>::const_iterator it = list.begin(),
-       last = list.end(); it != last; ++it, ++index) {
-    localelist->DefineOwnProperty(
-        ctx,
-        symbol::MakeSymbolFromIndex(index),
-        DataDescriptor(JSString::NewAsciiString(ctx, *it), ATTR::E),
-        true, IV_LV5_ERROR_WITH(e, NULL));
-  }
-  localelist->DefineOwnProperty(
-      ctx,
-      symbol::length(),
-      DataDescriptor(JSVal::UInt32(index), ATTR::NONE),
-      true, IV_LV5_ERROR_WITH(e, NULL));
-  return localelist;
+  return seen;
 }
 
 namespace detail_i18n {
 
 template<typename AvailIter>
-inline JSVal LookupSupportedLocales(
-    Context* ctx, AvailIter it, AvailIter last,
-    JSLocaleList* list, Error* e) {
-  std::vector<std::string> subset;
-  {
-    const uint32_t len = internal::GetLength(ctx, list, IV_LV5_ERROR(e));
-    for (uint32_t k = 0; k < len; ++k) {
-      const JSVal res =
-          list->Get(ctx, symbol::MakeSymbolFromIndex(k), IV_LV5_ERROR(e));
-      JSString* str = res.ToString(ctx, IV_LV5_ERROR(e));
-      const std::string locale(
-          core::i18n::LanguageTagScanner::RemoveExtension(str->begin(),
-                                                          str->end()));
-      const AvailIter t = ctx->i18n()->IndexOfMatch(it, last, locale);
-      if (t != last) {
-        subset.push_back(locale);
-      }
+inline JSVector* LookupSupportedLocales(Context* ctx,
+                                        AvailIter it, AvailIter last,
+                                        JSVector* requested, Error* e) {
+  JSVector* subset = JSVector::New(ctx);
+  for (JSVector::const_iterator i = requested->begin(),
+       iz = requested->end(); i != iz; ++i) {
+    const JSVal res = *i;
+    JSString* str = res.ToString(ctx, IV_LV5_ERROR_WITH(e, NULL));
+    const std::string locale(
+        core::i18n::LanguageTagScanner::RemoveExtension(str->begin(),
+                                                        str->end()));
+    const AvailIter t = ctx->i18n()->IndexOfMatch(it, last, locale);
+    if (t != last) {
+      subset->push_back(JSString::NewAsciiString(ctx, locale));
     }
   }
-
-  JSLocaleList* localelist = JSLocaleList::New(ctx);
-
-  uint32_t index = 0;
-  for (std::vector<std::string>::const_iterator it = subset.begin(),
-       last = subset.end(); it != last; ++it, ++index) {
-    localelist->DefineOwnProperty(
-        ctx,
-        symbol::MakeSymbolFromIndex(index),
-        DataDescriptor(JSString::NewAsciiString(ctx, *it), ATTR::E),
-        true, IV_LV5_ERROR(e));
-  }
-  localelist->DefineOwnProperty(
-      ctx,
-      symbol::length(),
-      DataDescriptor(JSVal::UInt32(index), ATTR::NONE),
-      true, IV_LV5_ERROR(e));
-  return localelist;
+  return subset;
 }
 
 template<typename AvailIter>
-inline JSVal BestFitSupportedLocales(
-    Context* ctx, AvailIter it, AvailIter last,
-    JSLocaleList* list, Error* e) {
-  return LookupSupportedLocales(ctx, it, last, list, e);
+inline JSVector* BestFitSupportedLocales(Context* ctx,
+                                         AvailIter it, AvailIter last,
+                                         JSVector* requested, Error* e) {
+  return LookupSupportedLocales(ctx, it, last, requested, e);
 }
 
 template<typename AvailIter>
-inline JSVal SupportedLocales(Context* ctx,
-                              AvailIter it,
-                              AvailIter last,
-                              JSVal requested, JSVal options, Error* e) {
-  JSLocaleList* list = NULL;
-  JSObject* req = requested.ToObject(ctx, IV_LV5_ERROR(e));
-  if (!req->IsClass<Class::LocaleList>()) {
-    list = static_cast<JSLocaleList*>(requested.object());
-  } else {
-    list = JSLocaleList::CreateLocaleList(ctx, req, IV_LV5_ERROR(e));
-  }
+inline JSArray* SupportedLocales(Context* ctx,
+                                 AvailIter it, AvailIter last,
+                                 JSVector* requested, JSVal options, Error* e) {
   bool best_fit = true;
   if (!options.IsUndefined()) {
-    JSObject* opt = options.ToObject(ctx, IV_LV5_ERROR(e));
+    JSObject* opt = options.ToObject(ctx, IV_LV5_ERROR_WITH(e, NULL));
     const JSVal matcher =
-        opt->Get(ctx, context::Intern(ctx, "localeMatcher"), IV_LV5_ERROR(e));
+        opt->Get(ctx, context::Intern(ctx, "localeMatcher"),
+                 IV_LV5_ERROR_WITH(e, NULL));
     if (!matcher.IsUndefined()) {
-      JSString* str = matcher.ToString(ctx, IV_LV5_ERROR(e));
+      JSString* str = matcher.ToString(ctx, IV_LV5_ERROR_WITH(e, NULL));
       if (*str == *JSString::NewAsciiString(ctx, "lookup")) {
         best_fit = false;
       } else if (*str != *JSString::NewAsciiString(ctx, "best fit")) {
         e->Report(Error::Range,
                   "localeMatcher should be 'lookup' or 'best fit'");
-        return JSEmpty;
+        return NULL;
       }
     }
   }
-  if (best_fit) {
-    return BestFitSupportedLocales(ctx, it, last, list, e);
-  } else {
-    return LookupSupportedLocales(ctx, it, last, list, e);
-  }
+
+  JSVector* subset =
+      (best_fit)
+      ? BestFitSupportedLocales(ctx, it, last, requested, e)
+      : LookupSupportedLocales(ctx, it, last, requested, e);
+  IV_LV5_ERROR_GUARD_WITH(e, NULL);
+
+  JSArray* result = subset->ToJSArray();
+  ScopedArguments arguments(ctx, 1, IV_LV5_ERROR_WITH(e, NULL));
+  arguments[0] = result;
+  runtime::ObjectFreeze(arguments, IV_LV5_ERROR_WITH(e, NULL));
+  result->set_extensible(true);
+  return result;
 }
 
 typedef std::unordered_map<std::string, std::string> ExtensionMap;
@@ -209,25 +152,9 @@ inline ExtensionMap CreateExtensionMap(
 
 template<typename AvailIter>
 inline core::i18n::LookupResult ResolveLocale(Context* ctx,
-                                              AvailIter it,
-                                              AvailIter last,
-                                              JSVal requested,
+                                              AvailIter it, AvailIter last,
+                                              JSVector* requested,
                                               JSVal options, Error* e) {
-  JSLocaleList* list = NULL;
-  if (requested.IsUndefined()) {
-    list = JSLocaleList::New(ctx);
-  } else {
-    JSObject* req =
-        requested.ToObject(ctx,
-                           IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
-    if (!req->IsClass<Class::LocaleList>()) {
-      list = static_cast<JSLocaleList*>(requested.object());
-    } else {
-      list = JSLocaleList::CreateLocaleList(
-          ctx, req, IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
-    }
-  }
-
   bool best_fit = true;
   if (!options.IsUndefined()) {
     JSObject* opt = options.ToObject(
@@ -251,20 +178,14 @@ inline core::i18n::LookupResult ResolveLocale(Context* ctx,
 
   std::vector<std::string> locales;
   {
-    const uint32_t len = internal::GetLength(
-        ctx, list,
-        IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
-    for (uint32_t k = 0; k < len; ++k) {
-      const JSVal res =
-          list->Get(ctx, symbol::MakeSymbolFromIndex(k),
-                    IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
-      JSString* str = res.ToString(
+    for (JSVector::const_iterator it = requested->begin(),
+         last = requested->end(); it != last; ++it) {
+      JSString* str = it->ToString(
           ctx,
           IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
       locales.push_back(str->GetUTF8());
     }
   }
-
   core::i18n::LookupResult res = (best_fit) ?
       ctx->i18n()->BestFitMatch(it, last, locales.begin(), locales.end()) :
       ctx->i18n()->LookupMatch(it, last, locales.begin(), locales.end());

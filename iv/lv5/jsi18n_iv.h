@@ -95,9 +95,12 @@ class JSNumberFormat : public JSObject {
 
 inline JSVal JSNumberFormat::Initialize(Context* ctx,
                                         JSNumberFormat* obj,
-                                        JSVal requested_locales,
+                                        JSVal req,
                                         JSVal op,
                                         Error* e) {
+  JSVector* requested =
+      CanonicalizeLocaleList(ctx, req, IV_LV5_ERROR(e));
+
   JSObject* options = NULL;
   if (op.IsUndefined()) {
     options = JSObject::New(ctx);
@@ -112,7 +115,7 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
           ctx,
           core::i18n::NumberFormat::AvailableLocales().begin(),
           core::i18n::NumberFormat::AvailableLocales().end(),
-          requested_locales,
+          requested,
           options,
           IV_LV5_ERROR(e));
   obj->SetField(JSNumberFormat::LOCALE,
@@ -145,7 +148,8 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
   }
 
   if (nu) {
-    obj->SetField(JSNumberFormat::NUMBERING_SYSTEM, JSString::NewAsciiString(ctx, nu->name));
+    obj->SetField(JSNumberFormat::NUMBERING_SYSTEM,
+                  JSString::NewAsciiString(ctx, nu->name));
   }
 
   core::i18n::NumberFormat::Style style = core::i18n::NumberFormat::DECIMAL;
@@ -320,8 +324,10 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
 }
 
 inline JSVal JSNumberFormat::SupportedLocalesOf(Context* ctx,
-                                                JSVal requested,
+                                                JSVal val,
                                                 JSVal options, Error* e) {
+  JSVector* requested =
+      CanonicalizeLocaleList(ctx, val, IV_LV5_ERROR(e));
   return detail_i18n::SupportedLocales(
       ctx,
       core::i18n::NumberFormat::AvailableLocales().begin(),
