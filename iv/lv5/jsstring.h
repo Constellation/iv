@@ -72,20 +72,20 @@ inline JSString::JSString(JSVal* src, uint32_t count)
     Cons::iterator it = cons->begin();
     for (uint32_t i = 0; i < count; ++i) {
       this_type* target = src[count - 1 - i].string();
-      it = std::transform(
+      it = std::copy(
           target->fibers().begin(),
           target->fibers().begin() + target->fiber_count(),
-          it, Retainer());
+          it);
     }
     fibers_[0] = cons;
   } else {
     FiberSlots::iterator it = fibers_.begin();
     for (uint32_t i = 0; i < count; ++i) {
       this_type* target = src[count - 1 - i].string();
-      it = std::transform(
+      it = std::copy(
           target->fibers().begin(),
           target->fibers().begin() + target->fiber_count(),
-          it, Retainer());
+          it);
     }
   }
 }
@@ -105,8 +105,8 @@ JSArray* JSString::Split(Context* ctx,
     }
     return vec->ToJSArray();
   } else {
-    std::vector<const FiberSlot*> slots(fibers_.begin(),
-                                        fibers_.begin() + fiber_count());
+    trace::Vector<const FiberSlot*>::type slots(fibers_.begin(),
+                                                fibers_.begin() + fiber_count());
     while (true) {
       const FiberSlot* current = slots.back();
       assert(!slots.empty());
@@ -159,8 +159,8 @@ JSArray* JSString::Split(Context* ctx,
       return ary;
     }
   } else {
-    std::vector<const FiberSlot*> slots(fibers_.begin(),
-                                        fibers_.begin() + fiber_count());
+    trace::Vector<const FiberSlot*>::type slots(fibers_.begin(),
+                                                fibers_.begin() + fiber_count());
     while (true) {
       const FiberSlot* current = slots.back();
       assert(!slots.empty());

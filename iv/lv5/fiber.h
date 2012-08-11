@@ -19,7 +19,7 @@ namespace lv5 {
 
 class JSString;
 
-class FiberSlot : public core::ThreadSafeRefCounted<FiberSlot> {
+class FiberSlot {
  public:
   typedef std::size_t size_type;
   enum Flag {
@@ -32,13 +32,6 @@ class FiberSlot : public core::ThreadSafeRefCounted<FiberSlot> {
 
   static const uint32_t kFlagShift = 2;
 
-  inline void operator delete(void* p) {
-    // this type memory is allocated by malloc
-    if (p) {
-      std::free(p);
-    }
-  }
-
   bool IsCons() const { return flags_ & IS_CONS; }
 
   bool Is8Bit() const { return flags_ & IS_8BIT; }
@@ -47,13 +40,7 @@ class FiberSlot : public core::ThreadSafeRefCounted<FiberSlot> {
 
   bool IsExternal() const { return flags_ & IS_EXTERNAL; }
 
-  bool ReleaseNeeded() const {
-    return !(flags_ & (IS_ORIGINAL | IS_CONS | IS_EXTERNAL));
-  }
-
   size_type size() const { return size_; }
-
-  inline ~FiberSlot();
 
  protected:
   explicit FiberSlot(uint32_t n, uint32_t flags)
@@ -310,12 +297,10 @@ class Fiber : public FiberBase {
   Fiber(const this_type* fiber, uint32_t from, uint32_t to)
     : FiberBase((to - from), k8BitFlag, fiber->original()),
       ptr_(fiber->ptr_ + from) {
-    original()->Retain();
   }
 
   explicit Fiber(const core::BasicStringPiece<CharT>& str)
     : FiberBase(str.size(), k8BitFlag | IS_ORIGINAL | IS_EXTERNAL, this),
-      // TODO(Constellation) avoid const_cast
       ptr_(const_cast<CharT*>(str.data())) {
   }
 
@@ -326,7 +311,7 @@ class Fiber : public FiberBase {
   }
 
   static this_type* NewWithSize(uint32_t n) {
-    void* mem = std::malloc(GetControlSize() + n * sizeof(char_type));
+    void* mem = GC_MALLOC_ATOMIC(GetControlSize() + n * sizeof(char_type));
     return new (mem) Fiber(n);
   }
 
@@ -337,16 +322,16 @@ class Fiber : public FiberBase {
 
   template<typename Iter>
   static this_type* New(Iter it, uint32_t n) {
-    void* mem = std::malloc(GetControlSize() + n * sizeof(char_type));
+    void* mem = GC_MALLOC_ATOMIC(GetControlSize() + n * sizeof(char_type));
     return new (mem) Fiber(it, n);
   }
 
   static this_type* NewWithExternal(const core::BasicStringPiece<CharT>& str) {
-    return new (std::malloc(sizeof(this_type))) Fiber(str);
+    return new (GC_MALLOC_ATOMIC(sizeof(this_type))) Fiber(str);
   }
 
   static this_type* New(const this_type* original, uint32_t from, uint32_t to) {
-    return new (std::malloc(sizeof(this_type))) Fiber(original, from, to);
+    return new (GC_MALLOC_ATOMIC(sizeof(this_type))) Fiber(original, from, to);
   }
 
   operator core::BasicStringPiece<char_type>() const {
@@ -498,12 +483,6 @@ int FiberBase::compare(const this_type& x) const {
     return core::CompareIterators(
         As16Bit()->begin(), As16Bit()->end(),
         x.As8Bit()->begin(), x.As8Bit()->end());
-  }
-}
-
-FiberSlot::~FiberSlot() {
-  if (ReleaseNeeded()) {
-    static_cast<const FiberBase*>(this)->original()->Release();
   }
 }
 

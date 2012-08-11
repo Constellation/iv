@@ -74,18 +74,18 @@ class HeapObject
 };
 
 template<>
+class HeapObject<STRING>
+  : public gc,
+    public Cell {
+ public:
+  HeapObject() : gc(), Cell(STRING) { }
+};
+
+template<>
 class HeapObject<NATIVE_ITERATOR>
   : public Cell {
  public:
   HeapObject() : Cell(NATIVE_ITERATOR) { }
-};
-
-template<>
-class HeapObject<STRING>
-  : public gc_cleanup,
-    public Cell {
- public:
-  HeapObject() : gc_cleanup(), Cell(STRING) { }
 };
 
 template<>

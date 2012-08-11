@@ -68,13 +68,6 @@ class JSString: public radio::HeapObject<radio::STRING> {
   };
 
  private:
-  struct Retainer {
-    const FiberSlot* operator()(const FiberSlot* slot) {
-      slot->Retain();
-      return slot;
-    }
-  };
-
   template<typename Derived>
   class FiberEnumerator {
    public:
@@ -101,7 +94,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
     }
 
    private:
-    std::vector<const FiberSlot*> slots_;
+    trace::Vector<const FiberSlot*>::type slots_;
   };
 
   template<typename OutputIter>
@@ -213,21 +206,20 @@ class JSString: public radio::HeapObject<radio::STRING> {
       this_type* cons = NewWithSize(lhs->size() + rhs->size(),
                                     lhs->Is8Bit() && rhs->Is8Bit(),
                                     lhs->fiber_count() + rhs->fiber_count());
-      std::transform(
+      std::copy(
           lhs->fibers().begin(),
           lhs->fibers().begin() + lhs->fiber_count(),
-          std::transform(rhs->fibers().begin(),
-                         rhs->fibers().begin() + rhs->fiber_count(),
-                         cons->begin(), Retainer()),
-          Retainer());
+          std::copy(rhs->fibers().begin(),
+                    rhs->fibers().begin() + rhs->fiber_count(),
+                    cons->begin()));
       return cons;
     }
 
     static this_type* NewWithSize(std::size_t size,
                                   bool is_8bit,
                                   std::size_t fiber_count) {
-      void* mem = std::malloc(GetControlSize() +
-                              fiber_count * sizeof(value_type));
+      void* mem = GC_MALLOC(GetControlSize() +
+                            fiber_count * sizeof(value_type));
       return new (mem) Cons(size, is_8bit, fiber_count);
     }
 
@@ -367,7 +359,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
         return this_type::New(ctx, vec.begin(), count, false);
       }
     }
-    return new (PointerFreeGC) this_type(this, count);
+    return new this_type(this, count);
   }
 
   inline JSArray* Split(Context* ctx,
@@ -427,7 +419,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
     if (this_type* res = context::LookupSingleString(ctx, ch)) {
       return res;
     }
-    return new (PointerFreeGC) this_type(ch);
+    return new this_type(ch);
   }
 
   template<typename Iter>
@@ -451,9 +443,9 @@ class JSString: public radio::HeapObject<radio::STRING> {
       return NewSingle(ctx, (*fiber)[from]);
     }
     if (size == fiber->size()) {
-      return new (PointerFreeGC) this_type(fiber);
+      return new this_type(fiber);
     }
-    return new (PointerFreeGC) this_type(fiber, from, to);
+    return new this_type(fiber, from, to);
   }
 
   static this_type* New(Context* ctx, this_type* lhs, this_type* rhs) {
@@ -465,7 +457,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
       return lhs;
     }
 
-    return new (PointerFreeGC) this_type(lhs, rhs);
+    return new this_type(lhs, rhs);
   }
 
   static this_type* New(Context* ctx, Symbol sym) {
@@ -486,38 +478,15 @@ class JSString: public radio::HeapObject<radio::STRING> {
       if (str->size() == 1) {
         return NewSingle(ctx, (*str)[0]);
       }
-      return new (PointerFreeGC) this_type(*str);
+      return new this_type(*str);
     }
   }
 
   static this_type* New(Context* ctx, JSVal* src, uint32_t count) {
-    return new (PointerFreeGC) this_type(src, count);
+    return new this_type(src, count);
   }
 
   // destructor
-
-  ~JSString() {
-    Destroy(fibers_.begin(), fibers_.begin() + fiber_count());
-  }
-
-  template<typename Iter>
-  static void Destroy(Iter it, Iter last) {
-    std::vector<const FiberSlot*> slots(it, last);
-    while (true) {
-      const FiberSlot* current = slots.back();
-      assert(!slots.empty());
-      slots.pop_back();
-      if (current->IsCons() && current->RetainCount() == 1) {
-        slots.insert(slots.end(),
-                     static_cast<const Cons*>(current)->begin(),
-                     static_cast<const Cons*>(current)->end());
-      }
-      current->Release();
-      if (slots.empty()) {
-        break;
-      }
-    }
-  }
 
   void MarkChildren(radio::Core* core) { }
 
@@ -530,7 +499,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
     if (n == 1) {
       return NewSingle(ctx, *it);
     }
-    return new (PointerFreeGC) this_type(it, n, is_8bit);
+    return new this_type(it, n, is_8bit);
   }
 
   inline const FiberBase* Flatten() const {
@@ -553,8 +522,6 @@ class JSString: public radio::HeapObject<radio::STRING> {
     Fiber<CharT>* fiber = Fiber<CharT>::NewWithSize(size_);
     tail->Copy(head->Copy(fiber->begin()));
     // these are Fibers, not Cons. so simply call Release
-    head->Release();
-    tail->Release();
     fiber_count_ = 1;
     fibers_[0] = fiber;
   }
@@ -573,7 +540,6 @@ class JSString: public radio::HeapObject<radio::STRING> {
   void SlowFlattenImpl() const {
     Fiber<CharT>* fiber = Fiber<CharT>::NewWithSize(size_);
     Copy(fiber->begin());
-    Destroy(fibers_.begin(), fibers_.begin() + fiber_count());
     fiber_count_ = 1;
     fibers_[0] = fiber;
   }
@@ -601,7 +567,6 @@ class JSString: public radio::HeapObject<radio::STRING> {
       fiber_count_(1),
       fibers_() {
     fibers_[0] = fiber;
-    fibers_[0]->Retain();
   }
 
   template<typename FiberType>
@@ -662,13 +627,12 @@ class JSString: public radio::HeapObject<radio::STRING> {
     } else {
       assert(fiber_count_ <= kMaxFibers);
       // insert fibers by reverse order (rhs first)
-      std::transform(
+      std::copy(
           lhs->fibers().begin(),
           lhs->fibers().begin() + lhs->fiber_count(),
-          std::transform(rhs->fibers().begin(),
-                         rhs->fibers().begin() + rhs->fiber_count(),
-                         fibers_.begin(), Retainer()),
-          Retainer());
+          std::copy(rhs->fibers().begin(),
+                    rhs->fibers().begin() + rhs->fiber_count(),
+                    fibers_.begin()));
     }
   }
 
@@ -682,19 +646,19 @@ class JSString: public radio::HeapObject<radio::STRING> {
       fiber_count_ = 1;
       Cons::iterator it = cons->begin();
       for (uint32_t i = 0; i < repeat; ++i) {
-        it = std::transform(
+        it = std::copy(
             target->fibers().begin(),
             target->fibers().begin() + target->fiber_count(),
-            it, Retainer());
+            it);
       }
       fibers_[0] = cons;
     } else {
       FiberSlots::iterator it = fibers_.begin();
       for (uint32_t i = 0; i < repeat; ++i) {
-        it = std::transform(
+        it = std::copy(
             target->fibers().begin(),
             target->fibers().begin() + target->fiber_count(),
-            it, Retainer());
+            it);
       }
     }
   }
