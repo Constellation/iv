@@ -115,7 +115,9 @@
 // ENABLE_JIT
 // http://homepage1.nifty.com/herumi/diary/1109.html#7
 #if not +0
-  #define IV_DISABLE_JIT
+  #if !defined(IV_DISABLE_JIT)
+    #define IV_DISABLE_JIT
+  #endif
 // #error "operator names used. use -fno-operator-names"
 #endif
 
@@ -130,7 +132,9 @@
 #endif
 
 #if !defined(IV_ENABLE_JIT)
-#define IV_DISABLE_JIT
+  #if !defined(IV_DISABLE_JIT)
+    #define IV_DISABLE_JIT
+  #endif
 #endif
 
 #endif  // IV_PLATFORM_H_

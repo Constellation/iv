@@ -8,7 +8,10 @@
 #if defined(IV_ENABLE_JIT)
 #include <iv/lv5/breaker/assembler.h>
 #else
-class iv::lv5::breaker::Assembler { };
+class iv::lv5::breaker::Assembler {
+ public:
+  void MarkChildren(radio::Core* core) { }
+};
 #endif
 
 namespace iv {

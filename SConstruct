@@ -64,6 +64,7 @@ def Build():
     EnumVariable('sse', 'sse option', 'no',
                  allowed_values=('no', 'sse', 'sse2', 'sse3', 'sse4'),
                  map={}, ignorecase=2),
+    BoolVariable('disable_jit', '', 0),
     BoolVariable('cxx11', '', 0),
     BoolVariable('direct_threading', '', 0),
     BoolVariable('release', '', 0),
@@ -106,6 +107,9 @@ def Build():
 
   if env['sse'] != 'no':
     env.Append(CCFLAGS=['-m' + env['sse']])
+
+  if env['disable_jit'] != 'no':
+    env.Append(CPPDEFINES=['IV_DISABLE_JIT'])
 
   if env['gcov']:
     env.Append(
