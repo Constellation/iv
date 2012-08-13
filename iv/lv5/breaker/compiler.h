@@ -11,6 +11,7 @@
 #define IV_LV5_BREAKER_COMPILER_H_
 #include <iv/debug.h>
 #include <iv/byteorder.h>
+#include <iv/lv5/jsglobal.h>
 #include <iv/lv5/breaker/fwd.h>
 #include <iv/lv5/railgun/railgun.h>
 #include <iv/lv5/breaker/assembler.h>
@@ -1936,15 +1937,10 @@ class Compiler {
     TypeEntry dst_entry(Type::Unknown());
 
     // Some variables are defined as non-configurable.
-    if (name == symbol::undefined()) {
-      asm_->mov(asm_->rax, Extract(JSUndefined));
-      dst_entry = TypeEntry(JSUndefined);
-    } else if (name == symbol::NaN()) {
-      asm_->mov(asm_->rax, Extract(JSNaN));
-      dst_entry = TypeEntry(JSNaN);
-    } else if (name == symbol::Infinity()) {
-      asm_->mov(asm_->rax, Extract(iv::core::math::kInfinity));
-      dst_entry = TypeEntry(iv::core::math::kInfinity);
+    const JSGlobal::Constant constant = JSGlobal::LookupConstant(name);
+    if (constant.first) {
+      asm_->mov(asm_->rax, Extract(constant.second));
+      dst_entry = TypeEntry(constant.second);
     } else {
       std::shared_ptr<MonoIC> ic(new MonoIC());
       ic->CompileLoad(asm_, ctx_->global_obj(), code_, name);
