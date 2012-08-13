@@ -108,7 +108,7 @@ def Build():
   if env['sse'] != 'no':
     env.Append(CCFLAGS=['-m' + env['sse']])
 
-  if env['disable_jit'] != 'no':
+  if env['disable_jit'] == 'yes':
     env.Append(CPPDEFINES=['IV_DISABLE_JIT'])
 
   if env['gcov']:
