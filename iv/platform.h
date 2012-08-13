@@ -137,4 +137,11 @@
   #endif
 #endif
 
+#if defined(__GXX_EXPERIMENTAL_CXX0X__) ||\
+    (defined(IV_COMPILER_MSVC) && defined(IV_COMPILER_MSVC_10))
+  #if !defined(IV_CXX11)
+    #define IV_CXX11
+  #endif
+#endif
+
 #endif  // IV_PLATFORM_H_

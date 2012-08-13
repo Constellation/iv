@@ -6,6 +6,7 @@
 #include <iterator>
 #include <algorithm>
 #include <iv/detail/array.h>
+#include <iv/utils.h>
 #include <iv/static_assert.h>
 namespace iv {
 namespace core {
@@ -152,6 +153,7 @@ class SegmentedVector {
 
    private:
     size_type size() const { return size_; }
+    bool empty() const { return size_ == 0; }
 
     void push_back(allocator_type& alloc, const value_type& value) {
       assert(size() < SegmentSize);
@@ -189,7 +191,9 @@ class SegmentedVector {
   ~SegmentedVector() {
     for (typename Segments::iterator it = segments_.begin(),
          last = segments_.end(); it != last; ++it) {
-      (*it)->clear(alloc_);
+      if (!(*it)->empty()) {
+        (*it)->clear(alloc_);
+      }
       segment_alloc_.deallocate(*it, 1);
     }
   }
@@ -266,6 +270,17 @@ class SegmentedVector {
       (*it)->clear(alloc_);
     }
     size_ = 0;
+  }
+
+  void shrink_to_fit() {
+    const size_type used_segments =
+        empty() ? 0 : (((size() - 1) / SegmentSize) + 1);
+    for (typename Segments::iterator it = segments_.begin() + used_segments,
+         last = segments_.end(); it != last; ++it) {
+      segment_alloc_.deallocate(*it, 1);
+    }
+    segments_.resize(used_segments);
+    ShrinkToFit(segments_);
   }
 
   reference front() { return (*this)[0]; }

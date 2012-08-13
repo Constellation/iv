@@ -6,6 +6,7 @@
 #include <string>
 #include <iv/debug.h>
 #include <iv/arith.h>
+#include <iv/platform.h>
 #include <iv/detail/cstdint.h>
 namespace iv {
 namespace core {
@@ -149,6 +150,15 @@ inline std::size_t NextCapacity(std::size_t capacity) {
     return math::CLP2(capacity);
   }
   return IV_ALIGNED_SIZE(capacity, 256);
+}
+
+template<class Vector>
+inline void ShrinkToFit(Vector& vec) {  // NOLINT
+#if defined(IV_CXX11)
+  vec.shrink_to_fit();
+#else
+  Vector(vec).swap(vec);
+#endif
 }
 
 } }  // namespace iv::core

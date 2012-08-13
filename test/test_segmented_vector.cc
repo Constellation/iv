@@ -74,6 +74,13 @@ TEST(SegmentedVectorCase, IntTest) {
       }
     }
   }
+
+  vector.shrink_to_fit();
+  EXPECT_EQ(10u, vector.size());
+  vector.clear();
+  EXPECT_EQ(0u, vector.size());
+  vector.shrink_to_fit();
+  EXPECT_EQ(0u, vector.size());
 }
 
 namespace {
