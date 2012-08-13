@@ -1,5 +1,6 @@
 #ifndef IV_LV5_RAILGUN_COMPILER_EXPRESSION_H_
 #define IV_LV5_RAILGUN_COMPILER_EXPRESSION_H_
+#include <iv/lv5/jsglobal.h>
 #include <iv/lv5/railgun/compiler.h>
 namespace iv {
 namespace lv5 {
@@ -21,11 +22,13 @@ class Compiler::DestGuard {
 inline RegisterID Compiler::EmitOptimizedLookup(OP::Type op,
                                                 uint32_t index,
                                                 RegisterID dst) {
-  dst = Dest(dst);
-  const LookupInfo info = Lookup(code_->names_[index]);
+  assert(op != OP::STORE_NAME);
+  const Symbol name = code_->names_[index];
+  const LookupInfo info = Lookup(name);
   assert(info.type() != LookupInfo::STACK);
   switch (info.type()) {
     case LookupInfo::HEAP: {
+      dst = Dest(dst);
       thunkpool_.Spill(dst);
       EmitUnsafe(
           OP::ToHeap(op),
@@ -36,10 +39,13 @@ inline RegisterID Compiler::EmitOptimizedLookup(OP::Type op,
       return dst;
     }
     case LookupInfo::GLOBAL: {
-      // last 2 zeros are placeholders for PIC
+      const JSGlobal::Constant constant(JSGlobal::LookupConstant(name));
+
+      // last 2 zeros are placeholders for bytecode PIC
       switch (op) {
         case OP::DECREMENT_NAME:
         case OP::INCREMENT_NAME: {
+          dst = Dest(dst);
           const OP::Type o =
               (op == OP::DECREMENT_NAME) ? OP::DECREMENT : OP::INCREMENT;
           thunkpool_.Spill(dst);
@@ -51,6 +57,7 @@ inline RegisterID Compiler::EmitOptimizedLookup(OP::Type op,
 
         case OP::POSTFIX_DECREMENT_NAME:
         case OP::POSTFIX_INCREMENT_NAME: {
+          dst = Dest(dst);
           const OP::Type o =
               (op == OP::POSTFIX_DECREMENT_NAME) ?
               OP::POSTFIX_DECREMENT : OP::POSTFIX_INCREMENT;
@@ -65,24 +72,39 @@ inline RegisterID Compiler::EmitOptimizedLookup(OP::Type op,
         default: {
           const OP::Type o =
               (op == OP::LOAD_NAME) ? OP::LOAD_GLOBAL :
-              (op == OP::STORE_NAME) ? OP::STORE_GLOBAL :
               (op == OP::DELETE_NAME) ? OP::DELETE_GLOBAL : OP::TYPEOF_GLOBAL;
+
+          if (constant.first) {
+            if (o == OP::LOAD_GLOBAL) {
+              return EmitConstantLoad(constant.second, dst);
+            } else if (o == OP::DELETE_GLOBAL) {
+              // delete indentifier type cannot comes to here.
+              return EmitConstantLoad(constant_pool_.false_index(), dst);
+            } else {  // o == OP::TYPEOF_GLOBAL
+              return EmitConstantLoad(constant.second.TypeOf(ctx_), dst);
+            }
+          }
+
+          dst = Dest(dst);
           thunkpool_.Spill(dst);
           EmitUnsafe(o, Instruction::SW(dst, index), 0u, 0u);
           return dst;
         }
       }
     }
+
     case LookupInfo::LOOKUP: {
+      dst = Dest(dst);
       thunkpool_.Spill(dst);
       EmitUnsafe(op, Instruction::SW(dst, index));
       return dst;
     }
+
     case LookupInfo::UNUSED: {
-      assert(op == OP::STORE_NAME);
       // do nothing
       return dst;
     }
+
     default: {
       UNREACHABLE();
     }
@@ -518,7 +540,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
   switch (token) {
     case Token::TK_DELETE: {
       if (const Identifier* ident = expr->AsIdentifier()) {
-        // DELETE_NAME_STRICT is already rejected in parser
+        // DELETE_NAME in strict code is already rejected in parser
         assert(!code_->strict());
         if (RegisterID local = GetLocal(ident->symbol())) {
           dst_ = EmitConstantLoad(constant_pool_.false_index(), dst_);

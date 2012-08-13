@@ -110,13 +110,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   };
 
   typedef std::unordered_map<
-      double,
-      int32_t,
-      std::hash<double>, JSDoubleEquals> JSDoubleToIndexMap;
-
-  typedef std::unordered_map<core::UString, int32_t> JSStringToIndexMap;
-
-  typedef std::unordered_map<
       const FunctionLiteral*, uint32_t> FunctionLiteralToCodeMap;
 
   class ArraySite;
@@ -140,6 +133,12 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     // constant register.
    public:
     static const uint32_t kEmpty = UINT32_MAX;
+
+    typedef std::unordered_map<core::UString, int32_t> JSStringToIndexMap;
+    typedef std::unordered_map<
+        double,
+        int32_t,
+        std::hash<double>, JSDoubleEquals> JSDoubleToIndexMap;
 
     ConstantPool(Context* ctx)
       : ctx_(ctx),
@@ -204,10 +203,9 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       return empty_index_;
     }
 
-    uint32_t string_index(const StringLiteral* str) {
-      const core::UString s = core::ToUString(str->value());
+    uint32_t string_index(const core::UString& str) {
       const JSStringToIndexMap::const_iterator it =
-          jsstring_to_index_map_.find(s);
+          jsstring_to_index_map_.find(str);
 
       if (it != jsstring_to_index_map_.end()) {
         // duplicate constant
@@ -218,12 +216,15 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       const uint32_t index = AddConstant(
           JSString::New(
               ctx_,
-              str->value().begin(),
-              str->value().end(),
-              core::character::IsASCII(str->value().begin(),
-                                       str->value().end())));
-      jsstring_to_index_map_.insert(std::make_pair(s, index));
+              str.begin(),
+              str.end(),
+              core::character::IsASCII(str.begin(), str.end())));
+      jsstring_to_index_map_.insert(std::make_pair(str, index));
       return index;
+    }
+
+    uint32_t string_index(const StringLiteral* str) {
+      return string_index(core::ToUString(str->value()));
     }
 
     uint32_t number_index(double val) {
@@ -239,6 +240,24 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       const uint32_t index = AddConstant(val);
       double_to_index_map_.insert(std::make_pair(val, index));
       return index;
+    }
+
+    uint32_t Lookup(JSVal constant) {
+      if (constant.IsString()) {
+        return string_index(constant.string()->GetUString());
+      } else if (constant.IsNumber()) {
+        return number_index(constant.number());
+      } else if (constant.IsUndefined()) {
+        return undefined_index();
+      } else if (constant.IsNull()) {
+        return null_index();
+      } else if (constant.IsBoolean()) {
+        return (constant.boolean()) ? true_index() : false_index();
+      } else if (constant.IsEmpty()) {
+        return empty_index();
+      }
+      UNREACHABLE();
+      return 0;  // makes compiler happy
     }
 
    private:
@@ -638,6 +657,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
         return;
       }
       case LookupInfo::UNUSED: {
+        // do nothing
         return;
       }
       default: {
@@ -1056,6 +1076,11 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     Emit<OP::LOAD_CONST>(Instruction::SW(dst, index));
     return dst;
   }
+
+  RegisterID EmitConstantLoad(JSVal value, RegisterID dst = RegisterID()) {
+    return EmitConstantLoad(constant_pool_.Lookup(value), dst);
+  }
+
 
   // accessors
 
