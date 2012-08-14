@@ -154,7 +154,7 @@ inline bool StoredSlot::MergeWithNoEffect(
 
 
 inline void StoredSlot::Merge(Context* ctx, const PropertyDescriptor& desc) {
-  Attributes::Interface attr(attributes().raw());
+  Attributes::External attr(attributes().raw());
 
   if (!desc.IsConfigurableAbsent()) {
     attr.set_configurable(desc.IsConfigurable());
@@ -229,7 +229,7 @@ AccessorDescriptor* PropertyDescriptor::AsAccessorDescriptor() {
 inline StoredSlot::StoredSlot(Context* ctx, const PropertyDescriptor& desc)
     : value_(JSUndefined),
       attributes_(Attributes::Safe::NotFound()) {
-  Attributes::Interface attributes(ATTR::NONE);
+  Attributes::External attributes(ATTR::NONE);
   attributes.set_configurable(desc.IsConfigurable());
   attributes.set_enumerable(desc.IsEnumerable());
   if (desc.IsData()) {

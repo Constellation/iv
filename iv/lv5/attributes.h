@@ -58,11 +58,11 @@ class Attributes {
     return attributes & (~UNDEFS);
   }
 
-  class Interface {
+  class External {
    public:
     friend class Attributes;
-    Interface(Raw attributes) : attributes_(attributes) { }  // NOLINT
-    Interface() : attributes_(NONE) { }
+    External(Raw attributes) : attributes_(attributes) { }  // NOLINT
+    External() : attributes_(NONE) { }
 
     Raw type() const {
       return attributes_ & TYPE_MASK;
@@ -167,11 +167,11 @@ class Attributes {
 
     Raw raw() const { return attributes_; }
 
-    inline friend bool operator==(Interface lhs, Interface rhs) {
+    inline friend bool operator==(External lhs, External rhs) {
       return lhs.raw() == rhs.raw();
     }
 
-    inline friend bool operator!=(Interface lhs, Interface rhs) {
+    inline friend bool operator!=(External lhs, External rhs) {
       return lhs.raw() != rhs.raw();
     }
 
@@ -191,10 +191,10 @@ class Attributes {
     Raw attributes_;
   };
 
-  class Safe : protected Attributes::Interface {
+  class Safe : protected Attributes::External {
    public:
     friend class Attributes;
-    typedef Attributes::Interface super_type;
+    typedef Attributes::External super_type;
     using super_type::IsEnumerable;
     using super_type::IsConfigurable;
     using super_type::IsData;
@@ -224,25 +224,25 @@ class Attributes {
       return (raw() & value) == value;
     }
 
-    static Safe UnSafe(Interface attr) {
+    static Safe UnSafe(External attr) {
       return Safe(attr);
     }
 
    private:
     explicit Safe(Raw attr)
-      : Interface(RemoveUndefs(attr)) {
+      : External(RemoveUndefs(attr)) {
       assert(Attributes::IsStored(raw()));
     }
 
-    explicit Safe(Interface attr)
-      : Interface(RemoveUndefs(attr.raw())) {
+    explicit Safe(External attr)
+      : External(RemoveUndefs(attr.raw())) {
       assert(Attributes::IsStored(raw()));
     }
 
-    Safe() : Interface() { }
+    Safe() : External() { }
   };
 
-  static Safe CreateData(Interface attributes) {
+  static Safe CreateData(External attributes) {
     assert(!attributes.IsEmpty());
     assert(!attributes.IsAccessor());
 
@@ -256,7 +256,7 @@ class Attributes {
     return Safe(attributes);
   }
 
-  static Safe CreateAccessor(Interface attributes) {
+  static Safe CreateAccessor(External attributes) {
     assert(!attributes.IsEmpty());
     assert(!attributes.IsWritable());
     assert(!attributes.IsData());

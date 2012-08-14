@@ -14,7 +14,7 @@ class AccessorDescriptor;
 class Slot;
 class Accessor;
 
-class PropertyDescriptor : protected Attributes::Interface {
+class PropertyDescriptor : protected Attributes::External {
  public:
   friend class StoredSlot;
   typedef PropertyDescriptor this_type;
@@ -34,17 +34,17 @@ class PropertyDescriptor : protected Attributes::Interface {
   enum AccessorDescriptorSetterTag { ACCESSOR_DESCRIPTOR_SETTER };
 
   PropertyDescriptor(detail::JSEmptyType val)  // NOLINT
-    : Attributes::Interface(ATTR::UNDEFS),
+    : Attributes::External(ATTR::UNDEFS),
       value_() {
   }
 
   PropertyDescriptor()
-    : Attributes::Interface(ATTR::UNDEFS),
+    : Attributes::External(ATTR::UNDEFS),
       value_() {
   }
 
   PropertyDescriptor(const PropertyDescriptor& rhs)
-    : Attributes::Interface(rhs),
+    : Attributes::External(rhs),
       value_(rhs.value_) {
   }
 
@@ -62,33 +62,33 @@ class PropertyDescriptor : protected Attributes::Interface {
 
   bool MergeWithNoEffect(const PropertyDescriptor& desc) const;
 
-  using Attributes::Interface::IsEnumerable;
-  using Attributes::Interface::IsEnumerableAbsent;
-  using Attributes::Interface::set_enumerable;
-  using Attributes::Interface::IsConfigurable;
-  using Attributes::Interface::IsConfigurableAbsent;
-  using Attributes::Interface::set_configurable;
-  using Attributes::Interface::IsData;
-  using Attributes::Interface::set_data;
-  using Attributes::Interface::IsAccessor;
-  using Attributes::Interface::set_accessor;
-  using Attributes::Interface::IsGeneric;
-  using Attributes::Interface::IsEmpty;
-  using Attributes::Interface::IsWritable;
-  using Attributes::Interface::IsWritableAbsent;
-  using Attributes::Interface::set_writable;
-  using Attributes::Interface::IsValueAbsent;
-  using Attributes::Interface::IsGetterAbsent;
-  using Attributes::Interface::IsSetterAbsent;
-  using Attributes::Interface::IsAbsent;
-  using Attributes::Interface::IsDefault;
+  using Attributes::External::IsEnumerable;
+  using Attributes::External::IsEnumerableAbsent;
+  using Attributes::External::set_enumerable;
+  using Attributes::External::IsConfigurable;
+  using Attributes::External::IsConfigurableAbsent;
+  using Attributes::External::set_configurable;
+  using Attributes::External::IsData;
+  using Attributes::External::set_data;
+  using Attributes::External::IsAccessor;
+  using Attributes::External::set_accessor;
+  using Attributes::External::IsGeneric;
+  using Attributes::External::IsEmpty;
+  using Attributes::External::IsWritable;
+  using Attributes::External::IsWritableAbsent;
+  using Attributes::External::set_writable;
+  using Attributes::External::IsValueAbsent;
+  using Attributes::External::IsGetterAbsent;
+  using Attributes::External::IsSetterAbsent;
+  using Attributes::External::IsAbsent;
+  using Attributes::External::IsDefault;
 
  protected:
   PropertyLayout layout() const { return value_; }
 
   PropertyDescriptor(DataDescriptorTag tag,
                      JSVal val, Attributes::Raw attrs)
-    : Attributes::Interface(attrs |
+    : Attributes::External(attrs |
                             ATTR::DATA |
                             ATTR::UNDEF_GETTER |
                             ATTR::UNDEF_SETTER),
@@ -99,7 +99,7 @@ class PropertyDescriptor : protected Attributes::Interface {
   PropertyDescriptor(AccessorDescriptorTag tag,
                      JSObject* getter, JSObject* setter,
                      Attributes::Raw attrs)
-    : Attributes::Interface(attrs |
+    : Attributes::External(attrs |
                             ATTR::ACCESSOR |
                             ATTR::UNDEF_VALUE |
                             ATTR::UNDEF_WRITABLE),
@@ -110,7 +110,7 @@ class PropertyDescriptor : protected Attributes::Interface {
 
   PropertyDescriptor(AccessorDescriptorGetterTag tag,
                      JSObject* getter, Attributes::Raw attrs)
-    : Attributes::Interface(attrs |
+    : Attributes::External(attrs |
                             ATTR::ACCESSOR |
                             ATTR::UNDEF_VALUE |
                             ATTR::UNDEF_SETTER |
@@ -122,7 +122,7 @@ class PropertyDescriptor : protected Attributes::Interface {
 
   PropertyDescriptor(AccessorDescriptorSetterTag tag,
                      JSObject* setter, Attributes::Raw attrs)
-    : Attributes::Interface(attrs |
+    : Attributes::External(attrs |
                             ATTR::ACCESSOR |
                             ATTR::UNDEF_VALUE |
                             ATTR::UNDEF_GETTER |
@@ -133,7 +133,7 @@ class PropertyDescriptor : protected Attributes::Interface {
   }
 
   PropertyDescriptor(GenericDescriptorTag tag, Attributes::Raw attrs)
-    : Attributes::Interface(attrs |
+    : Attributes::External(attrs |
                             ATTR::UNDEF_VALUE |
                             ATTR::UNDEF_GETTER |
                             ATTR::UNDEF_SETTER |
@@ -143,14 +143,14 @@ class PropertyDescriptor : protected Attributes::Interface {
 
   // raw
   PropertyDescriptor(JSVal value, Attributes::Safe attributes)
-    : Attributes::Interface(attributes.raw()),
+    : Attributes::External(attributes.raw()),
       value_() {
     value_.data_ = value;
   }
 
   // raw
   PropertyDescriptor(JSObject* getter, JSObject* setter, Attributes::Safe attributes)
-    : Attributes::Interface(attributes.raw()),
+    : Attributes::External(attributes.raw()),
       value_() {
     value_.accessor_.getter_ = getter;
     value_.accessor_.setter_ = setter;
