@@ -66,7 +66,7 @@ class JSGlobal : public JSObject {
   virtual void GetOwnPropertyNames(Context* ctx,
                                    PropertyNamesCollector* collector,
                                    EnumerationMode mode) const {
-    return GetOwnPropertyNames(ctx, collector, mode);
+    return JSObject::GetOwnPropertyNames(ctx, collector, mode);
   }
 
   virtual void MarkChildren(radio::Core* core) {
