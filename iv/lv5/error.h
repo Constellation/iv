@@ -21,16 +21,23 @@ class Error {
   class Dummy;
   class Standard;
 
+#define IV_LV5_ERROR_LIST(V)\
+  V(Normal)\
+  V(Eval)\
+  V(Range)\
+  V(Reference)\
+  V(Syntax)\
+  V(Type)\
+  V(URI)\
+  V(User)
+
   enum Code {
-    Normal     = 0,
-    Eval       = 1,
-    Range      = 2,
-    Reference  = 3,
-    Syntax     = 4,
-    Type       = 5,
-    URI        = 6,
-    User       = 7
+#define IV_SEP(N) N,
+    IV_LV5_ERROR_LIST(IV_SEP)
+#undef IV_SEP
+    NUM_OF_CODE
   };
+
   static const uint8_t kCodeMask = 7;
 
   enum Kind {
@@ -78,6 +85,8 @@ class Error {
 
   virtual void Dump(Context* ctx, FILE* out) { }
 
+  static const char* CodeString(Code code);
+
  protected:
   Error(Kind k) : data_() {
     set_code(Normal);
@@ -101,6 +110,17 @@ class Error {
  private:
   uint8_t data_;
 };
+
+static const std::array<const char*, Error::NUM_OF_CODE + 1> kErrorStrings = { {
+#define IV_SEP(N) #N,
+  IV_LV5_ERROR_LIST(IV_SEP)
+  "NUM_OF_CODE"
+#undef IV_SEP
+} };
+
+inline const char* Error::CodeString(Code code) {
+  return kErrorStrings[code];
+}
 
 class Error::Dummy : public Error {
  public:

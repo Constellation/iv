@@ -227,6 +227,14 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       return string_index(core::ToUString(str->value()));
     }
 
+    uint32_t string_index(const core::StringPiece& str) {
+      return string_index(core::ToUString(str));
+    }
+
+    uint32_t string_index(const core::UStringPiece& str) {
+      return string_index(str);
+    }
+
     uint32_t number_index(double val) {
       const JSDoubleToIndexMap::const_iterator it =
           double_to_index_map_.find(val);
@@ -818,10 +826,32 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     (*data_)[code_->start() + from + 1].jump.to = to - from;
   }
 
-  // enter code functions
+  template<typename T>
+  void EmitError(Error::Code code, const T& message) {
+    Emit<OP::RAISE>(Instruction::UInt32(code, constant_pool()->string_index(message)));
+  }
 
-  void EmitFunctionBindingInstantiation(const FunctionLiteral& lit,
-                                        bool is_eval_decl) {
+  void EmitReferenceError() {
+    EmitError(Error::Reference, "Invalid left-hand side expression");
+  }
+
+  void EmitReferenceError(Symbol name) {
+    core::UStringBuilder builder;
+    builder.Append('"');
+    builder.Append(symbol::GetSymbolString(name));
+    builder.Append("\" not defined");
+    EmitError(Error::Reference, builder.BuildPiece());
+  }
+
+  void EmitImmutableError(Symbol name) {
+    core::UStringBuilder builder;
+    builder.Append("mutating immutable binding \"");
+    builder.Append(symbol::GetSymbolString(name));
+    builder.Append("\" not allowed in strict mode");
+    EmitError(Error::Type, builder.BuildPiece());
+  }
+
+  void FunctionInstantiation(const FunctionLiteral& lit, bool is_eval_decl) {
     FunctionScope* env =
         static_cast<FunctionScope*>(current_variable_scope_.get());
     registers_.Clear(env->stack_size(), env->heap_size());
@@ -864,8 +894,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
         if (info.type() != LookupInfo::STACK) {
           const uint32_t index = SymbolToNameIndex(it->first);
           assert(info.register_location() < 0 && "only arguments");
-          EmitInstantiate(index, info,
-                          registers_.LocalID(info.register_location()));
+          EmitInstantiate(index, info, registers_.LocalID(info.register_location()));
         }
       }
       if (env->scope()->IsArgumentsRealized()) {
@@ -882,24 +911,22 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     code_->set_stack_size(registers_.stack_size());
   }
 
-  void EmitPatchingBindingInstantiation(const FunctionLiteral& lit, bool eval) {
+  void EvalInstantiation(const FunctionLiteral& lit) {
     // not create new environment
     // simply use given it.
     //   for example,
     //     * direct call to eval in normal code
-    //     * global code
     registers_.Clear(0, 0);
 
     // save eval result or not
-    if (current_variable_scope_->UseExpressionReturn()) {
-      eval_result_ = Temporary();
-    }
+    assert(current_variable_scope_->UseExpressionReturn());
+    eval_result_ = Temporary();
 
     std::unordered_set<Symbol> already_declared;
     const Scope& scope = lit.scope();
     typedef Scope::FunctionLiterals Functions;
     const Functions& functions = scope.function_declarations();
-    const uint32_t flag = eval ? 1 : 0;
+    const uint32_t flag = 1;
     for (Functions::const_iterator it = functions.begin(),
          last = functions.end(); it != last; ++it) {
       const Symbol name = (*it)->name().Address()->symbol();
@@ -910,6 +937,40 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
             Instruction::UInt32(index, flag));
       }
     }
+    // variables
+    typedef Scope::Variables Variables;
+    const Variables& vars = scope.variables();
+    for (Variables::const_iterator it = vars.begin(),
+         last = vars.end(); it != last; ++it) {
+      const Symbol name = it->first->symbol();
+      if (already_declared.find(name) == already_declared.end()) {
+        already_declared.insert(name);
+        const uint32_t index = SymbolToNameIndex(name);
+        Emit<OP::INSTANTIATE_VARIABLE_BINDING>(
+            Instruction::UInt32(index, flag));
+      }
+    }
+  }
+
+  void GlobalInstantiation(const FunctionLiteral& lit) {
+    registers_.Clear(0, 0);
+    std::unordered_set<Symbol> already_declared;
+
+    const Scope& scope = lit.scope();
+    typedef Scope::FunctionLiterals Functions;
+    const Functions& functions = scope.function_declarations();
+    const uint32_t flag = 0;
+    for (Functions::const_iterator it = functions.begin(),
+         last = functions.end(); it != last; ++it) {
+      const Symbol name = (*it)->name().Address()->symbol();
+      if (already_declared.find(name) == already_declared.end()) {
+        already_declared.insert(name);
+        const uint32_t index = SymbolToNameIndex(name);
+        Emit<OP::INSTANTIATE_DECLARATION_BINDING>(
+            Instruction::UInt32(index, flag));
+      }
+    }
+
     // variables
     typedef Scope::Variables Variables;
     const Variables& vars = scope.variables();
@@ -937,15 +998,22 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     current_variable_scope_ =
         std::shared_ptr<VariableScope>(
             new CodeScope<TYPE>(&lit, upper, &scope, is_eval_decl));
-    {
-      // binding instantiation
-      if (TYPE == Code::FUNCTION) {
-        EmitFunctionBindingInstantiation(lit, is_eval_decl);
-      } else {
-        EmitPatchingBindingInstantiation(lit, TYPE == Code::EVAL);
-      }
+
+    // binding instantiation
+    switch (TYPE) {
+      case Code::FUNCTION:
+        FunctionInstantiation(lit, is_eval_decl);
+        break;
+      case Code::EVAL:
+        EvalInstantiation(lit);
+        break;
+      case Code::GLOBAL:
+        GlobalInstantiation(lit);
+        break;
     }
+
     thunkpool_.Initialize(code);
+
     {
       // function declarations
       typedef Scope::FunctionLiterals Functions;
@@ -965,6 +1033,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
         }
       }
     }
+
     // main
     const Statements& stmts = lit.body();
     for (Statements::const_iterator it = stmts.begin(),
@@ -1154,6 +1223,10 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   ConstantPool* constant_pool() { return &constant_pool_; }
 
   const ConstantPool* constant_pool() const { return &constant_pool_; }
+
+  Context* ctx() { return ctx_; }
+
+  const Context* ctx() const { return ctx_; }
 
  private:
   Context* ctx_;

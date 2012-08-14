@@ -81,14 +81,6 @@ class Operation {
     e->Report(Error::Reference, builder.BuildPiece());
   }
 
-  void RaiseImmutable(Symbol name, Error* e) const {
-    core::UStringBuilder builder;
-    builder.Append("mutating immutable binding \"");
-    builder.Append(symbol::GetSymbolString(name));
-    builder.Append("\" not allowed in strict mode");
-    e->Report(Error::Type, builder.BuildPiece());
-  }
-
   JSEnv* GetEnv(JSEnv* env, Symbol name) const {
     JSEnv* current = env;
     while (current) {

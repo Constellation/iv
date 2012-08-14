@@ -374,11 +374,8 @@ class Compiler {
         case r::OP::CONCAT:
           EmitCONCAT(instr);
           break;
-        case r::OP::RAISE_REFERENCE:
-          EmitRAISE_REFERENCE(instr);
-          break;
-        case r::OP::RAISE_IMMUTABLE:
-          EmitRAISE_IMMUTABLE(instr);
+        case r::OP::RAISE:
+          EmitRAISE(instr);
           break;
         case r::OP::TYPEOF:
           EmitTYPEOF(instr);
@@ -1279,18 +1276,15 @@ class Compiler {
     type_record_.Put(dst, TypeEntry(Type::String()));
   }
 
-  // opcode
-  void EmitRAISE_REFERENCE(const Instruction* instr) {
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->Call(&stub::RAISE_REFERENCE);
-  }
-
   // opcode name
-  void EmitRAISE_IMMUTABLE(const Instruction* instr) {
-    const Symbol name = code_->names()[instr[1].u32[0]];
+  void EmitRAISE(const Instruction* instr) {
+    const Error::Code code = static_cast<Error::Code>(instr[1].u32[0]);
+    const uint32_t constant = instr[1].u32[1];
+    JSString* str = code_->constants()[constant].string();
     asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, core::BitCast<uint64_t>(name));
-    asm_->Call(&stub::RAISE_IMMUTABLE);
+    asm_->mov(asm_->esi, code);
+    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(str));
+    asm_->Call(&stub::RAISE);
   }
 
   // opcode | (dst | src)

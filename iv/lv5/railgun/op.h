@@ -67,8 +67,7 @@ V(POSTFIX_DECREMENT_ELEMENT, 2)\
 V(TO_NUMBER, 2)\
 V(TO_PRIMITIVE_AND_TO_STRING, 2)\
 V(CONCAT, 2)\
-V(RAISE_REFERENCE, 1)\
-V(RAISE_IMMUTABLE, 2)\
+V(RAISE, 2)\
 \
 V(TYPEOF, 2)\
 \
@@ -223,7 +222,7 @@ struct OP {
   }
 
   static bool IsThrow(uint8_t op) {
-    return op == THROW || op == RAISE_IMMUTABLE || op == RAISE_REFERENCE;
+    return op == THROW || op == RAISE;
   }
 
   static Type BinaryOPFused(core::Token::Type token, bool if_true) {

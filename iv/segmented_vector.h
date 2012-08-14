@@ -264,7 +264,7 @@ class SegmentedVector {
     }
   }
 
-  void resize(size_type n, const value_type& c = value_type) {
+  void resize(size_type n, const value_type& c = value_type()) {
     const size_type previous = size();
     reserve(n);
     if (previous < n) {

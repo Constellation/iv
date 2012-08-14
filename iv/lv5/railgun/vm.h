@@ -1761,16 +1761,12 @@ JSVal VM::Execute(Frame* start, Error* e) {
         DISPATCH_ERROR();
       }
 
-      DEFINE_OPCODE(RAISE_IMMUTABLE) {
-        // opcode | name
-        const Symbol name = frame->GetName(instr[1].u32[0]);
-        RaiseImmutable(name, e);
-        DISPATCH_ERROR();
-      }
-
-      DEFINE_OPCODE(RAISE_REFERENCE) {
-        // opcode
-        RaiseReferenceError(e);
+      DEFINE_OPCODE(RAISE) {
+        // opcode | (code | message)
+        const Error::Code code = static_cast<Error::Code>(instr[1].u32[0]);
+        const uint32_t constant = instr[1].u32[1];
+        JSString* str = frame->GetConstant(constant).string();
+        e->Report(code, str->GetUString());
         DISPATCH_ERROR();
       }
 

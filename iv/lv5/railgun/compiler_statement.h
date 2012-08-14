@@ -349,7 +349,7 @@ inline void Compiler::Visit(const ForInStatement* stmt) {
           thunkpool_.Spill(local);
           Emit<OP::FORIN_ENUMERATE>(Instruction::Jump(0, local, iterator));
           if (code_->strict() && info.immutable()) {
-            Emit<OP::RAISE_IMMUTABLE>(SymbolToNameIndex(for_decl));
+            EmitImmutableError(for_decl);
           }
         } else {
           RegisterID tmp = Temporary();
@@ -387,7 +387,7 @@ inline void Compiler::Visit(const ForInStatement* stmt) {
           // ConstructorCall
           tmp.reset();
           EmitExpressionIgnoreResult(lhs);
-          Emit<OP::RAISE_REFERENCE>();
+          EmitReferenceError();
         }
       }
     }

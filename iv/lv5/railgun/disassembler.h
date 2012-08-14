@@ -88,7 +88,6 @@ class DisAssembler : private core::Noncopyable<> {
     switch (static_cast<OP::Type>(opcode)) {
       case OP::POP_ENV:
       case OP::DEBUGGER:
-      case OP::RAISE_REFERENCE:
       case OP::NOP: {
         len = snprintf(buf, sizeof(buf) - 1, "%s", op);
         break;
@@ -128,14 +127,15 @@ class DisAssembler : private core::Noncopyable<> {
             op, ExtractReg(r0).c_str());
         break;
       }
-      case OP::RAISE_IMMUTABLE: {
-        const unsigned int name = instr[1].u32[0];
-        len = snprintf(buf, sizeof(buf) - 1, "%s %u", op, name);
-        break;
-      }
       case OP::BUILD_ENV: {
         const unsigned int size = instr[1].u32[0], mu = instr[1].u32[1];
         len = snprintf(buf, sizeof(buf) - 1, "%s %u %u", op, size, mu);
+        break;
+      }
+      case OP::RAISE: {
+        const Error::Code code = static_cast<Error::Code>(instr[1].u32[0]);
+        const unsigned int constant = instr[1].u32[1];
+        len = snprintf(buf, sizeof(buf) - 1, "%s %s k%u", op, Error::CodeString(code), constant);
         break;
       }
       case OP::INSTANTIATE_VARIABLE_BINDING:

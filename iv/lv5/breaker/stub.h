@@ -19,7 +19,7 @@ inline Rep Extract(JSVal val) {
 
 namespace stub {
 
-#define RAISE()\
+#define IV_LV5_BREAKER_RAISE()\
   do {\
     void* pc = *stack->ret;\
     *stack->ret = Templates<>::dispatch_exception_handler();  /* NOLINT */\
@@ -30,7 +30,7 @@ namespace stub {
   stack->error);\
   do {\
     if (*stack->error) {\
-      RAISE();\
+      IV_LV5_BREAKER_RAISE();\
     }\
   } while (0);\
 ((void)0
@@ -188,12 +188,12 @@ inline Rep BINARY_INSTANCEOF(Frame* stack, JSVal lhs, JSVal rhs) {
   Context* ctx = stack->ctx;
   if (!rhs.IsObject()) {
     stack->error->Report(Error::Type, "instanceof requires object");
-    RAISE();
+    IV_LV5_BREAKER_RAISE();
   }
   JSObject* const robj = rhs.object();
   if (!robj->IsCallable()) {
     stack->error->Report(Error::Type, "instanceof requires constructor");
-    RAISE();
+    IV_LV5_BREAKER_RAISE();
   }
   const bool result = robj->AsCallable()->HasInstance(ctx, lhs, ERR);
   return Extract(JSVal::Bool(result));
@@ -203,7 +203,7 @@ inline Rep BINARY_IN(Frame* stack, JSVal lhs, JSVal rhs) {
   Context* ctx = stack->ctx;
   if (!rhs.IsObject()) {
     stack->error->Report(Error::Type, "in requires object");
-    RAISE();
+    IV_LV5_BREAKER_RAISE();
   }
   const Symbol s = lhs.ToSymbol(ctx, ERR);
   return Extract(JSVal::Bool(rhs.object()->HasProperty(ctx, s)));
@@ -270,12 +270,12 @@ inline Rep UNARY_BIT_NOT(Frame* stack, JSVal src) {
 
 inline Rep THROW(Frame* stack, JSVal src) {
   stack->error->Report(src);
-  RAISE();
+  IV_LV5_BREAKER_RAISE();
 }
 
 inline Rep THROW_WITH_TYPE_AND_MESSAGE(Frame* stack, Error::Code type, const char* message) {
   stack->error->Report(type, message);
-  RAISE();
+  IV_LV5_BREAKER_RAISE();
 }
 
 inline void RaiseReferenceError(Symbol name, Error* e) {
@@ -318,7 +318,7 @@ inline Rep LOAD_GLOBAL(Frame* stack, Symbol name, MonoIC* ic, Assembler* as) {
       return Extract(res);
     }
     RaiseReferenceError(name, stack->error);
-    RAISE();
+    IV_LV5_BREAKER_RAISE();
     return 0;
   }
 }
@@ -345,7 +345,7 @@ inline Rep STORE_GLOBAL(Frame* stack, Symbol name,
         stack->error->Report(Error::Reference,
                   "putting to unresolvable reference "
                   "not allowed in strict reference");
-        RAISE();
+        IV_LV5_BREAKER_RAISE();
       } else {
         ctx->global_obj()->Put(ctx, name, src, Strict, ERR);
       }
@@ -442,7 +442,7 @@ inline Rep CALL(Frame* stack,
   Context* ctx = stack->ctx;
   if (!callee.IsCallable()) {
     stack->error->Report(Error::Type, "not callable object");
-    RAISE();
+    IV_LV5_BREAKER_RAISE();
   }
   lv5::JSFunction* func = callee.object()->AsCallable();
   if (!func->IsNativeFunction()) {
@@ -462,7 +462,7 @@ inline Rep CALL(Frame* stack,
         argc_with_this, false);
     if (!new_frame) {
       stack->error->Report(Error::Range, "maximum call stack size exceeded");
-      RAISE();
+      IV_LV5_BREAKER_RAISE();
     }
     new_frame->InitThisBinding(ctx);
     *out_frame = new_frame;
@@ -488,7 +488,7 @@ inline Rep EVAL(Frame* stack,
   Context* ctx = stack->ctx;
   if (!callee.IsCallable()) {
     stack->error->Report(Error::Type, "not callable object");
-    RAISE();
+    IV_LV5_BREAKER_RAISE();
   }
   lv5::JSFunction* func = callee.object()->AsCallable();
   if (!func->IsNativeFunction()) {
@@ -508,7 +508,7 @@ inline Rep EVAL(Frame* stack,
         argc_with_this, false);
     if (!new_frame) {
       stack->error->Report(Error::Range, "maximum call stack size exceeded");
-      RAISE();
+      IV_LV5_BREAKER_RAISE();
     }
     new_frame->InitThisBinding(ctx);
     *out_frame = new_frame;
@@ -541,7 +541,7 @@ inline Rep CONSTRUCT(Frame* stack,
   Context* ctx = stack->ctx;
   if (!callee.IsCallable()) {
     stack->error->Report(Error::Type, "not callable object");
-    RAISE();
+    IV_LV5_BREAKER_RAISE();
   }
   lv5::JSFunction* func = callee.object()->AsCallable();
   if (!func->IsNativeFunction()) {
@@ -558,7 +558,7 @@ inline Rep CONSTRUCT(Frame* stack,
         argc_with_this, false);
     if (!new_frame) {
       stack->error->Report(Error::Range, "maximum call stack size exceeded");
-      RAISE();
+      IV_LV5_BREAKER_RAISE();
     }
     JSObject* const obj = JSObject::New(ctx, code->ConstructMap(ctx));
     new_frame->set_this_binding(obj);
@@ -586,21 +586,9 @@ inline Rep CONCAT(Context* ctx, JSVal* src, uint32_t count) {
   return Extract(JSString::New(ctx, src, count));
 }
 
-inline Rep RAISE_REFERENCE(Frame* stack) {
-  core::UStringBuilder builder;
-  builder.Append("Invalid left-hand side expression");
-  stack->error->Report(Error::Reference, builder.BuildPiece());
-  RAISE();
-  return 0;
-}
-
-inline Rep RAISE_IMMUTABLE(Frame* stack, Symbol name) {
-  core::UStringBuilder builder;
-  builder.Append("mutating immutable binding \"");
-  builder.Append(symbol::GetSymbolString(name));
-  builder.Append("\" not allowed in strict mode");
-  stack->error->Report(Error::Type, builder.BuildPiece());
-  RAISE();
+inline Rep RAISE(Frame* stack, Error::Code code, JSString* str) {
+  stack->error->Report(code, str->GetUString());
+  IV_LV5_BREAKER_RAISE();
   return 0;
 }
 
@@ -658,13 +646,13 @@ inline Rep INSTANTIATE_DECLARATION_BINDING(Frame* stack, JSEnv* env, Symbol name
       if (existing_prop.IsAccessor()) {
         stack->error->Report(Error::Type,
                              "create mutable function binding failed");
-        RAISE();
+        IV_LV5_BREAKER_RAISE();
       }
       const DataDescriptor* const data = existing_prop.AsDataDescriptor();
       if (!data->IsWritable() || !data->IsEnumerable()) {
         stack->error->Report(Error::Type,
                              "create mutable function binding failed");
-        RAISE();
+        IV_LV5_BREAKER_RAISE();
       }
     }
   }
@@ -745,7 +733,7 @@ inline Rep PREPARE_DYNAMIC_CALL(Frame* stack,
     return Extract(res);
   }
   RaiseReferenceError(name, stack->error);
-  RAISE();
+  IV_LV5_BREAKER_RAISE();
 }
 
 template<bool Strict>
@@ -756,7 +744,7 @@ inline Rep LOAD_NAME(Frame* stack, JSEnv* env, Symbol name) {
     return Extract(res);
   }
   RaiseReferenceError(name, stack->error);
-  RAISE();
+  IV_LV5_BREAKER_RAISE();
 }
 
 template<bool Strict>
@@ -769,7 +757,7 @@ inline Rep STORE_NAME(Frame* stack, JSEnv* env, Symbol name, JSVal src) {
       stack->error->Report(Error::Reference,
                            "putting to unresolvable reference "
                            "not allowed in strict reference");
-      RAISE();
+      IV_LV5_BREAKER_RAISE();
     } else {
       ctx->global_obj()->Put(ctx, name, src, Strict, ERR);
     }
@@ -1216,6 +1204,6 @@ inline Rep INCREMENT_PROP(Frame* stack, JSVal base, Symbol name) {
 }
 
 #undef ERR
-#undef RAISE
+#undef IV_LV5_BREAKER_RAISE
 } } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_STUB_H_

@@ -162,7 +162,7 @@ inline void Compiler::Visit(const Assignment* assign) {
       EmitExpressionIgnoreResult(lhs);
       EmitExpressionIgnoreResult(rhs);
       dst_ = Dest(dst_);
-      Emit<OP::RAISE_REFERENCE>();
+      EmitReferenceError();
     } else {
       {
         Thunk src(&thunkpool_, EmitExpression(lhs));
@@ -172,7 +172,7 @@ inline void Compiler::Visit(const Assignment* assign) {
                    Instruction::Reg3(ret, src.Release(), val));
       }
       dst_ = Dest(dst_);
-      Emit<OP::RAISE_REFERENCE>();
+      EmitReferenceError();
     }
     return;
   }
@@ -187,7 +187,7 @@ inline void Compiler::Visit(const Assignment* assign) {
           if (code_->strict()) {
             EmitExpressionIgnoreResult(rhs);
             dst_ = Dest(dst_);
-            Emit<OP::RAISE_IMMUTABLE>(SymbolToNameIndex(ident->symbol()));
+            EmitImmutableError(ident->symbol());
           } else {
             dst_ = EmitExpressionToDest(rhs, Dest(dst_));
           }
@@ -253,7 +253,7 @@ inline void Compiler::Visit(const Assignment* assign) {
             if (code_->strict()) {
               EmitUnsafe(OP::BinaryOP(token),
                          Instruction::Reg3(Temporary(), lv.reg(), rv));
-              Emit<OP::RAISE_IMMUTABLE>(SymbolToNameIndex(ident->symbol()));
+              EmitImmutableError(ident->symbol());
             } else {
               thunkpool_.Spill(dst_);
               EmitUnsafe(OP::BinaryOP(token),
@@ -604,7 +604,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
         RegisterID tmp = EmitExpression(expr);
         dst_ = Dest(dst_, tmp);
         Emit<OP::TO_NUMBER>(tmp);
-        Emit<OP::RAISE_REFERENCE>();
+        EmitReferenceError();
         return;
       }
       assert(expr->IsValidLeftHandSide());
@@ -616,7 +616,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
             if (info.immutable()) {
               Emit<OP::TO_NUMBER>(local);
               if (code_->strict()) {
-                Emit<OP::RAISE_IMMUTABLE>(index);
+                EmitImmutableError(ident->symbol());
               }
             } else {
               thunkpool_.Spill(local);
@@ -628,7 +628,7 @@ inline void Compiler::Visit(const UnaryOperation* unary) {
               if (code_->strict()) {
                 dst_ = Dest(dst_);
                 Emit<OP::TO_NUMBER>(local);
-                Emit<OP::RAISE_IMMUTABLE>(index);
+                EmitImmutableError(ident->symbol());
               } else {
                 RegisterID tmp = Temporary(dst_);
                 EmitMV(tmp, local);
@@ -698,7 +698,7 @@ inline void Compiler::Visit(const PostfixExpression* postfix) {
     RegisterID tmp = EmitExpression(expr);
     dst_ = Dest(dst_, tmp);
     Emit<OP::TO_NUMBER>(tmp);
-    Emit<OP::RAISE_REFERENCE>();
+    EmitReferenceError();
     return;
   }
   assert(expr->IsValidLeftHandSide());
@@ -711,7 +711,7 @@ inline void Compiler::Visit(const PostfixExpression* postfix) {
         if (info.immutable()) {
           Emit<OP::TO_NUMBER>(local);
           if (code_->strict()) {
-            Emit<OP::RAISE_IMMUTABLE>(index);
+            EmitImmutableError(ident->symbol());
           }
         } else {
           thunkpool_.Spill(local);
@@ -723,7 +723,7 @@ inline void Compiler::Visit(const PostfixExpression* postfix) {
           if (code_->strict()) {
             dst_ = Dest(dst_);
             Emit<OP::TO_NUMBER>(local);
-            Emit<OP::RAISE_IMMUTABLE>(index);
+            EmitImmutableError(ident->symbol());
           } else {
             RegisterID tmp = Temporary(dst_);
             EmitMV(tmp, local);

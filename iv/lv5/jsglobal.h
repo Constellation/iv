@@ -32,17 +32,22 @@ class JSGlobal : public JSObject {
     return std::make_pair(false, JSEmpty);
   }
 
-  inline uint32_t GetVariable(Symbol name) const {
+  inline JSVal* LookupVariable(Symbol name) {
     const SymbolMap::const_iterator it = symbol_map_.find(name);
     if (it != symbol_map_.end()) {
-      return it->second;
+      return &variables_[it->second];
     }
-    return core::kNotFound32;
+    return NULL;
   }
 
-  inline JSVal* PointAt(uint32_t point) {
-    return &variables_[point];
+  JSVal* PushVariable(Symbol name, JSVal init = JSUndefined) {
+    assert(symbol_map_.find(name) == symbol_map_.end());
+    symbol_map_[name] = variables_.size();
+    variables_.push_back(init);
+    return &variables_.back();
   }
+
+  const Vector& variables() const { return variables_; }
 
   virtual bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
     return JSObject::GetOwnPropertySlot(ctx, name, slot);
