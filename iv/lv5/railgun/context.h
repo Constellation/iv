@@ -36,7 +36,7 @@ inline void Context::Init() {
   global_map_cache_ = new(GC)MapCache();
   {
     const MapCacheKey key(reinterpret_cast<Map*>(NULL), symbol::kDummySymbol);
-    const MapCacheEntry entry(key, core::kNotFound);
+    const MapCacheEntry entry(key, core::kNotFound32);
     std::fill_n(global_map_cache_->begin(), global_map_cache_->size(), entry);
   }
 #ifdef DEBUG

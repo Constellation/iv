@@ -15,6 +15,7 @@ class JSGlobal : public JSObject {
  public:
   IV_LV5_DEFINE_JSCLASS(global)
 
+  typedef GCHashMap<Symbol, uint32_t>::type SymbolMap;
   typedef core::SegmentedVector<JSVal, 8, gc_allocator<JSVal> > Vector;
 
   static JSGlobal* New(Context* ctx) { return new JSGlobal(ctx); }
@@ -29,6 +30,18 @@ class JSGlobal : public JSObject {
       return std::make_pair(true, iv::core::math::kInfinity);
     }
     return std::make_pair(false, JSEmpty);
+  }
+
+  inline uint32_t GetVariable(Symbol name) const {
+    const SymbolMap::const_iterator it = symbol_map_.find(name);
+    if (it != symbol_map_.end()) {
+      return it->second;
+    }
+    return core::kNotFound32;
+  }
+
+  inline JSVal* PointAt(uint32_t point) {
+    return &variables_[point];
   }
 
   virtual bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
@@ -59,10 +72,12 @@ class JSGlobal : public JSObject {
  private:
   explicit JSGlobal(Context* ctx)
     : JSObject(Map::NewUniqueMap(ctx)),
+      symbol_map_(),
       variables_() {
     assert(map()->GetSlotsSize() == 0);
   }
 
+  SymbolMap symbol_map_;
   Vector variables_;
 };
 
