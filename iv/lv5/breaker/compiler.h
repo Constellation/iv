@@ -1982,8 +1982,7 @@ class Compiler {
     const Assembler::LocalLabelScope scope(asm_);
     LoadVR(asm_->rax, src);
     asm_->mov(asm_->rcx, core::BitCast<uint64_t>(slot));
-    asm_->mov(asm_->edx, asm_->word[asm_->rcx + kJSValSize]);
-    asm_->test(asm_->edx, ATTR::W);
+    asm_->test(asm_->word[asm_->rcx + kJSValSize], ATTR::W);
     asm_->jnz(".STORE");
     if (code_->strict()) {
       static const char* message = "modifying global variable failed";
