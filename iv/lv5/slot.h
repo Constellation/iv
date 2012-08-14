@@ -21,7 +21,7 @@ class Slot : public StoredSlot {
     : StoredSlot(JSEmpty, Attributes::Safe::NotFound()),
       cacheable_(true),
       base_(NULL),
-      offset_(core::kNotFound) {
+      offset_(UINT32_MAX) {
   }
 
   bool IsNotFound() const {

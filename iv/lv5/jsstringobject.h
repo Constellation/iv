@@ -18,8 +18,8 @@ class JSStringObject : public JSObject {
       length_(static_cast<uint32_t>(value->size())) {
   }
 
-  bool GetOwnPropertySlot(Context* ctx,
-                          Symbol name, Slot* slot) const {
+  virtual bool GetOwnPropertySlot(Context* ctx,
+                                  Symbol name, Slot* slot) const {
     if (name == symbol::length()) {
       slot->set(JSVal::UInt32(length_), Attributes::CreateData(ATTR::NONE), this);
       return true;
@@ -40,9 +40,9 @@ class JSStringObject : public JSObject {
     }
   }
 
-  void GetOwnPropertyNames(Context* ctx,
-                           PropertyNamesCollector* collector,
-                           EnumerationMode mode) const {
+  virtual void GetOwnPropertyNames(Context* ctx,
+                                   PropertyNamesCollector* collector,
+                                   EnumerationMode mode) const {
     if (mode == INCLUDE_NOT_ENUMERABLE) {
       collector->Add(symbol::length(), 0);
     }
@@ -67,7 +67,7 @@ class JSStringObject : public JSObject {
     return new JSStringObject(ctx, JSString::NewEmptyString(ctx));
   }
 
-  void MarkChildren(radio::Core* core) {
+  virtual void MarkChildren(radio::Core* core) {
     core->MarkCell(value_);
   }
 

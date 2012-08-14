@@ -159,11 +159,11 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
     return JSObject::GetOwnPropertySlot(ctx, name, slot);
   }
 
-  bool DefineOwnProperty(Context* ctx,
-                         Symbol name,
-                         const PropertyDescriptor& desc,
-                         bool th,
-                         Error* e) {
+  virtual bool DefineOwnProperty(Context* ctx,
+                                 Symbol name,
+                                 const PropertyDescriptor& desc,
+                                 bool th,
+                                 Error* e) {
     if (symbol::IsArrayIndexSymbol(name)) {
       // section 15.4.5.1 step 4
       return DefineArrayIndexProperty(ctx, name, desc, th, e);
@@ -176,7 +176,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
     }
   }
 
-  bool Delete(Context* ctx, Symbol name, bool th, Error* e) {
+  virtual bool Delete(Context* ctx, Symbol name, bool th, Error* e) {
     if (symbol::IsArrayIndexSymbol(name)) {
       const uint32_t index = symbol::GetIndexFromSymbol(name);
       if (kMaxVectorSize > index) {
@@ -213,9 +213,9 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
     return JSObject::DeleteDirect(ctx, name, th, e);
   }
 
-  void GetOwnPropertyNames(Context* ctx,
-                           PropertyNamesCollector* collector,
-                           EnumerationMode mode) const {
+  virtual void GetOwnPropertyNames(Context* ctx,
+                                   PropertyNamesCollector* collector,
+                                   EnumerationMode mode) const {
     if (length_.attributes().IsEnumerable() || (mode == INCLUDE_NOT_ENUMERABLE)) {
       collector->Add(symbol::length(), 0);
     }
@@ -238,7 +238,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
     JSObject::GetOwnPropertyNames(ctx, collector, mode);
   }
 
-  void MarkChildren(radio::Core* core) {
+  virtual void MarkChildren(radio::Core* core) {
     JSObject::MarkChildren(core);
     std::for_each(vector_.begin(), vector_.end(), radio::Core::Marker(core));
     if (map_) {

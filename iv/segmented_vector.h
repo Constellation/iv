@@ -44,8 +44,8 @@ class SegmentedVector {
         std::bidirectional_iterator_tag, value_type> super_type;
     typedef typename super_type::pointer pointer;
     typedef const typename super_type::pointer const_pointer;
-    typedef uint16_t reference;
-    typedef uint16_t const_reference;
+    typedef value_type& reference;
+    typedef const value_type& const_reference;
     typedef typename super_type::difference_type difference_type;
     typedef iterator_base<segmented_vector_type*> iterator;
     typedef iterator_base<const segmented_vector_type*> const_iterator;
