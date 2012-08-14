@@ -264,6 +264,20 @@ class SegmentedVector {
     }
   }
 
+  void resize(size_type n, const value_type& c = value_type) {
+    const size_type previous = size();
+    reserve(n);
+    if (previous < n) {
+      for (difference_type diff = n - previous; diff--;) {
+        push_back(c);
+      }
+    } else {
+      for (difference_type diff = previous - n; diff--;) {
+        pop_back();
+      }
+    }
+  }
+
   void clear() {
     for (typename Segments::iterator it = segments_.begin(),
          last = segments_.end(); it != last; ++it) {
