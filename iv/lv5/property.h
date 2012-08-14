@@ -229,24 +229,24 @@ AccessorDescriptor* PropertyDescriptor::AsAccessorDescriptor() {
 inline StoredSlot::StoredSlot(Context* ctx, const PropertyDescriptor& desc)
     : value_(JSUndefined),
       attributes_(Attributes::Safe::NotFound()) {
-  Attributes::Interface interface(ATTR::NONE);
-  interface.set_configurable(desc.IsConfigurable());
-  interface.set_enumerable(desc.IsEnumerable());
+  Attributes::Interface attributes(ATTR::NONE);
+  attributes.set_configurable(desc.IsConfigurable());
+  attributes.set_enumerable(desc.IsEnumerable());
   if (desc.IsData()) {
     const DataDescriptor* const data = desc.AsDataDescriptor();
     if (!data->IsValueAbsent()) {
       value_ = data->value();
     }
-    interface.set_writable(data->IsWritable());
-    attributes_ = Attributes::CreateData(interface);
+    attributes.set_writable(data->IsWritable());
+    attributes_ = Attributes::CreateData(attributes);
   } else if (desc.IsAccessor()) {
     const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
     Accessor* accessor = Accessor::New(ctx, ac->get(), ac->set());
     value_ = JSVal::Cell(accessor);
-    attributes_ = Attributes::CreateAccessor(interface);
+    attributes_ = Attributes::CreateAccessor(attributes);
   } else {
     assert(desc.IsGeneric());
-    attributes_ = Attributes::CreateData(interface);
+    attributes_ = Attributes::CreateData(attributes);
   }
 }
 

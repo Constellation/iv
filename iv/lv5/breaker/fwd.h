@@ -96,10 +96,10 @@ typedef int32_t register_t;
 
 namespace stub {
 
-template<bool STRICT>
+template<bool Strict>
 Rep LOAD_GLOBAL(Frame* stack, Symbol name, MonoIC* ic, Assembler* as);
 
-template<bool STRICT>
+template<bool Strict>
 Rep STORE_GLOBAL(Frame* stack, Symbol name,
                  MonoIC* ic, Assembler* as, JSVal src);
 

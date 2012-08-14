@@ -298,7 +298,7 @@ inline JSEnv* GetEnv(Context* ctx, JSEnv* env, Symbol name) {
   return NULL;
 }
 
-template<bool STRICT>
+template<bool Strict>
 inline Rep LOAD_GLOBAL(Frame* stack, Symbol name, MonoIC* ic, Assembler* as) {
   // opcode | (dst | index) | nop | nop
   Context* ctx = stack->ctx;
@@ -314,7 +314,7 @@ inline Rep LOAD_GLOBAL(Frame* stack, Symbol name, MonoIC* ic, Assembler* as) {
     return Extract(ret);
   } else {
     if (ctx->global_env()->HasBinding(ctx, name)) {
-      const JSVal res = ctx->global_env()->GetBindingValue(ctx, name, STRICT, ERR);
+      const JSVal res = ctx->global_env()->GetBindingValue(ctx, name, Strict, ERR);
       return Extract(res);
     }
     RaiseReferenceError(name, stack->error);
@@ -323,7 +323,7 @@ inline Rep LOAD_GLOBAL(Frame* stack, Symbol name, MonoIC* ic, Assembler* as) {
   }
 }
 
-template<bool STRICT>
+template<bool Strict>
 inline Rep STORE_GLOBAL(Frame* stack, Symbol name,
                         MonoIC* ic, Assembler* as, JSVal src) {
   // opcode | (src | name) | nop | nop
@@ -335,19 +335,19 @@ inline Rep STORE_GLOBAL(Frame* stack, Symbol name,
       ic->Repatch(as, global->map(), slot.offset());
       global->GetSlot(slot.offset()) = src;
     } else {
-      global->Put(ctx, name, src, STRICT, ERR);
+      global->Put(ctx, name, src, Strict, ERR);
     }
   } else {
     if (ctx->global_env()->HasBinding(ctx, name)) {
-      ctx->global_env()->SetMutableBinding(ctx, name, src, STRICT, ERR);
+      ctx->global_env()->SetMutableBinding(ctx, name, src, Strict, ERR);
     } else {
-      if (STRICT) {
+      if (Strict) {
         stack->error->Report(Error::Reference,
                   "putting to unresolvable reference "
                   "not allowed in strict reference");
         RAISE();
       } else {
-        ctx->global_obj()->Put(ctx, name, src, STRICT, ERR);
+        ctx->global_obj()->Put(ctx, name, src, Strict, ERR);
       }
     }
   }
@@ -366,12 +366,12 @@ inline Rep DELETE_GLOBAL(Frame* stack, Symbol name) {
   }
 }
 
-template<bool STRICT>
+template<bool Strict>
 inline Rep TYPEOF_GLOBAL(Frame* stack, Symbol name) {
   Context* ctx = stack->ctx;
   JSEnv* global = ctx->global_env();
   if (global->HasBinding(ctx, name)) {
-    const JSVal res = global->GetBindingValue(ctx, name, STRICT, ERR);
+    const JSVal res = global->GetBindingValue(ctx, name, Strict, ERR);
     return Extract(res.TypeOf(ctx));
   } else {
     // not found -> unresolvable reference
@@ -379,46 +379,46 @@ inline Rep TYPEOF_GLOBAL(Frame* stack, Symbol name) {
   }
 }
 
-template<int Target, std::size_t Returned, bool STRICT>
+template<int Target, std::size_t Returned, bool Strict>
 inline Rep INCREMENT_HEAP(Frame* stack, JSEnv* env, uint32_t offset) {
   JSDeclEnv* decl = static_cast<JSDeclEnv*>(env);
-  const JSVal w = decl->GetByOffset(offset, STRICT, ERR);
+  const JSVal w = decl->GetByOffset(offset, Strict, ERR);
   if (w.IsInt32() &&
       railgun::detail::IsIncrementOverflowSafe<Target>(w.int32())) {
     std::tuple<JSVal, JSVal> results;
     const int32_t target = w.int32();
     std::get<0>(results) = w;
     std::get<1>(results) = JSVal::Int32(target + Target);
-    decl->SetByOffset(offset, std::get<1>(results), STRICT, ERR);
+    decl->SetByOffset(offset, std::get<1>(results), Strict, ERR);
     return Extract(std::get<Returned>(results));
   } else {
     Context* ctx = stack->ctx;
     std::tuple<double, double> results;
     std::get<0>(results) = w.ToNumber(ctx, ERR);
     std::get<1>(results) = std::get<0>(results) + Target;
-    decl->SetByOffset(offset, std::get<1>(results), STRICT, ERR);
+    decl->SetByOffset(offset, std::get<1>(results), Strict, ERR);
     return Extract(JSVal(std::get<Returned>(results)));
   }
 }
 
-template<int Target, std::size_t Returned, bool STRICT>
+template<int Target, std::size_t Returned, bool Strict>
 inline JSVal IncrementName(Context* ctx,
                            JSEnv* env, Symbol s, Error* e) {
   if (JSEnv* current = GetEnv(ctx, env, s)) {
-    const JSVal w = current->GetBindingValue(ctx, s, STRICT, IV_LV5_ERROR(e));
+    const JSVal w = current->GetBindingValue(ctx, s, Strict, IV_LV5_ERROR(e));
     if (w.IsInt32() &&
         railgun::detail::IsIncrementOverflowSafe<Target>(w.int32())) {
       std::tuple<JSVal, JSVal> results;
       const int32_t target = w.int32();
       std::get<0>(results) = w;
       std::get<1>(results) = JSVal::Int32(target + Target);
-      current->SetMutableBinding(ctx, s, std::get<1>(results), STRICT, e);
+      current->SetMutableBinding(ctx, s, std::get<1>(results), Strict, e);
       return std::get<Returned>(results);
     } else {
       std::tuple<double, double> results;
       std::get<0>(results) = w.ToNumber(ctx, IV_LV5_ERROR(e));
       std::get<1>(results) = std::get<0>(results) + Target;
-      current->SetMutableBinding(ctx, s, std::get<1>(results), STRICT, e);
+      current->SetMutableBinding(ctx, s, std::get<1>(results), Strict, e);
       return std::get<Returned>(results);
     }
   }
@@ -426,10 +426,10 @@ inline JSVal IncrementName(Context* ctx,
   return 0.0;
 }
 
-template<int Target, std::size_t Returned, bool STRICT>
+template<int Target, std::size_t Returned, bool Strict>
 inline Rep INCREMENT_NAME(Frame* stack, JSEnv* env, Symbol name) {
   const JSVal res =
-      IncrementName<Target, Returned, STRICT>(stack->ctx, env, name, ERR);
+      IncrementName<Target, Returned, Strict>(stack->ctx, env, name, ERR);
   return Extract(res);
 }
 
@@ -671,12 +671,12 @@ inline Rep INSTANTIATE_DECLARATION_BINDING(Frame* stack, JSEnv* env, Symbol name
   return 0;
 }
 
-template<bool CONFIGURABLE, bool STRICT>
+template<bool CONFIGURABLE, bool Strict>
 inline Rep INSTANTIATE_VARIABLE_BINDING(Frame* stack, JSEnv* env, Symbol name) {
   Context* ctx = stack->ctx;
   if (!env->HasBinding(ctx, name)) {
     env->CreateMutableBinding(ctx, name, CONFIGURABLE, ERR);
-    env->SetMutableBinding(ctx, name, JSUndefined, STRICT, ERR);
+    env->SetMutableBinding(ctx, name, JSUndefined, Strict, ERR);
   }
   return 0;
 }
@@ -713,9 +713,9 @@ inline bool TO_BOOLEAN(JSVal src) {
   return src.ToBoolean();
 }
 
-template<bool STRICT>
+template<bool Strict>
 inline Rep LOAD_ARGUMENTS(Frame* stack, railgun::Frame* frame) {
-  if (STRICT) {
+  if (Strict) {
     JSObject* obj = JSStrictArguments::New(
         stack->ctx, frame->callee().object()->AsCallable(),
         frame->arguments_crbegin(),
@@ -748,36 +748,36 @@ inline Rep PREPARE_DYNAMIC_CALL(Frame* stack,
   RAISE();
 }
 
-template<bool STRICT>
+template<bool Strict>
 inline Rep LOAD_NAME(Frame* stack, JSEnv* env, Symbol name) {
   Context* ctx = stack->ctx;
   if (JSEnv* current = GetEnv(ctx, env, name)) {
-    const JSVal res = current->GetBindingValue(ctx, name, STRICT, ERR);
+    const JSVal res = current->GetBindingValue(ctx, name, Strict, ERR);
     return Extract(res);
   }
   RaiseReferenceError(name, stack->error);
   RAISE();
 }
 
-template<bool STRICT>
+template<bool Strict>
 inline Rep STORE_NAME(Frame* stack, JSEnv* env, Symbol name, JSVal src) {
   Context* ctx = stack->ctx;
   if (JSEnv* current = GetEnv(ctx, env, name)) {
-    current->SetMutableBinding(ctx, name, src, STRICT, ERR);
+    current->SetMutableBinding(ctx, name, src, Strict, ERR);
   } else {
-    if (STRICT) {
+    if (Strict) {
       stack->error->Report(Error::Reference,
                            "putting to unresolvable reference "
                            "not allowed in strict reference");
       RAISE();
     } else {
-      ctx->global_obj()->Put(ctx, name, src, STRICT, ERR);
+      ctx->global_obj()->Put(ctx, name, src, Strict, ERR);
     }
   }
   return 0;
 }
 
-template<bool STRICT>
+template<bool Strict>
 inline Rep DELETE_NAME(Frame* stack, JSEnv* env, Symbol name) {
   Context* ctx = stack->ctx;
   if (JSEnv* current = GetEnv(ctx, env, name)) {
@@ -786,11 +786,11 @@ inline Rep DELETE_NAME(Frame* stack, JSEnv* env, Symbol name) {
   return Extract(JSTrue);
 }
 
-template<bool STRICT>
+template<bool Strict>
 inline Rep TYPEOF_NAME(Frame* stack, JSEnv* env, Symbol name) {
   Context* ctx = stack->ctx;
   if (JSEnv* current = GetEnv(ctx, env, name)) {
-    const JSVal res = current->GetBindingValue(ctx, name, STRICT, ERR);
+    const JSVal res = current->GetBindingValue(ctx, name, Strict, ERR);
     return Extract(res.TypeOf(ctx));
   }
   return Extract(ctx->global_data()->string_undefined());
@@ -850,20 +850,20 @@ inline Rep LOAD_ELEMENT(Frame* stack, JSVal base, JSVal element) {
   return Extract(res);
 }
 
-template<bool STRICT>
+template<bool Strict>
 void StorePropPrimitive(Context* ctx,
                         JSVal base, Symbol name, JSVal stored, Error* e) {
   assert(base.IsPrimitive());
   JSObject* const o = base.ToObject(ctx, IV_LV5_ERROR_VOID(e));
   if (!o->CanPut(ctx, name)) {
-    if (STRICT) {
+    if (Strict) {
       e->Report(Error::Type, "cannot put value to object");
     }
     return;
   }
   const PropertyDescriptor own_desc = o->GetOwnProperty(ctx, name);
   if (!own_desc.IsEmpty() && own_desc.IsData()) {
-    if (STRICT) {
+    if (Strict) {
       e->Report(Error::Type,
                 "value to symbol defined and not data descriptor");
     }
@@ -878,48 +878,48 @@ void StorePropPrimitive(Context* ctx,
     ac->set()->AsCallable()->Call(&a, base, e);
     return;
   } else {
-    if (STRICT) {
+    if (Strict) {
       e->Report(Error::Type, "value to symbol in transient object");
     }
   }
 }
 
-template<bool STRICT>
+template<bool Strict>
 inline void StorePropImpl(Context* ctx,
                           JSVal base, Symbol name, JSVal stored, Error* e) {
   if (base.IsPrimitive()) {
-    StorePropPrimitive<STRICT>(ctx, base, name, stored, e);
+    StorePropPrimitive<Strict>(ctx, base, name, stored, e);
   } else {
-    base.object()->Put(ctx, name, stored, STRICT, e);
+    base.object()->Put(ctx, name, stored, Strict, e);
   }
 }
 
-template<bool STRICT>
+template<bool Strict>
 inline Rep STORE_ELEMENT(Frame* stack, JSVal base, JSVal element, JSVal src) {
   Context* ctx = stack->ctx;
   const Symbol name = element.ToSymbol(ctx, ERR);
-  StorePropImpl<STRICT>(ctx, base, name, src, ERR);
+  StorePropImpl<Strict>(ctx, base, name, src, ERR);
   return 0;
 }
 
-template<bool STRICT>
+template<bool Strict>
 inline Rep DELETE_ELEMENT(Frame* stack, JSVal base, JSVal element) {
   Context* ctx = stack->ctx;
   uint32_t index;
   if (element.GetUInt32(&index)) {
     JSObject* const obj = base.ToObject(ctx, ERR);
     const bool result =
-        obj->Delete(ctx, symbol::MakeSymbolFromIndex(index), STRICT, ERR);
+        obj->Delete(ctx, symbol::MakeSymbolFromIndex(index), Strict, ERR);
     return Extract(JSVal::Bool(result));
   } else {
     const Symbol name = element.ToSymbol(ctx, ERR);
     JSObject* const obj = base.ToObject(ctx, ERR);
-    const bool result = obj->Delete(ctx, name, STRICT, ERR);
+    const bool result = obj->Delete(ctx, name, Strict, ERR);
     return Extract(JSVal::Bool(result));
   }
 }
 
-template<int Target, std::size_t Returned, bool STRICT>
+template<int Target, std::size_t Returned, bool Strict>
 inline Rep INCREMENT_ELEMENT(Frame* stack, JSVal base, JSVal element) {
   Context* ctx = stack->ctx;
   const Symbol s = element.ToSymbol(ctx, ERR);
@@ -930,13 +930,13 @@ inline Rep INCREMENT_ELEMENT(Frame* stack, JSVal base, JSVal element) {
     const int32_t target = w.int32();
     std::get<0>(results) = w;
     std::get<1>(results) = JSVal::Int32(target + Target);
-    StorePropImpl<STRICT>(ctx, base, s, std::get<1>(results), ERR);
+    StorePropImpl<Strict>(ctx, base, s, std::get<1>(results), ERR);
     return Extract(std::get<Returned>(results));
   } else {
     std::tuple<double, double> results;
     std::get<0>(results) = w.ToNumber(ctx, ERR);
     std::get<1>(results) = std::get<0>(results) + Target;
-    StorePropImpl<STRICT>(ctx, base, s, std::get<1>(results), ERR);
+    StorePropImpl<Strict>(ctx, base, s, std::get<1>(results), ERR);
     return Extract(JSVal(std::get<Returned>(results)));
   }
 }
@@ -962,20 +962,20 @@ inline JSEnv* TRY_CATCH_SETUP(Context* ctx,
   return JSStaticEnv::New(ctx, outer, sym, value);
 }
 
-template<bool STRICT>
+template<bool Strict>
 inline Rep STORE_PROP_GENERIC(Frame* stack,
                               JSVal base, Symbol name, JSVal src,
                               railgun::Instruction* instr) {
-  StorePropImpl<STRICT>(stack->ctx, base, name, src, ERR);
+  StorePropImpl<Strict>(stack->ctx, base, name, src, ERR);
   return 0;
 }
 
-template<bool STRICT>
+template<bool Strict>
 Rep LOAD_PROP(Frame* stack,
               JSVal base, Symbol name,
               railgun::Instruction* instr);
 
-template<bool STRICT>
+template<bool Strict>
 inline Rep LOAD_PROP_GENERIC(Frame* stack,
                              JSVal base, Symbol name,
                              railgun::Instruction* instr) {
@@ -983,7 +983,7 @@ inline Rep LOAD_PROP_GENERIC(Frame* stack,
   return Extract(res);
 }
 
-template<bool STRICT>
+template<bool Strict>
 inline Rep LOAD_PROP_OWN(Frame* stack,
                          JSVal base, Symbol name,
                          railgun::Instruction* instr) {
@@ -1010,19 +1010,19 @@ inline Rep LOAD_PROP_OWN(Frame* stack,
     if (obj->GetPropertySlot(ctx, name, &slot)) {
       instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
       Assembler::RepatchSite::RepatchAfterCall(
-          stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP<STRICT>));
+          stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP<Strict>));
       const JSVal ret = slot.Get(ctx, obj, ERR);
       return Extract(ret);
     } else {
       instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
       Assembler::RepatchSite::RepatchAfterCall(
-          stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP<STRICT>));
+          stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP<Strict>));
       return Extract(JSUndefined);
     }
   }
 }
 
-template<bool STRICT>
+template<bool Strict>
 inline Rep LOAD_PROP_PROTO(Frame* stack,
                            JSVal base, Symbol name,
                            railgun::Instruction* instr) {
@@ -1047,13 +1047,13 @@ inline Rep LOAD_PROP_PROTO(Frame* stack,
     // uncache
     instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
     Assembler::RepatchSite::RepatchAfterCall(
-        stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP<STRICT>));
+        stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP<Strict>));
     const JSVal res = LoadPropImpl(ctx, base, name, ERR);
     return Extract(res);
   }
 }
 
-template<bool STRICT>
+template<bool Strict>
 inline Rep LOAD_PROP_CHAIN(Frame* stack,
                            JSVal base, Symbol name,
                            railgun::Instruction* instr) {
@@ -1077,13 +1077,13 @@ inline Rep LOAD_PROP_CHAIN(Frame* stack,
     // uncache
     instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
     Assembler::RepatchSite::RepatchAfterCall(
-        stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP<STRICT>));
+        stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP<Strict>));
     const JSVal res = LoadPropImpl(ctx, base, name, ERR);
     return Extract(res);
   }
 }
 
-template<bool STRICT>
+template<bool Strict>
 inline Rep LOAD_PROP(Frame* stack,
                      JSVal base, Symbol name,
                      railgun::Instruction* instr) {
@@ -1109,7 +1109,7 @@ inline Rep LOAD_PROP(Frame* stack,
       // bailout to generic
       instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP_GENERIC);
       Assembler::RepatchSite::RepatchAfterCall(
-          stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP_GENERIC<STRICT>));
+          stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP_GENERIC<Strict>));
       const JSVal res = slot.Get(ctx, base, ERR);
       return Extract(res);
     }
@@ -1120,7 +1120,7 @@ inline Rep LOAD_PROP(Frame* stack,
       // own property
       instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP_OWN);
       Assembler::RepatchSite::RepatchAfterCall(
-          stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP_OWN<STRICT>));
+          stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP_OWN<Strict>));
       instr[2].map = obj->map();
       instr[3].u32[0] = slot.offset();
       return Extract(slot.value());
@@ -1131,7 +1131,7 @@ inline Rep LOAD_PROP(Frame* stack,
       obj->FlattenMap();
       instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP_PROTO);
       Assembler::RepatchSite::RepatchAfterCall(
-          stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP_PROTO<STRICT>));
+          stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP_PROTO<Strict>));
       instr[2].map = obj->map();
       instr[3].map = slot.base()->map();
       instr[4].u32[0] = slot.offset();
@@ -1141,7 +1141,7 @@ inline Rep LOAD_PROP(Frame* stack,
     // chain property
     instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP_CHAIN);
     Assembler::RepatchSite::RepatchAfterCall(
-        stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP_CHAIN<STRICT>));
+        stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP_CHAIN<Strict>));
     instr[2].chain = Chain::New(obj, slot.base());
     instr[3].map = slot.base()->map();
     instr[4].u32[0] = slot.offset();
@@ -1150,13 +1150,13 @@ inline Rep LOAD_PROP(Frame* stack,
   return Extract(JSUndefined);
 }
 
-template<bool STRICT>
+template<bool Strict>
 inline Rep STORE_PROP(Frame* stack,
                       JSVal base, Symbol name, JSVal src,
                       railgun::Instruction* instr) {
   Context* ctx = stack->ctx;
   if (base.IsPrimitive()) {
-    StorePropPrimitive<STRICT>(ctx, base, name, src, ERR);
+    StorePropPrimitive<Strict>(ctx, base, name, src, ERR);
   } else {
     // cache patten
     JSObject* obj = base.object();
@@ -1172,29 +1172,29 @@ inline Rep STORE_PROP(Frame* stack,
           obj->GetSlot(slot.offset()) = src;
         } else {
           // dispatch generic path
-          obj->Put(ctx, name, src, STRICT, ERR);
+          obj->Put(ctx, name, src, Strict, ERR);
           instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::STORE_PROP_GENERIC);
           Assembler::RepatchSite::RepatchAfterCall(
-              stack->ret, core::BitCast<uint64_t>(&stub::STORE_PROP_GENERIC<STRICT>));
+              stack->ret, core::BitCast<uint64_t>(&stub::STORE_PROP_GENERIC<Strict>));
         }
       } else {
         instr[2].map = NULL;
-        obj->Put(ctx, name, src, STRICT, ERR);
+        obj->Put(ctx, name, src, Strict, ERR);
       }
     }
   }
   return 0;
 }
 
-template<bool STRICT>
+template<bool Strict>
 inline Rep DELETE_PROP(Frame* stack, JSVal base, Symbol name) {
   Context* ctx = stack->ctx;
   JSObject* const obj = base.ToObject(ctx, ERR);
-  const bool res = obj->Delete(ctx, name, STRICT, ERR);
+  const bool res = obj->Delete(ctx, name, Strict, ERR);
   return Extract(JSVal::Bool(res));
 }
 
-template<int Target, std::size_t Returned, bool STRICT>
+template<int Target, std::size_t Returned, bool Strict>
 inline Rep INCREMENT_PROP(Frame* stack, JSVal base, Symbol name) {
   Context* ctx = stack->ctx;
   const JSVal w = LoadPropImpl(ctx, base, name, ERR);
@@ -1204,13 +1204,13 @@ inline Rep INCREMENT_PROP(Frame* stack, JSVal base, Symbol name) {
     const int32_t target = w.int32();
     std::get<0>(results) = w;
     std::get<1>(results) = JSVal::Int32(target + Target);
-    StorePropImpl<STRICT>(ctx, base, name, std::get<1>(results), ERR);
+    StorePropImpl<Strict>(ctx, base, name, std::get<1>(results), ERR);
     return Extract(std::get<Returned>(results));
   } else {
     std::tuple<double, double> results;
     std::get<0>(results) = w.ToNumber(ctx, ERR);
     std::get<1>(results) = std::get<0>(results) + Target;
-    StorePropImpl<STRICT>(ctx, base, name, std::get<1>(results), ERR);
+    StorePropImpl<Strict>(ctx, base, name, std::get<1>(results), ERR);
     return Extract(JSVal(std::get<Returned>(results)));
   }
 }
