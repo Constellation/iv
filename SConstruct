@@ -85,6 +85,7 @@ def Build():
     env.Replace(CXX='clang++', CC='clang')
     if os.environ.get('CLANG_COLOR'):
       env.Append(CCFLAGS=["-fcolor-diagnostics"])
+    env.Append(CPPFLAGS=['-ferror-limit=1000']);
 
   if not env.GetOption('clean'):
     conf = Configure(env)
