@@ -446,6 +446,13 @@ JSVal VM::Execute(Frame* start, Error* e) {
         DISPATCH(LOAD_GLOBAL);
       }
 
+      DEFINE_OPCODE(LOAD_GLOBAL_DIRECT) {
+        // opcode | dst | slot
+        StoredSlot* slot = instr[2].slot;
+        REG(instr[1].i32[0]) = slot->value();
+        DISPATCH(LOAD_GLOBAL_DIRECT);
+      }
+
       DEFINE_OPCODE(LOAD_ELEMENT) {
         // opcode | (dst | base | element)
         const JSVal base = REG(instr[1].i16[1]);
@@ -618,6 +625,21 @@ JSVal VM::Execute(Frame* start, Error* e) {
           }
         }
         DISPATCH(STORE_GLOBAL);
+      }
+
+      DEFINE_OPCODE(STORE_GLOBAL_DIRECT) {
+        // opcode | src | slot
+        const JSVal src = REG(instr[1].i32[0]);
+        StoredSlot* slot = instr[2].slot;
+        if (slot->attributes().IsWritable()) {
+          slot->set_value(src);
+        } else {
+          if (strict) {
+            e->Report(Error::Type, "modifying global variable failed");
+            DISPATCH_ERROR();
+          }
+        }
+        DISPATCH(STORE_GLOBAL_DIRECT);
       }
 
       DEFINE_OPCODE(STORE_ELEMENT) {

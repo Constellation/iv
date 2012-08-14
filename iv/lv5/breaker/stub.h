@@ -6,7 +6,7 @@
 #include <iv/lv5/breaker/templates.h>
 #include <iv/lv5/breaker/assembler.h>
 #include <iv/lv5/breaker/jsfunction.h>
-#include <iv/lv5/breaker/context.h>
+#include <iv/lv5/breaker/context_fwd.h>
 #include <iv/lv5/breaker/mono_ic.h>
 #include <iv/lv5/accessor.h>
 namespace iv {

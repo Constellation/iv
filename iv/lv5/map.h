@@ -295,10 +295,6 @@ class Map : public radio::HeapObject<radio::POINTER> {
     return map;
   }
 
-  Map* ChangeAttributesTransition() {
-    return NULL;
-  }
-
   std::size_t GetSlotsSize() const {
     return (table_) ? table_->size() + deleted_.size() : calculated_size_;
   }

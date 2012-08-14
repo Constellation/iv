@@ -74,6 +74,7 @@ static const char* kSpecFileNames[] = {
   "test/lv5/suite/spec/set/set-has.js",
   "test/lv5/suite/spec/set/set-add.js",
   "test/lv5/suite/spec/set/set-delete.js",
+  "test/lv5/suite/spec/global-registers/global-registers-writable.js",
 };
 static const std::size_t kSpecFileNamesSize =
   sizeof(kSpecFileNames) / sizeof(const char*);

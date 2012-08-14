@@ -10,6 +10,7 @@ namespace lv5 {
 
 class Map;
 class Chain;
+class StoredSlot;
 
 namespace railgun {
 
@@ -38,7 +39,21 @@ struct Instruction {
     } jump;
     Map* map;
     Chain* chain;
+    StoredSlot* slot;
+    uint64_t u64;
   };
+
+  static Instruction UInt64(uint64_t value) {
+    Instruction instr(0u);
+    instr.u64 = value;
+    return instr;
+  }
+
+  static Instruction Slot(StoredSlot* slot) {
+    Instruction instr(0u);
+    instr.slot = slot;
+    return instr;
+  }
 
   static Instruction Reg2(RegisterID a, RegisterID b) {
     Instruction instr(0u);

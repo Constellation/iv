@@ -8,7 +8,7 @@
 #include <iv/lv5/jsarguments.h>
 #include <iv/lv5/railgun/railgun.h>
 #include <iv/lv5/breaker/fwd.h>
-#include <iv/lv5/breaker/context.h>
+#include <iv/lv5/breaker/context_fwd.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {

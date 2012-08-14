@@ -205,6 +205,18 @@ class DisAssembler : private core::Noncopyable<> {
             reinterpret_cast<const void*>(map), offset);
         break;
       }
+      case OP::LOAD_GLOBAL_DIRECT:
+      case OP::STORE_GLOBAL_DIRECT: {
+        const int r0 = instr[1].i32[0];
+        const StoredSlot* slot = instr[2].slot;
+        len = snprintf(
+            buf,
+            sizeof(buf) - 1,
+            "%s %s %p",
+            op, ExtractReg(r0).c_str(),
+            reinterpret_cast<const void*>(slot));
+        break;
+      }
       case OP::BINARY_BIT_OR:
       case OP::BINARY_BIT_XOR:
       case OP::BINARY_BIT_AND:

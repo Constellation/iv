@@ -5,7 +5,7 @@
 #include <iv/date_utils.h>
 #include <iv/lv5/specialized_ast.h>
 #include <iv/lv5/error_check.h>
-#include <iv/lv5/context.h>
+#include <iv/lv5/context_fwd.h>
 #include <iv/lv5/railgun/railgun.h>
 #include <iv/lv5/railgun/command.h>
 #include <iv/lv5/breaker/breaker.h>

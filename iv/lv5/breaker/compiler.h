@@ -539,8 +539,14 @@ class Compiler {
         case r::OP::LOAD_GLOBAL:
           EmitLOAD_GLOBAL(instr);
           break;
+        case r::OP::LOAD_GLOBAL_DIRECT:
+          EmitLOAD_GLOBAL_DIRECT(instr);
+          break;
         case r::OP::STORE_GLOBAL:
           EmitSTORE_GLOBAL(instr);
+          break;
+        case r::OP::STORE_GLOBAL_DIRECT:
+          EmitSTORE_GLOBAL_DIRECT(instr);
           break;
         case r::OP::DELETE_GLOBAL:
           EmitDELETE_GLOBAL(instr);
@@ -1954,6 +1960,43 @@ class Compiler {
     std::shared_ptr<MonoIC> ic(new MonoIC());
     ic->CompileStore(asm_, ctx_->global_obj(), code_, name);
     asm_->BindIC(ic);
+  }
+
+  // opcode | dst | slot
+  void EmitLOAD_GLOBAL_DIRECT(const Instruction* instr) {
+    const register_t dst = Reg(instr[1].i32[0]);
+    StoredSlot* slot = instr[2].slot;
+    TypeEntry dst_entry(Type::Unknown());
+    asm_->mov(asm_->rax, core::BitCast<uint64_t>(slot));
+    asm_->mov(asm_->rax, asm_->ptr[asm_->rax]);
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    set_last_used_candidate(dst);
+    type_record_.Put(dst, dst_entry);
+  }
+
+  // opcode | src | slot
+  void EmitSTORE_GLOBAL_DIRECT(const Instruction* instr) {
+    const register_t src = Reg(instr[1].i32[0]);
+    StoredSlot* slot = instr[2].slot;
+
+    const Assembler::LocalLabelScope scope(asm_);
+    LoadVR(asm_->rax, src);
+    asm_->mov(asm_->rcx, core::BitCast<uint64_t>(slot));
+    asm_->mov(asm_->edx, asm_->word[asm_->rcx + kJSValSize]);
+    asm_->test(asm_->edx, ATTR::W);
+    asm_->jnz(".STORE");
+    if (code_->strict()) {
+      static const char* message = "modifying global variable failed";
+      asm_->mov(asm_->rdi, asm_->r14);
+      asm_->mov(asm_->rsi, Error::Type);
+      asm_->mov(asm_->rdx, core::BitCast<uint64_t>(message));
+      asm_->Call(&stub::THROW_WITH_TYPE_AND_MESSAGE);
+    } else {
+      asm_->jmp(".EXIT");
+    }
+    asm_->L(".STORE");
+    asm_->mov(asm_->qword[asm_->rcx], asm_->rax);
+    asm_->L(".EXIT");
   }
 
   // opcode | (dst | name) | nop | nop

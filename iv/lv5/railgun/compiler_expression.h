@@ -45,31 +45,32 @@ inline RegisterID Compiler::EmitOptimizedLookup(OP::Type op,
       switch (op) {
         case OP::DECREMENT_NAME:
         case OP::INCREMENT_NAME: {
-          dst = Dest(dst);
           const OP::Type o =
               (op == OP::DECREMENT_NAME) ? OP::DECREMENT : OP::INCREMENT;
+          dst = EmitOptimizedLookup(OP::LOAD_NAME, index, dst);
+          dst = Dest(dst);
           thunkpool_.Spill(dst);
-          Emit<OP::LOAD_GLOBAL>(Instruction::SW(dst, index), 0u, 0u);
           EmitUnsafe(o, dst);
-          Emit<OP::STORE_GLOBAL>(Instruction::SW(dst, index), 0u, 0u);
+          EmitStore(name, dst);
           return dst;
         }
 
         case OP::POSTFIX_DECREMENT_NAME:
         case OP::POSTFIX_INCREMENT_NAME: {
-          dst = Dest(dst);
           const OP::Type o =
               (op == OP::POSTFIX_DECREMENT_NAME) ?
               OP::POSTFIX_DECREMENT : OP::POSTFIX_INCREMENT;
-          RegisterID tmp = Temporary();
-          Emit<OP::LOAD_GLOBAL>(Instruction::SW(tmp, index), 0u, 0u);
+          RegisterID tmp = EmitOptimizedLookup(OP::LOAD_NAME, index, Temporary());
+          dst = Dest(dst);
           thunkpool_.Spill(dst);
           EmitUnsafe(o, Instruction::SSW(dst, tmp, 0));
-          Emit<OP::STORE_GLOBAL>(Instruction::SW(tmp, index), 0u, 0u);
+          EmitStore(name, tmp);
           return dst;
         }
 
         default: {
+          JSGlobal* global = ctx()->global_obj();
+          const uint32_t entry = global->LookupVariable(name);
           const OP::Type o =
               (op == OP::LOAD_NAME) ? OP::LOAD_GLOBAL :
               (op == OP::DELETE_NAME) ? OP::DELETE_GLOBAL : OP::TYPEOF_GLOBAL;
@@ -85,9 +86,24 @@ inline RegisterID Compiler::EmitOptimizedLookup(OP::Type op,
             }
           }
 
-          dst = Dest(dst);
-          thunkpool_.Spill(dst);
-          EmitUnsafe(o, Instruction::SW(dst, index), 0u, 0u);
+          if (entry != core::kNotFound32) {
+            // optimized global operations
+            StoredSlot* slot = &global->PointAt(entry);
+            if (o == OP::DELETE_GLOBAL) {
+              // because of configurable: false
+              return EmitConstantLoad(JSFalse, dst);
+            }
+            dst = Dest(dst);
+            thunkpool_.Spill(dst);
+            Emit<OP::LOAD_GLOBAL_DIRECT>(dst, Instruction::Slot(slot));
+            if (o == OP::TYPEOF_GLOBAL) {
+              Emit<OP::TYPEOF>(Instruction::Reg2(dst, dst));
+            }
+          } else {
+            dst = Dest(dst);
+            thunkpool_.Spill(dst);
+            EmitUnsafe(o, Instruction::SW(dst, index), 0u, 0u);
+          }
           return dst;
         }
       }
@@ -1039,21 +1055,25 @@ inline void Compiler::Visit(const ObjectLiteral* lit) {
   dst_ = EmitMV(dst_, obj);
 }
 
-inline void Compiler::Visit(const FunctionLiteral* lit) {
-  const DestGuard dest_guard(this);
-  uint32_t index;
+inline uint32_t Compiler::DefineCode(const FunctionLiteral* lit) {
   const FunctionLiteralToCodeMap::const_iterator it =
       function_literal_to_code_map_.find(lit);
   if (it != function_literal_to_code_map_.end()) {
-    index = it->second;
+    return it->second;
   } else {
     Code* const code = new Code(ctx_, script_, *lit, core_, Code::FUNCTION);
-    index = code_->codes_.size();
+    const uint32_t index = code_->codes_.size();
     code_->codes_.push_back(code);
     code_info_stack_.push_back(
         std::make_tuple(code, lit, current_variable_scope_));
     function_literal_to_code_map_[lit] = index;
+    return index;
   }
+}
+
+inline void Compiler::Visit(const FunctionLiteral* lit) {
+  const DestGuard dest_guard(this);
+  const uint32_t index = DefineCode(lit);
   dst_ = Dest(dst_);
   thunkpool_.Spill(dst_);
   Emit<OP::LOAD_FUNCTION>(Instruction::SW(dst_, index));

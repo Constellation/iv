@@ -87,6 +87,10 @@ inline void Context::Validate() {
   assert(iterator_live_count_ == 0);
 }
 
+inline lv5::JSFunction* Context::NewFunction(Code* code, JSEnv* env) {
+  return JSVMFunction::New(this, code, env);
+}
+
 inline Context::~Context() {
   vm_->~VM();
   GC_FREE(vm_);

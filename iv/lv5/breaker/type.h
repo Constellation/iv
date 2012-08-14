@@ -1,7 +1,7 @@
 #ifndef IV_LV5_BREAKER_TYPE_H_
 #define IV_LV5_BREAKER_TYPE_H_
 #include <iv/lv5/jsval_fwd.h>
-#include <iv/lv5/breaker/context.h>
+#include <iv/lv5/breaker/context_fwd.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {

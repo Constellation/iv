@@ -3,6 +3,7 @@
 #include <iv/debug.h>
 #include <iv/lv5/jsval_fwd.h>
 #include <iv/lv5/attributes.h>
+#include <iv/lv5/breaker/fwd.h>
 namespace iv {
 namespace lv5 {
 
@@ -161,6 +162,7 @@ class PropertyDescriptor : protected Attributes::External {
 
 class StoredSlot {
  public:
+  friend class breaker::Compiler;
   StoredSlot(JSVal value, Attributes::Safe attributes)
     : value_(value),
       attributes_(attributes) {

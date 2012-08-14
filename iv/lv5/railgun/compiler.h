@@ -32,6 +32,7 @@
 #include <iv/lv5/railgun/analyzer.h>
 #include <iv/lv5/railgun/continuation_status.h>
 #include <iv/lv5/railgun/direct_threading.h>
+#include <iv/lv5/railgun/jsfunction.h>
 
 namespace iv {
 namespace lv5 {
@@ -643,6 +644,8 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     return Lookup(code_->names_[index]).type() != LookupInfo::UNUSED;
   }
 
+  uint32_t DefineCode(const FunctionLiteral* lit);
+
   void EmitStore(Symbol sym, RegisterID src) {
     const uint32_t index = SymbolToNameIndex(sym);
     const LookupInfo info = Lookup(sym);
@@ -657,7 +660,15 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       }
       case LookupInfo::GLOBAL: {
         // last 2 zeros are placeholders for PIC
-        Emit<OP::STORE_GLOBAL>(Instruction::SW(src, index), 0u, 0u);
+        JSGlobal* global = ctx()->global_obj();
+        const uint32_t entry = global->LookupVariable(sym);
+        if (entry != core::kNotFound32) {
+          // optimized global operations
+          StoredSlot* slot = &global->PointAt(entry);
+          Emit<OP::STORE_GLOBAL_DIRECT>(src, Instruction::Slot(slot));
+        } else {
+          Emit<OP::STORE_GLOBAL>(Instruction::SW(src, index), 0u, 0u);
+        }
         return;
       }
       case LookupInfo::LOOKUP: {
@@ -954,20 +965,50 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   void GlobalInstantiation(const FunctionLiteral& lit) {
     registers_.Clear(0, 0);
-    std::unordered_set<Symbol> already_declared;
+
+    JSGlobal* global = ctx()->global_obj();
 
     const Scope& scope = lit.scope();
     typedef Scope::FunctionLiterals Functions;
     const Functions& functions = scope.function_declarations();
-    const uint32_t flag = 0;
     for (Functions::const_iterator it = functions.begin(),
          last = functions.end(); it != last; ++it) {
       const Symbol name = (*it)->name().Address()->symbol();
-      if (already_declared.find(name) == already_declared.end()) {
-        already_declared.insert(name);
-        const uint32_t index = SymbolToNameIndex(name);
-        Emit<OP::INSTANTIATE_DECLARATION_BINDING>(
-            Instruction::UInt32(index, flag));
+      const uint32_t entry = global->LookupVariable(name);
+      const uint32_t index = DefineCode(*it);
+      Code* target = code_->codes()[index];
+      JSFunction* func = ctx()->NewFunction(target, ctx()->global_env());
+      if (entry == core::kNotFound32) {
+        // Does global have the same name property?
+        Slot slot;
+        if (global->GetPropertySlot(ctx(), name, &slot) && !slot.attributes().IsConfigurable()) {
+          // property found and not configurable
+          if (slot.attributes().IsAccessor()) {
+            // report error
+            EmitError(Error::Type, "create mutable function binding failed");
+            continue;
+          }
+          assert(slot.attributes().IsData());
+          if (!slot.attributes().IsWritable() || !slot.attributes().IsEnumerable()) {
+            EmitError(Error::Type, "create mutable function binding failed");
+            continue;
+          }
+          // OK. We can remove this property safety and set global register.
+          Error::Dummy dummy;
+          global->Delete(ctx(), name, true, &dummy);
+          assert(!dummy);
+        }
+        // new global register
+        global->PushVariable(
+            name, func, Attributes::CreateData(ATTR::W | ATTR::E));
+      } else {
+        // override variable
+        StoredSlot& slot(global->PointAt(entry));
+        if (!slot.attributes().IsWritable() || !slot.attributes().IsEnumerable()) {
+          EmitError(Error::Type, "create mutable function binding failed");
+          continue;
+        }
+        slot.set_value(func);
       }
     }
 
@@ -977,11 +1018,14 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     for (Variables::const_iterator it = vars.begin(),
          last = vars.end(); it != last; ++it) {
       const Symbol name = it->first->symbol();
-      if (already_declared.find(name) == already_declared.end()) {
-        already_declared.insert(name);
-        const uint32_t index = SymbolToNameIndex(name);
-        Emit<OP::INSTANTIATE_VARIABLE_BINDING>(
-            Instruction::UInt32(index, flag));
+      const uint32_t entry = global->LookupVariable(name);
+      if (entry == core::kNotFound32) {
+        if (global->HasProperty(ctx(), name)) {
+          // ignore this
+          continue;
+        }
+        global->PushVariable(
+            name, JSUndefined, Attributes::CreateData(ATTR::W | ATTR::E));
       }
     }
   }
@@ -1014,7 +1058,9 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
     thunkpool_.Initialize(code);
 
-    {
+    // because Global function declarations are already defined in
+    // GlobalInstantiation
+    if (TYPE == Code::FUNCTION || TYPE == Code::EVAL) {
       // function declarations
       typedef Scope::FunctionLiterals Functions;
       const Functions& functions = scope.function_declarations();
