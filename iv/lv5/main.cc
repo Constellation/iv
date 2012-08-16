@@ -18,45 +18,22 @@
 
 namespace {
 
-iv::lv5::railgun::Code* Compile(iv::lv5::railgun::Context* ctx,
-                                std::shared_ptr<iv::core::FileSource> src,
-                                bool use_folded_registers = false) {
-  iv::lv5::AstFactory factory(ctx);
-  iv::core::Parser<
-      iv::lv5::AstFactory,
-      iv::core::FileSource> parser(&factory, *src.get(), ctx->symbol_table());
-  const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
-  iv::lv5::railgun::JSScript* script =
-      iv::lv5::railgun::JSSourceScript<iv::core::FileSource>::New(ctx, src);
-  if (!global) {
-    std::fprintf(stderr, "%s\n", parser.error().c_str());
-    return NULL;
-  }
-  return iv::lv5::railgun::Compile(ctx, *global, script, use_folded_registers);
-}
-
 #if defined(IV_ENABLE_JIT)
 int BreakerExecute(const iv::core::StringPiece& data,
                    const std::string& filename, bool statistics) {
   iv::lv5::Error::Standard e;
   iv::lv5::breaker::Context ctx;
-  std::shared_ptr<iv::core::FileSource>
-      src(new iv::core::FileSource(data, filename));
-  iv::lv5::railgun::Code* code = Compile(&ctx, src, true);
-  if (!code) {
-    return EXIT_FAILURE;
-  }
   ctx.DefineFunction<&iv::lv5::Print, 1>("print");
   ctx.DefineFunction<&iv::lv5::Log, 1>("log");  // this is simply output log function
   ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
   ctx.DefineFunction<&iv::lv5::CollectGarbage, 0>("gc");
   ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
   ctx.DefineFunction<&iv::lv5::railgun::Dis, 1>("dis");
-
   ctx.DefineFunction<&iv::lv5::breaker::Run, 0>("run");
-  iv::lv5::breaker::Compile(&ctx, code);
-  iv::lv5::breaker::Run(&ctx, code, &e);
 
+  std::shared_ptr<iv::core::FileSource>
+      src(new iv::core::FileSource(data, filename));
+  iv::lv5::breaker::ExecuteInGlobal(&ctx, src, &e);
   if (e) {
     e.Dump(&ctx, stderr);
     return EXIT_FAILURE;
@@ -86,12 +63,7 @@ int BreakerExecuteFiles(const std::vector<std::string>& filenames) {
         src(new iv::core::FileSource(
                 iv::core::StringPiece(res.data(), res.size()), *it));
     res.clear();
-    iv::lv5::railgun::Code* code = Compile(&ctx, src, true);
-    if (!code) {
-      return EXIT_FAILURE;
-    }
-    iv::lv5::breaker::Compile(&ctx, code);
-    iv::lv5::breaker::Run(&ctx, code, &e);
+    iv::lv5::breaker::ExecuteInGlobal(&ctx, src, &e);
     if (e) {
       e.Dump(&ctx, stderr);
       return EXIT_FAILURE;
@@ -106,12 +78,6 @@ int RailgunExecute(const iv::core::StringPiece& data,
                    const std::string& filename, bool statistics) {
   iv::lv5::Error::Standard e;
   iv::lv5::railgun::Context ctx;
-  std::shared_ptr<iv::core::FileSource>
-      src(new iv::core::FileSource(data, filename));
-  iv::lv5::railgun::Code* code = Compile(&ctx, src);
-  if (!code) {
-    return EXIT_FAILURE;
-  }
   ctx.DefineFunction<&iv::lv5::Print, 1>("print");
   ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
   ctx.DefineFunction<&iv::lv5::CollectGarbage, 0>("gc");
@@ -119,8 +85,10 @@ int RailgunExecute(const iv::core::StringPiece& data,
   ctx.DefineFunction<&iv::lv5::railgun::Dis, 1>("dis");
   ctx.DefineFunction<&iv::lv5::railgun::Run, 0>("run");
   ctx.DefineFunction<&iv::lv5::railgun::StackDepth, 0>("StackDepth");
-  ctx.vm()->Run(code, &e);
 
+  std::shared_ptr<iv::core::FileSource>
+      src(new iv::core::FileSource(data, filename));
+  iv::lv5::railgun::ExecuteInGlobal(&ctx, src, &e);
   if (e) {
     e.Dump(&ctx, stderr);
     return EXIT_FAILURE;
@@ -153,11 +121,7 @@ int RailgunExecuteFiles(const std::vector<std::string>& filenames) {
         src(new iv::core::FileSource(
                 iv::core::StringPiece(res.data(), res.size()), *it));
     res.clear();
-    iv::lv5::railgun::Code* code = Compile(&ctx, src);
-    if (!code) {
-      return EXIT_FAILURE;
-    }
-    ctx.vm()->Run(code, &e);
+    iv::lv5::railgun::ExecuteInGlobal(&ctx, src, &e);
     if (e) {
       e.Dump(&ctx, stderr);
       return EXIT_FAILURE;
@@ -170,10 +134,12 @@ int RailgunExecuteFiles(const std::vector<std::string>& filenames) {
 int DisAssemble(const iv::core::StringPiece& data,
                 const std::string& filename) {
   iv::lv5::railgun::Context ctx;
+  iv::lv5::Error::Standard e;
   std::shared_ptr<iv::core::FileSource>
       src(new iv::core::FileSource(data, filename));
-  iv::lv5::railgun::Code* code = Compile(&ctx, src, true);
-  if (!code) {
+  iv::lv5::railgun::Code* code =
+      iv::lv5::railgun::CompileInGlobal(&ctx, src, true, &e);
+  if (e) {
     return EXIT_FAILURE;
   }
   iv::lv5::railgun::OutputDisAssembler dis(&ctx, stdout);

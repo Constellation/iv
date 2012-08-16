@@ -16,6 +16,7 @@
 #include <iv/lv5/breaker/exception.h>
 #include <iv/lv5/breaker/command.h>
 #include <iv/lv5/breaker/context.h>
+#include <iv/lv5/breaker/api.h>
 
 #endif  // defined(IV_ENABLE_JIT)
 #endif  // IV_BREAKER_BREAKER_H_

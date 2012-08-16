@@ -21,5 +21,6 @@
 #include <iv/lv5/railgun/jsfunction.h>
 #include <iv/lv5/railgun/vm.h>
 #include <iv/lv5/railgun/context.h>
+#include <iv/lv5/railgun/api.h>
 
 #endif  // IV_LV5_RAILGUN_RAILGUN_H_
