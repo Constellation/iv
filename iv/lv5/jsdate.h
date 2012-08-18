@@ -10,11 +10,10 @@ class JSDate : public JSObject {
  public:
   IV_LV5_DEFINE_JSCLASS(Date)
 
-  JSVal DefaultValue(Context* ctx,
-                     Hint::Object hint, Error* res) {
+  virtual JSVal DefaultValue(Context* ctx, Hint::Object hint, Error* e) {
     return JSObject::DefaultValue(
         ctx,
-        (hint == Hint::NONE) ? Hint::STRING : hint, res);
+        (hint == Hint::NONE) ? Hint::STRING : hint, e);
   }
 
 
@@ -30,15 +29,9 @@ class JSDate : public JSObject {
     return new JSDate(ctx, map, val);
   }
 
+  double value() const { return value_; }
 
-  const double& value() const {
-    return value_;
-  }
-
-
-  void set_value(double val) {
-    value_ = val;
-  }
+  void set_value(double val) { value_ = val; }
 
  private:
   JSDate(Context* ctx, double val)
