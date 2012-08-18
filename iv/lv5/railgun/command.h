@@ -13,32 +13,13 @@ namespace lv5 {
 namespace railgun {
 namespace detail {
 
-inline Code* Compile(Context* ctx,
-                     std::shared_ptr<core::FileSource> src) {
-  AstFactory factory(ctx);
-  core::Parser<
-      iv::lv5::AstFactory,
-      iv::core::FileSource> parser(&factory, *src.get(), ctx->symbol_table());
-  const FunctionLiteral* const global = parser.ParseProgram();
-  JSScript* script = JSSourceScript<core::FileSource>::New(ctx, src);
-  if (!global) {
-    std::fprintf(stderr, "%s\n", parser.error().c_str());
-    return NULL;
-  }
-  return CompileGlobal(ctx, *global, script);
-}
-
 static void Execute(const core::StringPiece& data,
                     const std::string& filename, Error* e) {
   Context ctx;
-  std::shared_ptr<core::FileSource> src(new core::FileSource(data, filename));
-  Code* code = Compile(&ctx, src);
-  if (!code) {
-    return;
-  }
   ctx.DefineFunction<&Print, 1>("print");
   ctx.DefineFunction<&Quit, 1>("quit");
-  ctx.vm()->Run(code, e);
+  std::shared_ptr<core::FileSource> src(new core::FileSource(data, filename));
+  iv::lv5::railgun::ExecuteInGlobal(&ctx, src, e);
 }
 
 }  // namespace detail

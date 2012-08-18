@@ -9,41 +9,19 @@
 #include <iv/lv5/railgun/railgun.h>
 #include <iv/lv5/railgun/command.h>
 #include <iv/lv5/breaker/breaker.h>
+#include <iv/lv5/breaker/api.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {
 namespace detail {
-
-railgun::Code* Compile(Context* ctx,
-                       std::shared_ptr<core::FileSource> src) {
-  AstFactory factory(ctx);
-  core::Parser<
-      iv::lv5::AstFactory,
-      core::FileSource> parser(&factory, *src.get(), ctx->symbol_table());
-  const FunctionLiteral* const global = parser.ParseProgram();
-  railgun::JSScript* script =
-      railgun::JSSourceScript<core::FileSource>::New(ctx, src);
-  if (!global) {
-    std::fprintf(stderr, "%s\n", parser.error().c_str());
-    return NULL;
-  }
-  return railgun::CompileGlobal(ctx, *global, script, true);
-}
 
 static void Execute(const core::StringPiece& data,
                     const std::string& filename, Error* e) {
   breaker::Context ctx;
   ctx.DefineFunction<&Print, 1>("print");
   ctx.DefineFunction<&Quit, 1>("quit");
-
   std::shared_ptr<core::FileSource> src(new core::FileSource(data, filename));
-  railgun::Code* code = Compile(&ctx, src);
-  if (!code) {
-    return;
-  }
-  breaker::Compile(&ctx, code);
-
-  breaker::Run(&ctx, code, e);
+  breaker::ExecuteInGlobal(&ctx, src, e);
 }
 
 }  // namespace detail
