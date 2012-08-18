@@ -3073,10 +3073,10 @@ inline void Compile(Context* ctx, railgun::Code* code) {
 }
 
 // external interfaces
-inline railgun::Code* Compile(
+inline railgun::Code* CompileGlobal(
     Context* ctx,
     const FunctionLiteral& global, railgun::JSScript* script) {
-  railgun::Code* code = railgun::Compile(ctx, global, script, true);
+  railgun::Code* code = railgun::CompileGlobal(ctx, global, script, true);
   if (code) {
     Compile(ctx, code);
   }

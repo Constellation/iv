@@ -25,7 +25,7 @@ inline Code* Compile(Context* ctx,
     std::fprintf(stderr, "%s\n", parser.error().c_str());
     return NULL;
   }
-  return Compile(ctx, *global, script);
+  return CompileGlobal(ctx, *global, script);
 }
 
 static void Execute(const core::StringPiece& data,

@@ -318,7 +318,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   // entry points
 
   // Global Code
-  Code* Compile(const FunctionLiteral& global, JSScript* script) {
+  Code* CompileGlobal(const FunctionLiteral& global, JSScript* script) {
     Code* code = NULL;
     {
       script_ = script;
@@ -1299,12 +1299,12 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   trace::Vector<Map*>::type temporary_;
 };
 
-inline Code* Compile(Context* ctx,
-                     const FunctionLiteral& global,
-                     JSScript* script,
-                     bool use_folded_registers = false) {
+inline Code* CompileGlobal(Context* ctx,
+                           const FunctionLiteral& global,
+                           JSScript* script,
+                           bool use_folded_registers = false) {
   Compiler compiler(ctx, use_folded_registers);
-  return compiler.Compile(global, script);
+  return compiler.CompileGlobal(global, script);
 }
 
 inline Code* CompileFunction(Context* ctx,
