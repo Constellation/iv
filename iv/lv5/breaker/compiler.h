@@ -2884,8 +2884,7 @@ class Compiler {
   void LoadCellTag(const Xbyak::Reg64& target, const Xbyak::Reg32& out) {
     // Because of Little Endianess
     IV_STATIC_ASSERT(core::kLittleEndian);
-    asm_->mov(out, asm_->word[target + IV_OFFSETOF(radio::Cell, next_address_of_freelist_or_storage_)]);  // NOLINT
-    asm_->shr(out, radio::Color::kOffset);
+    asm_->mov(out, asm_->word[target + radio::Cell::TagOffset()]);  // NOLINT
   }
 
   void LoadClassTag(const Xbyak::Reg64& target,
