@@ -4,6 +4,7 @@
 #include <iv/noncopyable.h>
 #include <iv/lv5/breaker/fwd.h>
 #include <iv/lv5/breaker/ic.h>
+#include <iv/lv5/breaker/executable_pages.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {
@@ -80,7 +81,9 @@ class Assembler : public Xbyak::CodeGenerator {
 
   Assembler()
     : Xbyak::CodeGenerator(4096, Xbyak::AutoGrow),
-      bytecode_offsets_() {
+      bytecode_offsets_(),
+      ics_(),
+      pages_() {
     bytecode_offsets_.reserve(1024);
   }
 
@@ -227,6 +230,7 @@ class Assembler : public Xbyak::CodeGenerator {
  private:
   BytecodeOffsets bytecode_offsets_;
   ICVector ics_;
+  ExecutablePages<> pages_;
 };
 
 } } }  // namespace iv::lv5::breaker
