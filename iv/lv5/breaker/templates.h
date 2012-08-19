@@ -97,6 +97,37 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     Padding(size);
   }
 
+  // rdi : frame
+  // rsi : base
+  // don't break rdx and rcx
+  void CompileStringLength(std::size_t size) {
+    inLocalLabel();
+    {
+      mov(rax, detail::jsval64::kValueMask);
+      test(rax, rsi);
+      jnz(".FAIL");
+
+      mov(eax, word[rsi + radio::Cell::TagOffset()]);
+      cmp(eax, radio::STRING);
+      jne(".FAIL");
+
+      const std::ptrdiff_t length_offset =
+          IV_CAST_OFFSET(radio::Cell*, JSString*) +
+          IV_OFFSETOF(JSString, size_);
+      mov(eax, word[rsi + length_offset]);
+
+      // TODO(Constellation)
+      // we should limit JSString::size to int32_t
+      or(rax, r15);
+      ret();
+
+      L(".FAIL");
+      mov(rax, core::BitCast<uint64_t>(&stub::LOAD_PROP_GENERIC));
+      jmp(rax);
+    }
+    outLocalLabel();
+  }
+
   void Padding(std::size_t size) {
     if (size) {
       std::size_t current = getSize();

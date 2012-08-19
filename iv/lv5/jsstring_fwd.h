@@ -15,6 +15,7 @@
 #include <iv/lv5/context_utils.h>
 #include <iv/lv5/fiber.h>
 #include <iv/lv5/radio/cell.h>
+#include <iv/lv5/breaker/fwd.h>
 namespace iv {
 namespace lv5 {
 
@@ -39,6 +40,8 @@ class Error;
 class JSString: public radio::HeapObject<radio::STRING> {
  public:
   friend class GlobalData;
+  friend class breaker::TemplatesGenerator;
+  friend class breaker::Compiler;
   typedef JSString this_type;
 
   // FiberSlots has FiberSlot by reverse order
@@ -265,7 +268,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
   const_reverse_iterator crend() const { return rend(); }
 
   // getters
-  std::size_t size() const { return size_; }
+  uint32_t size() const { return size_; }
 
   bool empty() const { return size() == 0; }
 
@@ -665,7 +668,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
 
   JSString(JSVal* src, uint32_t count);
 
-  std::size_t size_;
+  uint32_t size_;
   bool is_8bit_;
   mutable std::size_t fiber_count_;
   mutable FiberSlots fibers_;

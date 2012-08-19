@@ -963,7 +963,6 @@ Rep LOAD_PROP(Frame* stack,
               JSVal base, Symbol name,
               railgun::Instruction* instr);
 
-template<bool Strict>
 inline Rep LOAD_PROP_GENERIC(Frame* stack,
                              JSVal base, Symbol name,
                              railgun::Instruction* instr) {
@@ -1097,7 +1096,7 @@ inline Rep LOAD_PROP(Frame* stack,
       // bailout to generic
       instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP_GENERIC);
       Assembler::RepatchSite::RepatchAfterCall(
-          stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP_GENERIC<Strict>));
+          stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP_GENERIC));
       const JSVal res = slot.Get(ctx, base, ERR);
       return Extract(res);
     }
