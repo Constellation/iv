@@ -1083,6 +1083,10 @@ inline Rep LOAD_PROP(Frame* stack,
   if (base.IsPrimitive()) {
     JSVal res;
     if (GetPrimitiveOwnProperty(ctx, base, name, &res)) {
+      if (base.IsString() && name == symbol::length()) {
+        Assembler::RepatchSite::RepatchAfterCall(
+            stack->ret, core::BitCast<uint64_t>(Templates<>::string_length()));
+      }
       return Extract(res);
     } else {
       // if base is primitive, property not found in "this" object
