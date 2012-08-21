@@ -1811,7 +1811,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
       DEFINE_OPCODE(CONCAT) {
         // opcode | (dst | start | count)
         JSVal* src = &REG(instr[1].ssw.i16[1]);
-        JSString* str = JSString::New(ctx(), src, instr[1].ssw.u32);
+        JSString* str = JSString::New(ctx(), src, instr[1].ssw.u32, ERR);
         REG(instr[1].ssw.i16[0]) = str;
         DISPATCH(CONCAT);
       }

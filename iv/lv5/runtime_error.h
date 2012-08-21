@@ -45,7 +45,7 @@ inline JSVal ErrorToString(const Arguments& args, Error* e) {
       const JSVal target =
           obj.object()->Get(ctx, symbol::name(), IV_LV5_ERROR(e));
       if (target.IsUndefined()) {
-        name = JSString::NewAsciiString(ctx, "Error");
+        name = JSString::NewAsciiString(ctx, "Error", IV_LV5_ERROR(e));
       } else {
         name = target.ToString(ctx, IV_LV5_ERROR(e));
       }
@@ -70,7 +70,7 @@ inline JSVal ErrorToString(const Arguments& args, Error* e) {
     builder.AppendJSString(*name);
     builder.Append(": ");
     builder.AppendJSString(*msg);
-    return builder.Build(ctx);
+    return builder.Build(ctx, false, e);
   }
   e->Report(Error::Type, "base must be object");
   return JSUndefined;

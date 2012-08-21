@@ -90,11 +90,13 @@ inline Rep BINARY_ADD(Frame* stack, JSVal lhs, JSVal rhs) {
   Context* ctx = stack->ctx;
   if (lhs.IsString()) {
     if (rhs.IsString()) {
-      return Extract(JSString::New(ctx, lhs.string(), rhs.string()));
+      JSString* const result = JSString::New(ctx, lhs.string(), rhs.string(), ERR);
+      return Extract(result);
     } else {
       const JSVal rp = rhs.ToPrimitive(ctx, Hint::NONE, ERR);
       JSString* const rs = rp.ToString(ctx, ERR);
-      return Extract(JSString::New(ctx, lhs.string(), rs));
+      JSString* const result = JSString::New(ctx, lhs.string(), rs, ERR);
+      return Extract(result);
     }
   }
 
@@ -103,7 +105,8 @@ inline Rep BINARY_ADD(Frame* stack, JSVal lhs, JSVal rhs) {
   if (lprim.IsString() || rprim.IsString()) {
     JSString* const lstr = lprim.ToString(ctx, ERR);
     JSString* const rstr = rprim.ToString(ctx, ERR);
-    return Extract(JSString::New(ctx, lstr, rstr));
+    JSString* const result = JSString::New(ctx, lstr, rstr, ERR);
+    return Extract(result);
   }
 
   const double left = lprim.ToNumber(ctx, ERR);
@@ -582,8 +585,9 @@ inline Rep CONSTRUCT(Frame* stack,
   }
 }
 
-inline Rep CONCAT(Context* ctx, JSVal* src, uint32_t count) {
-  return Extract(JSString::New(ctx, src, count));
+inline Rep CONCAT(Frame* stack, JSVal* src, uint32_t count) {
+  JSString* result = JSString::New(stack->ctx, src, count, ERR);
+  return Extract(result);
 }
 
 inline Rep RAISE(Frame* stack, Error::Code code, JSString* str) {

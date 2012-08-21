@@ -137,7 +137,7 @@ JSVal Encode(Context* ctx, const FiberType* fiber, Error* e) {
     }
   }
   // always in ASCII range
-  return builder.Build(ctx, true);
+  return builder.Build(ctx, true, e);
 }
 
 template<typename URITraits, typename FiberType>
@@ -240,14 +240,14 @@ JSVal Decode(Context* ctx, const FiberType* fiber, Error* e) {
       }
     }
   }
-  return builder.Build(ctx);
+  return builder.Build(ctx, false, e);
 }
 
 template<typename FiberType>
-JSVal EscapeHelper(Context* ctx, const FiberType* fiber);
+JSVal EscapeHelper(Context* ctx, const FiberType* fiber, Error* e);
 
 template<typename FiberType>
-JSVal UnescapeHelper(Context* ctx, const FiberType* fiber);
+JSVal UnescapeHelper(Context* ctx, const FiberType* fiber, Error* e);
 
 }  // namespace detail
 
@@ -374,7 +374,7 @@ inline JSVal ThrowTypeError(const Arguments& args, Error* e) {
 }
 
 template<typename FiberType>
-inline JSVal detail::EscapeHelper(Context* ctx, const FiberType* fiber) {
+inline JSVal detail::EscapeHelper(Context* ctx, const FiberType* fiber, Error* e) {
   const char kHexDigits[17] = "0123456789ABCDEF";
   std::array<uint16_t, 3> hexbuf;
   hexbuf[0] = '%';
@@ -396,7 +396,7 @@ inline JSVal detail::EscapeHelper(Context* ctx, const FiberType* fiber) {
       }
     }
   }
-  return builder.Build(ctx, true);
+  return builder.Build(ctx, true, e);
 }
 
 // section B.2.1 escape(string)
@@ -409,14 +409,14 @@ inline JSVal GlobalEscape(const Arguments& args, Error* e) {
     return str;  // empty string
   }
   if (str->Is8Bit()) {
-    return detail::EscapeHelper(ctx, str->Get8Bit());
+    return detail::EscapeHelper(ctx, str->Get8Bit(), e);
   } else {
-    return detail::EscapeHelper(ctx, str->Get16Bit());
+    return detail::EscapeHelper(ctx, str->Get16Bit(), e);
   }
 }
 
 template<typename FiberType>
-inline JSVal detail::UnescapeHelper(Context* ctx, const FiberType* fiber) {
+inline JSVal detail::UnescapeHelper(Context* ctx, const FiberType* fiber, Error* e) {
   JSStringBuilder builder;
   const std::size_t len = fiber->size();
   std::size_t k = 0;
@@ -455,7 +455,7 @@ inline JSVal detail::UnescapeHelper(Context* ctx, const FiberType* fiber) {
       ++k;
     }
   }
-  return builder.Build(ctx);
+  return builder.Build(ctx, false, e);
 }
 
 // section B.2.2 unescape(string)
@@ -468,9 +468,9 @@ inline JSVal GlobalUnescape(const Arguments& args, Error* e) {
     return str;  // empty string
   }
   if (str->Is8Bit()) {
-    return detail::UnescapeHelper(ctx, str->Get8Bit());
+    return detail::UnescapeHelper(ctx, str->Get8Bit(), e);
   } else {
-    return detail::UnescapeHelper(ctx, str->Get16Bit());
+    return detail::UnescapeHelper(ctx, str->Get16Bit(), e);
   }
 }
 

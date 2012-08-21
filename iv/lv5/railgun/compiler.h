@@ -214,12 +214,13 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       }
 
       // new constant value
+      Error::Dummy dummy;
       const uint32_t index = AddConstant(
           JSString::New(
               ctx_,
               str.begin(),
               str.end(),
-              core::character::IsASCII(str.begin(), str.end())));
+              core::character::IsASCII(str.begin(), str.end()), &dummy));
       jsstring_to_index_map_.insert(std::make_pair(str, index));
       return index;
     }

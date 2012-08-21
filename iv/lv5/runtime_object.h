@@ -397,17 +397,17 @@ inline JSVal ObjectToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.toString", args, e);
   const JSVal this_binding = args.this_binding();
   if (this_binding.IsUndefined()) {
-    return JSString::NewAsciiString(args.ctx(), "[object Undefined]");
+    return JSString::NewAsciiString(args.ctx(), "[object Undefined]", e);
   }
   if (this_binding.IsNull()) {
-    return JSString::NewAsciiString(args.ctx(), "[object Null]");
+    return JSString::NewAsciiString(args.ctx(), "[object Null]", e);
   }
   JSObject* const obj = this_binding.ToObject(args.ctx(), IV_LV5_ERROR(e));
   JSStringBuilder builder;
   builder.Append("[object ");
   builder.Append(obj->cls()->name);
   builder.Append("]");
-  return builder.Build(args.ctx());
+  return builder.Build(args.ctx(), false, e);
 }
 
 // section 15.2.4.3 Object.prototype.toLocaleString()

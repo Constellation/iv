@@ -15,7 +15,9 @@ class JSStringDToA : public core::dtoa::DToA<JSStringDToA, JSString*> {
 
  private:
   JSString* Create(const char* str) const {
-    return JSString::NewAsciiString(ctx_, str);
+    // Because result string length always smaller than JSString max length
+    Error::Dummy dummy;
+    return JSString::NewAsciiString(ctx_, str, &dummy);
   }
 
   Context* ctx_;

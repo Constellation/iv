@@ -65,6 +65,7 @@ static const char* kSpecFileNames[] = {
   "test/lv5/suite/spec/string/string-fromcodepoint.js",
   "test/lv5/suite/spec/string/string-raw.js",
   "test/lv5/suite/spec/string/string-codepointat.js",
+  "test/lv5/suite/spec/string/string-length-limit.js",
   "test/lv5/suite/spec/map/map-constructor.js",
   "test/lv5/suite/spec/map/map-has.js",
   "test/lv5/suite/spec/map/map-get.js",

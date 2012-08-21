@@ -39,10 +39,10 @@ inline JSVal RegExpConstructor(const Arguments& args, Error* e) {
   }
   JSRegExp* reg;
   if (args_count == 1 || args[1].IsUndefined()) {
-    reg = JSRegExp::New(ctx, pattern);
+    reg = JSRegExp::New(ctx, pattern, IV_LV5_ERROR(e));
   } else {
     JSString* flags = args[1].ToString(ctx, IV_LV5_ERROR(e));
-    reg = JSRegExp::New(ctx, pattern, flags);
+    reg = JSRegExp::New(ctx, pattern, flags, IV_LV5_ERROR(e));
   }
   if (reg->IsValid()) {
     return reg;
@@ -89,7 +89,7 @@ inline JSVal RegExpToString(const Arguments& args, Error* e) {
     JSRegExp* const reg = static_cast<JSRegExp*>(obj.object());
     JSStringBuilder builder;
     builder.Append('/');
-    builder.AppendJSString(*(reg->source(ctx)));
+    builder.AppendJSString(*(reg->source()));
     builder.Append('/');
     if (reg->global()) {
       builder.Append('g');
@@ -100,7 +100,7 @@ inline JSVal RegExpToString(const Arguments& args, Error* e) {
     if (reg->multiline()) {
       builder.Append('m');
     }
-    return builder.Build(ctx);
+    return builder.Build(ctx, false, e);
   }
   e->Report(Error::Type, "RegExp.prototype.toString is not generic function");
   return JSEmpty;

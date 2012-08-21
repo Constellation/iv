@@ -61,7 +61,7 @@ class JSNumberFormat : public JSObject {
       // if value is -0, we overwrite it as +0
       value = 0;
     }
-    return JSString::New(ctx, format()->Format(value));
+    return JSString::New(ctx, format()->Format(value), e);
   }
 
   static JSNumberFormat* New(Context* ctx) {
@@ -118,8 +118,9 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
           requested,
           options,
           IV_LV5_ERROR(e));
-  obj->SetField(JSNumberFormat::LOCALE,
-                JSString::NewAsciiString(ctx, result.locale()));
+  JSString* locale_string =
+      JSString::NewAsciiString(ctx, result.locale(), IV_LV5_ERROR(e));
+  obj->SetField(JSNumberFormat::LOCALE, locale_string);
   const core::i18n::NumberFormat::Data* locale =
       core::i18n::NumberFormat::Lookup(result.locale());
 
@@ -148,17 +149,18 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
   }
 
   if (nu) {
-    obj->SetField(JSNumberFormat::NUMBERING_SYSTEM,
-                  JSString::NewAsciiString(ctx, nu->name));
+    JSString* str =
+        JSString::NewAsciiString(ctx, nu->name, IV_LV5_ERROR(e));
+    obj->SetField(JSNumberFormat::NUMBERING_SYSTEM, str);
   }
 
   core::i18n::NumberFormat::Style style = core::i18n::NumberFormat::DECIMAL;
   core::i18n::Currency::Display display = core::i18n::Currency::SYMBOL;
   const core::i18n::Currency::Data* currency_data = NULL;
   {
-    JSString* decimal = JSString::NewAsciiString(ctx, "decimal");
-    JSString* percent = JSString::NewAsciiString(ctx, "percent");
-    JSString* currency = JSString::NewAsciiString(ctx, "currency");
+    JSString* decimal = JSString::NewAsciiString(ctx, "decimal", e);
+    JSString* percent = JSString::NewAsciiString(ctx, "percent", e);
+    JSString* currency = JSString::NewAsciiString(ctx, "currency", e);
     JSVector* vec = JSVector::New(ctx);
     vec->push_back(decimal);
     vec->push_back(percent);
@@ -195,7 +197,7 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
             builder.Append(*it);
           }
         }
-        JSString* c = builder.Build(ctx);
+        JSString* c = builder.Build(ctx, false, IV_LV5_ERROR(e));
         obj->SetField(JSNumberFormat::CURRENCY, c);
 
         // check target currency exists
@@ -211,9 +213,9 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
       {
         // currencyDisplay option
         JSVector* vec = JSVector::New(ctx);
-        JSString* code = JSString::NewAsciiString(ctx, "code");
-        JSString* symbol = JSString::NewAsciiString(ctx, "symbol");
-        JSString* name = JSString::NewAsciiString(ctx, "name");
+        JSString* code = JSString::NewAsciiString(ctx, "code", e);
+        JSString* symbol = JSString::NewAsciiString(ctx, "symbol", e);
+        JSString* name = JSString::NewAsciiString(ctx, "name", e);
         vec->push_back(code);
         vec->push_back(symbol);
         vec->push_back(name);

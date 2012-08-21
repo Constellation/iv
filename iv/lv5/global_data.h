@@ -38,15 +38,16 @@ class GlobalData {
       string_cache_(),
       global_obj_(JSGlobal::New(ctx)),
       string_empty_(new JSString()),
-      string_null_(JSString::NewAsciiString(ctx, "null")),
-      string_true_(JSString::NewAsciiString(ctx, "true")),
-      string_false_(JSString::NewAsciiString(ctx, "false")),
-      string_undefined_(JSString::NewAsciiString(ctx, "undefined")),
-      string_function_(JSString::NewAsciiString(ctx, "function")),
-      string_object_(JSString::NewAsciiString(ctx, "object")),
-      string_number_(JSString::NewAsciiString(ctx, "number")),
-      string_string_(JSString::NewAsciiString(ctx, "string")),
-      string_boolean_(JSString::NewAsciiString(ctx, "boolean")),
+      string_null_(),
+      string_true_(),
+      string_false_(),
+      string_undefined_(),
+      string_function_(),
+      string_object_(),
+      string_number_(),
+      string_string_(),
+      string_boolean_(),
+      string_empty_regexp_(),
       empty_object_map_(Map::New(ctx)),
       function_map_(Map::New(ctx)),
       array_map_(Map::New(ctx)),
@@ -58,6 +59,18 @@ class GlobalData {
       error_map_(Map::New(ctx)),
       gc_hook_(this) {
     {
+      Error::Dummy e;
+      string_null_ = JSString::NewAsciiString(ctx, "null", &e);
+      string_true_ = JSString::NewAsciiString(ctx, "true", &e);
+      string_false_ = JSString::NewAsciiString(ctx, "false", &e);
+      string_undefined_ = JSString::NewAsciiString(ctx, "undefined", &e);
+      string_function_ = JSString::NewAsciiString(ctx, "function", &e);
+      string_object_ = JSString::NewAsciiString(ctx, "object", &e);
+      string_number_ = JSString::NewAsciiString(ctx, "number", &e);
+      string_string_ = JSString::NewAsciiString(ctx, "string", &e);
+      string_boolean_ = JSString::NewAsciiString(ctx, "boolean", &e);
+      string_empty_regexp_ = JSString::NewAsciiString(ctx, "(?:)", &e);
+
       // RegExp Map
       // see also jsregexp.h, JSRegExp::FIELD
       MapBuilder builder(ctx);
@@ -147,6 +160,8 @@ class GlobalData {
 
   JSString* string_boolean() const { return string_boolean_; }
 
+  JSString* string_empty_regexp() const { return string_empty_regexp_; }
+
   JSString* GetSingleString(uint16_t ch) {
     if (ch < 0x80) {
       // caching value
@@ -201,6 +216,7 @@ class GlobalData {
   JSString* string_number_;
   JSString* string_string_;
   JSString* string_boolean_;
+  JSString* string_empty_regexp_;
 
   // builtin maps
   Map* empty_object_map_;

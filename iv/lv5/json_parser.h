@@ -92,7 +92,7 @@ class JSONParser : private core::Noncopyable<> {
         return ParseJSONArray(CHECK);
 
       case Token::TK_STRING:
-        return ParseJSONString();
+        return ParseJSONString(CHECK);
 
       case Token::TK_NUMBER:
         return ParseJSONNumber();
@@ -155,10 +155,10 @@ class JSONParser : private core::Noncopyable<> {
     return vec->ToJSArray();
   }
 
-  JSVal ParseJSONString() {
+  JSVal ParseJSONString(Error* e) {
     assert(token_ == Token::TK_STRING);
     const std::vector<uint16_t>& vec = lexer_.Buffer();
-    JSString* string = JSString::New(ctx_, vec.begin(), vec.end());
+    JSString* string = JSString::New(ctx_, vec.begin(), vec.end(), false, CHECK);
     Next();
     return string;
   }

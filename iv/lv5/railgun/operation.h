@@ -368,11 +368,11 @@ class Operation {
     }
     if (lhs.IsString()) {
       if (rhs.IsString()) {
-        return JSString::New(ctx_, lhs.string(), rhs.string());
+        return JSString::New(ctx_, lhs.string(), rhs.string(), e);
       } else {
         const JSVal rp = rhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
         JSString* const rs = rp.ToString(ctx_, CHECK);
-        return JSString::New(ctx_, lhs.string(), rs);
+        return JSString::New(ctx_, lhs.string(), rs, e);
       }
     }
 
@@ -381,7 +381,7 @@ class Operation {
     if (lprim.IsString() || rprim.IsString()) {
       JSString* const lstr = lprim.ToString(ctx_, CHECK);
       JSString* const rstr = rprim.ToString(ctx_, CHECK);
-      return JSString::New(ctx_, lstr, rstr);
+      return JSString::New(ctx_, lstr, rstr, e);
     }
 
     const double left = lprim.ToNumber(ctx_, CHECK);

@@ -55,7 +55,9 @@ inline JSVector* CanonicalizeLocaleList(Context* ctx, JSVal locales, Error* e) {
       const std::string canonicalized = scanner.Canonicalize();
       if (checker.find(canonicalized) == checker.end()) {
         checker.insert(canonicalized);
-        seen->push_back(JSString::NewAsciiString(ctx, canonicalized));
+        JSString* str =
+            JSString::NewAsciiString(ctx, canonicalized, IV_LV5_ERROR_WITH(e, NULL));
+        seen->push_back(str);
       }
     }
   }
@@ -78,7 +80,9 @@ inline JSVector* LookupSupportedLocales(Context* ctx,
                                                         str->end()));
     const AvailIter t = ctx->i18n()->IndexOfMatch(it, last, locale);
     if (t != last) {
-      subset->push_back(JSString::NewAsciiString(ctx, locale));
+      JSString* str =
+          JSString::NewAsciiString(ctx, locale, IV_LV5_ERROR_WITH(e, NULL));
+      subset->push_back(str);
     }
   }
   return subset;
@@ -103,9 +107,10 @@ inline JSArray* SupportedLocales(Context* ctx,
                  IV_LV5_ERROR_WITH(e, NULL));
     if (!matcher.IsUndefined()) {
       JSString* str = matcher.ToString(ctx, IV_LV5_ERROR_WITH(e, NULL));
-      if (*str == *JSString::NewAsciiString(ctx, "lookup")) {
+      const std::string res = str->GetUTF8();
+      if (res == "lookup") {
         best_fit = false;
-      } else if (*str != *JSString::NewAsciiString(ctx, "best fit")) {
+      } else if (res != "best fit") {
         e->Report(Error::Range,
                   "localeMatcher should be 'lookup' or 'best fit'");
         return NULL;
@@ -166,9 +171,10 @@ inline core::i18n::LookupResult ResolveLocale(Context* ctx,
       JSString* str = matcher.ToString(
           ctx,
           IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
-      if (*str == *JSString::NewAsciiString(ctx, "lookup")) {
+      const std::string res = str->GetUTF8();
+      if (res == "lookup") {
         best_fit = false;
-      } else if (*str != *JSString::NewAsciiString(ctx, "best fit")) {
+      } else if (res != "best fit") {
         e->Report(Error::Range,
                   "localeMatcher should be 'lookup' or 'best fit'");
         return core::i18n::LookupResult();
@@ -331,7 +337,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx,
           ctx,
           name,
           DataDescriptor(
-              JSString::NewAsciiString(ctx, "numeric"),
+              JSString::NewAsciiString(ctx, "numeric", e),
               ATTR::W | ATTR::E | ATTR::C),
           true, IV_LV5_ERROR_WITH(e, NULL));
     }
@@ -345,7 +351,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx,
           ctx,
           name,
           DataDescriptor(
-              JSString::NewAsciiString(ctx, "numeric"),
+              JSString::NewAsciiString(ctx, "numeric", e),
               ATTR::W | ATTR::E | ATTR::C),
           true, IV_LV5_ERROR_WITH(e, NULL));
     }

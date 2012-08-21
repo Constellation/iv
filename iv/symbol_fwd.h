@@ -131,6 +131,8 @@ IV_STATIC_ASSERT(std::is_pod<Symbol>::value);
 
 namespace symbol {
 
+static const uint32_t kMaxSize = INT32_MAX;
+
 inline bool IsIndexSymbol(Symbol sym) {
   return sym.index_.low_ == detail::kSymbolIsIndex;
 }

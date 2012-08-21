@@ -16,7 +16,7 @@
 #include <iv/utils.h>
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/hint.h>
-#include <iv/lv5/jsstring_fwd.h>
+#include <iv/lv5/symbol.h>
 #include <iv/lv5/radio/cell.h>
 
 namespace iv {
@@ -28,6 +28,7 @@ class Context;
 class JSReference;
 class JSEnv;
 class JSObject;
+class JSString;
 
 namespace detail {
 template<std::size_t PointerSize, bool IsLittle>

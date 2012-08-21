@@ -97,7 +97,7 @@ class JSONStringifier : private core::Noncopyable<> {
                       fiber->end(), std::back_inserter(builder));
     }
     builder.Append('"');
-    return builder.Build(ctx_);
+    return builder.Build(ctx_, str.Is8Bit(), e);
   }
 
   JSVal JO(JSObject* value, Error* e) {
@@ -142,7 +142,8 @@ class JSONStringifier : private core::Noncopyable<> {
 
     JSString* final;
     if (partial.empty()) {
-      final = JSString::NewAsciiString(ctx_, "{}");
+      // no error
+      final = JSString::NewAsciiString(ctx_, "{}", e);
     } else {
       JSStringBuilder builder;
       if (gap_.empty()) {
@@ -159,7 +160,7 @@ class JSONStringifier : private core::Noncopyable<> {
           }
         }
         builder.Append('}');
-        final = builder.Build(ctx_);
+        final = builder.Build(ctx_, false, IV_LV5_ERROR(e));
       } else {
         builder.Append("{\n");
         builder.Append(indent_);
@@ -178,7 +179,7 @@ class JSONStringifier : private core::Noncopyable<> {
         builder.Append('\n');
         builder.Append(stepback);
         builder.Append('}');
-        final = builder.Build(ctx_);
+        final = builder.Build(ctx_, false, IV_LV5_ERROR(e));
       }
     }
     indent_.assign(stepback);
@@ -205,7 +206,8 @@ class JSONStringifier : private core::Noncopyable<> {
     }
     JSString* final;
     if (partial.empty()) {
-      final = JSString::NewAsciiString(ctx_, "[]");
+      // no error
+      final = JSString::NewAsciiString(ctx_, "[]", e);
     } else {
       JSStringBuilder builder;
       if (gap_.empty()) {
@@ -222,7 +224,7 @@ class JSONStringifier : private core::Noncopyable<> {
           }
         }
         builder.Append(']');
-        final = builder.Build(ctx_);
+        final = builder.Build(ctx_, false, IV_LV5_ERROR(e));
       } else {
         builder.Append("[\n");
         builder.Append(indent_);
@@ -241,7 +243,7 @@ class JSONStringifier : private core::Noncopyable<> {
         builder.Append('\n');
         builder.Append(stepback);
         builder.Append(']');
-        final = builder.Build(ctx_);
+        final = builder.Build(ctx_, false, IV_LV5_ERROR(e));
       }
     }
     indent_.assign(stepback);

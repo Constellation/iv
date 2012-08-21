@@ -1275,7 +1275,7 @@ class Compiler {
     const uint32_t count = instr[1].ssw.u32;
     assert(!IsConstantID(start));
     asm_->lea(asm_->rsi, asm_->ptr[asm_->r13 + start * kJSValSize]);
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->edx, count);
     asm_->Call(&stub::CONCAT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
@@ -1404,9 +1404,14 @@ class Compiler {
     TypeEntry dst_entry = TypeEntry(Type::Unknown());
     if (name == symbol::length()) {
       if (base_entry.type().IsArray() ||
-          base_entry.type().IsFunction() ||
-          base_entry.type().IsString()) {
+          base_entry.type().IsFunction()) {
         dst_entry = TypeEntry(Type::Number());
+      } else if (base_entry.type().IsString()) {
+        if (base_entry.IsConstant()) {
+          dst_entry = TypeEntry(base_entry.constant().string()->size());
+        } else {
+          dst_entry = TypeEntry(Type::Int32());
+        }
       }
     }
 

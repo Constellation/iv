@@ -14,6 +14,8 @@
 #include <iv/ustringpiece.h>
 #include <iv/lv5/context_utils.h>
 #include <iv/lv5/fiber.h>
+#include <iv/lv5/error.h>
+#include <iv/lv5/jsval_fwd.h>
 #include <iv/lv5/radio/cell.h>
 #include <iv/lv5/breaker/fwd.h>
 namespace iv {
@@ -51,6 +53,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
 
   static const size_type kMaxFibers = 5;
   static const size_type npos = static_cast<size_type>(-1);
+  static const size_type kMaxSize = core::symbol::kMaxSize;
 
   typedef std::array<const FiberSlot*, kMaxFibers> FiberSlots;
 
@@ -344,7 +347,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
     return copier.Copy();
   }
 
-  inline this_type* Repeat(Context* ctx, uint32_t count) {
+  inline this_type* Repeat(Context* ctx, uint32_t count, Error* e) {
     if (count == 0 || empty()) {
       return this_type::NewEmptyString(ctx);
     }
@@ -356,12 +359,18 @@ class JSString: public radio::HeapObject<radio::STRING> {
       // single character
       if (Is8Bit()) {
         const std::vector<char> vec(count, At(0));
-        return this_type::New(ctx, vec.begin(), count, true);
+        return this_type::New(ctx, vec.begin(), count, true, e);
       } else {
         const std::vector<uint16_t> vec(count, At(0));
-        return this_type::New(ctx, vec.begin(), count, false);
+        return this_type::New(ctx, vec.begin(), count, false, e);
       }
     }
+
+    if (static_cast<size_type>(size()) * count > kMaxSize) {
+      e->Report(Error::Type, "too long string is prohibited");
+      return NULL;
+    }
+
     return new this_type(this, count);
   }
 
@@ -410,12 +419,12 @@ class JSString: public radio::HeapObject<radio::STRING> {
 
   // factory methods
 
-  static this_type* New(Context* ctx, const core::UStringPiece& str) {
-    return New(ctx, str.begin(), str.size(), false);
+  static this_type* New(Context* ctx, const core::UStringPiece& str, Error* e) {
+    return New(ctx, str.begin(), str.size(), false, e);
   }
 
-  static this_type* NewAsciiString(Context* ctx, const core::StringPiece& str) {
-    return New(ctx, str.begin(), str.size(), true);
+  static this_type* NewAsciiString(Context* ctx, const core::StringPiece& str, Error* e) {
+    return New(ctx, str.begin(), str.size(), true, e);
   }
 
   static this_type* NewSingle(Context* ctx, uint16_t ch) {
@@ -426,9 +435,8 @@ class JSString: public radio::HeapObject<radio::STRING> {
   }
 
   template<typename Iter>
-  static this_type* New(Context* ctx,
-                        Iter it, Iter last, bool is_8bit = false) {
-    return New(ctx, it, std::distance(it, last), is_8bit);
+  static this_type* New(Context* ctx, Iter it, Iter last, bool is_8bit, Error * e) {
+    return New(ctx, it, std::distance(it, last), is_8bit, e);
   }
 
   static this_type* NewEmptyString(Context* ctx) {
@@ -436,7 +444,8 @@ class JSString: public radio::HeapObject<radio::STRING> {
   }
 
   template<typename FiberType>
-  static this_type* NewWithFiber(Context* ctx, const FiberType* fiber,
+  static this_type* NewWithFiber(Context* ctx,
+                                 const FiberType* fiber,
                                  std::size_t from, std::size_t to) {
     const std::size_t size = to - from;
     if (size == 0) {
@@ -451,13 +460,18 @@ class JSString: public radio::HeapObject<radio::STRING> {
     return new this_type(fiber, from, to);
   }
 
-  static this_type* New(Context* ctx, this_type* lhs, this_type* rhs) {
+  static this_type* New(Context* ctx, this_type* lhs, this_type* rhs, Error * e) {
     if (lhs->empty()) {
       return rhs;
     }
 
     if (rhs->empty()) {
       return lhs;
+    }
+
+    if (lhs->size() + rhs->size() > kMaxSize) {
+      e->Report(Error::Type, "too long string is prohibited");
+      return NULL;
     }
 
     return new this_type(lhs, rhs);
@@ -471,7 +485,8 @@ class JSString: public radio::HeapObject<radio::STRING> {
       }
       std::array<char, 15> buffer;
       char* end = core::UInt32ToString(index, buffer.data());
-      return New(ctx, buffer.data(), end, true);
+      Error::Dummy dummy;
+      return New(ctx, buffer.data(), end, true, &dummy);
     } else {
       assert(!symbol::IsIndexSymbol(sym));
       const core::UString* str = symbol::GetStringFromSymbol(sym);
@@ -481,26 +496,49 @@ class JSString: public radio::HeapObject<radio::STRING> {
       if (str->size() == 1) {
         return NewSingle(ctx, (*str)[0]);
       }
+      assert(str->size() <= kMaxSize);
       return new this_type(*str);
     }
   }
 
-  static this_type* New(Context* ctx, JSVal* src, uint32_t count) {
-    return new this_type(src, count);
+  static this_type* New(Context* ctx, JSVal* src, uint32_t count, Error* e) {
+    size_type size = 0;
+    size_type fiber_count = 0;
+    bool is_8bit = true;
+    for (uint32_t i = 0; i < count; ++i) {
+      this_type* str = src[i].string();
+      size += str->size();
+      fiber_count += str->fiber_count();
+      if (!str->Is8Bit()) {
+        is_8bit = false;
+      }
+    }
+
+    if (size > kMaxSize) {
+      e->Report(Error::Type, "too long string is prohibited");
+      return NULL;
+    }
+
+    return new this_type(src, count, size, fiber_count, is_8bit);
   }
 
   // destructor
 
+  // TODO(Constellation) implement it
   void MarkChildren(radio::Core* core) { }
 
  private:
   template<typename Iter>
-  static this_type* New(Context* ctx, Iter it, std::size_t n, bool is_8bit) {
+  static this_type* New(Context* ctx, Iter it, std::size_t n, bool is_8bit, Error* e) {
     if (n == 0) {
       return NewEmptyString(ctx);
     }
     if (n == 1) {
       return NewSingle(ctx, *it);
+    }
+    if (n > kMaxSize) {
+      e->Report(Error::Type, "too long string is prohibited");
+      return NULL;
     }
     return new this_type(it, n, is_8bit);
   }
@@ -666,7 +704,8 @@ class JSString: public radio::HeapObject<radio::STRING> {
     }
   }
 
-  JSString(JSVal* src, uint32_t count);
+  JSString(JSVal* src, uint32_t count,
+           size_type size, size_type fiber_count, bool is_8bit);
 
   uint32_t size_;
   bool is_8bit_;

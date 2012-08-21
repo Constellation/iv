@@ -668,12 +668,12 @@ JSString* JSLayout::ToString(Context* ctx, Error* e) const {
     // int32 short cut
     std::array<char, 15> buffer;
     char* end = core::Int32ToString(int32(), buffer.data());
-    return JSString::New(ctx, buffer.data(), end, true);
+    return JSString::New(ctx, buffer.data(), end, true, e);
   } else if (IsNumber()) {
     std::array<char, 80> buffer;
     const char* const str =
         core::DoubleToCString(number(), buffer.data(), buffer.size());
-    return JSString::NewAsciiString(ctx, str);
+    return JSString::NewAsciiString(ctx, str, e);
   } else if (IsBoolean()) {
     return boolean() ?
         ctx->global_data()->string_true() : ctx->global_data()->string_false();
