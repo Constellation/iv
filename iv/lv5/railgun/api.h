@@ -21,7 +21,7 @@ inline Code* CompileInGlobal(Context* ctx,
         parser.error());
     return NULL;
   }
-  Code* code = Compile(ctx, *global, script, use_folded_registers);
+  Code* code = CompileGlobal(ctx, *global, script, use_folded_registers);
   if (!code) {
     e->Report(Error::Syntax, "something wrong");
     return NULL;

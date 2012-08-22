@@ -25,12 +25,10 @@ class MonoIC : public IC {
 
     MapCompile(as, as->rdx);
 
-    as->mov(as->rcx, core::BitCast<uint64_t>(global));
-    as->mov(as->rax, as->rcx);
+    as->mov(as->rax, core::BitCast<uint64_t>(global));
 
     // load map pointer
-    as->mov(as->rcx, as->qword[as->rcx + IV_OFFSETOF(JSObject, map_)]);
-    as->cmp(as->rdx, as->rcx);
+    as->cmp(as->rdx, as->qword[as->rax + IV_OFFSETOF(JSObject, map_)]);
     as->jne(".SLOW");
 
     OffsetCompile(as, as->edx);
@@ -63,11 +61,9 @@ class MonoIC : public IC {
     MapCompile(as, as->rdx);
 
     as->mov(as->rcx, core::BitCast<uint64_t>(global));
-    as->mov(as->rdi, as->rcx);
 
     // load map pointer
-    as->mov(as->rcx, as->qword[as->rcx + IV_OFFSETOF(JSObject, map_)]);
-    as->cmp(as->rdx, as->rcx);
+    as->cmp(as->rdx, as->qword[as->rcx + IV_OFFSETOF(JSObject, map_)]);
     as->jne(".SLOW");
 
     OffsetCompile(as, as->edx);
@@ -75,8 +71,8 @@ class MonoIC : public IC {
     const std::ptrdiff_t data_offset =
         IV_OFFSETOF(JSObject, slots_) +
         IV_OFFSETOF(JSObject::Slots, data_);
-    as->mov(as->rdi, as->qword[as->rdi + data_offset]);
-    as->mov(as->qword[as->rdi + as->rdx * kJSValSize], as->rax);
+    as->mov(as->rcx, as->qword[as->rcx + data_offset]);
+    as->mov(as->qword[as->rcx + as->rdx * kJSValSize], as->rax);
     as->jmp(".EXIT");
 
     as->L(".SLOW");

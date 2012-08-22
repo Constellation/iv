@@ -19,6 +19,7 @@
 #include <iv/lv5/breaker/jsfunction.h>
 #include <iv/lv5/breaker/type.h>
 #include <iv/lv5/breaker/mono_ic.h>
+#include <iv/lv5/breaker/poly_ic.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {
@@ -67,6 +68,7 @@ class Compiler {
       top_(top),
       code_(NULL),
       asm_(new Assembler),
+      native_code_(new NativeCode(asm_)),
       jump_map_(),
       entry_points_(),
       unresolved_address_map_(),
@@ -77,7 +79,7 @@ class Compiler {
       last_used_(kInvalidUsedOffset),
       last_used_candidate_(),
       type_record_() {
-    top_->core_data()->set_assembler(asm_);
+    top_->core_data()->set_native_code(native_code_);
   }
 
   static uint64_t RotateLeft64(uint64_t val, uint64_t amount) {
@@ -236,7 +238,7 @@ class Compiler {
         set_previous_instr(previous);
       }
 
-      asm_->AttachBytecodeOffset(asm_->size(), instr - total_first_instr);
+      native_code()->AttachBytecodeOffset(asm_->size(), instr - total_first_instr);
 
       switch (opcode) {
         case r::OP::NOP:
@@ -1274,7 +1276,7 @@ class Compiler {
     const uint32_t count = instr[1].ssw.u32;
     assert(!IsConstantID(start));
     asm_->lea(asm_->rsi, asm_->ptr[asm_->r13 + start * kJSValSize]);
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(asm_->rdi, asm_->r14);
     asm_->mov(asm_->edx, count);
     asm_->Call(&stub::CONCAT);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
@@ -1403,9 +1405,14 @@ class Compiler {
     TypeEntry dst_entry = TypeEntry(Type::Unknown());
     if (name == symbol::length()) {
       if (base_entry.type().IsArray() ||
-          base_entry.type().IsFunction() ||
-          base_entry.type().IsString()) {
+          base_entry.type().IsFunction()) {
         dst_entry = TypeEntry(Type::Number());
+      } else if (base_entry.type().IsString()) {
+        if (base_entry.IsConstant()) {
+          dst_entry = TypeEntry(base_entry.constant().string()->size());
+        } else {
+          dst_entry = TypeEntry(Type::Int32());
+        }
       }
     }
 
@@ -1944,7 +1951,7 @@ class Compiler {
     } else {
       std::shared_ptr<MonoIC> ic(new MonoIC());
       ic->CompileLoad(asm_, ctx_->global_obj(), code_, name);
-      asm_->BindIC(ic);
+      native_code()->BindIC(ic);
     }
 
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
@@ -1959,7 +1966,7 @@ class Compiler {
     LoadVR(asm_->rax, src);
     std::shared_ptr<MonoIC> ic(new MonoIC());
     ic->CompileStore(asm_, ctx_->global_obj(), code_, name);
-    asm_->BindIC(ic);
+    native_code()->BindIC(ic);
   }
 
   // opcode | dst | slot
@@ -2883,8 +2890,7 @@ class Compiler {
   void LoadCellTag(const Xbyak::Reg64& target, const Xbyak::Reg32& out) {
     // Because of Little Endianess
     IV_STATIC_ASSERT(core::kLittleEndian);
-    asm_->mov(out, asm_->word[target + IV_OFFSETOF(radio::Cell, next_address_of_freelist_or_storage_)]);  // NOLINT
-    asm_->shr(out, radio::Color::kOffset);
+    asm_->mov(out, asm_->word[target + radio::Cell::TagOffset()]);  // NOLINT
   }
 
   void LoadClassTag(const Xbyak::Reg64& target,
@@ -3037,6 +3043,8 @@ class Compiler {
 
   Context* ctx() const { return ctx_; }
 
+  NativeCode* native_code() const { return native_code_; }
+
   void LookupHeapEnv(const Xbyak::Reg64& target, uint32_t nest) {
     for (uint32_t i = 0; i < nest; ++i) {
       asm_->mov(target, asm_->ptr[target + IV_OFFSETOF(JSEnv, outer_)]);
@@ -3047,6 +3055,7 @@ class Compiler {
   railgun::Code* top_;
   railgun::Code* code_;
   Assembler* asm_;
+  NativeCode* native_code_;
   JumpMap jump_map_;
   EntryPointMap entry_points_;
   UnresolvedAddressMap unresolved_address_map_;
@@ -3073,10 +3082,10 @@ inline void Compile(Context* ctx, railgun::Code* code) {
 }
 
 // external interfaces
-inline railgun::Code* Compile(
+inline railgun::Code* CompileGlobal(
     Context* ctx,
     const FunctionLiteral& global, railgun::JSScript* script) {
-  railgun::Code* code = railgun::Compile(ctx, global, script, true);
+  railgun::Code* code = railgun::CompileGlobal(ctx, global, script, true);
   if (code) {
     Compile(ctx, code);
   }

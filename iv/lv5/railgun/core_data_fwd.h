@@ -87,25 +87,25 @@ class CoreData : public GCKind<CoreData> {
     return 1;
   }
 
-  const breaker::Assembler* assembler() const { return assembler_.get(); }
+  const breaker::NativeCode* native_code() const { return native_code_.get(); }
 
  private:
   explicit CoreData()
     : data_(),
       lines_(),
       compiled_(false),
-      assembler_() {
+      native_code_() {
     lines_.reserve(1024);
   }
 
-  void set_assembler(breaker::Assembler* assembler) {
-    assembler_.reset(assembler);
+  void set_native_code(breaker::NativeCode* code) {
+    native_code_.reset(code);
   }
 
   Data data_;
   Lines lines_;
   bool compiled_;
-  core::unique_ptr<breaker::Assembler> assembler_;
+  core::unique_ptr<breaker::NativeCode> native_code_;
 };
 
 } } }  // namespace iv::lv5::railgun

@@ -35,6 +35,8 @@ namespace iv {
 namespace lv5 {
 
 class Arguments;
+class Error;
+class JSEnv;
 
 namespace railgun {
 
@@ -42,6 +44,7 @@ class Context;
 struct Frame;
 class Code;
 class JSVMFunction;
+struct Instruction;
 
 }  // namespace railgun
 namespace breaker {
@@ -53,8 +56,10 @@ class Context;
 class Compiler;
 class MonoIC;
 class Assembler;
+class NativeCode;
 class JSFunction;
 class IC;
+class TemplatesGenerator;
 
 // JIT Frame layout. This frame layout is constructed on breaker prologue
 struct Frame {
@@ -102,6 +107,10 @@ Rep LOAD_GLOBAL(Frame* stack, Symbol name, MonoIC* ic, Assembler* as);
 template<bool Strict>
 Rep STORE_GLOBAL(Frame* stack, Symbol name,
                  MonoIC* ic, Assembler* as, JSVal src);
+
+Rep LOAD_PROP_GENERIC(Frame* stack,
+                      JSVal base, Symbol name,
+                      railgun::Instruction* instr);
 
 } } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_FWD_H_

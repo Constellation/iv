@@ -105,7 +105,7 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
   Context* const ctx = static_cast<Context*>(args.ctx());
   JSStringBuilder builder;
   internal::BuildFunctionSource(&builder, args, IV_LV5_ERROR(e));
-  JSString* const source = builder.Build(ctx);
+  JSString* const source = builder.Build(ctx, false, IV_LV5_ERROR(e));
   JSScript* const script = CompileScript(ctx, source, false, IV_LV5_ERROR(e));
   internal::IsOneFunctionExpression(*script->function(), IV_LV5_ERROR(e));
   const ContextSwitcher switcher(ctx,

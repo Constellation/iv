@@ -11,9 +11,6 @@ namespace iv {
 namespace lv5 {
 namespace breaker {
 
-static const std::size_t kDispatchExceptionHandler = 0;
-static const std::size_t kExceptionHandlerIsNotFound = kDispatchExceptionHandler + 64;  // NOLINT
-static const std::size_t kBreakerPrologue = kExceptionHandlerIsNotFound + 64;
 static const uint64_t kStackPayload = 2;  // NOLINT
 
 class TemplatesGenerator : public Xbyak::CodeGenerator {
@@ -21,20 +18,19 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
   TemplatesGenerator(char* ptr, std::size_t size)
     : Xbyak::CodeGenerator(size, ptr) {
     Xbyak::CodeArray::protect(ptr, size, true);
-    CompileDispatchExceptionHandler(kExceptionHandlerIsNotFound);
-    CompileExceptionHandlerIsNotFound(kBreakerPrologue);
-    CompileBreakerPrologue(0);
-
-    prologue =
-        core::BitCast<TemplatesGenerator::PrologueType>(ptr + kBreakerPrologue);
+    dispatch_exception_handler = CompileDispatchExceptionHandler();
+    exception_handler_is_not_found = CompileExceptionHandlerIsNotFound();
+    prologue = CompileBreakerPrologue();
+    string_length = CompileStringLength();
   }
 
-  void CompileDispatchExceptionHandler(std::size_t size) {
+  void* CompileDispatchExceptionHandler() {
     // In this procedure, callee-save registers are the same to main code.
     // So use r12(context) and r13(frame) directly.
     // passing
     //   pc to 1st argument
     //   Frame to 2nd argument
+    const std::size_t size = getSize();
     mov(rdi, rax);
     mov(rsi, rsp);
     mov(rdx, r14);
@@ -44,18 +40,19 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     mov(r13, ptr[r14 + offsetof(Frame, frame)]);
     mov(rsp, ptr[r14 + offsetof(Frame, rsp)]);
     jmp(rax);  // jump to exception handler
-    Padding(size);
+    return core::BitCast<void*>(getCode() + size);
   }
 
-  void CompileExceptionHandlerIsNotFound(std::size_t size) {
+  void* CompileExceptionHandlerIsNotFound() {
     // restore callee-save registers
+    const std::size_t size = getSize();
     mov(r15, ptr[rsp + offsetof(Frame, r15)]);
     mov(r14, ptr[rsp + offsetof(Frame, r14)]);
     mov(r13, ptr[rsp + offsetof(Frame, r13)]);
     mov(r12, ptr[rsp + offsetof(Frame, r12)]);
     add(rsp, sizeof(Frame));
     ret();
-    Padding(size);
+    return core::BitCast<void*>(getCode() + size);
   }
 
   typedef JSVal(*PrologueType)(Context* ctx,
@@ -64,7 +61,8 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
   // rsi : frame
   // rdx : code ptr
   // rcx : error ptr
-  void CompileBreakerPrologue(std::size_t size) {
+  PrologueType CompileBreakerPrologue() {
+    const std::size_t size = getSize();
     sub(rsp, sizeof(Frame));
 
     // construct breaker::Frame
@@ -94,31 +92,59 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     add(rsp, sizeof(Frame));
 
     ret();
-    Padding(size);
+    return core::BitCast<PrologueType>(getCode() + size);
   }
 
-  void Padding(std::size_t size) {
-    if (size) {
-      std::size_t current = getSize();
-      while (current != size) {
-        nop();
-        ++current;
-      }
+  // rdi : frame
+  // rsi : base
+  // don't break rdx and rcx
+  void* CompileStringLength() {
+    const std::size_t size = getSize();
+    inLocalLabel();
+    {
+      mov(rax, detail::jsval64::kValueMask);
+      test(rax, rsi);
+      jnz(".FAIL");
+
+      mov(eax, word[rsi + radio::Cell::TagOffset()]);
+      cmp(eax, radio::STRING);
+      jne(".FAIL");
+
+      const std::ptrdiff_t length_offset =
+          IV_CAST_OFFSET(radio::Cell*, JSString*) +
+          IV_OFFSETOF(JSString, size_);
+      mov(eax, word[rsi + length_offset]);
+
+      or(rax, r15);
+      ret();
+
+      L(".FAIL");
+      mov(rax, core::BitCast<uint64_t>(&stub::LOAD_PROP_GENERIC));
+      jmp(rax);
     }
+    outLocalLabel();
+    return core::BitCast<void*>(getCode() + size);
   }
 
  public:  // opened
   PrologueType prologue;
+  void* dispatch_exception_handler;
+  void* exception_handler_is_not_found;
+  void* string_length;
 };
 
 template<typename D = void>
 struct Templates {
   static void* dispatch_exception_handler() {
-    return reinterpret_cast<void*>(code + kDispatchExceptionHandler);
+    return Templates<>::generator.dispatch_exception_handler;
   }
 
   static void* exception_handler_is_not_found() {
-    return reinterpret_cast<void*>(code + kExceptionHandlerIsNotFound);
+    return Templates<>::generator.exception_handler_is_not_found;
+  }
+
+  static void* string_length() {
+    return Templates<>::generator.string_length;
   }
 
   static MIE_ALIGN(4096) char code[4096];

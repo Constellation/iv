@@ -152,6 +152,7 @@ Context::Context(JSAPI fc, JSAPI ge)
 }
 
 void Context::Initialize() {
+  Error::Dummy dummy;
   JSFunction* func_constructor =
       JSNativeFunction::NewPlain(this, function_constructor_, 1, context::Intern(this, "Function"));
   JSFunction* eval_function =
@@ -175,7 +176,7 @@ void Context::Initialize() {
   struct ClassSlot func_cls = {
     JSFunction::GetClass(),
     context::Intern(this, "Function"),
-    JSString::NewAsciiString(this, "Function"),
+    JSString::NewAsciiString(this, "Function", &dummy),
     func_constructor,
     func_proto
   };
@@ -184,7 +185,7 @@ void Context::Initialize() {
   struct ClassSlot obj_cls = {
     JSObject::GetClass(),
     context::Intern(this, "Object"),
-    JSString::NewAsciiString(this, "Object"),
+    JSString::NewAsciiString(this, "Object", &dummy),
     obj_constructor,
     obj_proto
   };
@@ -298,7 +299,7 @@ void Context::Initialize() {
     struct ClassSlot cls = {
       JSArguments::GetClass(),
       context::Intern(this, "Arguments"),
-      JSString::NewAsciiString(this, "Arguments"),
+      JSString::NewAsciiString(this, "Arguments", &dummy),
       NULL,
       obj_proto
     };
@@ -310,10 +311,11 @@ void Context::InitGlobal(const ClassSlot& func_cls,
                          JSObject* obj_proto, JSFunction* eval_function,
                          bind::Object* global_binder) {
   // Global
+  Error::Dummy dummy;
   struct ClassSlot cls = {
     JSGlobal::GetClass(),
     symbol::global(),
-    JSString::NewAsciiString(this, "global"),
+    JSString::NewAsciiString(this, "global", &dummy),
     NULL,
     obj_proto
   };
@@ -356,6 +358,7 @@ void Context::InitGlobal(const ClassSlot& func_cls,
 void Context::InitArray(const ClassSlot& func_cls,
                         JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.4 Array
+  Error::Dummy dummy;
   JSObject* const proto = JSArray::NewPlain(this, Map::NewUniqueMap(this));
   // section 15.4.2 The Array Constructor
   JSFunction* const constructor =
@@ -366,7 +369,7 @@ void Context::InitArray(const ClassSlot& func_cls,
   struct ClassSlot cls = {
     JSArray::GetClass(),
     context::Intern(this, "Array"),
-    JSString::NewAsciiString(this, "Array"),
+    JSString::NewAsciiString(this, "Array", &dummy),
     constructor,
     proto
   };
@@ -440,6 +443,7 @@ void Context::InitArray(const ClassSlot& func_cls,
 void Context::InitString(const ClassSlot& func_cls,
                          JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.5 String
+  Error::Dummy dummy;
   JSStringObject* const proto = JSStringObject::NewPlain(this);
   // section 15.5.2 The String Constructor
   JSFunction* const constructor =
@@ -450,7 +454,7 @@ void Context::InitString(const ClassSlot& func_cls,
   struct ClassSlot cls = {
     JSStringObject::GetClass(),
     context::Intern(this, "String"),
-    JSString::NewAsciiString(this, "String"),
+    JSString::NewAsciiString(this, "String", &dummy),
     constructor,
     proto
   };
@@ -533,6 +537,7 @@ void Context::InitString(const ClassSlot& func_cls,
 void Context::InitBoolean(const ClassSlot& func_cls,
                           JSObject* obj_proto, bind::Object* global_binder) {
   // Boolean
+  Error::Dummy dummy;
   JSBooleanObject* const proto =
       JSBooleanObject::NewPlain(this, Map::NewUniqueMap(this), false);
   // section 15.6.2 The Boolean Constructor
@@ -544,7 +549,7 @@ void Context::InitBoolean(const ClassSlot& func_cls,
   struct ClassSlot cls = {
     JSBooleanObject::GetClass(),
     context::Intern(this, "Boolean"),
-    JSString::NewAsciiString(this, "Boolean"),
+    JSString::NewAsciiString(this, "Boolean", &dummy),
     constructor,
     proto
   };
@@ -571,6 +576,7 @@ void Context::InitBoolean(const ClassSlot& func_cls,
 void Context::InitNumber(const ClassSlot& func_cls,
                          JSObject* obj_proto, bind::Object* global_binder) {
   // 15.7 Number
+  Error::Dummy dummy;
   JSNumberObject* const proto =
       JSNumberObject::NewPlain(this, Map::NewUniqueMap(this), 0);
   // section 15.7.3 The Number Constructor
@@ -582,7 +588,7 @@ void Context::InitNumber(const ClassSlot& func_cls,
   struct ClassSlot cls = {
     JSNumberObject::GetClass(),
     context::Intern(this, "Number"),
-    JSString::NewAsciiString(this, "Number"),
+    JSString::NewAsciiString(this, "Number", &dummy),
     constructor,
     proto
   };
@@ -645,10 +651,11 @@ void Context::InitNumber(const ClassSlot& func_cls,
 void Context::InitMath(const ClassSlot& func_cls,
                        JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.8 Math
+  Error::Dummy dummy;
   struct ClassSlot cls = {
     JSMath::GetClass(),
     context::Intern(this, "Math"),
-    JSString::NewAsciiString(this, "Math"),
+    JSString::NewAsciiString(this, "Math", &dummy),
     NULL,
     obj_proto
   };
@@ -744,6 +751,7 @@ void Context::InitMath(const ClassSlot& func_cls,
 void Context::InitDate(const ClassSlot& func_cls,
                        JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.9 Date
+  Error::Dummy dummy;
   JSObject* const proto =
       JSDate::NewPlain(this, Map::NewUniqueMap(this), core::kNaN);
   // section 15.9.2.1 The Date Constructor
@@ -755,7 +763,7 @@ void Context::InitDate(const ClassSlot& func_cls,
   struct ClassSlot cls = {
     JSDate::GetClass(),
     context::Intern(this, "Date"),
-    JSString::NewAsciiString(this, "Date"),
+    JSString::NewAsciiString(this, "Date", &dummy),
     constructor,
     proto
   };
@@ -882,6 +890,7 @@ void Context::InitDate(const ClassSlot& func_cls,
 void Context::InitRegExp(const ClassSlot& func_cls,
                          JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.10 RegExp
+  Error::Dummy dummy;
   JSObject* const proto = JSRegExp::NewPlain(this, Map::NewFromPoint(this, global_data()->GetRegExpMap()));
   // section 15.10.4 The RegExp Constructor
   JSFunction* const constructor =
@@ -892,7 +901,7 @@ void Context::InitRegExp(const ClassSlot& func_cls,
   struct ClassSlot cls = {
     JSRegExp::GetClass(),
     context::Intern(this, "RegExp"),
-    JSString::NewAsciiString(this, "RegExp"),
+    JSString::NewAsciiString(this, "RegExp", &dummy),
     constructor,
     proto
   };
@@ -923,6 +932,7 @@ void Context::InitRegExp(const ClassSlot& func_cls,
 void Context::InitError(const ClassSlot& func_cls,
                         JSObject* obj_proto, bind::Object* global_binder) {
   // Error
+  Error::Dummy dummy;
   JSObject* const proto = JSObject::NewPlain(this, Map::NewUniqueMap(this));
   // section 15.11.2 The Error Constructor
   JSFunction* const constructor =
@@ -933,7 +943,7 @@ void Context::InitError(const ClassSlot& func_cls,
   struct ClassSlot cls = {
     JSError::GetClass(),
     context::Intern(this, "Error"),
-    JSString::NewAsciiString(this, "Error"),
+    JSString::NewAsciiString(this, "Error", &dummy),
     constructor,
     proto
   };
@@ -953,7 +963,7 @@ void Context::InitError(const ClassSlot& func_cls,
       // section 15.11.4.1 Error.prototype.constructor
       .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
       // section 15.11.4.2 Error.prototype.name
-      .def("name", JSString::NewAsciiString(this, "Error"), ATTR::W | ATTR::C)
+      .def("name", JSString::NewAsciiString(this, "Error", &dummy), ATTR::W | ATTR::C)
       // section 15.11.4.3 Error.prototype.message
       .def("message", JSString::NewEmptyString(this), ATTR::W | ATTR::C)
       // section 15.11.4.4 Error.prototype.toString()
@@ -976,7 +986,7 @@ void Context::InitError(const ClassSlot& func_cls,
     struct ClassSlot sub_cls = {
       JSEvalError::GetClass(),
       context::Intern(this, "Error"),
-      JSString::NewAsciiString(this, "EvalError"),
+      JSString::NewAsciiString(this, "EvalError", &dummy),
       sub_constructor,
       sub_proto
     };
@@ -1008,7 +1018,7 @@ void Context::InitError(const ClassSlot& func_cls,
     struct ClassSlot sub_cls = {
       JSRangeError::GetClass(),
       context::Intern(this, "Error"),
-      JSString::NewAsciiString(this, "RangeError"),
+      JSString::NewAsciiString(this, "RangeError", &dummy),
       sub_constructor,
       sub_proto
     };
@@ -1041,7 +1051,7 @@ void Context::InitError(const ClassSlot& func_cls,
     struct ClassSlot sub_cls = {
       JSReferenceError::GetClass(),
       context::Intern(this, "Error"),
-      JSString::NewAsciiString(this, "ReferenceError"),
+      JSString::NewAsciiString(this, "ReferenceError", &dummy),
       sub_constructor,
       sub_proto
     };
@@ -1073,7 +1083,7 @@ void Context::InitError(const ClassSlot& func_cls,
     struct ClassSlot sub_cls = {
       JSSyntaxError::GetClass(),
       context::Intern(this, "Error"),
-      JSString::NewAsciiString(this, "SyntaxError"),
+      JSString::NewAsciiString(this, "SyntaxError", &dummy),
       sub_constructor,
       sub_proto
     };
@@ -1105,7 +1115,7 @@ void Context::InitError(const ClassSlot& func_cls,
     struct ClassSlot sub_cls = {
       JSTypeError::GetClass(),
       context::Intern(this, "Error"),
-      JSString::NewAsciiString(this, "TypeError"),
+      JSString::NewAsciiString(this, "TypeError", &dummy),
       sub_constructor,
       sub_proto
     };
@@ -1137,7 +1147,7 @@ void Context::InitError(const ClassSlot& func_cls,
     struct ClassSlot sub_cls = {
       JSURIError::GetClass(),
       context::Intern(this, "Error"),
-      JSString::NewAsciiString(this, "URIError"),
+      JSString::NewAsciiString(this, "URIError", &dummy),
       sub_constructor,
       sub_proto
     };
@@ -1157,10 +1167,11 @@ void Context::InitError(const ClassSlot& func_cls,
 void Context::InitJSON(const ClassSlot& func_cls,
                        JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.12 JSON
+  Error::Dummy dummy;
   struct ClassSlot cls = {
     JSJSON::GetClass(),
     context::Intern(this, "JSON"),
-    JSString::NewAsciiString(this, "JSON"),
+    JSString::NewAsciiString(this, "JSON", &dummy),
     NULL,
     obj_proto
   };
@@ -1180,6 +1191,7 @@ void Context::InitMap(const ClassSlot& func_cls,
                       JSObject* obj_proto, bind::Object* global_binder) {
   // ES.next Map
   // http://wiki.ecmascript.org/doku.php?id=harmony:simple_maps_and_sets
+  Error::Dummy dummy;
   JSObject* const proto = JSMap::NewPlain(this, Map::NewUniqueMap(this));
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::MapConstructor, 0>::NewPlain(
@@ -1189,7 +1201,7 @@ void Context::InitMap(const ClassSlot& func_cls,
   struct ClassSlot cls = {
     JSMap::GetClass(),
     context::Intern(this, "Map"),
-    JSString::NewAsciiString(this, "Map"),
+    JSString::NewAsciiString(this, "Map", &dummy),
     constructor,
     proto
   };
@@ -1215,6 +1227,7 @@ void Context::InitSet(const ClassSlot& func_cls,
                       JSObject* obj_proto, bind::Object* global_binder) {
   // ES.next Set
   // http://wiki.ecmascript.org/doku.php?id=harmony:simple_maps_and_sets
+  Error::Dummy dummy;
   JSObject* const proto = JSSet::NewPlain(this, Map::NewUniqueMap(this));
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::SetConstructor, 0>::NewPlain(
@@ -1224,7 +1237,7 @@ void Context::InitSet(const ClassSlot& func_cls,
   struct ClassSlot cls = {
     JSSet::GetClass(),
     context::Intern(this, "Set"),
-    JSString::NewAsciiString(this, "Set"),
+    JSString::NewAsciiString(this, "Set", &dummy),
     constructor,
     proto
   };
@@ -1247,10 +1260,11 @@ void Context::InitSet(const ClassSlot& func_cls,
 
 void Context::InitIntl(const ClassSlot& func_cls,
                        JSObject* obj_proto, bind::Object* global_binder) {
+  Error::Dummy dummy;
   struct ClassSlot cls = {
     JSIntl::GetClass(),
     context::Intern(this, "Intl"),
-    JSString::NewAsciiString(this, "Intl"),
+    JSString::NewAsciiString(this, "Intl", &dummy),
     NULL,
     obj_proto
   };
@@ -1277,7 +1291,7 @@ void Context::InitIntl(const ClassSlot& func_cls,
     struct ClassSlot cls = {
       JSCollator::GetClass(),
       context::Intern(this, "Collator"),
-      JSString::NewAsciiString(this, "Collator"),
+      JSString::NewAsciiString(this, "Collator", &dummy),
       constructor,
       proto
     };
@@ -1312,7 +1326,7 @@ void Context::InitIntl(const ClassSlot& func_cls,
     struct ClassSlot cls = {
       JSNumberFormat::GetClass(),
       context::Intern(this, "NumberFormat"),
-      JSString::NewAsciiString(this, "NumberFormat"),
+      JSString::NewAsciiString(this, "NumberFormat", &dummy),
       constructor,
       proto
     };
@@ -1347,7 +1361,7 @@ void Context::InitIntl(const ClassSlot& func_cls,
     struct ClassSlot cls = {
       JSDateTimeFormat::GetClass(),
       context::Intern(this, "DateTimeFormat"),
-      JSString::NewAsciiString(this, "DateTimeFormat"),
+      JSString::NewAsciiString(this, "DateTimeFormat", &dummy),
       constructor,
       proto
     };

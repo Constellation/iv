@@ -50,7 +50,7 @@ inline JSVal FunctionToString(const Arguments& args, Error* e) {
       builder.Append("anonymous");
     }
     builder.Append(func->GetSource());
-    return builder.Build(ctx);
+    return builder.Build(ctx, false, e);
   }
   e->Report(Error::Type, "Function.prototype.toString is not generic function");
   return JSEmpty;

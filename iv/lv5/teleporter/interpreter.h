@@ -725,7 +725,7 @@ void Interpreter::Visit(const Assignment* assign) {
         if (lprim.IsString() || rprim.IsString()) {
           JSString* const lstr = lprim.ToString(ctx_, CHECK);
           JSString* const rstr = rprim.ToString(ctx_, CHECK);
-          result = JSString::New(ctx_, lstr, rstr);
+          result = JSString::New(ctx_, lstr, rstr, CHECK);
           break;
         }
         const double left_num = lprim.ToNumber(ctx_, CHECK);
@@ -883,7 +883,8 @@ void Interpreter::Visit(const BinaryOperation* binary) {
         if (lprim.IsString() || rprim.IsString()) {
           JSString* const lstr = lprim.ToString(ctx_, CHECK);
           JSString* const rstr = rprim.ToString(ctx_, CHECK);
-          ctx_->Return(JSString::New(ctx_, lstr, rstr));
+          JSString* const result = JSString::New(ctx_, lstr, rstr, CHECK);
+          ctx_->Return(result);
           return;
         }
         const double left_num = lprim.ToNumber(ctx_, CHECK);
@@ -1214,7 +1215,8 @@ void Interpreter::Visit(const PostfixExpression* postfix) {
 
 
 void Interpreter::Visit(const StringLiteral* str) {
-  ctx_->Return(JSString::New(ctx_, str->value()));
+  JSString* result = JSString::New(ctx_, str->value(), CHECK);
+  ctx_->Return(result);
 }
 
 
@@ -1253,10 +1255,9 @@ void Interpreter::Visit(const FalseLiteral* lit) {
 }
 
 void Interpreter::Visit(const RegExpLiteral* regexp) {
-  ctx_->Return(
-      JSRegExp::New(ctx_,
-                    regexp->value(),
-                    regexp->regexp()));
+  JSRegExp* reg =
+      JSRegExp::New(ctx_, regexp->value(), regexp->regexp(), CHECK);
+  ctx_->Return(reg);
 }
 
 

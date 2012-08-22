@@ -2,6 +2,7 @@
 #define IV_LV5_RADIO_CELL_H_
 #include <gc/gc.h>
 #include <gc/gc_cpp.h>
+#include <iv/byteorder.h>
 #include <iv/lv5/radio/color.h>
 #include <iv/lv5/radio/block_size.h>
 namespace iv {
@@ -25,15 +26,41 @@ enum CellTag {
 class Cell {
  public:
   // next is used for free list ptr and gc mark bits
-  explicit Cell(int tag)
-    : next_address_of_freelist_or_storage_(
-        tag << Color::kOffset | Color::WHITE) {
+  union Tag {
+#if defined(IV_IS_LITTLE_ENDIAN)
+    struct Pair {
+      uint32_t color;
+      uint32_t tag;
+    } pair;
+#else
+    struct Pair {
+      uint32_t tag;
+      uint32_t color;
+    } pair;
+#endif
+    uint64_t next_address_of_freelist;
+  };
+
+  static const int kTagOffset = offsetof(Tag, pair) + offsetof(Tag::Pair, tag);
+
+  static int TagOffset() {
+    return IV_OFFSETOF(Cell, storage_) + kTagOffset;
   }
-  Cell() : next_address_of_freelist_or_storage_(Color::CLEAR) { }
+
+  explicit Cell(uint32_t tag) {
+    storage_.pair.tag = tag;
+    storage_.pair.color = Color::WHITE;
+  }
+
+  Cell() {
+    storage_.pair.tag = 0;
+    storage_.pair.color = Color::CLEAR;
+  }
+
   virtual ~Cell() { }
 
-  int tag() const {
-    return next_address_of_freelist_or_storage_ >> Color::kOffset;
+  uint32_t tag() const {
+    return storage_.pair.tag;
   }
 
   Block* block() const {
@@ -42,27 +69,25 @@ class Cell {
   }
 
   Color::Type color() const {
-    return static_cast<Color::Type>(
-        next_address_of_freelist_or_storage_& Color::kMask);
+    return static_cast<Color::Type>(storage_.pair.color & Color::kMask);
   }
 
   void Coloring(Color::Type color) {
-    next_address_of_freelist_or_storage_ &= ~Color::kMask;  // clear color
-    next_address_of_freelist_or_storage_ |= color;
+    storage_.pair.color = color;
   }
 
   Cell* next() const {
-    return reinterpret_cast<Cell*>(next_address_of_freelist_or_storage_);
+    return reinterpret_cast<Cell*>(storage_.next_address_of_freelist);
   }
 
   void set_next(Cell* cell) {
-    next_address_of_freelist_or_storage_ = reinterpret_cast<uintptr_t>(cell);
+    storage_.next_address_of_freelist = reinterpret_cast<uint64_t>(cell);
   }
 
   virtual void MarkChildren(Core* core) { }
 
   // This is public, because offsetof to this is used in breaker::Compiler
-  uintptr_t next_address_of_freelist_or_storage_;
+  Tag storage_;
 };
 
 template<CellTag TAG = POINTER>

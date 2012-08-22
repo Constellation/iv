@@ -217,7 +217,7 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
     }
     ++k;
   }
-  return builder.Build(ctx);
+  return builder.Build(ctx, false, e);
 }
 
 // section 15.4.4.4 Array.prototype.concat([item1[, item2[, ...]]])
@@ -297,7 +297,7 @@ inline JSVal ArrayJoin(const Arguments& args, Error* e) {
   if (!args.At(0).IsUndefined()) {
     separator = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
   } else {
-    separator = JSString::NewAsciiString(ctx, ",");
+    separator = JSString::NewAsciiString(ctx, ",", e);
   }
 
   if (len == 0) {
@@ -344,7 +344,7 @@ inline JSVal ArrayJoin(const Arguments& args, Error* e) {
     }
   }
 
-  return builder.Build(ctx);
+  return builder.Build(ctx, false, e);
 }
 
 // section 15.4.4.6 Array.prototype.pop()

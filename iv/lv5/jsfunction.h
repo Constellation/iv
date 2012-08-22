@@ -9,6 +9,7 @@
 #include <iv/lv5/class.h>
 #include <iv/lv5/map.h>
 #include <iv/lv5/arguments.h>
+#include <iv/lv5/jsstring_fwd.h>
 #include <iv/lv5/radio/core_fwd.h>
 namespace iv {
 namespace lv5 {

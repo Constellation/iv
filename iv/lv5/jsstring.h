@@ -34,11 +34,11 @@ inline uint32_t SplitFiberWithOneChar(Context* ctx,
     if (*it != ch) {
       builder->Append(*it);
     } else {
+      JSString* str =
+          builder->Build(ctx, fiber->Is8Bit(), IV_LV5_ERROR_WITH(e, 0));
       ary->JSArray::DefineOwnProperty(
           ctx, symbol::MakeSymbolFromIndex(index),
-          DataDescriptor(
-              builder->Build(ctx, fiber->Is8Bit()),
-              ATTR::W | ATTR::E | ATTR::C),
+          DataDescriptor(str, ATTR::W | ATTR::E | ATTR::C),
           false, e);
       ++index;
       if (index == limit) {
@@ -53,19 +53,12 @@ inline uint32_t SplitFiberWithOneChar(Context* ctx,
 }  // namespace detail
 
 
-inline JSString::JSString(JSVal* src, uint32_t count)
-  : size_(0),
-    is_8bit_(true),
-    fiber_count_(0),
+inline JSString::JSString(JSVal* src, uint32_t count,
+                          size_type s, size_type fibers, bool is_8bit)
+  : size_(s),
+    is_8bit_(is_8bit),
+    fiber_count_(fibers),
     fibers_() {
-  for (uint32_t i = 0; i < count; ++i) {
-    this_type* str = src[i].string();
-    size_ += str->size();
-    fiber_count_ += str->fiber_count();
-    if (!str->Is8Bit()) {
-      is_8bit_ = false;
-    }
-  }
   if (fiber_count() > kMaxFibers) {
     Cons* cons = Cons::NewWithSize(size(), Is8Bit(), fiber_count());
     fiber_count_ = 1;
@@ -197,11 +190,10 @@ JSArray* JSString::Split(Context* ctx,
       }
     }
   }
+  JSString* result = builder.Build(ctx, false, IV_LV5_ERROR_WITH(e, NULL));
   ary->JSArray::DefineOwnProperty(
       ctx, symbol::MakeSymbolFromIndex(index),
-      DataDescriptor(
-          builder.Build(ctx),
-          ATTR::W | ATTR::E | ATTR::C),
+      DataDescriptor(result, ATTR::W | ATTR::E | ATTR::C),
       false, e);
   return ary;
 }

@@ -175,34 +175,39 @@ inline bool Error::Standard::RequireMaterialize(Context* ctx) const {
 inline JSVal Error::Standard::Detail(Context* ctx) {
   assert(code() != Error::Normal);
   JSError* error = NULL;
+  Error::Dummy dummy;
+  JSString* message = JSString::New(ctx, detail(), &dummy);
+  if (dummy) {
+    message = JSString::NewAsciiString(ctx, "something wrong with error message", &dummy);
+  }
   switch (code()) {
     case Error::Eval: {
-      error = JSEvalError::New(ctx, JSString::New(ctx, detail()));
+      error = JSEvalError::New(ctx, message);
       break;
     }
 
     case Error::Range: {
-      error = JSRangeError::New(ctx, JSString::New(ctx, detail()));
+      error = JSRangeError::New(ctx, message);
       break;
     }
 
     case Error::Reference: {
-      error = JSReferenceError::New(ctx, JSString::New(ctx, detail()));
+      error = JSReferenceError::New(ctx, message);
       break;
     }
 
     case Error::Syntax: {
-      error = JSSyntaxError::New(ctx, JSString::New(ctx, detail()));
+      error = JSSyntaxError::New(ctx, message);
       break;
     }
 
     case Error::Type: {
-      error = JSTypeError::New(ctx, JSString::New(ctx, detail()));
+      error = JSTypeError::New(ctx, message);
       break;
     }
 
     case Error::URI: {
-      error = JSURIError::New(ctx, JSString::New(ctx, detail()));
+      error = JSURIError::New(ctx, message);
       break;
     }
 
@@ -231,9 +236,14 @@ inline JSVal Error::Standard::Detail(Context* ctx) {
     }
     Clear();
     if (!dump.empty()) {
+      Error::Dummy dummy;
+      JSString* stack = JSString::New(ctx, dump, &dummy);
+      if (dummy) {
+        stack = JSString::NewAsciiString(ctx, "something wrong with error stack", &dummy);
+      }
       error->DefineOwnProperty(
           ctx, symbol::stack(),
-          DataDescriptor(JSString::New(ctx, dump), ATTR::NONE),
+          DataDescriptor(stack, ATTR::NONE),
           false, this);
     }
     if (*this) {

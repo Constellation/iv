@@ -17,7 +17,7 @@ inline void* SearchExceptionHandler(void* pc, void** rsp,
   Error* e = stack->error;
   assert(*e);
   const std::size_t bytecode_offset =
-      frame->code()->core_data()->assembler()->PCToBytecodeOffset(pc);
+      frame->code()->core_data()->native_code()->PCToBytecodeOffset(pc);
   frame->MaterializeErrorStack(
       ctx, e, frame->code()->core_data()->data()->data() + bytecode_offset);
   while (true) {

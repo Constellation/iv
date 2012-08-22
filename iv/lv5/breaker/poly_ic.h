@@ -11,6 +11,10 @@ class PolyIC : public IC {
 };
 
 class LoadPropertyIC : public PolyIC {
+ public:
+  static const std::size_t kPolyICChainSize = 3;
+ private:
+  uintptr_t* last_hole_;
 };
 
 class StorePropertyIC : public PolyIC {

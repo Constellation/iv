@@ -446,7 +446,7 @@ inline void ReplaceOnce(Builder* builder,
 
 
 template<typename FiberType>
-JSVal StringTrimHelper(Context* ctx, const FiberType* fiber);
+JSVal StringTrimHelper(Context* ctx, const FiberType* fiber, Error* e);
 
 }  // namespace detail
 
@@ -479,7 +479,7 @@ inline JSVal StringFromCharCode(const Arguments& args, Error* e) {
     const uint32_t ch = it->ToUInt32(ctx, IV_LV5_ERROR(e));
     builder.Append(ch);
   }
-  return builder.Build(ctx);
+  return builder.Build(ctx, false, e);
 }
 
 // ES6
@@ -500,7 +500,7 @@ inline JSVal StringFromCodePoint(const Arguments& args, Error* e) {
     const uint32_t cp = static_cast<uint32_t>(nextCP);
     core::unicode::CodePointToUTF16(cp, std::back_inserter(builder));
   }
-  return builder.Build(ctx);
+  return builder.Build(ctx, false, e);
 }
 
 // ES6
@@ -525,7 +525,7 @@ inline JSVal StringRaw(const Arguments& args, Error* e) {
     elements.AppendJSString(*next_seg);
     ++next_index;
     if (next_index == literal_segments) {
-      return elements.Build(ctx);
+      return elements.Build(ctx, false, e);
     }
     next = args.At(next_index);
     const JSString* next_sub = next.ToString(ctx, IV_LV5_ERROR(e));
@@ -655,7 +655,7 @@ inline JSVal StringConcat(const Arguments& args, Error* e) {
     const JSString* const r = it->ToString(args.ctx(), IV_LV5_ERROR(e));
     builder.AppendJSString(*r);
   }
-  return builder.Build(args.ctx());
+  return builder.Build(args.ctx(), false, e);
 }
 
 // section 15.5.4.7 String.prototype.indexOf(searchString, position)
@@ -792,7 +792,7 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
         replacer.Replace(&builder, IV_LV5_ERROR(e));
       }
     }
-    return builder.Build(ctx);
+    return builder.Build(ctx, false, e);
   } else {
     JSString* search_str = (args_count == 0) ?
         ctx->global_data()->string_undefined() :
@@ -832,7 +832,7 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
     builder.AppendJSString(
         *str,
         loc + search_str->size(), str->size());
-    return builder.Build(ctx);
+    return builder.Build(ctx, false, e);
   }
 }
 
@@ -1060,13 +1060,13 @@ inline JSVal StringSubstring(const Arguments& args, Error* e) {
 namespace detail {
 
 template<typename Converter>
-inline JSString* ConvertCase(Context* ctx, JSString* str, Converter converter) {
+inline JSString* ConvertCase(Context* ctx, JSString* str, Converter converter, Error* e) {
   if (str->Is8Bit()) {
     std::vector<char> builder;
     builder.resize(str->size());
     const Fiber8* fiber = str->Get8Bit();
     std::transform(fiber->begin(), fiber->end(), builder.begin(), converter);
-    return JSString::New(ctx, builder.begin(), builder.end(), true);
+    return JSString::New(ctx, builder.begin(), builder.end(), true, e);
   } else {
     // Special Casing is considered
     std::vector<uint16_t> builder;
@@ -1085,7 +1085,7 @@ inline JSString* ConvertCase(Context* ctx, JSString* str, Converter converter) {
         builder.push_back(ch);
       }
     }
-    return JSString::New(ctx, builder.begin(), builder.end(), false);
+    return JSString::New(ctx, builder.begin(), builder.end(), false, e);
   }
 }
 
@@ -1103,7 +1103,7 @@ struct ToUpperCase {
 
 template<typename Iter, typename Converter>
 inline JSString* ConvertCaseLocale(Context* ctx,
-                                   Iter it, Iter last, Converter converter) {
+                                   Iter it, Iter last, Converter converter, Error* e) {
   std::vector<uint16_t> builder;
   builder.reserve(std::distance(it, last));
   int prev = core::character::code::DEFAULT;
@@ -1131,7 +1131,7 @@ inline JSString* ConvertCaseLocale(Context* ctx,
       }
     }
   }
-  return JSString::New(ctx, builder.begin(), builder.end(), false);
+  return JSString::New(ctx, builder.begin(), builder.end(), false, e);
 }
 
 struct ToLocaleUpperCase {
@@ -1157,7 +1157,7 @@ inline JSVal StringToLowerCase(const Arguments& args, Error* e) {
   const JSVal val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
-  return detail::ConvertCase(args.ctx(), str, detail::ToLowerCase());
+  return detail::ConvertCase(args.ctx(), str, detail::ToLowerCase(), e);
 }
 
 // section 15.5.4.17 String.prototype.toLocaleLowerCase()
@@ -1170,12 +1170,12 @@ inline JSVal StringToLocaleLowerCase(const Arguments& args, Error* e) {
     const Fiber8* fiber = str->Get8Bit();
     return detail::ConvertCaseLocale(args.ctx(),
                                      fiber->begin(), fiber->end(),
-                                     detail::ToLocaleLowerCase());
+                                     detail::ToLocaleLowerCase(), e);
   } else {
     const Fiber16* fiber = str->Get16Bit();
     return detail::ConvertCaseLocale(args.ctx(),
                                      fiber->begin(), fiber->end(),
-                                     detail::ToLocaleLowerCase());
+                                     detail::ToLocaleLowerCase(), e);
   }
 }
 
@@ -1185,7 +1185,7 @@ inline JSVal StringToUpperCase(const Arguments& args, Error* e) {
   const JSVal val = args.this_binding();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
-  return detail::ConvertCase(args.ctx(), str, detail::ToUpperCase());
+  return detail::ConvertCase(args.ctx(), str, detail::ToUpperCase(), e);
 }
 
 // section 15.5.4.19 String.prototype.toLocaleUpperCase()
@@ -1198,17 +1198,17 @@ inline JSVal StringToLocaleUpperCase(const Arguments& args, Error* e) {
     const Fiber8* fiber = str->Get8Bit();
     return detail::ConvertCaseLocale(args.ctx(),
                                      fiber->begin(), fiber->end(),
-                                     detail::ToLocaleUpperCase());
+                                     detail::ToLocaleUpperCase(), e);
   } else {
     const Fiber16* fiber = str->Get16Bit();
     return detail::ConvertCaseLocale(args.ctx(),
                                      fiber->begin(), fiber->end(),
-                                     detail::ToLocaleUpperCase());
+                                     detail::ToLocaleUpperCase(), e);
   }
 }
 
 template<typename FiberType>
-inline JSVal detail::StringTrimHelper(Context* ctx, const FiberType* fiber) {
+inline JSVal detail::StringTrimHelper(Context* ctx, const FiberType* fiber, Error* e) {
   typename FiberType::const_iterator lit = fiber->begin();
   const typename FiberType::const_iterator last = fiber->end();
   // trim leading space
@@ -1230,7 +1230,7 @@ inline JSVal detail::StringTrimHelper(Context* ctx, const FiberType* fiber) {
       break;
     }
   }
-  return JSString::New(ctx, lit, rit.base());
+  return JSString::New(ctx, lit, rit.base(), false, e);
 }
 
 // section 15.5.4.20 String.prototype.trim()
@@ -1240,9 +1240,9 @@ inline JSVal StringTrim(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   if (str->Is8Bit()) {
-    return detail::StringTrimHelper(args.ctx(), str->Get8Bit());
+    return detail::StringTrimHelper(args.ctx(), str->Get8Bit(), e);
   } else {
-    return detail::StringTrimHelper(args.ctx(), str->Get16Bit());
+    return detail::StringTrimHelper(args.ctx(), str->Get16Bit(), e);
   }
 }
 
@@ -1257,7 +1257,7 @@ inline JSVal StringRepeat(const Arguments& args, Error* e) {
   if (count < 0) {
     return JSString::NewEmptyString(ctx);
   }
-  return str->Repeat(ctx, count);
+  return str->Repeat(ctx, count, e);
 }
 
 // section 15.5.4.22 String.prototype.startsWith(searchString, [position])
@@ -1370,7 +1370,7 @@ inline JSVal StringReverse(const Arguments& args, Error* e) {
   Context* ctx = args.ctx();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
-  return JSString::New(ctx, str->crbegin(), str->crend(), str->Is8Bit());
+  return JSString::New(ctx, str->crbegin(), str->crend(), str->Is8Bit(), e);
 }
 
 // section B.2.3 String.prototype.substr(start, length)

@@ -219,13 +219,14 @@ class JSCollatorBoundFunction : public JSFunction {
   explicit JSCollatorBoundFunction(Context* ctx, JSCollator* collator)
     : JSFunction(ctx),
       collator_(collator) {
+    Error::Dummy dummy;
     DefineOwnProperty(
         ctx, symbol::length(),
         DataDescriptor(JSVal::UInt32(2u), ATTR::NONE), false, NULL);
     DefineOwnProperty(
         ctx, symbol::name(),
         DataDescriptor(
-            JSString::NewAsciiString(ctx, "compare"),
+            JSString::NewAsciiString(ctx, "compare", &dummy),
             ATTR::NONE), false, NULL);
   }
 
@@ -296,7 +297,9 @@ class JSNumberFormat : public JSObject {
       return JSEmpty;
     }
     return JSString::New(
-        ctx, result.getBuffer(), result.getBuffer() + result.length());
+        ctx,
+        result.getBuffer(),
+        result.getBuffer() + result.length(), false, e);
   }
 
   static JSNumberFormat* New(Context* ctx) {
@@ -391,7 +394,9 @@ class JSDateTimeFormat : public JSObject {
       return JSEmpty;
     }
     return JSString::New(
-        ctx, result.getBuffer(), result.getBuffer() + result.length());
+        ctx,
+        result.getBuffer(),
+        result.getBuffer() + result.length(), false, e);
   }
 
   static JSDateTimeFormat* New(Context* ctx) {
@@ -602,8 +607,8 @@ inline JSVal JSCollator::Initialize(Context* ctx,
 
   {
     JSVector* vec = JSVector::New(ctx);
-    JSString* sort = JSString::NewAsciiString(ctx, "sort");
-    JSString* search = JSString::NewAsciiString(ctx, "search");
+    JSString* sort = JSString::NewAsciiString(ctx, "sort", e);
+    JSString* search = JSString::NewAsciiString(ctx, "search", e);
     vec->push_back(sort);
     vec->push_back(search);
     const JSVal u = opt.Get(ctx,
@@ -622,8 +627,9 @@ inline JSVal JSCollator::Initialize(Context* ctx,
           requested,
           options,
           IV_LV5_ERROR(e));
-  obj->SetField(JSCollator::LOCALE,
-                JSString::NewAsciiString(ctx, result.locale()));
+  JSString* locale_string =
+      JSString::NewAsciiString(ctx, result.locale(), IV_LV5_ERROR(e));
+  obj->SetField(JSCollator::LOCALE, locale_string);
   icu::Locale locale(result.locale().c_str());
   {
     for (detail_i18n::CollatorOptionTable::const_iterator
@@ -637,7 +643,8 @@ inline JSVal JSCollator::Initialize(Context* ctx,
              oit = it->values.begin(),
              olast = it->values.end();
              oit != olast && *oit; ++oit) {
-          vec->push_back(JSString::NewAsciiString(ctx, *oit));
+          JSString* str = JSString::NewAsciiString(ctx, *oit, IV_LV5_ERROR(e));
+          vec->push_back(str);
         }
       }
       JSVal value = opt.Get(ctx,
@@ -700,10 +707,10 @@ inline JSVal JSCollator::Initialize(Context* ctx,
 
   {
     JSVector* vec = JSVector::New(ctx);
-    JSString* o_base = JSString::NewAsciiString(ctx, "base");
-    JSString* o_accent = JSString::NewAsciiString(ctx, "accent");
-    JSString* o_case = JSString::NewAsciiString(ctx, "case");
-    JSString* o_variant = JSString::NewAsciiString(ctx, "variant");
+    JSString* o_base = JSString::NewAsciiString(ctx, "base", e);
+    JSString* o_accent = JSString::NewAsciiString(ctx, "accent", e);
+    JSString* o_case = JSString::NewAsciiString(ctx, "case", e);
+    JSString* o_variant = JSString::NewAsciiString(ctx, "variant", e);
     vec->push_back(o_base);
     vec->push_back(o_accent);
     vec->push_back(o_case);
@@ -714,7 +721,7 @@ inline JSVal JSCollator::Initialize(Context* ctx,
                       JSUndefined, IV_LV5_ERROR(e));
     if (s.IsUndefined()) {
       if (JSVal::StrictEqual(obj->GetField(JSCollator::USAGE),
-                             JSString::NewAsciiString(ctx, "sort"))) {
+                             JSString::NewAsciiString(ctx, "sort", e))) {
         s = o_variant;
       } else {
         s = o_base;
@@ -826,8 +833,9 @@ inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
           requested,
           JSObject::New(ctx),
           IV_LV5_ERROR(e));
-  obj->SetField(JSDateTimeFormat::LOCALE,
-                JSString::NewAsciiString(ctx, result.locale()));
+  JSString* locale_string =
+      JSString::NewAsciiString(ctx, result.locale(), IV_LV5_ERROR(e));
+  obj->SetField(JSDateTimeFormat::LOCALE, locale_string);
   icu::Locale locale(result.locale().c_str());
   {
     UErrorCode err = U_ZERO_ERROR;
@@ -837,8 +845,10 @@ inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
       e->Report(Error::Type, "numbering system initialization failed");
       return JSEmpty;
     }
-    obj->SetField(JSDateTimeFormat::NUMBERING_SYSTEM,
-                  JSString::NewAsciiString(ctx, numbering_system->getName()));
+    JSString* ns =
+        JSString::NewAsciiString(
+            ctx, numbering_system->getName(), IV_LV5_ERROR(e));
+    obj->SetField(JSDateTimeFormat::NUMBERING_SYSTEM, ns);
   }
 
   JSVal tz =
@@ -877,7 +887,8 @@ inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
            dit = it->values.begin(),
            dlast = it->values.end();
            dit != dlast && *dit; ++dit) {
-        vec->push_back(JSString::NewAsciiString(ctx, *dit));
+        JSString* str = JSString::NewAsciiString(ctx, *dit, IV_LV5_ERROR(e));
+        vec->push_back(str);
       }
       const JSVal value = opt.Get(ctx,
                                   prop,
@@ -889,8 +900,8 @@ inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
   }
 
   {
-    JSString* basic = JSString::NewAsciiString(ctx, "basic");
-    JSString* best_fit = JSString::NewAsciiString(ctx, "best fit");
+    JSString* basic = JSString::NewAsciiString(ctx, "basic", e);
+    JSString* best_fit = JSString::NewAsciiString(ctx, "best fit", e);
     JSVector* vec = JSVector::New(ctx);
     vec->push_back(basic);
     vec->push_back(best_fit);
@@ -1079,8 +1090,8 @@ inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
   obj->set_date_time_format(format);
 
   format->adoptCalendar(calendar.get());
-  obj->SetField(JSDateTimeFormat::CALENDAR,
-                JSString::NewAsciiString(ctx, calendar->getType()));
+  JSString* str = JSString::NewAsciiString(ctx, calendar->getType(), IV_LV5_ERROR(e));
+  obj->SetField(JSDateTimeFormat::CALENDAR, str);
   calendar.release();  // release
   return obj;
 }
@@ -1111,8 +1122,9 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
           requested,
           options,
           IV_LV5_ERROR(e));
-  obj->SetField(JSNumberFormat::LOCALE,
-                JSString::NewAsciiString(ctx, result.locale()));
+  JSString* locale_string =
+      JSString::NewAsciiString(ctx, result.locale(), IV_LV5_ERROR(e));
+  obj->SetField(JSNumberFormat::LOCALE, locale_string);
   icu::Locale locale(result.locale().c_str());
   {
     UErrorCode err = U_ZERO_ERROR;
@@ -1122,8 +1134,10 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
       e->Report(Error::Type, "numbering system initialization failed");
       return JSEmpty;
     }
-    obj->SetField(JSNumberFormat::NUMBERING_SYSTEM,
-                  JSString::NewAsciiString(ctx, numbering_system->getName()));
+    JSString* ns =
+        JSString::NewAsciiString(
+            ctx, numbering_system->getName(), IV_LV5_ERROR(e));
+    obj->SetField(JSNumberFormat::NUMBERING_SYSTEM, ns);
   }
 
   enum {
@@ -1133,9 +1147,9 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
   } style = DECIMAL_STYLE;
   icu::DecimalFormat* format = NULL;
   {
-    JSString* decimal = JSString::NewAsciiString(ctx, "decimal");
-    JSString* percent = JSString::NewAsciiString(ctx, "percent");
-    JSString* currency = JSString::NewAsciiString(ctx, "currency");
+    JSString* decimal = JSString::NewAsciiString(ctx, "decimal", e);
+    JSString* percent = JSString::NewAsciiString(ctx, "percent", e);
+    JSString* currency = JSString::NewAsciiString(ctx, "currency", e);
     JSVector* vec = JSVector::New(ctx);
     vec->push_back(decimal);
     vec->push_back(percent);
@@ -1173,15 +1187,15 @@ inline JSVal JSNumberFormat::Initialize(Context* ctx,
             builder.Append(*it);
           }
         }
-        JSString* c = builder.Build(ctx);
+        JSString* c = builder.Build(ctx, false, IV_LV5_ERROR(e));
         obj->SetField(JSNumberFormat::CURRENCY, c);
       }
       {
         // currencyDisplay option
         JSVector* vec = JSVector::New(ctx);
-        JSString* code = JSString::NewAsciiString(ctx, "code");
-        JSString* symbol = JSString::NewAsciiString(ctx, "symbol");
-        JSString* name = JSString::NewAsciiString(ctx, "name");
+        JSString* code = JSString::NewAsciiString(ctx, "code", e);
+        JSString* symbol = JSString::NewAsciiString(ctx, "symbol", e);
+        JSString* name = JSString::NewAsciiString(ctx, "name", e);
         vec->push_back(code);
         vec->push_back(symbol);
         vec->push_back(name);

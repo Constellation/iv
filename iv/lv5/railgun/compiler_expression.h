@@ -797,6 +797,10 @@ inline void Compiler::Visit(const StringLiteral* lit) {
     // this value is not used and StringLiteral doesn't have side effect
     return;
   }
+  if (lit->value().size() > JSString::kMaxSize) {
+    EmitError(Error::Type, "too long string is prohibited");
+    return;
+  }
   const uint32_t index = constant_pool_.string_index(lit);
   dst_ = EmitConstantLoad(index, dst_);
 }
@@ -874,8 +878,13 @@ inline void Compiler::Visit(const RegExpLiteral* lit) {
   dst_ = Dest(dst_);
   thunkpool_.Spill(dst_);
   Emit<OP::LOAD_REGEXP>(Instruction::SW(dst_, code_->constants_.size()));
-  code_->constants_.push_back(
-      JSRegExp::New(ctx_, lit->value(), lit->regexp()));
+  Error::Standard e;
+  JSRegExp* reg = JSRegExp::New(ctx_, lit->value(), lit->regexp(), &e);
+  if (e) {
+    EmitError(Error::Type, e.detail());
+    return;
+  }
+  code_->constants_.push_back(reg);
 }
 
 class Compiler::ArraySite {

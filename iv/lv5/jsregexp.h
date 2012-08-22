@@ -31,12 +31,8 @@ class JSRegExp : public JSObject {
     FIELD_LAST_INDEX = 4
   };
 
-  JSString* source(Context* ctx) {
-    Error::Dummy e;
-    const JSVal source = Get(ctx, symbol::source(), &e);
-    assert(!e);
-    assert(source.IsString());
-    return source.string();
+  JSString* source() const {
+    return GetSlot(FIELD_SOURCE).string();
   }
 
   static JSRegExp* New(Context* ctx) {
@@ -48,29 +44,30 @@ class JSRegExp : public JSObject {
 
   static JSRegExp* New(Context* ctx,
                        const core::UStringPiece& value,
-                       const JSRegExpImpl* impl) {
-    JSRegExp* const reg = new JSRegExp(ctx, value, impl);
+                       const JSRegExpImpl* impl,
+                       Error* e) {
+    JSRegExp* const reg = new JSRegExp(ctx, value, impl, IV_LV5_ERROR_WITH(e, NULL));
     reg->set_cls(JSRegExp::GetClass());
     reg->set_prototype(context::GetClassSlot(ctx, Class::RegExp).prototype);
     return reg;
   }
 
-  static JSRegExp* New(Context* ctx, JSString* value) {
-    JSRegExp* const reg = new JSRegExp(ctx, value);
+  static JSRegExp* New(Context* ctx, JSString* value, Error* e) {
+    JSRegExp* const reg = new JSRegExp(ctx, value, IV_LV5_ERROR_WITH(e, NULL));
     reg->set_cls(JSRegExp::GetClass());
     reg->set_prototype(context::GetClassSlot(ctx, Class::RegExp).prototype);
     return reg;
   }
 
-  static JSRegExp* New(Context* ctx, JSString* value, JSString* flags) {
-    JSRegExp* const reg = new JSRegExp(ctx, value, flags);
+  static JSRegExp* New(Context* ctx, JSString* value, JSString* flags, Error* e) {
+    JSRegExp* const reg = new JSRegExp(ctx, value, flags, IV_LV5_ERROR_WITH(e, NULL));
     reg->set_cls(JSRegExp::GetClass());
     reg->set_prototype(context::GetClassSlot(ctx, Class::RegExp).prototype);
     return reg;
   }
 
   static JSRegExp* New(Context* ctx, JSRegExp* r) {
-    JSString* source = r->source(ctx);
+    JSString* source = r->source();
     JSRegExp* const reg = new JSRegExp(ctx, source, r->impl());
     reg->set_cls(JSRegExp::GetClass());
     reg->set_prototype(context::GetClassSlot(ctx, Class::RegExp).prototype);
@@ -131,7 +128,7 @@ class JSRegExp : public JSObject {
   uint32_t num_of_captures() const { return impl_->number_of_captures(); }
 
  private:
-  JSRegExp(Context* ctx, JSString* pattern, JSString* flags)
+  JSRegExp(Context* ctx, JSString* pattern, JSString* flags, Error* e)
     : JSObject(context::GetRegExpMap(ctx)),
       impl_() {
     int f = 0;
@@ -143,21 +140,25 @@ class JSRegExp : public JSObject {
       f = JSRegExpImpl::ComputeFlags(fiber16->begin(), fiber16->end());
     }
     impl_ = CompileImpl(ctx->regexp_allocator(), pattern, f);
-    InitializeProperty(ctx, Escape(ctx, pattern));
+    JSString* escaped = Escape(ctx, pattern, IV_LV5_ERROR_VOID(e));
+    InitializeProperty(ctx, escaped);
   }
 
-  JSRegExp(Context* ctx, JSString* pattern)
+  JSRegExp(Context* ctx, JSString* pattern, Error* e)
     : JSObject(context::GetRegExpMap(ctx)),
       impl_(CompileImpl(ctx->regexp_allocator(), pattern)) {
-    InitializeProperty(ctx, Escape(ctx, pattern));
+    JSString* escaped = Escape(ctx, pattern, IV_LV5_ERROR_VOID(e));
+    InitializeProperty(ctx, escaped);
   }
 
   JSRegExp(Context* ctx,
            const core::UStringPiece& pattern,
-           const JSRegExpImpl* reg)
+           const JSRegExpImpl* reg,
+           Error* e)
     : JSObject(context::GetRegExpMap(ctx)),
       impl_(reg) {
-    InitializeProperty(ctx, Escape(ctx, pattern));
+    JSString* escaped = Escape(ctx, pattern, IV_LV5_ERROR_VOID(e));
+    InitializeProperty(ctx, escaped);
   }
 
   JSRegExp(Context* ctx,
@@ -171,23 +172,22 @@ class JSRegExp : public JSObject {
   explicit JSRegExp(Context* ctx)
     : JSObject(context::GetRegExpMap(ctx)),
       impl_(new JSRegExpImpl(ctx->regexp_allocator())) {
-    InitializeProperty(ctx, JSString::NewAsciiString(ctx, "(?:)"));
+    InitializeProperty(ctx, ctx->global_data()->string_empty_regexp());
   }
 
   explicit JSRegExp(Context* ctx, Map* map)
     : JSObject(map),
       impl_(new JSRegExpImpl(ctx->regexp_allocator())) {
-    GetSlot(FIELD_SOURCE) = JSString::NewAsciiString(ctx, "(?:)");
+    GetSlot(FIELD_SOURCE) = ctx->global_data()->string_empty_regexp();
     GetSlot(FIELD_GLOBAL) = JSVal::Bool(impl_->global());
     GetSlot(FIELD_IGNORE_CASE) = JSVal::Bool(impl_->ignore());
     GetSlot(FIELD_MULTILINE) = JSVal::Bool(impl_->multiline());
     GetSlot(FIELD_LAST_INDEX) = JSVal::Int32(0);
   }
 
-  static JSString* Escape(Context* ctx, JSString* str) {
+  static JSString* Escape(Context* ctx, JSString* str, Error* e) {
     JSStringBuilder builder;
     builder.reserve(str->size());
-    bool is_8bit = true;
     if (str->Is8Bit()) {
       const Fiber8* fiber8 = str->Get8Bit();
       core::RegExpEscape(fiber8->begin(), fiber8->end(),
@@ -196,21 +196,19 @@ class JSRegExp : public JSObject {
       const Fiber16* fiber16 = str->Get16Bit();
       core::RegExpEscape(fiber16->begin(), fiber16->end(),
                          std::back_inserter(builder));
-      is_8bit = false;
     }
-    return builder.Build(ctx, is_8bit);
+    return builder.Build(ctx, str->Is8Bit(), e);
   }
 
-  static JSString* Escape(Context* ctx, const core::UStringPiece& str) {
+  static JSString* Escape(Context* ctx, const core::UStringPiece& str, Error* e) {
     JSStringBuilder builder;
     builder.reserve(str.size());
-    core::RegExpEscape(str.begin(), str.end(),
-                       std::back_inserter(builder));
-    return builder.Build(ctx);
+    core::RegExpEscape(str.begin(), str.end(), std::back_inserter(builder));
+    return builder.Build(ctx, false, e);
   }
 
   void InitializeProperty(Context* ctx, JSString* src) {
-    GetSlot(FIELD_SOURCE) = src->empty() ? JSString::NewAsciiString(ctx, "(?:)") : src;
+    GetSlot(FIELD_SOURCE) = src->empty() ? ctx->global_data()->string_empty_regexp() : src;
     GetSlot(FIELD_GLOBAL) = JSVal::Bool(impl_->global());
     GetSlot(FIELD_IGNORE_CASE) = JSVal::Bool(impl_->ignore());
     GetSlot(FIELD_MULTILINE) = JSVal::Bool(impl_->multiline());
