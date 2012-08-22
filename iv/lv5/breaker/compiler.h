@@ -68,6 +68,7 @@ class Compiler {
       top_(top),
       code_(NULL),
       asm_(new Assembler),
+      native_code_(new NativeCode(asm_)),
       jump_map_(),
       entry_points_(),
       unresolved_address_map_(),
@@ -78,7 +79,7 @@ class Compiler {
       last_used_(kInvalidUsedOffset),
       last_used_candidate_(),
       type_record_() {
-    top_->core_data()->set_assembler(asm_);
+    top_->core_data()->set_native_code(native_code_);
   }
 
   static uint64_t RotateLeft64(uint64_t val, uint64_t amount) {
@@ -237,7 +238,7 @@ class Compiler {
         set_previous_instr(previous);
       }
 
-      asm_->AttachBytecodeOffset(asm_->size(), instr - total_first_instr);
+      native_code()->AttachBytecodeOffset(asm_->size(), instr - total_first_instr);
 
       switch (opcode) {
         case r::OP::NOP:
@@ -1950,7 +1951,7 @@ class Compiler {
     } else {
       std::shared_ptr<MonoIC> ic(new MonoIC());
       ic->CompileLoad(asm_, ctx_->global_obj(), code_, name);
-      asm_->BindIC(ic);
+      native_code()->BindIC(ic);
     }
 
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
@@ -1965,7 +1966,7 @@ class Compiler {
     LoadVR(asm_->rax, src);
     std::shared_ptr<MonoIC> ic(new MonoIC());
     ic->CompileStore(asm_, ctx_->global_obj(), code_, name);
-    asm_->BindIC(ic);
+    native_code()->BindIC(ic);
   }
 
   // opcode | dst | slot
@@ -3042,6 +3043,8 @@ class Compiler {
 
   Context* ctx() const { return ctx_; }
 
+  NativeCode* native_code() const { return native_code_; }
+
   void LookupHeapEnv(const Xbyak::Reg64& target, uint32_t nest) {
     for (uint32_t i = 0; i < nest; ++i) {
       asm_->mov(target, asm_->ptr[target + IV_OFFSETOF(JSEnv, outer_)]);
@@ -3052,6 +3055,7 @@ class Compiler {
   railgun::Code* top_;
   railgun::Code* code_;
   Assembler* asm_;
+  NativeCode* native_code_;
   JumpMap jump_map_;
   EntryPointMap entry_points_;
   UnresolvedAddressMap unresolved_address_map_;

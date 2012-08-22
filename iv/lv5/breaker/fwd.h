@@ -56,6 +56,7 @@ class Context;
 class Compiler;
 class MonoIC;
 class Assembler;
+class NativeCode;
 class JSFunction;
 class IC;
 class TemplatesGenerator;

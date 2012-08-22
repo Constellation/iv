@@ -75,17 +75,7 @@ class Assembler : public Xbyak::CodeGenerator {
     std::size_t offset_;
   };
 
-  typedef std::pair<std::size_t, std::size_t> PCOffsetAndBytecodeOffset;
-  typedef core::SortedVector<PCOffsetAndBytecodeOffset> BytecodeOffsets;
-  typedef std::vector<std::shared_ptr<IC> > ICVector;
-
-  Assembler()
-    : Xbyak::CodeGenerator(4096, Xbyak::AutoGrow),
-      bytecode_offsets_(),
-      ics_(),
-      pages_() {
-    bytecode_offsets_.reserve(1024);
-  }
+  Assembler() : Xbyak::CodeGenerator(4096, Xbyak::AutoGrow) { }
 
   // implementation of INT $3 and INT imm8
   // INT3 is used for gdb breakpoint.
@@ -102,135 +92,17 @@ class Assembler : public Xbyak::CodeGenerator {
     interrupt();
   }
 
-  void* GainExecutableByOffset(std::size_t offset) const {
-    return core::BitCast<void*>(getCode() + offset);
-  }
-
   template<typename Func>
   void Call(Func* f) {
     mov(rax, core::BitCast<uintptr_t>(f));
     call(rax);
   }
 
-  template<typename Func, typename T1>
-  void Call(Func* f, const T1& t1) {
-    mov(rdi, t1);
-    Call(f);
-  }
-
-  template<typename Func,
-           typename T1, typename T2>
-  void Call(Func* f, const T1& t1, const T2& t2) {
-    mov(rsi, t2);
-    Call(f, t1);
-  }
-
-  template<typename Func,
-           typename T1, typename T2, typename T3>
-  void Call(Func* f, const T1& t1, const T2& t2, const T3& t3) {
-    mov(rdx, t3);
-    Call(f, t1, t2);
-  }
-
-  template<typename Func,
-           typename T1, typename T2, typename T3,
-           typename T4>
-  void Call(Func* f, const T1& t1, const T2& t2, const T3& t3, const T4& t4) {
-    mov(rcx, t4);
-    Call(f, t1, t2, t3);
-  }
-
-  template<typename Func,
-           typename T1, typename T2, typename T3,
-           typename T4, typename T5>
-  void Call(Func* f,
-            const T1& t1, const T2& t2,
-            const T3& t3, const T4& t4, const T5& t5) {
-    mov(r8, t5);
-    Call(f, t1, t2, t3, t4);
-  }
-
-  template<typename Func,
-           typename T1, typename T2, typename T3,
-           typename T4, typename T5, typename T6>
-  void Call(Func* f,
-            const T1& t1, const T2& t2, const T3& t3,
-            const T4& t4, const T5& t5, const T6& t6) {
-    mov(r9, t6);
-    Call(f, t1, t2, t3, t4, t5);
-  }
-
-  struct Comparator {
-    bool operator()(const PCOffsetAndBytecodeOffset& offset,
-                    std::size_t pc_offset) const {
-      return offset.first < pc_offset;
-    }
-
-    bool operator()(std::size_t pc_offset,
-                    const PCOffsetAndBytecodeOffset& offset) const {
-      return pc_offset < offset.first;
-    }
-  };
-
-  void AttachBytecodeOffset(std::size_t pc_offset,
-                            std::size_t bytecode_offset) {
-    if (bytecode_offsets_.empty()) {
-      bytecode_offsets_.push_back(std::make_pair(pc_offset, bytecode_offset));
-      return;
-    }
-
-    PCOffsetAndBytecodeOffset& offset = bytecode_offsets_.back();
-    if (offset.first == pc_offset) {
-      offset.second = bytecode_offset;
-      return;
-    }
-
-    if (offset.second != bytecode_offset) {
-      bytecode_offsets_.push_back(std::make_pair(pc_offset, bytecode_offset));
-    }
-  }
-
-  std::size_t PCToBytecodeOffset(void* pc) const {
-    const BytecodeOffsets::const_iterator it =
-        std::upper_bound(
-            bytecode_offsets_.begin(),
-            bytecode_offsets_.end(),
-            core::BitCast<uint64_t>(pc) - core::BitCast<uint64_t>(getCode()),
-            Comparator());
-    if (it != bytecode_offsets_.begin()) {
-      return (it - 1)->second;
-    }
-    return 0;
-  }
-
-  void BindIC(std::shared_ptr<IC> ic) {
-    ics_.push_back(ic);
-  }
-
   std::size_t size() const { return getSize(); }
 
-  void MarkChildren(radio::Core* core) {
-    for (ICVector::const_iterator it = ics_.begin(),
-         last = ics_.end(); it != last; ++it) {
-      (*it)->MarkChildren(core);
-    }
+  void* GainExecutableByOffset(std::size_t offset) const {
+    return core::BitCast<void*>(getCode() + offset);
   }
-
-  GC_ms_entry* MarkChildren(GC_word* top,
-                            GC_ms_entry* entry,
-                            GC_ms_entry* mark_sp_limit,
-                            GC_word env) {
-    for (ICVector::const_iterator it = ics_.begin(),
-         last = ics_.end(); it != last; ++it) {
-      entry = (*it)->MarkChildren(top, entry, mark_sp_limit, env);
-    }
-    return entry;
-  }
-
- private:
-  BytecodeOffsets bytecode_offsets_;
-  ICVector ics_;
-  ExecutablePages<> pages_;
 };
 
 } } }  // namespace iv::lv5::breaker

@@ -6,9 +6,9 @@
 #include <iv/lv5/railgun/instruction.h>
 
 #if defined(IV_ENABLE_JIT)
-#include <iv/lv5/breaker/assembler.h>
+#include <iv/lv5/breaker/native_code.h>
 #else
-class iv::lv5::breaker::Assembler {
+class iv::lv5::breaker::NativeCode {
  public:
   void MarkChildren(radio::Core* core) { }
 };
@@ -103,7 +103,7 @@ inline void CoreData::MarkChildren(radio::Core* core) {
       }
       n += instr.GetLength();
     }
-    assembler_->MarkChildren(core);
+    native_code_->MarkChildren(core);
   }
 }
 

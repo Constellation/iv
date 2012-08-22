@@ -7,6 +7,7 @@
 #include <iv/lv5/breaker/templates.h>
 #include <iv/lv5/breaker/stub.h>
 #include <iv/lv5/breaker/assembler.h>
+#include <iv/lv5/breaker/native_code.h>
 #include <iv/lv5/breaker/compiler.h>
 #include <iv/lv5/breaker/compiler_arithmetic.h>
 #include <iv/lv5/breaker/entry_point.h>
