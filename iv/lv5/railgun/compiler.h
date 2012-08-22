@@ -327,8 +327,9 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       data_ = core_->data();
       data_->reserve(4 * core::Size::KB);
       code = new Code(ctx_, script_, global, core_, Code::GLOBAL);
-      EmitFunctionCode<Code::GLOBAL>(global, code,
-                                     std::shared_ptr<VariableScope>());
+      EmitFunctionCode<Code::GLOBAL>(
+          global, code,
+          std::shared_ptr<VariableScope>());
     }
     CompileEpilogue(code);
     return code;
@@ -863,7 +864,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     EmitError(Error::Type, builder.BuildPiece());
   }
 
-  void FunctionInstantiation(const FunctionLiteral& lit, bool is_eval_decl) {
+  bool FunctionInstantiation(const FunctionLiteral& lit, bool is_eval_decl) {
     FunctionScope* env =
         static_cast<FunctionScope*>(current_variable_scope_.get());
     registers_.Clear(env->stack_size(), env->heap_size());
@@ -921,9 +922,11 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
     code_->set_heap_size(registers_.heap_size());
     code_->set_stack_size(registers_.stack_size());
+
+    return true;
   }
 
-  void EvalInstantiation(const FunctionLiteral& lit) {
+  bool EvalInstantiation(const FunctionLiteral& lit) {
     // not create new environment
     // simply use given it.
     //   for example,
@@ -962,9 +965,11 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
             Instruction::UInt32(index, flag));
       }
     }
+
+    return true;
   }
 
-  void GlobalInstantiation(const FunctionLiteral& lit) {
+  bool GlobalInstantiation(const FunctionLiteral& lit) {
     registers_.Clear(0, 0);
 
     JSGlobal* global = ctx()->global_obj();
@@ -987,12 +992,12 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
           if (slot.attributes().IsAccessor()) {
             // report error
             EmitError(Error::Type, "create mutable function binding failed");
-            continue;
+            return false;
           }
           assert(slot.attributes().IsData());
           if (!slot.attributes().IsWritable() || !slot.attributes().IsEnumerable()) {
             EmitError(Error::Type, "create mutable function binding failed");
-            continue;
+            return false;
           }
           // OK. We can remove this property safety and set global register.
           Error::Dummy dummy;
@@ -1007,7 +1012,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
         StoredSlot& slot(global->PointAt(entry));
         if (!slot.attributes().IsWritable() || !slot.attributes().IsEnumerable()) {
           EmitError(Error::Type, "create mutable function binding failed");
-          continue;
+          return false;
         }
         slot.set_value(func);
       }
@@ -1029,6 +1034,8 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
             name, JSUndefined, Attributes::CreateData(ATTR::W | ATTR::E));
       }
     }
+
+    return true;
   }
 
   template<Code::CodeType TYPE>
