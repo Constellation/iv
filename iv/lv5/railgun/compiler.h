@@ -987,17 +987,21 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       if (entry == core::kNotFound32) {
         // Does global have the same name property?
         Slot slot;
-        if (global->GetPropertySlot(ctx(), name, &slot) && !slot.attributes().IsConfigurable()) {
-          // property found and not configurable
-          if (slot.attributes().IsAccessor()) {
-            // report error
-            EmitError(Error::Type, "create mutable function binding failed");
-            return false;
-          }
-          assert(slot.attributes().IsData());
-          if (!slot.attributes().IsWritable() || !slot.attributes().IsEnumerable()) {
-            EmitError(Error::Type, "create mutable function binding failed");
-            return false;
+        if (global->GetPropertySlot(ctx(), name, &slot)) {
+          if (!slot.attributes().IsConfigurable()) {
+            // property found and not configurable
+            if (slot.attributes().IsAccessor()) {
+              // report error
+              EmitError(Error::Type, "create mutable function binding failed");
+              return false;
+            }
+            assert(slot.attributes().IsData());
+            if (!slot.attributes().IsWritable() || !slot.attributes().IsEnumerable()) {
+              EmitError(Error::Type, "create mutable function binding failed");
+              return false;
+            }
+            // ignore this
+            continue;
           }
           // OK. We can remove this property safety and set global register.
           Error::Dummy dummy;
