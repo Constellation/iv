@@ -10,8 +10,9 @@ namespace breaker {
 class MonoIC : public IC {
  public:
   static const int k64MovImmOffset = 2;
-  static const int k32MovImmOffset = 1;
+  static const int kMovAddressImmOffset = 3;
   static const int kJSValSize = sizeof(JSVal);
+  static const std::size_t kMaxOffset = 0x7FFFFFFF;
 
   MonoIC()
     : IC(IC::MONO),
@@ -31,13 +32,13 @@ class MonoIC : public IC {
     as->cmp(as->rdx, as->qword[as->rax + IV_OFFSETOF(JSObject, map_)]);
     as->jne(".SLOW");
 
-    OffsetCompile(as, as->edx);
-
+    const uint32_t dummy32 = 0x7FFF0000;
     const std::ptrdiff_t data_offset =
         IV_OFFSETOF(JSObject, slots_) +
         IV_OFFSETOF(JSObject::Slots, data_);
     as->mov(as->rax, as->qword[as->rax + data_offset]);
-    as->mov(as->rax, as->qword[as->rax + as->rdx * kJSValSize]);
+    offset_position_ = as->size() + kMovAddressImmOffset;
+    as->mov(as->rax, as->qword[as->rax + dummy32]);
     as->jmp(".EXIT");
 
     as->L(".SLOW");
@@ -66,13 +67,13 @@ class MonoIC : public IC {
     as->cmp(as->rdx, as->qword[as->rcx + IV_OFFSETOF(JSObject, map_)]);
     as->jne(".SLOW");
 
-    OffsetCompile(as, as->edx);
-
+    const uint32_t dummy32 = 0x7FFF0000;
     const std::ptrdiff_t data_offset =
         IV_OFFSETOF(JSObject, slots_) +
         IV_OFFSETOF(JSObject::Slots, data_);
     as->mov(as->rcx, as->qword[as->rcx + data_offset]);
-    as->mov(as->qword[as->rcx + as->rdx * kJSValSize], as->rax);
+    offset_position_ = as->size() + kMovAddressImmOffset;
+    as->mov(as->qword[as->rcx + dummy32], as->rax);
     as->jmp(".EXIT");
 
     as->L(".SLOW");
@@ -92,6 +93,7 @@ class MonoIC : public IC {
 
   void Repatch(Assembler* as, Map* map, uint32_t offset) {
     // Repatch map pointer in machine code
+    assert(offset <= kMaxOffset);
     as->rewrite(map_position(), core::BitCast<uint64_t>(map), k64Size);
     as->rewrite(offset_position(), offset, k32Size);
     map_ = map;
@@ -118,13 +120,6 @@ class MonoIC : public IC {
     map_position_ = as->size() + k64MovImmOffset;
     as->mov(map, dummy64);
     as->rewrite(map_position(), 0, k64Size);
-  }
-
-  void OffsetCompile(Assembler* as, const Xbyak::Reg32& offset) {
-    const uint32_t dummy32 = 0x0FFF00000;
-    offset_position_ = as->size() + k32MovImmOffset;
-    as->mov(offset, dummy32);
-    as->rewrite(offset_position(), 0, k32Size);
   }
 
   std::size_t map_position_;

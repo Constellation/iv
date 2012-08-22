@@ -309,8 +309,8 @@ inline Rep LOAD_GLOBAL(Frame* stack, Symbol name, MonoIC* ic, Assembler* as) {
   Slot slot;
   if (global->GetOwnPropertySlot(ctx, name, &slot)) {
     // now Own Property Pattern only implemented
-    if (slot.IsLoadCacheable()) {
-      ic->Repatch(as, global->map(), slot.offset());
+    if (slot.IsLoadCacheable() && (slot.offset() * sizeof(JSVal)) <= MonoIC::kMaxOffset) {
+      ic->Repatch(as, global->map(), slot.offset() * sizeof(JSVal));
       return Extract(slot.value());
     }
     const JSVal ret = slot.Get(ctx, global, ERR);
@@ -334,8 +334,8 @@ inline Rep STORE_GLOBAL(Frame* stack, Symbol name,
   JSGlobal* global = ctx->global_obj();
   Slot slot;
   if (global->GetOwnPropertySlot(ctx, name, &slot)) {
-    if (slot.IsStoreCacheable()) {
-      ic->Repatch(as, global->map(), slot.offset());
+    if (slot.IsStoreCacheable() && (slot.offset() * sizeof(JSVal)) <= MonoIC::kMaxOffset) {
+      ic->Repatch(as, global->map(), slot.offset() * sizeof(JSVal));
       global->GetSlot(slot.offset()) = src;
     } else {
       global->Put(ctx, name, src, Strict, ERR);
