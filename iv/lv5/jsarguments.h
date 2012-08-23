@@ -51,17 +51,8 @@ class JSNormalArguments : public JSObject {
     return obj;
   }
 
-  JSVal Get(Context* ctx, Symbol name, Error* e) {
-    if (symbol::IsArrayIndexSymbol(name)) {
-      const uint32_t index = symbol::GetIndexFromSymbol(name);
-      if (mapping_.size() > index) {
-        const Symbol mapped = mapping_[index];
-        if (mapped != symbol::kDummySymbol) {
-          return env_->GetBindingValue(ctx, mapped, true, e);
-        }
-      }
-    }
-    const JSVal v = JSObject::Get(ctx, name, IV_LV5_ERROR(e));
+  virtual JSVal GetSlot(Context* ctx, Symbol name, Slot* slot, Error* e) {
+    const JSVal v = JSObject::GetSlot(ctx, name, slot, IV_LV5_ERROR(e));
     if (name == symbol::caller() &&
         v.IsCallable() &&
         v.object()->AsCallable()->IsStrict()) {
@@ -106,18 +97,18 @@ class JSNormalArguments : public JSObject {
           const Attributes::Safe old(slot.attributes());
           slot.Merge(ctx, desc);
           if (old != slot.attributes()) {
-            map_ = map_->ChangeAttributesTransition(ctx, name, slot.attributes());
+            set_map(map()->ChangeAttributesTransition(ctx, name, slot.attributes()));
           }
-          GetSlot(slot.offset()) = slot.value();
+          Direct(slot.offset()) = slot.value();
         } else {
           // add property transition
           // searching already created maps and if this is available, move to this
           uint32_t offset;
           slot.Merge(ctx, desc);
-          map_ = map_->AddPropertyTransition(ctx, name, slot.attributes(), &offset);
-          slots_.resize(map_->GetSlotsSize(), JSEmpty);
+          set_map(map()->AddPropertyTransition(ctx, name, slot.attributes(), &offset));
+          slots_.resize(map()->GetSlotsSize(), JSEmpty);
           // set newly created property
-          GetSlot(offset) = slot.value();
+          Direct(offset) = slot.value();
         }
       }
       return returned;
@@ -133,10 +124,10 @@ class JSNormalArguments : public JSObject {
         // searching already created maps and if this is available, move to this
         uint32_t offset;
         const StoredSlot slot(ctx, desc);
-        map_ = map_->AddPropertyTransition(ctx, name, slot.attributes(), &offset);
-        slots_.resize(map_->GetSlotsSize(), JSEmpty);
+        set_map(map()->AddPropertyTransition(ctx, name, slot.attributes(), &offset));
+        slots_.resize(map()->GetSlotsSize(), JSEmpty);
         // set newly created property
-        GetSlot(offset) = slot.value();
+        Direct(offset) = slot.value();
         return true;
       }
     }
@@ -280,8 +271,8 @@ class JSStrictArguments : public JSObject {
     return obj;
   }
 
-  JSVal Get(Context* ctx, Symbol name, Error* e) {
-    const JSVal v = JSObject::Get(ctx, name, IV_LV5_ERROR(e));
+  virtual JSVal GetSlot(Context* ctx, Symbol name, Slot* slot, Error* e) {
+    const JSVal v = JSObject::GetSlot(ctx, name, slot, IV_LV5_ERROR(e));
     if (name == symbol::caller() &&
         v.IsCallable() &&
         v.object()->AsCallable()->IsStrict()) {

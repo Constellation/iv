@@ -66,8 +66,12 @@ JSVal JSObject::DefaultValue(Context* ctx, Hint::Object hint, Error* e) {
 
 JSVal JSObject::Get(Context* ctx, Symbol name, Error* e) {
   Slot slot;
-  if (GetPropertySlot(ctx, name, &slot)) {
-    return slot.Get(ctx, this, e);
+  return GetSlot(ctx, name, &slot, e);
+}
+
+JSVal JSObject::GetSlot(Context* ctx, Symbol name, Slot* slot, Error* e) {
+  if (GetPropertySlot(ctx, name, slot)) {
+    return slot->Get(ctx, this, e);
   }
   return JSUndefined;
 }
@@ -98,9 +102,8 @@ PropertyDescriptor JSObject::GetOwnProperty(Context* ctx, Symbol name) const {
   if (GetOwnPropertySlot(ctx, name, &slot)) {
     assert(!slot.IsNotFound());
     return slot.ToDescriptor();
-  } else {
-    return JSEmpty;
   }
+  return JSEmpty;
 }
 
 bool JSObject::CanPut(Context* ctx, Symbol name) const {
@@ -115,12 +118,12 @@ bool JSObject::CanPut(Context* ctx, Symbol name) const {
       }
     }
   }
-  if (!prototype_) {
+  if (!prototype()) {
     return IsExtensible();
   }
   {
     Slot inherited;
-    if (prototype_->GetPropertySlot(ctx, name, &inherited)) {
+    if (prototype()->GetPropertySlot(ctx, name, &inherited)) {
       if (inherited.attributes().IsAccessor()) {
         return inherited.accessor()->setter();
       } else {
@@ -148,18 +151,18 @@ bool JSObject::DefineOwnProperty(Context* ctx,
         const Attributes::Safe old(slot.attributes());
         slot.Merge(ctx, desc);
         if (old != slot.attributes()) {
-          map_ = map_->ChangeAttributesTransition(ctx, name, slot.attributes());
+          set_map(map()->ChangeAttributesTransition(ctx, name, slot.attributes()));
         }
-        GetSlot(slot.offset()) = slot.value();
+        Direct(slot.offset()) = slot.value();
       } else {
         // add property transition
         // searching already created maps and if this is available, move to this
         uint32_t offset;
         slot.Merge(ctx, desc);
-        map_ = map_->AddPropertyTransition(ctx, name, slot.attributes(), &offset);
-        slots_.resize(map_->GetSlotsSize(), JSEmpty);
+        set_map(map()->AddPropertyTransition(ctx, name, slot.attributes(), &offset));
+        slots_.resize(map()->GetSlotsSize(), JSEmpty);
         // set newly created property
-        GetSlot(offset) = slot.value();
+        Direct(offset) = slot.value();
       }
     }
     return returned;
@@ -176,9 +179,9 @@ bool JSObject::DefineOwnProperty(Context* ctx,
       // searching already created maps and if this is available, move to this
       uint32_t offset;
       const StoredSlot stored(ctx, desc);
-      map_ = map_->AddPropertyTransition(ctx, name, stored.attributes(), &offset);
-      slots_.resize(map_->GetSlotsSize(), JSEmpty);
-      GetSlot(offset) = stored.value();
+      set_map(map()->AddPropertyTransition(ctx, name, stored.attributes(), &offset));
+      slots_.resize(map()->GetSlotsSize(), JSEmpty);
+      Direct(offset) = stored.value();
       return true;
     }
   }
@@ -232,7 +235,7 @@ bool JSObject::HasProperty(Context* ctx, Symbol name) const {
 // Delete direct doesn't lookup by GetOwnPropertySlot.
 // Simple, lookup from map and delete it
 bool JSObject::DeleteDirect(Context* ctx, Symbol name, bool th, Error* e) {
-  const Map::Entry entry = map_->Get(ctx, name);
+  const Map::Entry entry = map()->Get(ctx, name);
   if (entry.IsNotFound()) {
     return true;  // not found
   }
@@ -247,8 +250,8 @@ bool JSObject::DeleteDirect(Context* ctx, Symbol name, bool th, Error* e) {
   // if previous map is avaiable shape, move to this.
   // and if that is not avaiable, create new map and move to it.
   // newly created slots size is always smaller than before
-  map_ = map_->DeletePropertyTransition(ctx, name);
-  GetSlot(entry.offset) = JSEmpty;
+  set_map(map()->DeletePropertyTransition(ctx, name));
+  Direct(entry.offset) = JSEmpty;
   return true;
 }
 
@@ -272,7 +275,7 @@ bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* e) {
   if (slot.HasOffset()) {
     offset = slot.offset();
   } else {
-    const Map::Entry entry = map_->Get(ctx, name);
+    const Map::Entry entry = map()->Get(ctx, name);
     if (entry.IsNotFound()) {
       return true;
     }
@@ -283,8 +286,8 @@ bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* e) {
   // if previous map is avaiable shape, move to this.
   // and if that is not avaiable, create new map and move to it.
   // newly created slots size is always smaller than before
-  map_ = map_->DeletePropertyTransition(ctx, name);
-  GetSlot(offset) = JSEmpty;
+  set_map(map()->DeletePropertyTransition(ctx, name));
+  Direct(offset) = JSEmpty;
   return true;
 }
 
@@ -292,7 +295,7 @@ void JSObject::GetPropertyNames(Context* ctx,
                                 PropertyNamesCollector* collector,
                                 EnumerationMode mode) const {
   GetOwnPropertyNames(ctx, collector, mode);
-  const JSObject* obj = prototype_;
+  const JSObject* obj = prototype();
   while (obj) {
     obj->GetOwnPropertyNames(ctx, collector->LevelUp(), mode);
     obj = obj->prototype();
@@ -302,13 +305,13 @@ void JSObject::GetPropertyNames(Context* ctx,
 void JSObject::GetOwnPropertyNames(Context* ctx,
                                    PropertyNamesCollector* collector,
                                    EnumerationMode mode) const {
-  map_->GetOwnPropertyNames(collector, mode);
+  map()->GetOwnPropertyNames(collector, mode);
 }
 
 bool JSObject::GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
   const Map::Entry entry = map()->Get(ctx, name);
   if (!entry.IsNotFound()) {
-    slot->set(GetSlot(entry.offset), entry.attributes, this, entry.offset);
+    slot->set(Direct(entry.offset), entry.attributes, this, entry.offset);
     return true;
   }
   return false;

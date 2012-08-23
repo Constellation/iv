@@ -17,10 +17,14 @@
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/hint.h>
 #include <iv/lv5/symbol.h>
-#include <iv/lv5/radio/cell.h>
 
 namespace iv {
 namespace lv5 {
+namespace radio {
+
+class Cell;
+
+}  // namespace radio
 
 class Error;
 class JSEnv;
@@ -29,6 +33,7 @@ class JSReference;
 class JSEnv;
 class JSObject;
 class JSString;
+class Slot;
 
 namespace detail {
 template<std::size_t PointerSize, bool IsLittle>
@@ -100,6 +105,10 @@ struct Layout<8, true> {
         radio::Cell* cell_;
       } payload_;
     } struct_;
+    struct {
+      uint64_t low;
+      uint64_t high;
+    } bytes_;
   };
 };
 
@@ -123,6 +132,10 @@ struct Layout<8, false> {
         radio::Cell* cell_;
       } payload_;
     } struct_;
+    struct {
+      uint64_t high;
+      uint64_t low;
+    } bytes_;
   };
 };
 
@@ -314,6 +327,8 @@ class JSLayout {
 
   static inline bool StrictEqual(this_type lhs, this_type rhs);
 
+  static inline bool BitEqual(this_type lhs, this_type rhs);
+
   value_type value_;
 };
 
@@ -481,6 +496,10 @@ class JSVal : public JSLayout {
     return JSLayout::StrictEqual(lhs, rhs);
   }
 
+  static inline bool BitEqual(this_type lhs, this_type rhs) {
+    return JSLayout::BitEqual(lhs, rhs);
+  }
+
   static inline CompareResult NumberCompare(double lhs, double rhs) {
     if (core::math::IsNaN(lhs) || core::math::IsNaN(rhs)) {
       return CMP_UNDEFINED;
@@ -495,6 +514,10 @@ class JSVal : public JSLayout {
   static inline CompareResult Compare(Context* ctx,
                                       this_type lhs,
                                       this_type rhs, Error* e);
+
+  bool GetPropertySlot(Context* ctx, Symbol name, Slot* slot, Error* e) const;
+
+  JSVal GetSlot(Context* ctx, Symbol name, Slot* slot, Error* e) const;
 
  private:
   JSVal(uint32_t val, detail::UInt32Tag dummy)

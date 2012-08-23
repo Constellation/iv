@@ -277,6 +277,17 @@ class Attributes {
     }
   };
 
+  class String {
+   public:
+    static Safe Length() {
+      return CreateData(NONE);
+    }
+
+    static Safe Indexed() {
+      return CreateData(ENUMERABLE);
+    }
+  };
+
  private:
   static bool CheckUndefs(Raw attributes) {
     return attributes & UNDEFS;

@@ -981,5 +981,98 @@ CompareResult JSVal::Compare(Context* ctx,
   }
 }
 
+inline JSVal JSVal::GetSlot(Context* ctx,
+                            Symbol name, Slot* slot, Error* e) const {
+  if (!IsObject()) {
+    JSObject* proto = NULL;
+    if (IsNullOrUndefined()) {
+      e->Report(Error::Type, "null or undefined has no properties");
+      return JSEmpty;
+    }
+
+    assert(IsPrimitive());
+    if (IsString()) {
+      JSString* str = string();
+      if (name == symbol::length()) {
+        slot->StringSet(
+            JSVal::UInt32(str->size()),
+            Attributes::String::Length());
+        return slot->value();
+      }
+
+      if (symbol::IsArrayIndexSymbol(name)) {
+        const uint32_t index = symbol::GetIndexFromSymbol(name);
+        if (index < str->size()) {
+          slot->StringSet(
+              JSString::NewSingle(ctx, str->At(index)),
+              Attributes::String::Indexed());
+          return slot->value();
+        }
+      }
+      proto = context::GetClassSlot(ctx, Class::String).prototype;
+    } else if (IsNumber()) {
+      proto = context::GetClassSlot(ctx, Class::Number).prototype;
+    } else {  // IsBoolean()
+      proto = context::GetClassSlot(ctx, Class::Boolean).prototype;
+    }
+    if (proto->GetPropertySlot(ctx, name, slot)) {
+      return slot->Get(ctx, *this, e);
+    }
+    return JSUndefined;
+  }
+  return object()->GetSlot(ctx, name, slot, e);
+}
+
+inline bool JSVal::GetPropertySlot(Context* ctx,
+                                   Symbol name, Slot* slot, Error* e) const {
+  JSObject* obj = NULL;
+  if (!IsObject()) {
+    if (IsNullOrUndefined()) {
+      e->Report(Error::Type, "null or undefined has no properties");
+      return false;
+    }
+
+    assert(IsPrimitive());
+    if (IsString()) {
+      JSString* str = string();
+      if (name == symbol::length()) {
+        slot->StringSet(
+            JSVal::UInt32(str->size()),
+            Attributes::String::Length());
+        return true;
+      }
+
+      if (symbol::IsArrayIndexSymbol(name)) {
+        const uint32_t index = symbol::GetIndexFromSymbol(name);
+        if (index < str->size()) {
+          slot->StringSet(
+              JSString::NewSingle(ctx, str->At(index)),
+              Attributes::String::Indexed());
+          return true;
+        }
+      }
+      obj = context::GetClassSlot(ctx, Class::String).prototype;
+    } else if (IsNumber()) {
+      obj = context::GetClassSlot(ctx, Class::Number).prototype;
+    } else {  // IsBoolean()
+      obj = context::GetClassSlot(ctx, Class::Boolean).prototype;
+    }
+  } else {
+    obj = object();
+  }
+
+  return obj->GetPropertySlot(ctx, name, slot);
+}
+
+bool JSLayout::BitEqual(this_type lhs, this_type rhs) {
+#if defined(IV_OS_SOLARIS) && defined(IV_64)
+  return
+      lhs.value_.bytes_.high == rhs.value_.bytes_.high &&
+      lhs.value_.bytes_.low == rhs.value_.bytes_.low;
+#else
+  return lhs.value_.bytes_ == rhs.value_.bytes_;
+#endif
+}
+
 } }  // namespace iv::lv5
 #endif  // IV_LV5_JSVAL_H_

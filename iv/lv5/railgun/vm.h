@@ -497,7 +497,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
         assert(obj);
         if (instr[2].map == obj->map()) {
           // cache hit
-          REG(instr[1].ssw.i16[0]) = obj->GetSlot(instr[3].u32[0]);
+          REG(instr[1].ssw.i16[0]) = obj->Direct(instr[3].u32[0]);
           DISPATCH(LOAD_PROP_OWN);
         } else {
           // not found => uncache
@@ -537,7 +537,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
         if (instr[2].map == obj->map() &&
             proto && instr[3].map == proto->map()) {
           // cache hit
-          REG(instr[1].ssw.i16[0]) = proto->GetSlot(instr[4].u32[0]);
+          REG(instr[1].ssw.i16[0]) = proto->Direct(instr[4].u32[0]);
         } else {
           // uncache
           const Symbol name = frame->GetName(instr[1].ssw.u32);
@@ -568,7 +568,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
         }
         if (JSObject* cached = instr[2].chain->Validate(obj, instr[3].map)) {
           // cache hit
-          REG(instr[1].ssw.i16[0]) = cached->GetSlot(instr[4].u32[0]);
+          REG(instr[1].ssw.i16[0]) = cached->Direct(instr[4].u32[0]);
         } else {
           // uncache
           const Symbol name = frame->GetName(instr[1].ssw.u32);
@@ -611,14 +611,14 @@ JSVal VM::Execute(Frame* start, Error* e) {
         JSGlobal* global = ctx()->global_obj();
         if (instr[2].map == global->map()) {
           // map is cached, so use previous index code
-          global->GetSlot(instr[3].u32[0]) = src;
+          global->Direct(instr[3].u32[0]) = src;
         } else {
           const Symbol name = frame->GetName(instr[1].ssw.u32);
           Slot slot;
           if (global->GetOwnPropertySlot(ctx(), name, &slot) && slot.IsStoreCacheable()) {
             instr[2].map = global->map();
             instr[3].u32[0] = slot.offset();
-            global->GetSlot(slot.offset()) = src;
+            global->Direct(slot.offset()) = src;
           } else {
             instr[2].map = NULL;
             StoreName(ctx()->global_env(), name, src, strict, ERR);
@@ -1911,7 +1911,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
         // opcode | (obj | item) | (offset | merged)
         assert(REG(instr[1].i16[0]).IsObject());
         JSObject* const obj = REG(instr[1].i16[0]).object();
-        obj->GetSlot(instr[2].u32[0]) = REG(instr[1].i16[1]);
+        obj->Direct(instr[2].u32[0]) = REG(instr[1].i16[1]);
         DISPATCH(STORE_OBJECT_DATA);
       }
 
@@ -1920,10 +1920,10 @@ JSVal VM::Execute(Frame* start, Error* e) {
         JSObject* const obj = REG(instr[1].i16[0]).object();
         const JSVal value = REG(instr[1].i16[1]);
         if (instr[2].u32[1]) {
-          Accessor* ac = static_cast<Accessor*>(obj->GetSlot(instr[2].u32[0]).cell());
+          Accessor* ac = static_cast<Accessor*>(obj->Direct(instr[2].u32[0]).cell());
           ac->set_getter(value.object());
         } else {
-          obj->GetSlot(instr[2].u32[0]) = JSVal::Cell(Accessor::New(ctx(), value.object(), NULL));
+          obj->Direct(instr[2].u32[0]) = JSVal::Cell(Accessor::New(ctx(), value.object(), NULL));
         }
         DISPATCH(STORE_OBJECT_GET);
       }
@@ -1933,10 +1933,10 @@ JSVal VM::Execute(Frame* start, Error* e) {
         JSObject* const obj = REG(instr[1].i16[0]).object();
         const JSVal value = REG(instr[1].i16[1]);
         if (instr[2].u32[1]) {
-          Accessor* ac = static_cast<Accessor*>(obj->GetSlot(instr[2].u32[0]).cell());
+          Accessor* ac = static_cast<Accessor*>(obj->Direct(instr[2].u32[0]).cell());
           ac->set_setter(value.object());
         } else {
-          obj->GetSlot(instr[2].u32[0]) = JSVal::Cell(Accessor::New(ctx(), NULL, value.object()));
+          obj->Direct(instr[2].u32[0]) = JSVal::Cell(Accessor::New(ctx(), NULL, value.object()));
         }
         DISPATCH(STORE_OBJECT_SET);
       }

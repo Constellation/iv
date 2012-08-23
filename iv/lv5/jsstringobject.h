@@ -21,7 +21,7 @@ class JSStringObject : public JSObject {
   virtual bool GetOwnPropertySlot(Context* ctx,
                                   Symbol name, Slot* slot) const {
     if (name == symbol::length()) {
-      slot->set(JSVal::UInt32(length_), Attributes::CreateData(ATTR::NONE), this);
+      slot->set(JSVal::UInt32(length_), Attributes::String::Length(), this);
       return true;
     }
     if (symbol::IsArrayIndexSymbol(name)) {
@@ -33,11 +33,10 @@ class JSStringObject : public JSObject {
       if (len <= index) {
         return false;
       }
-      slot->set(JSString::NewSingle(ctx, value_->At(index)), Attributes::CreateData(ATTR::ENUMERABLE), this);
+      slot->set(JSString::NewSingle(ctx, value_->At(index)), Attributes::String::Indexed(), this);
       return true;
-    } else {
-      return JSObject::GetOwnPropertySlot(ctx, name, slot);
     }
+    return JSObject::GetOwnPropertySlot(ctx, name, slot);
   }
 
   virtual void GetOwnPropertyNames(Context* ctx,

@@ -1454,11 +1454,7 @@ class Compiler {
 
     Assembler::RepatchSite site;
     site.MovRepatchableAligned(asm_, asm_->rax);
-    if (code_->strict()) {
-      site.Repatch(asm_, core::BitCast<uint64_t>(&stub::LOAD_PROP<true>));
-    } else {
-      site.Repatch(asm_, core::BitCast<uint64_t>(&stub::LOAD_PROP<false>));
-    }
+    site.Repatch(asm_, core::BitCast<uint64_t>(&stub::LOAD_PROP));
     asm_->call(asm_->rax);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);

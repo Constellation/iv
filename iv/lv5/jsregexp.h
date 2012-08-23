@@ -32,7 +32,7 @@ class JSRegExp : public JSObject {
   };
 
   JSString* source() const {
-    return GetSlot(FIELD_SOURCE).string();
+    return Direct(FIELD_SOURCE).string();
   }
 
   static JSRegExp* New(Context* ctx) {
@@ -89,7 +89,7 @@ class JSRegExp : public JSObject {
   bool sticky() const { return impl_->sticky(); }
 
   int LastIndex(Context* ctx, Error* e) {
-    return GetSlot(FIELD_LAST_INDEX).ToInt32(ctx, e);
+    return Direct(FIELD_LAST_INDEX).ToInt32(ctx, e);
   }
 
   void SetLastIndex(Context* ctx, int i, Error* e) {
@@ -178,11 +178,11 @@ class JSRegExp : public JSObject {
   explicit JSRegExp(Context* ctx, Map* map)
     : JSObject(map),
       impl_(new JSRegExpImpl(ctx->regexp_allocator())) {
-    GetSlot(FIELD_SOURCE) = ctx->global_data()->string_empty_regexp();
-    GetSlot(FIELD_GLOBAL) = JSVal::Bool(impl_->global());
-    GetSlot(FIELD_IGNORE_CASE) = JSVal::Bool(impl_->ignore());
-    GetSlot(FIELD_MULTILINE) = JSVal::Bool(impl_->multiline());
-    GetSlot(FIELD_LAST_INDEX) = JSVal::Int32(0);
+    Direct(FIELD_SOURCE) = ctx->global_data()->string_empty_regexp();
+    Direct(FIELD_GLOBAL) = JSVal::Bool(impl_->global());
+    Direct(FIELD_IGNORE_CASE) = JSVal::Bool(impl_->ignore());
+    Direct(FIELD_MULTILINE) = JSVal::Bool(impl_->multiline());
+    Direct(FIELD_LAST_INDEX) = JSVal::Int32(0);
   }
 
   static JSString* Escape(Context* ctx, JSString* str, Error* e) {
@@ -208,11 +208,11 @@ class JSRegExp : public JSObject {
   }
 
   void InitializeProperty(Context* ctx, JSString* src) {
-    GetSlot(FIELD_SOURCE) = src->empty() ? ctx->global_data()->string_empty_regexp() : src;
-    GetSlot(FIELD_GLOBAL) = JSVal::Bool(impl_->global());
-    GetSlot(FIELD_IGNORE_CASE) = JSVal::Bool(impl_->ignore());
-    GetSlot(FIELD_MULTILINE) = JSVal::Bool(impl_->multiline());
-    GetSlot(FIELD_LAST_INDEX) = JSVal::Int32(0);
+    Direct(FIELD_SOURCE) = src->empty() ? ctx->global_data()->string_empty_regexp() : src;
+    Direct(FIELD_GLOBAL) = JSVal::Bool(impl_->global());
+    Direct(FIELD_IGNORE_CASE) = JSVal::Bool(impl_->ignore());
+    Direct(FIELD_MULTILINE) = JSVal::Bool(impl_->multiline());
+    Direct(FIELD_LAST_INDEX) = JSVal::Int32(0);
   }
 
   template<typename FiberType>

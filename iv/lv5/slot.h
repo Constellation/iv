@@ -56,7 +56,16 @@ class Slot : public StoredSlot {
     offset_ = offset;
   }
 
+  void StringSet(JSVal value, Attributes::Safe attributes) {
+    StoredSlot::set(value, attributes);
+    cacheable_ = false;
+    base_ = NULL;
+    offset_ = UINT32_MAX;
+  }
+
   const JSObject* base() const { return base_; }
+
+  bool IsStringBase() const { return !base(); };
 
   uint32_t offset() const { return offset_; }
 
@@ -73,6 +82,21 @@ class Slot : public StoredSlot {
   const JSObject* base_;
   uint32_t offset_;
 };
+
+
+// TODO(Constellation) move this to jsfunction.h
+inline JSVal JSFunction::GetSlot(Context* ctx, Symbol name, Slot* slot, Error* e) {
+  const JSVal val = JSObject::GetSlot(ctx, name, slot, IV_LV5_ERROR(e));
+  if (name == symbol::caller()) {
+    slot->MakeUnCacheable();
+    if (val.IsCallable() && val.object()->AsCallable()->IsStrict()) {
+      e->Report(Error::Type,
+                "\"caller\" property is not accessible in strict code");
+      return JSFalse;
+    }
+  }
+  return val;
+}
 
 } }  // namespace iv::lv5
 #endif  // IV_LV5_SLOT_H_

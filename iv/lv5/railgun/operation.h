@@ -127,57 +127,55 @@ class Operation {
                  JSVal base, Symbol s, bool strict, Error* e) {
     // opcode | (dst | base | name) | nop | nop | nop
     base.CheckObjectCoercible(CHECK);
+    Slot slot;
+    const JSVal res = base.GetSlot(ctx_, s, &slot, IV_LV5_ERROR(e));
+
+    if (slot.IsNotFound()) {
+      return res;
+    }
+
+    // property found
+    if (!slot.IsLoadCacheable()) {
+      // bailout to generic
+      instr[0] = Instruction::GetOPInstruction(generic);
+      return slot.Get(ctx_, base, e);
+    }
+
     JSObject* obj = NULL;
     if (base.IsPrimitive()) {
-      JSVal res;
-      if (GetPrimitiveOwnProperty(base, s, &res)) {
-        return res;
-      } else {
-        // if base is primitive, property not found in "this" object
-        // so, lookup from proto
-        obj = base.GetPrimitiveProto(ctx_);
-      }
+      // if base is primitive, property not found in "this" object
+      // so, lookup from proto
+      obj = base.GetPrimitiveProto(ctx_);
     } else {
       obj = base.object();
     }
-    Slot slot;
-    if (obj->GetPropertySlot(ctx_, s, &slot)) {
-      // property found
-      if (!slot.IsLoadCacheable()) {
-        // bailout to generic
-        instr[0] = Instruction::GetOPInstruction(generic);
-        return slot.Get(ctx_, base, e);
-      }
 
-      // cache phase
-      // own property / proto property / chain lookup property
-      if (slot.base() == obj) {
-        // own property
-        instr[0] = Instruction::GetOPInstruction(own);
-        instr[2].map = obj->map();
-        instr[3].u32[0] = slot.offset();
-        return slot.value();
-      }
+    // cache phase
+    // own property / proto property / chain lookup property
+    if (slot.base() == obj) {
+      // own property
+      instr[0] = Instruction::GetOPInstruction(own);
+      instr[2].map = obj->map();
+      instr[3].u32[0] = slot.offset();
+      return slot.value();
+    }
 
-      if (slot.base() == obj->prototype()) {
-        // proto property
-        obj->FlattenMap();
-        instr[0] = Instruction::GetOPInstruction(proto);
-        instr[2].map = obj->map();
-        instr[3].map = slot.base()->map();
-        instr[4].u32[0] = slot.offset();
-        return slot.value();
-      }
-
-      // chain property
-      instr[0] = Instruction::GetOPInstruction(chain);
-      instr[2].chain = Chain::New(obj, slot.base());
+    if (slot.base() == obj->prototype()) {
+      // proto property
+      obj->FlattenMap();
+      instr[0] = Instruction::GetOPInstruction(proto);
+      instr[2].map = obj->map();
       instr[3].map = slot.base()->map();
       instr[4].u32[0] = slot.offset();
       return slot.value();
-    } else {
-      return JSUndefined;
     }
+
+    // chain property
+    instr[0] = Instruction::GetOPInstruction(chain);
+    instr[2].chain = Chain::New(obj, slot.base());
+    instr[3].map = slot.base()->map();
+    instr[4].u32[0] = slot.offset();
+    return slot.value();
   }
 
   JSVal LoadElement(JSVal base,
@@ -292,7 +290,7 @@ class Operation {
       JSObject* obj = base.object();
       if (instr[2].map == obj->map()) {
         // map is cached, so use previous index code
-        obj->GetSlot(instr[3].u32[0]) = stored;
+        obj->Direct(instr[3].u32[0]) = stored;
         return;
       } else {
         Slot slot;
@@ -301,7 +299,7 @@ class Operation {
           if (slot.IsStoreCacheable()) {
             instr[2].map = obj->map();
             instr[3].u32[0] = slot.offset();
-            obj->GetSlot(slot.offset()) = stored;
+            obj->Direct(slot.offset()) = stored;
           } else {
             // dispatch generic path
             obj->Put(ctx_, s, stored, strict, e);
@@ -602,7 +600,7 @@ class Operation {
     // opcode | (dst | index) | nop | nop
     if (instr[2].map == global->map()) {
       // map is cached, so use previous index code
-      return global->GetSlot(instr[3].u32[0]);
+      return global->Direct(instr[3].u32[0]);
     } else {
       // now Own Property Pattern only implemented
       Slot slot;

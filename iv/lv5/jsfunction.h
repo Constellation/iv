@@ -54,17 +54,8 @@ class JSFunction : public JSObject {
     return false;
   }
 
-  virtual JSVal Get(Context* ctx, Symbol name, Error* e) {
-    const JSVal val = JSObject::Get(ctx, name, IV_LV5_ERROR(e));
-    if (name == symbol::caller() &&
-        val.IsCallable() &&
-        val.object()->AsCallable()->IsStrict()) {
-      e->Report(Error::Type,
-                "\"caller\" property is not accessible in strict code");
-      return JSFalse;
-    }
-    return val;
-  }
+  // implementation is in slot.h
+  virtual JSVal GetSlot(Context* ctx, Symbol name, Slot* slot, Error* e);
 
   virtual bool IsNativeFunction() const = 0;
 

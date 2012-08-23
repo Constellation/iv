@@ -39,18 +39,19 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
 
   virtual JSVal DefaultValue(Context* ctx, Hint::Object hint, Error* e);
 
-  virtual JSVal Get(Context* ctx, Symbol name, Error* e);
-
-  // if you handle it, override GetOwnPropertySlot
+  // if you handle it, override
+  //   GetSlot
+  //   GetPropertySlot
+  //   GetOwnPropertySlot
+  // instead of
+  //   Get
+  //   GetProperty
+  //   GetOwnProperty
+  JSVal Get(Context* ctx, Symbol name, Error* e);
   PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const;
-
-  // if you handle it, override GetPropertySlot
   PropertyDescriptor GetProperty(Context* ctx, Symbol name) const;
-
-  // hook these functions
-
+  virtual JSVal GetSlot(Context* ctx, Symbol name, Slot* slot, Error* e);
   virtual bool GetPropertySlot(Context* ctx, Symbol name, Slot* slot) const;
-
   virtual bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const;
 
   bool CanPut(Context* ctx, Symbol name) const;
@@ -130,21 +131,23 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
 
   static JSObject* NewPlain(Context* ctx, Map* map);
 
-  Map* FlattenMap() const;
-
-  inline const JSVal& GetSlot(std::size_t n) const {
+  inline const JSVal& Direct(std::size_t n) const {
     assert(slots_.size() > n);
     return slots_[n];
   }
 
-  inline JSVal& GetSlot(std::size_t n) {
+  inline JSVal& Direct(std::size_t n) {
     assert(slots_.size() > n);
     return slots_[n];
   }
+
+  void MarkChildren(radio::Core* core);
 
   Map* map() const { return map_; }
 
-  void MarkChildren(radio::Core* core);
+  void set_map(Map* map) { map_ = map; }
+
+  Map* FlattenMap() const;
 
  protected:
   explicit JSObject(Map* map);
