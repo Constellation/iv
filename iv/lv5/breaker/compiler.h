@@ -2319,9 +2319,7 @@ class Compiler {
       asm_->jnz(".RESULT_IS_NOT_OBJECT");
 
       // currently, rax target is guaranteed as cell
-      // TODO(Constellation) optimize
-      LoadCellTag(asm_->rax, asm_->ecx);
-      asm_->cmp(asm_->ecx, radio::OBJECT);
+      CompareCellTag(asm_->rax, radio::OBJECT);
       asm_->je(".CONSTRUCT_EXIT");
 
       // constructor call and return value is not object
@@ -2884,11 +2882,14 @@ class Compiler {
     asm_->jb(label, type);
   }
 
-  // TODO(Constellation) optimize
   void LoadCellTag(const Xbyak::Reg64& target, const Xbyak::Reg32& out) {
     // Because of Little Endianess
     IV_STATIC_ASSERT(core::kLittleEndian);
     asm_->mov(out, asm_->word[target + radio::Cell::TagOffset()]);  // NOLINT
+  }
+
+  void CompareCellTag(const Xbyak::Reg64& target, uint8_t tag) {
+    asm_->cmp(asm_->word[target + radio::Cell::TagOffset()], tag);  // NOLINT
   }
 
   void LoadClassTag(const Xbyak::Reg64& target,
@@ -2897,6 +2898,14 @@ class Compiler {
     const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
     asm_->mov(tmp, asm_->qword[target + offset]);
     asm_->mov(out, asm_->word[tmp + IV_OFFSETOF(Class, type)]);
+  }
+
+  void CompareClassType(const Xbyak::Reg64& target,
+                        const Xbyak::Reg64& tmp,
+                        uint8_t tag) {
+    const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
+    asm_->mov(tmp, asm_->qword[target + offset]);
+    asm_->cmp(asm_->word[tmp + IV_OFFSETOF(Class, type)], tag);
   }
 
   void EmptyGuard(const Xbyak::Reg64& target,
@@ -2961,7 +2970,6 @@ class Compiler {
     IV_STATIC_ASSERT(core::kLittleEndian);
 
     const TypeEntry type_entry = type_record_.Get(base);
-    const Xbyak::Reg32 tmp32(tmp.getIdx());
 
     if (!type_entry.type().IsSomeObject()) {
       // check target is Cell
@@ -2970,17 +2978,14 @@ class Compiler {
       asm_->jnz(label, type);
 
       // target is guaranteed as cell
-      // TODO(Constellation) optimize
-      LoadCellTag(target, tmp32);
-      asm_->cmp(tmp32, radio::OBJECT);
+      CompareCellTag(target, radio::OBJECT);
       asm_->jne(label, type);
     }
 
     // target is guaranteed as object
     // load Class tag from object and check it is Array
     if (!type_entry.type().IsArray()) {
-      LoadClassTag(target, tmp, tmp32);
-      asm_->cmp(tmp32, Class::Array);
+      CompareClassType(target, tmp, Class::Array);
       asm_->jne(label, type);
     }
 
