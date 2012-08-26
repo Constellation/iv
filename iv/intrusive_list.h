@@ -136,7 +136,8 @@ class IntrusiveListIterator
 };
 
 template<typename T>
-class IntrusiveList : protected IntrusiveListBase, private Noncopyable<IntrusiveList<T> > {
+class IntrusiveList
+  : protected IntrusiveListBase, private Noncopyable<IntrusiveList<T> > {
  public:
   typedef IntrusiveListBase node_type;
   typedef IntrusiveListIterator<T, false> iterator;

@@ -11,6 +11,7 @@ class NativeCode {
   typedef std::pair<std::size_t, std::size_t> PCOffsetAndBytecodeOffset;
   typedef core::SortedVector<PCOffsetAndBytecodeOffset> BytecodeOffsets;
   typedef std::vector<std::shared_ptr<IC> > ICVector;
+  typedef ExecutablePages<> Pages;
 
   NativeCode(Assembler* as)
     : bytecode_offsets_(),
@@ -86,10 +87,13 @@ class NativeCode {
     }
   }
 
+  Pages* pages() { return &pages_; }
+  const Pages* pages() const { return &pages_; }
+
  private:
   BytecodeOffsets bytecode_offsets_;
   ICVector ics_;
-  ExecutablePages<> pages_;
+  Pages pages_;
   core::unique_ptr<Assembler> asm_;
 };
 
