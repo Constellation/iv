@@ -32,6 +32,10 @@ class PolyICUnit: public core::IntrusiveListBase {
   Map* proto() const { return proto_; }
   Chain* chain() const { return chain_; }
 
+  void Redirect(uintptr_t ptr) {
+    // TODO(Constellation) implement it
+  }
+
  protected:
   void set_tail(std::size_t tail) {
     tail_ = tail;
@@ -48,11 +52,13 @@ class PolyICUnit: public core::IntrusiveListBase {
 
 class PolyIC : public IC, public core::IntrusiveList<PolyICUnit> {
  public:
-  typedef PolyICUnit IC;
+  typedef PolyICUnit Unit;
+
+  PolyIC() : IC(IC::POLY) { }
 
   ~PolyIC() {
     for (iterator it = begin(), last = end(); it != last;) {
-      IC* ic = &*it;
+      Unit* ic = &*it;
       ++it;
       ic->Unlink();
       delete ic;
@@ -86,37 +92,70 @@ class LoadPropertyIC : public PolyIC {
  public:
   static const std::size_t kMaxPolyICSize = 5;
 
+  explicit LoadPropertyIC(uintptr_t* direct_call)
+    : direct_call_(direct_call) { }
+
   void LoadOwnProperty(NativeCode* code, Map* map, uint32_t offset) {
-    if (size() <= kMaxPolyICSize) {
+    if (size() >= kMaxPolyICSize) {
       return;
     }
-    IC* ic = new IC(IC::LOAD_OWN_PROPERTY);
+
+    Unit* ic = new Unit(Unit::LOAD_OWN_PROPERTY);
+
     NativeCode::Pages::Buffer buffer = code->pages()->Gain(256);
     Xbyak::CodeGenerator gen(buffer.size, buffer.ptr);
-    push_back(*ic);
+    gen.inLocalLabel();
+    {
+    }
+    gen.outLocalLabel();
+
+    Chaining(ic, core::BitCast<uintptr_t>(gen.getCode()));
   }
 
   void LoadPrototypeProperty(NativeCode* code,
                              Map* map, Map* proto, uint32_t offset) {
-    if (size() <= kMaxPolyICSize) {
+    if (size() >= kMaxPolyICSize) {
       return;
     }
-    IC* ic = new IC(IC::LOAD_PROTO_PROPERTY);
+    Unit* ic = new Unit(Unit::LOAD_PROTO_PROPERTY);
     NativeCode::Pages::Buffer buffer = code->pages()->Gain(256);
     Xbyak::CodeGenerator gen(buffer.size, buffer.ptr);
-    push_back(*ic);
+
+    Chaining(ic, core::BitCast<uintptr_t>(gen.getCode()));
   }
 
   void LoadChainProperty(NativeCode* code,
                          Chain* chain, uint32_t offset) {
-    if (size() <= kMaxPolyICSize) {
+    if (size() >= kMaxPolyICSize) {
       return;
     }
-    IC* ic = new IC(IC::LOAD_CHAIN_PROPERTY);
+    Unit* ic = new Unit(Unit::LOAD_CHAIN_PROPERTY);
     NativeCode::Pages::Buffer buffer = code->pages()->Gain(256);
     Xbyak::CodeGenerator gen(buffer.size, buffer.ptr);
+
+    Chaining(ic, core::BitCast<uintptr_t>(gen.getCode()));
+  }
+
+ private:
+  void Chaining(Unit* ic, uintptr_t code) {
+    if (empty()) {
+      *direct_call_ = code;
+    } else {
+      back().Redirect(code);
+    }
+
+    if ((size() + 1) == kMaxPolyICSize) {
+      // last one
+      // TODO(Constellation) indicate stub function
+      ic->Redirect(0);
+    } else {
+      // TODO(Constellation) indicate stub function
+      ic->Redirect(0);
+    }
     push_back(*ic);
   }
+
+  uintptr_t* direct_call_;
 };
 
 class StorePropertyIC : public PolyIC {
