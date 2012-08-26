@@ -527,6 +527,10 @@ class JSString: public radio::HeapObject<radio::STRING> {
   // TODO(Constellation) implement it
   void MarkChildren(radio::Core* core) { }
 
+  static std::size_t SizeOffset() {
+    return IV_OFFSETOF(JSString, size_);
+  }
+
  private:
   template<typename Iter>
   static this_type* New(Context* ctx, Iter it, std::size_t n, bool is_8bit, Error* e) {

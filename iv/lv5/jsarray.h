@@ -272,29 +272,41 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
     vector_.reserve((len > kMaxVectorSize) ? kMaxVectorSize : len);
   }
 
+  static std::size_t VectorOffset() {
+    return IV_OFFSETOF(JSArray, vector_);
+  }
+
+  static std::size_t LengthOffset() {
+    return IV_OFFSETOF(JSArray, length_);
+  }
+
+  static std::size_t DenseOffset() {
+    return IV_OFFSETOF(JSArray, dense_);
+  }
+
  private:
   JSArray(Context* ctx, uint32_t len)
     : JSObject(context::GetArrayMap(ctx)),
       vector_((len <= kMaxVectorSize) ? len : 4, JSEmpty),
       map_(NULL),
-      dense_(true),
-      length_(len, Attributes::CreateData(ATTR::WRITABLE)) {
+      length_(len, Attributes::CreateData(ATTR::WRITABLE)),
+      dense_(true) {
   }
 
   JSArray(Context* ctx, Map* map, uint32_t len)
     : JSObject(map),
       vector_((len <= kMaxVectorSize) ? len : 4, JSEmpty),
       map_(NULL),
-      dense_(true),
-      length_(len, Attributes::CreateData(ATTR::WRITABLE)) {
+      length_(len, Attributes::CreateData(ATTR::WRITABLE)),
+      dense_(true) {
   }
 
   JSArray(Context* ctx, JSArray* array)
     : JSObject(Map::NewFromPoint(ctx, array->map())),
       vector_(array->vector_),
       map_(array->map_ ? new(GC)SparseArray(*array->map_) : NULL),
-      dense_(array->dense_),
-      length_(array->length_) {
+      length_(array->length_),
+      dense_(array->dense_) {
   }
 
 #define REJECT(str)\
@@ -631,8 +643,8 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
 
   JSValVector vector_;
   SparseArray* map_;
-  bool dense_;
   StoredSlot length_;
+  uint8_t dense_;
 };
 
 } }  // namespace iv::lv5

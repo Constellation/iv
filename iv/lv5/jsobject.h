@@ -149,6 +149,10 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
 
   Map* FlattenMap() const;
 
+  static std::size_t MapOffset() { return IV_OFFSETOF(JSObject, map_); }
+  static std::size_t SlotsOffset() { return IV_OFFSETOF(JSObject, slots_); }
+  static std::size_t ClassOffset() { return IV_OFFSETOF(JSObject, cls_); }
+
  protected:
   explicit JSObject(Map* map);
 

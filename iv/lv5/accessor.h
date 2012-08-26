@@ -38,6 +38,14 @@ class Accessor : public radio::HeapObject<radio::ACCESSOR> {
     core->MarkCell(getter_);
     core->MarkCell(setter_);
   }
+
+  static std::size_t GetterOffset() {
+    return IV_OFFSETOF(Accessor, getter_);
+  }
+
+  static std::size_t SetterOffset() {
+    return IV_OFFSETOF(Accessor, setter_);
+  }
  private:
   JSObject* getter_;
   JSObject* setter_;

@@ -1324,8 +1324,8 @@ class Compiler {
     LoadVRs(asm_->rdi, obj, asm_->rax, item);
     const std::ptrdiff_t data_offset =
         IV_CAST_OFFSET(radio::Cell*, JSObject*) +
-        IV_OFFSETOF(JSObject, slots_) +
-        IV_OFFSETOF(JSObject::Slots, data_);
+        JSObject::SlotsOffset() +
+        JSObject::Slots::DataOffset();
     asm_->mov(asm_->rdi, asm_->qword[asm_->rdi + data_offset]);
     asm_->mov(asm_->qword[asm_->rdi + kJSValSize * offset], asm_->rax);
   }
@@ -1340,14 +1340,14 @@ class Compiler {
       LoadVRs(asm_->rdi, obj, asm_->rax, item);
       const std::ptrdiff_t data_offset =
           IV_CAST_OFFSET(radio::Cell*, JSObject*) +
-          IV_OFFSETOF(JSObject, slots_) +
-          IV_OFFSETOF(JSObject::Slots, data_);
+          JSObject::SlotsOffset() +
+          JSObject::Slots::DataOffset();
       asm_->mov(asm_->rdi, asm_->qword[asm_->rdi + data_offset]);
       asm_->mov(asm_->rdi, asm_->qword[asm_->rdi + kJSValSize * offset]);
       // rdi is Accessor Cell
       const std::ptrdiff_t getter_offset =
           IV_CAST_OFFSET(radio::Cell*, Accessor*) +
-          IV_OFFSETOF(Accessor, getter_);
+          Accessor::GetterOffset();
       const std::ptrdiff_t cell_to_jsobject =
           IV_CAST_OFFSET(radio::Cell*, JSObject*);
       if (cell_to_jsobject != 0) {
@@ -1372,14 +1372,14 @@ class Compiler {
       LoadVRs(asm_->rdi, obj, asm_->rax, item);
       const std::ptrdiff_t data_offset =
           IV_CAST_OFFSET(radio::Cell*, JSObject*) +
-          IV_OFFSETOF(JSObject, slots_) +
-          IV_OFFSETOF(JSObject::Slots, data_);
+          JSObject::SlotsOffset() +
+          JSObject::Slots::DataOffset();
       asm_->mov(asm_->rdi, asm_->qword[asm_->rdi + data_offset]);
       asm_->mov(asm_->rdi, asm_->qword[asm_->rdi + kJSValSize * offset]);
       // rdi is Accessor Cell
       const std::ptrdiff_t getter_offset =
           IV_CAST_OFFSET(radio::Cell*, Accessor*) +
-          IV_OFFSETOF(Accessor, setter_);
+          Accessor::SetterOffset();
       const std::ptrdiff_t cell_to_jsobject =
           IV_CAST_OFFSET(radio::Cell*, JSObject*);
       if (cell_to_jsobject != 0) {
@@ -1427,15 +1427,15 @@ class Compiler {
 
       // check index is not out of range
       const std::ptrdiff_t vector_offset =
-          IV_CAST_OFFSET(radio::Cell*, JSArray*) + IV_OFFSETOF(JSArray, vector_);
+          IV_CAST_OFFSET(radio::Cell*, JSArray*) + JSArray::VectorOffset();
       const std::ptrdiff_t size_offset =
-          vector_offset + IV_OFFSETOF(JSArray::JSValVector, size_);
+          vector_offset + JSArray::JSValVector::SizeOffset();
       asm_->cmp(asm_->qword[asm_->rsi + size_offset], index);
       asm_->jbe(".ARRAY_FAST_PATH_EXIT");
 
       // load element from index directly
       const std::ptrdiff_t data_offset =
-          vector_offset + IV_OFFSETOF(JSArray::JSValVector, data_);
+          vector_offset + JSArray::JSValVector::DataOffset();
       asm_->mov(asm_->rax, asm_->qword[asm_->rsi + data_offset]);
       asm_->mov(asm_->rax, asm_->qword[asm_->rax + kJSValSize * index]);
 
@@ -1484,15 +1484,15 @@ class Compiler {
 
       // check index is not out of range
       const std::ptrdiff_t vector_offset =
-          IV_CAST_OFFSET(radio::Cell*, JSArray*) + IV_OFFSETOF(JSArray, vector_);
+          IV_CAST_OFFSET(radio::Cell*, JSArray*) + JSArray::VectorOffset();
       const std::ptrdiff_t size_offset =
-          vector_offset + IV_OFFSETOF(JSArray::JSValVector, size_);
+          vector_offset + JSArray::JSValVector::SizeOffset();
       asm_->cmp(asm_->qword[asm_->rsi + size_offset], index);
       asm_->jbe(".ARRAY_FAST_PATH_EXIT");
 
       // load element from index directly
       const std::ptrdiff_t data_offset =
-          vector_offset + IV_OFFSETOF(JSArray::JSValVector, data_);
+          vector_offset + JSArray::JSValVector::DataOffset();
       asm_->mov(asm_->rax, asm_->qword[asm_->rsi + data_offset]);
       asm_->mov(asm_->qword[asm_->rax + kJSValSize * index], asm_->rcx);
       asm_->jmp(".EXIT");
@@ -1731,9 +1731,9 @@ class Compiler {
 
       // check index is not out of range
       const std::ptrdiff_t vector_offset =
-          IV_CAST_OFFSET(radio::Cell*, JSArray*) + IV_OFFSETOF(JSArray, vector_);
+          IV_CAST_OFFSET(radio::Cell*, JSArray*) + JSArray::VectorOffset();
       const std::ptrdiff_t size_offset =
-          vector_offset + IV_OFFSETOF(JSArray::JSValVector, size_);
+          vector_offset + JSArray::JSValVector::SizeOffset();
       // TODO(Constellation): change Storage size to uint32_t
       asm_->mov(asm_->ecx, asm_->edx);
       asm_->cmp(asm_->rcx, asm_->qword[asm_->rsi + size_offset]);
@@ -1741,7 +1741,7 @@ class Compiler {
 
       // load element from index directly
       const std::ptrdiff_t data_offset =
-          vector_offset + IV_OFFSETOF(JSArray::JSValVector, data_);
+          vector_offset + JSArray::JSValVector::DataOffset();
       asm_->mov(asm_->rax, asm_->qword[asm_->rsi + data_offset]);
       asm_->lea(asm_->rax, asm_->ptr[asm_->rax + asm_->rcx * kJSValSize]);
       asm_->mov(asm_->rax, asm_->qword[asm_->rax]);
@@ -1786,9 +1786,9 @@ class Compiler {
 
       // check index is not out of range
       const std::ptrdiff_t vector_offset =
-          IV_CAST_OFFSET(radio::Cell*, JSArray*) + IV_OFFSETOF(JSArray, vector_);
+          IV_CAST_OFFSET(radio::Cell*, JSArray*) + JSArray::VectorOffset();
       const std::ptrdiff_t size_offset =
-          vector_offset + IV_OFFSETOF(JSArray::JSValVector, size_);
+          vector_offset + JSArray::JSValVector::SizeOffset();
       // TODO(Constellation): change Storage size to uint32_t
       asm_->mov(asm_->edi, asm_->edx);
       asm_->cmp(asm_->rdi, asm_->qword[asm_->rsi + size_offset]);
@@ -1796,7 +1796,7 @@ class Compiler {
 
       // load element from index directly
       const std::ptrdiff_t data_offset =
-          vector_offset + IV_OFFSETOF(JSArray::JSValVector, data_);
+          vector_offset + JSArray::JSValVector::DataOffset();
       asm_->mov(asm_->rax, asm_->qword[asm_->rsi + data_offset]);
       asm_->lea(asm_->rax, asm_->ptr[asm_->rax + asm_->rdi * kJSValSize]);
       asm_->mov(asm_->qword[asm_->rax], asm_->rcx);
@@ -2319,6 +2319,7 @@ class Compiler {
       asm_->jnz(".RESULT_IS_NOT_OBJECT");
 
       // currently, rax target is guaranteed as cell
+      // TODO(Constellation) optimize
       LoadCellTag(asm_->rax, asm_->ecx);
       asm_->cmp(asm_->ecx, radio::OBJECT);
       asm_->je(".CONSTRUCT_EXIT");
@@ -2883,6 +2884,7 @@ class Compiler {
     asm_->jb(label, type);
   }
 
+  // TODO(Constellation) optimize
   void LoadCellTag(const Xbyak::Reg64& target, const Xbyak::Reg32& out) {
     // Because of Little Endianess
     IV_STATIC_ASSERT(core::kLittleEndian);
@@ -2892,7 +2894,7 @@ class Compiler {
   void LoadClassTag(const Xbyak::Reg64& target,
                     const Xbyak::Reg64& tmp,
                     const Xbyak::Reg32& out) {
-    const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + IV_OFFSETOF(JSObject, cls_);
+    const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
     asm_->mov(tmp, asm_->qword[target + offset]);
     asm_->mov(out, asm_->word[tmp + IV_OFFSETOF(Class, type)]);
   }
@@ -2968,6 +2970,7 @@ class Compiler {
       asm_->jnz(label, type);
 
       // target is guaranteed as cell
+      // TODO(Constellation) optimize
       LoadCellTag(target, tmp32);
       asm_->cmp(tmp32, radio::OBJECT);
       asm_->jne(label, type);
@@ -2983,8 +2986,8 @@ class Compiler {
 
     // target is guaranteed as Array (pointer to Cell)
     // load dense field and check it is dense
-    const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSArray*) + IV_OFFSETOF(JSArray, dense_);
-    asm_->test(asm_->word[target + offset], 0xFFFF);
+    const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSArray*) + JSArray::DenseOffset();
+    asm_->test(asm_->byte[target + offset], 0xFF);
     asm_->jz(label, type);
   }
 

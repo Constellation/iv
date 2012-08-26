@@ -112,7 +112,7 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
 
       const std::ptrdiff_t length_offset =
           IV_CAST_OFFSET(radio::Cell*, JSString*) +
-          IV_OFFSETOF(JSString, size_);
+          JSString::SizeOffset();
       mov(eax, word[rsi + length_offset]);
 
       or(rax, r15);

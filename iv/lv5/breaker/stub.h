@@ -1062,6 +1062,10 @@ inline Rep LOAD_PROP_CHAIN(Frame* stack,
   }
 }
 
+inline Rep LOAD_PROP_CHAINING(Frame* stack, JSVal base, Symbol name) {
+  return 0;
+}
+
 inline Rep LOAD_PROP(Frame* stack,
                      JSVal base, Symbol name,
                      railgun::Instruction* instr) {

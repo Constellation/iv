@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <gc/gc.h>
 #include <iv/noncopyable.h>
+#include <iv/utils.h>
 #include <iv/lv5/breaker/fwd.h>
 namespace iv {
 namespace lv5 {
@@ -180,6 +181,14 @@ class Storage {
     std::copy(last, end(), first);
     size_ -= n;
     return last;
+  }
+
+  static std::size_t DataOffset() {
+    return IV_OFFSETOF(this_type, data_);
+  }
+
+  static std::size_t SizeOffset() {
+    return IV_OFFSETOF(this_type, size_);
   }
 
  private:

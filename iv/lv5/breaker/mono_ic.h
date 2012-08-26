@@ -29,13 +29,13 @@ class MonoIC : public IC {
     as->mov(as->rax, core::BitCast<uint64_t>(global));
 
     // load map pointer
-    as->cmp(as->rdx, as->qword[as->rax + IV_OFFSETOF(JSObject, map_)]);
+    as->cmp(as->rdx, as->qword[as->rax + JSObject::MapOffset()]);
     as->jne(".SLOW");
 
     const uint32_t dummy32 = 0x7FFF0000;
     const std::ptrdiff_t data_offset =
-        IV_OFFSETOF(JSObject, slots_) +
-        IV_OFFSETOF(JSObject::Slots, data_);
+        JSObject::SlotsOffset() +
+        JSObject::Slots::DataOffset();
     as->mov(as->rax, as->qword[as->rax + data_offset]);
     offset_position_ = as->size() + kMovAddressImmOffset;
     as->mov(as->rax, as->qword[as->rax + dummy32]);
@@ -64,13 +64,13 @@ class MonoIC : public IC {
     as->mov(as->rcx, core::BitCast<uint64_t>(global));
 
     // load map pointer
-    as->cmp(as->rdx, as->qword[as->rcx + IV_OFFSETOF(JSObject, map_)]);
+    as->cmp(as->rdx, as->qword[as->rcx + JSObject::MapOffset()]);
     as->jne(".SLOW");
 
     const uint32_t dummy32 = 0x7FFF0000;
     const std::ptrdiff_t data_offset =
-        IV_OFFSETOF(JSObject, slots_) +
-        IV_OFFSETOF(JSObject::Slots, data_);
+        JSObject::SlotsOffset() +
+        JSObject::Slots::DataOffset();
     as->mov(as->rcx, as->qword[as->rcx + data_offset]);
     offset_position_ = as->size() + kMovAddressImmOffset;
     as->mov(as->qword[as->rcx + dummy32], as->rax);

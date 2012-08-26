@@ -26,20 +26,20 @@ class PolyICUnit: public core::IntrusiveListBase {
       tail_(0) {
   }
 
-  std::size_t tail() const { return tail_; }
-
   Map* own() const { return own_; }
   Map* proto() const { return proto_; }
   Chain* chain() const { return chain_; }
 
   void Redirect(uintptr_t ptr) {
-    // TODO(Constellation) implement it
+		for (std::size_t i = 0; i < sizeof(uintptr_t); ++i) {
+			tail_[i] = static_cast<uint8_t>(ptr >> (i * 8));
+		}
   }
 
- protected:
-  void set_tail(std::size_t tail) {
+  void set_tail(uint8_t* tail) {
     tail_ = tail;
   }
+ protected:
 
   union {
     Map* own_;
@@ -47,7 +47,7 @@ class PolyICUnit: public core::IntrusiveListBase {
   };
   Map* proto_;
   Type type_;
-  std::size_t tail_;
+  uint8_t* tail_;
 };
 
 class PolyIC : public IC, public core::IntrusiveList<PolyICUnit> {
@@ -103,13 +103,41 @@ class LoadPropertyIC : public PolyIC {
     Unit* ic = new Unit(Unit::LOAD_OWN_PROPERTY);
 
     NativeCode::Pages::Buffer buffer = code->pages()->Gain(256);
-    Xbyak::CodeGenerator gen(buffer.size, buffer.ptr);
-    gen.inLocalLabel();
-    {
-    }
-    gen.outLocalLabel();
+    Xbyak::CodeGenerator as(buffer.size, buffer.ptr);
 
-    Chaining(ic, core::BitCast<uintptr_t>(gen.getCode()));
+    // TODO(Constellation)
+    // we should purge these cell jump (only first time)
+    as.inLocalLabel();
+    {
+      // check target is Cell
+      as.mov(as.r10, detail::jsval64::kValueMask);
+      as.test(as.rdi, as.r10);
+      as.jnz(".EXIT");  // we should purge this to generic
+
+      // target is guaranteed as cell
+      as.mov(as.word[as.rdi + radio::Cell::TagOffset()], radio::OBJECT);
+      as.jne(".EXIT");  // we should purge this to string check path
+
+      // map guard
+      as.mov(as.r10, core::BitCast<uintptr_t>(map));
+      as.cmp(as.r10, as.qword[as.rdi + JSObject::MapOffset()]);
+      as.jne(".EXIT");
+
+      const std::ptrdiff_t data_offset =
+          JSObject::SlotsOffset() +
+          JSObject::Slots::DataOffset();
+      as.mov(as.rax, as.qword[as.rdi + data_offset]);
+      as.mov(as.rax, as.qword[as.rax + offset]);
+      as.ret();
+
+      as.L(".EXIT");
+      const uint64_t dummy64 = UINT64_C(0x0FFF000000000000);
+      as.mov(as.rax, dummy64);
+      as.jmp(as.rax);
+    }
+    as.outLocalLabel();
+
+    Chaining(ic, core::BitCast<uintptr_t>(as.getCode()));
   }
 
   void LoadPrototypeProperty(NativeCode* code,
@@ -119,9 +147,9 @@ class LoadPropertyIC : public PolyIC {
     }
     Unit* ic = new Unit(Unit::LOAD_PROTO_PROPERTY);
     NativeCode::Pages::Buffer buffer = code->pages()->Gain(256);
-    Xbyak::CodeGenerator gen(buffer.size, buffer.ptr);
+    Xbyak::CodeGenerator as(buffer.size, buffer.ptr);
 
-    Chaining(ic, core::BitCast<uintptr_t>(gen.getCode()));
+    Chaining(ic, core::BitCast<uintptr_t>(as.getCode()));
   }
 
   void LoadChainProperty(NativeCode* code,
@@ -131,9 +159,9 @@ class LoadPropertyIC : public PolyIC {
     }
     Unit* ic = new Unit(Unit::LOAD_CHAIN_PROPERTY);
     NativeCode::Pages::Buffer buffer = code->pages()->Gain(256);
-    Xbyak::CodeGenerator gen(buffer.size, buffer.ptr);
+    Xbyak::CodeGenerator as(buffer.size, buffer.ptr);
 
-    Chaining(ic, core::BitCast<uintptr_t>(gen.getCode()));
+    Chaining(ic, core::BitCast<uintptr_t>(as.getCode()));
   }
 
  private:
@@ -146,11 +174,10 @@ class LoadPropertyIC : public PolyIC {
 
     if ((size() + 1) == kMaxPolyICSize) {
       // last one
-      // TODO(Constellation) indicate stub function
-      ic->Redirect(0);
+      ic->Redirect(core::BitCast<uintptr_t>(&stub::LOAD_PROP_GENERIC));
     } else {
       // TODO(Constellation) indicate stub function
-      ic->Redirect(0);
+      ic->Redirect(core::BitCast<uintptr_t>(&stub::LOAD_PROP_CHAINING));
     }
     push_back(*ic);
   }
