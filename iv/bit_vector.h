@@ -207,6 +207,13 @@ class BitVector {
     }
   }
 
+  this_type& operator-=(const this_type& rhs) {
+    assert(size() == rhs.size());
+    for (size_type i = 0, len = num_words(); i < len; ++i) {
+      data()[i] &= (~rhs.data()[i]);
+    }
+  }
+
   this_type operator~() const {
     return this_type(*this).flip();
   }
