@@ -18,8 +18,8 @@ class FixedContainer {
   typedef typename std::add_pointer<const value_type>::type const_pointer;
   typedef pointer iterator;
   typedef const_pointer const_iterator;
-  typedef typename std::add_reference<T>::type  reference;
-  typedef typename std::add_const<reference>::type const_reference;
+  typedef T&  reference;
+  typedef const T& const_reference;
   typedef std::reverse_iterator<iterator> reverse_iterator;
   typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
   typedef std::size_t size_type;

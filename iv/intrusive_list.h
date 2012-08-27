@@ -69,7 +69,7 @@ class IntrusiveListIterator
   typedef typename intrusive_list_detail::Prefix<value_type*, IsConst>::type pointer;  // NOLINT
   typedef typename std::add_pointer<const typename std::remove_pointer<pointer>::type>::type const_pointer;  // NOLINT
   typedef typename intrusive_list_detail::Prefix<value_type&, IsConst>::type reference;  // NOLINT
-  typedef typename std::add_reference<const typename std::remove_reference<reference>::type>::type const_reference;  // NOLINT
+  typedef const typename std::remove_reference<reference>::type& const_reference;  // NOLINT
   typedef typename super_type::difference_type difference_type;
 
   typedef IntrusiveListIterator<T, false> iterator;
