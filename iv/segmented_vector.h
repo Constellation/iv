@@ -179,7 +179,8 @@ class SegmentedVector {
 
   typedef
       typename Alloc::template rebind<Segment>::other segment_allocator_type;
-  typedef std::vector<Segment*, Alloc> Segments;
+  typedef std::vector<Segment*,
+          typename Alloc::template rebind<Segment*>::other> Segments;
 
   SegmentedVector(const allocator_type& alloc = allocator_type())
     : size_(0),
