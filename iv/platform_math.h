@@ -62,14 +62,6 @@ inline double Log2(double x) {
   return std::log(x) / 0.693147180559945309417232121458176568;
 }
 
-inline double Log1p(double x) {
-  // log1p(n) = log(n + 1)
-  if (x == 0) {
-    return x;
-  }
-  return std::log(x + 1);
-}
-
 inline double Expm1(double x) {
   // expm1(n) = exp(n) - 1
   //
@@ -129,10 +121,6 @@ inline double Log2(double x) {
   return std::log2(x);
 }
 
-inline double Log1p(double x) {
-  return std::log1p(x);
-}
-
 inline double Expm1(double x) {
   return std::expm1(x);
 }
@@ -150,6 +138,14 @@ inline double Atanh(double x) {
 }
 
 #endif
+
+inline double Log1p(double x) {
+  // log1p(n) = log(n + 1)
+  if (x == 0) {
+    return x;
+  }
+  return std::log(x + 1);
+}
 
 inline double Round(double value) {
   const double res = std::ceil(value);
