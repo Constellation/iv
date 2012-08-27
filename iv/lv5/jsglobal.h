@@ -60,7 +60,11 @@ class JSGlobal : public JSObject {
       slot->set(stored.value(), stored.attributes(), this);
       return true;
     }
-    return JSObject::GetOwnPropertySlot(ctx, name, slot);
+    const bool res = JSObject::GetOwnPropertySlot(ctx, name, slot);
+    if (!res) {
+      slot->MakeUnCacheable();
+    }
+    return res;
   }
 
   virtual bool DefineOwnProperty(Context* ctx,

@@ -181,6 +181,11 @@ class Map : public radio::HeapObject<radio::POINTER> {
     return new Map(UniqueTag());
   }
 
+  static Map* NewUniqueMap(Context* ctx, Map* previous) {
+    assert(previous);
+    return new Map(previous, UniqueTag());
+  }
+
   static Map* New(Context* ctx) {
     return new Map();
   }
@@ -331,11 +336,6 @@ class Map : public radio::HeapObject<radio::POINTER> {
 
   bool HasTable() const {
     return table_;
-  }
-
-  static Map* NewUniqueMap(Context* ctx, Map* previous) {
-    assert(previous);
-    return new Map(previous, UniqueTag());
   }
 
   static Map* New(Context* ctx, Map* previous) {
