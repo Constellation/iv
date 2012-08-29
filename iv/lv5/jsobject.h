@@ -53,6 +53,8 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
   JSVal Get(Context* ctx, Symbol name, Error* e);
   PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const;
   PropertyDescriptor GetProperty(Context* ctx, Symbol name) const;
+  bool HasOwnProperty(Context* ctx, Symbol name) const;
+
   virtual JSVal GetSlot(Context* ctx, Symbol name, Slot* slot, Error* e);
   virtual bool GetPropertySlot(Context* ctx, Symbol name, Slot* slot) const;
   virtual bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const;

@@ -10,6 +10,7 @@
 #include <iv/stringpiece.h>
 #include <iv/ustringpiece.h>
 #include <iv/notfound.h>
+#include <iv/symbol_fwd.h>
 #include <iv/i18n_language_tag_scanner.h>
 #include <iv/i18n_number_format.h>
 namespace iv {
@@ -109,7 +110,7 @@ class LookupResult {
 
 class I18N {
  public:
-  I18N() { }
+  I18N() : symbols_() { }
 
   // 6.2.4 DefaultLocale()
   // the well-formed (6.2.2) and canonicalized (6.2.3) BCP 47 language tag
@@ -174,6 +175,50 @@ class I18N {
                                      ReqIter rlast) {
     return LookupMatcher(ait, alast, rit, rlast);
   }
+
+#define IV_I18N_LOCALE_SYMBOLS(V)\
+  V(initializedIntlObject)\
+  V(usage)\
+  V(locale)\
+  V(numberingSystem)\
+  V(style)\
+  V(currency)\
+  V(currencyDisplay)\
+  V(minimumIntegerDigits)\
+  V(minimumFractionDigits)\
+  V(maximumFractionDigits)\
+  V(minimumSignificantDigits)\
+  V(maximumSignificantDigits)\
+  V(useGrouping)\
+  V(positivePattern)\
+  V(negativePattern)\
+  V(boundFormat)\
+  V(initializedNumberFormat)\
+
+  class Symbols {
+   public:
+    Symbols()
+      :
+#define IV_V(name) name##_(ToUString(#name)),
+        IV_I18N_LOCALE_SYMBOLS(IV_V)
+#undef IV_V
+        last_order_() {
+    }
+
+#define IV_V(name) Symbol name() const { return detail::MakeSymbol(&name##_); }
+    IV_I18N_LOCALE_SYMBOLS(IV_V)
+#undef IV_V
+
+   private:
+#define IV_V(name) const core::UString name##_;
+    IV_I18N_LOCALE_SYMBOLS(IV_V)
+#undef IV_V
+    int last_order_;
+  };
+
+  const Symbols& symbols() const { return symbols_; }
+ private:
+  Symbols symbols_;
 };
 
 } } }  // namespace iv::core::i18n

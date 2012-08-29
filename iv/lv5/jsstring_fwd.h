@@ -417,6 +417,24 @@ class JSString: public radio::HeapObject<radio::STRING> {
     return (*x.Flatten()) >= (*y.Flatten());
   }
 
+  int compare(const core::StringPiece& piece) const {
+    if (Is8Bit()) {
+      return core::StringPiece(*Get8Bit()).compare(piece);
+    } else {
+      const Fiber16* fiber = Get16Bit();
+      return core::CompareIterators(fiber->begin(), fiber->end(), piece.begin(), piece.end());
+    }
+  }
+
+  int compare(const core::UStringPiece& piece) const {
+    if (Is16Bit()) {
+      return core::UStringPiece(*Get16Bit()).compare(piece);
+    } else {
+      const Fiber8* fiber = Get8Bit();
+      return core::CompareIterators(fiber->begin(), fiber->end(), piece.begin(), piece.end());
+    }
+  }
+
   // factory methods
 
   static this_type* New(Context* ctx, const core::UStringPiece& str, Error* e) {

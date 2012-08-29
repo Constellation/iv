@@ -13,7 +13,7 @@ class SymbolTable {
  public:
   class SymbolHolder {
    public:
-    SymbolHolder(const UStringPiece& piece)
+    SymbolHolder(const UStringPiece& piece)  // NOLINT
       : rep_(),
         size_(piece.size()),
         is_8bit_(false),
@@ -21,7 +21,7 @@ class SymbolTable {
       rep_.rep16_ = piece.data();
     }
 
-    SymbolHolder(const StringPiece& piece)
+    SymbolHolder(const StringPiece& piece)  // NOLINT
       : rep_(),
         size_(piece.size()),
         is_8bit_(true),
@@ -29,7 +29,7 @@ class SymbolTable {
       rep_.rep8_ = piece.data();
     }
 
-    SymbolHolder(const UString* str)
+    SymbolHolder(const UString* str)  // NOLINT
       : rep_(),
         size_(str->size()),
         is_8bit_(false),
@@ -100,19 +100,23 @@ class SymbolTable {
 
   typedef std::unordered_set<SymbolHolder, SymbolHolderHasher> Set;
 
-  SymbolTable()
-    : set_() {
+  explicit SymbolTable(bool insert_default_symbol_flag = true)
+    : set_(),
+      insert_default_symbol_(insert_default_symbol_flag) {
     // insert default symbols
+    if (insert_default_symbol()) {
 #define V(sym) InsertDefaults(symbol::sym());
-    IV_DEFAULT_SYMBOLS(V)
+      IV_DEFAULT_SYMBOLS(V)
 #undef V
+    }
   }
 
   ~SymbolTable() {
     for (Set::const_iterator it = set_.begin(),
          last = set_.end(); it != last; ++it) {
-      const Symbol sym = detail::MakeSymbol(it->pointer());
-      if (!symbol::DefaultSymbolProvider::Instance()->IsDefaultSymbol(sym)) {
+      if (!insert_default_symbol() ||
+          !symbol::DefaultSymbolProvider::Instance()->IsDefaultSymbol(
+              detail::MakeSymbol(it->pointer()))) {
         delete it->pointer();
       }
     }
@@ -141,6 +145,8 @@ class SymbolTable {
     }
   }
 
+  bool insert_default_symbol() const { return insert_default_symbol_; }
+
  private:
   void InsertDefaults(Symbol sym) {
     if (symbol::IsStringSymbol(sym)) {
@@ -150,6 +156,7 @@ class SymbolTable {
   }
 
   Set set_;
+  bool insert_default_symbol_;
 };
 
 } }  // namespace iv::core

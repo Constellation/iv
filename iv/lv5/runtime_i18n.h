@@ -77,7 +77,7 @@ inline JSVal CollatorResolvedOptionsGetter(const Arguments& args, Error* e) {
 inline JSVal CollatorSupportedLocalesOf(const Arguments& args, Error* e) {
   Context* ctx = args.ctx();
   JSVector* requested =
-      CanonicalizeLocaleList(ctx, args.At(0), IV_LV5_ERROR(e));
+      i18n::CanonicalizeLocaleList(ctx, args.At(0), IV_LV5_ERROR(e));
   return detail_i18n::SupportedLocales(
       args.ctx(),
       ICUStringIteration(icu::Collator::getAvailableLocales()),
@@ -88,20 +88,55 @@ inline JSVal CollatorSupportedLocalesOf(const Arguments& args, Error* e) {
 
 inline JSVal NumberFormatConstructor(const Arguments& args, Error* e) {
   Context* ctx = args.ctx();
-  JSNumberFormat* obj = JSNumberFormat::New(ctx);
-  return JSNumberFormat::Initialize(ctx, obj, args.At(0), args.At(1), e);
+  JSObject* obj = NULL;
+  const JSVal t = args.this_binding();
+  const JSVal locales = args.At(0);
+  const JSVal options = args.At(1);
+  if (args.IsConstructorCalled() || t.IsUndefined() || JSVal::SameValue(t, ctx->intl())) {
+    // FIXME(Constellation) this isn't abstracted.
+    obj = JSObject::New(ctx);
+    obj->set_prototype(ctx->number_format_prototype());
+  } else {
+    obj = t.ToObject(ctx, IV_LV5_ERROR(e));
+  }
+  if (!obj->IsExtensible()) {
+    e->Report(Error::Type, "Intl.NumberFormat to non extensible object");
+    return JSEmpty;
+  }
+  return i18n::InitializeNumberFormat(ctx, obj, locales, options, e);
+}
+
+inline JSVal NumberFormatFormatGetter(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Intl.NumberFormat.format", args, e);
+  Context* ctx = args.ctx();
+  JSObject* o = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
+  if (!o->HasOwnProperty(ctx, ctx->i18n()->symbols().initializedNumberFormat())) {
+    e->Report(Error::Type,
+              "Intl.NumberFormat.prototype.format is not generic function");
+    return JSEmpty;
+  }
+
+  const PropertyDescriptor desc =
+      o->GetOwnProperty(ctx, ctx->i18n()->symbols().initializedNumberFormat());
+  i18n::JSNumberFormatHolder* format =
+      static_cast<i18n::JSNumberFormatHolder*>(desc.AsDataDescriptor()->value().object());
+  return format->Bound(ctx, e);
 }
 
 inline JSVal NumberFormatFormat(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Intl.NumberFormat.prototype.format", args, e);
   Context* ctx = args.ctx();
   JSObject* o = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
-  if (!o->IsClass<Class::NumberFormat>()) {
+  if (!o->HasOwnProperty(ctx, ctx->i18n()->symbols().initializedNumberFormat())) {
     e->Report(Error::Type,
               "Intl.NumberFormat.prototype.format is not generic function");
     return JSEmpty;
   }
-  JSNumberFormat* format = static_cast<JSNumberFormat*>(o);
+
+  const PropertyDescriptor desc =
+      o->GetOwnProperty(ctx, ctx->i18n()->symbols().initializedNumberFormat());
+  i18n::JSNumberFormatHolder* format =
+      static_cast<i18n::JSNumberFormatHolder*>(desc.AsDataDescriptor()->value().object());
   const double value = args.At(0).ToNumber(ctx, IV_LV5_ERROR(e));
   return format->Format(ctx, value, e);
 }
@@ -111,53 +146,23 @@ inline JSVal NumberFormatResolvedOptionsGetter(
   IV_LV5_CONSTRUCTOR_CHECK("Intl.NumberFormat.resolvedOptions", args, e);
   Context* ctx = args.ctx();
   JSObject* o = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
-  if (!o->IsClass<Class::NumberFormat>()) {
+  if (!o->HasOwnProperty(ctx, ctx->i18n()->symbols().initializedNumberFormat())) {
     e->Report(
         Error::Type,
         "Intl.NumberFormat.prototype.resolvedOptions is not generic getter");
     return JSEmpty;
   }
-  JSNumberFormat* format = static_cast<JSNumberFormat*>(o);
-  JSObject* obj = JSObject::New(ctx);
-  bind::Object(ctx, obj)
-      .def(context::Intern(ctx, "style"),
-           format->GetField(JSNumberFormat::STYLE),
-           ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "currency"),
-           format->GetField(JSNumberFormat::CURRENCY),
-           ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "currencyDisplay"),
-           format->GetField(JSNumberFormat::CURRENCY_DISPLAY),
-           ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "minimumIntegerDigits"),
-           format->GetField(JSNumberFormat::MINIMUM_INTEGER_DIGITS),
-           ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "minimumFractionDigits"),
-           format->GetField(JSNumberFormat::MINIMUM_FRACTION_DIGITS),
-           ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "maximumFractionDigits"),
-           format->GetField(JSNumberFormat::MAXIMUM_FRACTION_DIGITS),
-           ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "minimumSignificantDigits"),
-           format->GetField(JSNumberFormat::MINIMUM_SIGNIFICANT_DIGITS),
-           ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "maximumSignificantDigits"),
-           format->GetField(JSNumberFormat::MAXIMUM_SIGNIFICANT_DIGITS),
-           ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "useGrouping"),
-           format->GetField(JSNumberFormat::USE_GROUPING))
-      .def(context::Intern(ctx, "locale"),
-           format->GetField(JSNumberFormat::LOCALE),
-           ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "numberingSystem"),
-           format->GetField(JSNumberFormat::NUMBERING_SYSTEM),
-           ATTR::W | ATTR::E | ATTR::C);
-  return obj;
+
+  const PropertyDescriptor desc =
+      o->GetOwnProperty(ctx, ctx->i18n()->symbols().initializedNumberFormat());
+  i18n::JSNumberFormatHolder* format =
+      static_cast<i18n::JSNumberFormatHolder*>(desc.AsDataDescriptor()->value().object());
+  return format->ResolveOptions(ctx, e);
 }
 
 inline JSVal NumberFormatSupportedLocalesOf(const Arguments& args, Error* e) {
-  return JSNumberFormat::SupportedLocalesOf(args.ctx(),
-                                            args.At(0), args.At(1), e);
+  return i18n::NumberFormatSupportedLocalesOf(args.ctx(),
+                                              args.At(0), args.At(1), e);
 }
 
 #ifdef IV_ENABLE_I18N
@@ -253,7 +258,7 @@ inline JSVal DateTimeFormatSupportedLocalesOf(const Arguments& args, Error* e) {
     vec[i] = avail[i].getName();
   }
   JSVector* requested =
-      CanonicalizeLocaleList(ctx, args.At(0), IV_LV5_ERROR(e));
+      i18n::CanonicalizeLocaleList(ctx, args.At(0), IV_LV5_ERROR(e));
   return detail_i18n::SupportedLocales(
       args.ctx(),
       vec.begin(),

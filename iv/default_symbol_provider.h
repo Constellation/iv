@@ -43,6 +43,21 @@ namespace symbol {
     V(source)\
     V(compare)\
     V(join)\
+    V(Intl)\
+    V(Collator)\
+    V(NumberFormat)\
+    V(DateTimeFormat)\
+    V(usage)\
+    V(localeMatcher)\
+    V(style)\
+    V(currency)\
+    V(currencyDisplay)\
+    V(minimumIntegerDigits)\
+    V(minimumFractionDigits)\
+    V(maximumFractionDigits)\
+    V(minimumSignificantDigits)\
+    V(maximumSignificantDigits)\
+    V(useGrouping)\
     V(raw)
 
 class DefaultSymbolProvider : public core::Singleton<DefaultSymbolProvider> {

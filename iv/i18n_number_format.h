@@ -409,6 +409,8 @@ class NumberFormat {
     return map;
   }
 
+ public:
+  Style style() const { return style_; }
   int minimum_significant_digits() const { return minimum_significant_digits_; }
   int maximum_significant_digits() const { return maximum_significant_digits_; }
   int minimum_integer_digits() const { return minimum_integer_digits_; }
@@ -417,6 +419,7 @@ class NumberFormat {
   const NumberingSystem::Data* numbering_system() const {
     return numbering_system_;
   }
+  const Data* data() const { return data_; }
   const Currency::Data* currency() const { return currency_; }
   Currency::Display currency_display() const { return currency_display_; }
   bool use_grouping() const { return use_grouping_; }

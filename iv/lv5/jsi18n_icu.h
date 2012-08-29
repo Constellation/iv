@@ -122,13 +122,13 @@ class JSCollator : public JSObject {
   explicit JSCollator(Context* ctx)
     : JSObject(Map::NewUniqueMap(ctx)),
       collator_fields_(),
-      collator_(new JSIntl::GCHandle<icu::Collator>()) {
+      collator_(new i18n::GCHandle<icu::Collator>()) {
   }
 
   JSCollator(Context* ctx, Map* map)
     : JSObject(map),
       collator_fields_(),
-      collator_(new JSIntl::GCHandle<icu::Collator>()) {
+      collator_(new i18n::GCHandle<icu::Collator>()) {
   }
 
   static JSCollator* New(Context* ctx) {
@@ -185,7 +185,7 @@ class JSCollator : public JSObject {
 
  private:
   std::array<JSVal, NUM_OF_FIELDS> collator_fields_;
-  JSIntl::GCHandle<icu::Collator>* collator_;
+  i18n::GCHandle<icu::Collator>* collator_;
 };
 
 class JSCollatorBoundFunction : public JSFunction {
@@ -233,104 +233,6 @@ class JSCollatorBoundFunction : public JSFunction {
   JSCollator* collator_;
 };
 
-class JSNumberFormat : public JSObject {
- public:
-  IV_LV5_DEFINE_JSCLASS(NumberFormat)
-
-  enum NumberFormatField {
-    STYLE = 0,
-    CURRENCY,
-    CURRENCY_DISPLAY,
-    MINIMUM_INTEGER_DIGITS,
-    MINIMUM_FRACTION_DIGITS,
-    MAXIMUM_FRACTION_DIGITS,
-    MINIMUM_SIGNIFICANT_DIGITS,
-    MAXIMUM_SIGNIFICANT_DIGITS,
-    USE_GROUPING,
-    POSITIVE_PATTERN,
-    NEGATIVE_PATTERN,
-    LOCALE,
-    NUMBERING_SYSTEM,
-    NUM_OF_FIELDS
-  };
-
-  explicit JSNumberFormat(Context* ctx)
-    : JSObject(Map::NewUniqueMap(ctx)),
-      number_format_(new JSIntl::GCHandle<icu::DecimalFormat>()),
-      fields_() {
-  }
-
-  JSNumberFormat(Context* ctx, Map* map)
-    : JSObject(map),
-      number_format_(new JSIntl::GCHandle<icu::DecimalFormat>()),
-      fields_() {
-  }
-
-  JSVal GetField(std::size_t n) {
-    assert(n < fields_.size());
-    return fields_[n];
-  }
-
-  void SetField(std::size_t n, JSVal v) {
-    assert(n < fields_.size());
-    fields_[n] = v;
-  }
-
-  void set_number_format(icu::DecimalFormat* number_format) {
-    number_format_->handle.reset(number_format);
-  }
-
-  icu::DecimalFormat* number_format() const {
-    return number_format_->handle.get();
-  }
-
-  JSVal Format(Context* ctx, double value, Error* e) {
-    UErrorCode err = U_ZERO_ERROR;
-    icu::UnicodeString result;
-    if (value == 0) {
-      // if value is -0, we overwrite it as +0
-      value = 0;
-    }
-    number_format()->format(value, result);
-    if (U_FAILURE(err)) {
-      e->Report(Error::Type, "Intl.NumberFormat parse failed");
-      return JSEmpty;
-    }
-    return JSString::New(
-        ctx,
-        result.getBuffer(),
-        result.getBuffer() + result.length(), false, e);
-  }
-
-  static JSNumberFormat* New(Context* ctx) {
-    JSNumberFormat* const collator = new JSNumberFormat(ctx);
-    collator->set_cls(JSNumberFormat::GetClass());
-    collator->set_prototype(
-        context::GetClassSlot(ctx, Class::NumberFormat).prototype);
-    return collator;
-  }
-
-  static JSNumberFormat* NewPlain(Context* ctx, Map* map) {
-    JSNumberFormat* obj = new JSNumberFormat(ctx, map);
-    Error::Dummy e;
-    JSNumberFormat::Initialize(ctx, obj, JSUndefined, JSUndefined, &e);
-    return obj;
-  }
-
-  static JSVal Initialize(Context* ctx,
-                          JSNumberFormat* obj,
-                          JSVal requested_locales,
-                          JSVal op,
-                          Error* e);
-
-  static JSVal SupportedLocalesOf(Context* ctx,
-                                  JSVal requested, JSVal options, Error* e);
-
- private:
-  JSIntl::GCHandle<icu::DecimalFormat>* number_format_;
-  std::array<JSVal, NUM_OF_FIELDS> fields_;
-};
-
 class JSDateTimeFormat : public JSObject {
  public:
   IV_LV5_DEFINE_JSCLASS(DateTimeFormat)
@@ -357,13 +259,13 @@ class JSDateTimeFormat : public JSObject {
 
   explicit JSDateTimeFormat(Context* ctx)
     : JSObject(Map::NewUniqueMap(ctx)),
-      date_time_format_(new JSIntl::GCHandle<icu::DateFormat>()),
+      date_time_format_(new i18n::GCHandle<icu::DateFormat>()),
       fields_() {
   }
 
   JSDateTimeFormat(Context* ctx, Map* map)
     : JSObject(map),
-      date_time_format_(new JSIntl::GCHandle<icu::DateFormat>()),
+      date_time_format_(new i18n::GCHandle<icu::DateFormat>()),
       fields_() {
   }
 
@@ -422,7 +324,7 @@ class JSDateTimeFormat : public JSObject {
 
 
  private:
-  JSIntl::GCHandle<icu::DateFormat>* date_time_format_;
+  i18n::GCHandle<icu::DateFormat>* date_time_format_;
   std::array<JSVal, NUM_OF_FIELDS> fields_;
 };
 
@@ -594,7 +496,7 @@ inline JSVal JSCollator::Initialize(Context* ctx,
                                     JSVal op,
                                     Error* e) {
   JSVector* requested =
-      CanonicalizeLocaleList(ctx, req, IV_LV5_ERROR(e));
+      i18n::CanonicalizeLocaleList(ctx, req, IV_LV5_ERROR(e));
 
   JSObject* options = NULL;
   if (op.IsUndefined()) {
@@ -812,7 +714,7 @@ inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
                                           JSVal op,
                                           Error* e) {
   JSVector* requested =
-      CanonicalizeLocaleList(ctx, req, IV_LV5_ERROR(e));
+      i18n::CanonicalizeLocaleList(ctx, req, IV_LV5_ERROR(e));
 
   JSObject* options =
       detail_i18n::ToDateTimeOptions(ctx, op, true, false, IV_LV5_ERROR(e));
@@ -1094,236 +996,6 @@ inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
   obj->SetField(JSDateTimeFormat::CALENDAR, str);
   calendar.release();  // release
   return obj;
-}
-
-inline JSVal JSNumberFormat::Initialize(Context* ctx,
-                                        JSNumberFormat* obj,
-                                        JSVal req,
-                                        JSVal op,
-                                        Error* e) {
-  JSVector* requested =
-      CanonicalizeLocaleList(ctx, req, IV_LV5_ERROR(e));
-
-
-  JSObject* options = NULL;
-  if (op.IsUndefined()) {
-    options = JSObject::New(ctx);
-  } else {
-    options = op.ToObject(ctx, IV_LV5_ERROR(e));
-  }
-
-  detail_i18n::NumberOptions opt(options);
-
-  const core::i18n::LookupResult result =
-      detail_i18n::ResolveLocale(
-          ctx,
-          ICUStringIteration(icu::NumberFormat::getAvailableLocales()),
-          ICUStringIteration(),
-          requested,
-          options,
-          IV_LV5_ERROR(e));
-  JSString* locale_string =
-      JSString::NewAsciiString(ctx, result.locale(), IV_LV5_ERROR(e));
-  obj->SetField(JSNumberFormat::LOCALE, locale_string);
-  icu::Locale locale(result.locale().c_str());
-  {
-    UErrorCode err = U_ZERO_ERROR;
-    core::unique_ptr<icu::NumberingSystem> numbering_system(
-        icu::NumberingSystem::createInstance(locale, err));
-    if (U_FAILURE(err)) {
-      e->Report(Error::Type, "numbering system initialization failed");
-      return JSEmpty;
-    }
-    JSString* ns =
-        JSString::NewAsciiString(
-            ctx, numbering_system->getName(), IV_LV5_ERROR(e));
-    obj->SetField(JSNumberFormat::NUMBERING_SYSTEM, ns);
-  }
-
-  enum {
-    DECIMAL_STYLE,
-    PERCENT_STYLE,
-    CURRENCY_STYLE
-  } style = DECIMAL_STYLE;
-  icu::DecimalFormat* format = NULL;
-  {
-    JSString* decimal = JSString::NewAsciiString(ctx, "decimal", e);
-    JSString* percent = JSString::NewAsciiString(ctx, "percent", e);
-    JSString* currency = JSString::NewAsciiString(ctx, "currency", e);
-    JSVector* vec = JSVector::New(ctx);
-    vec->push_back(decimal);
-    vec->push_back(percent);
-    vec->push_back(currency);
-    const JSVal t = opt.Get(ctx,
-                            context::Intern(ctx, "style"),
-                            detail_i18n::Options::STRING, vec,
-                            decimal, IV_LV5_ERROR(e));
-    obj->SetField(JSNumberFormat::STYLE, t);
-
-    UErrorCode status = U_ZERO_ERROR;
-    if (JSVal::StrictEqual(t, currency)) {
-      style = CURRENCY_STYLE;
-      {
-        // currency option
-        const JSVal currency = opt.Get(ctx,
-                                       context::Intern(ctx, "currency"),
-                                       detail_i18n::Options::STRING, NULL,
-                                       JSUndefined, IV_LV5_ERROR(e));
-        if (currency.IsUndefined()) {
-          e->Report(Error::Type, "currency is not specified");
-          return JSEmpty;
-        }
-        JSString* tmp = currency.string();
-        if (!core::i18n::IsWellFormedCurrencyCode(tmp->begin(), tmp->end())) {
-          e->Report(Error::Range, "invalid currency code");
-          return JSEmpty;
-        }
-        JSStringBuilder builder;
-        for (JSString::const_iterator it = tmp->begin(), last = tmp->end();
-             it != last; ++it) {
-          if (core::character::IsASCII(*it)) {
-            builder.Append(core::character::ToUpperCase(*it));
-          } else {
-            builder.Append(*it);
-          }
-        }
-        JSString* c = builder.Build(ctx, false, IV_LV5_ERROR(e));
-        obj->SetField(JSNumberFormat::CURRENCY, c);
-      }
-      {
-        // currencyDisplay option
-        JSVector* vec = JSVector::New(ctx);
-        JSString* code = JSString::NewAsciiString(ctx, "code", e);
-        JSString* symbol = JSString::NewAsciiString(ctx, "symbol", e);
-        JSString* name = JSString::NewAsciiString(ctx, "name", e);
-        vec->push_back(code);
-        vec->push_back(symbol);
-        vec->push_back(name);
-        const JSVal cd = opt.Get(ctx,
-                                 context::Intern(ctx, "currencyDisplay"),
-                                 detail_i18n::Options::STRING, vec,
-                                 symbol, IV_LV5_ERROR(e));
-        obj->SetField(JSNumberFormat::CURRENCY_DISPLAY, cd);
-#if IV_ICU_VERSION < 40700
-        // old ICU
-        const icu::NumberFormat::EStyle number_style =
-            (JSVal::StrictEqual(cd, code)) ?
-              icu::NumberFormat::kIsoCurrencyStyle :
-            (JSVal::StrictEqual(cd, name)) ?
-              icu::NumberFormat::kPluralCurrencyStyle :
-              icu::NumberFormat::kCurrencyStyle;
-#else
-        const UNumberFormatStyle number_style =
-            (JSVal::StrictEqual(cd, code)) ? UNUM_CURRENCY_ISO :
-            (JSVal::StrictEqual(cd, name)) ? UNUM_CURRENCY_PLURAL :
-            UNUM_CURRENCY;
-#endif  // IV_ICU_VERSION < 40700
-        format = static_cast<icu::DecimalFormat*>(
-            icu::NumberFormat::createInstance(locale, number_style, status));
-      }
-    } else if (JSVal::StrictEqual(t, decimal)) {
-      style = DECIMAL_STYLE;
-      format = static_cast<icu::DecimalFormat*>(
-          icu::NumberFormat::createInstance(locale, status));
-    } else {
-      style = PERCENT_STYLE;
-      format = static_cast<icu::DecimalFormat*>(
-          icu::NumberFormat::createPercentInstance(locale, status));
-    }
-
-    if (U_FAILURE(status)) {
-      e->Report(Error::Type, "number format creation failed");
-      return JSEmpty;
-    }
-    obj->set_number_format(format);
-  }
-
-  const int32_t minimum_integer_digits =
-      opt.GetNumber(ctx,
-                    context::Intern(ctx, "minimumIntegerDigits"),
-                    1,
-                    21,
-                    1, IV_LV5_ERROR(e));
-  obj->SetField(JSNumberFormat::MINIMUM_INTEGER_DIGITS,
-                JSVal::Int32(minimum_integer_digits));
-  format->setMinimumIntegerDigits(minimum_integer_digits);
-
-  // TODO(Constellation) use CurrencyDigits(c)
-  const int32_t minimum_fraction_digits_default = 0;
-
-  const int32_t minimum_fraction_digits =
-      opt.GetNumber(ctx,
-                    context::Intern(ctx, "minimumFractionDigits"),
-                    0,
-                    20,
-                    minimum_fraction_digits_default, IV_LV5_ERROR(e));
-  obj->SetField(JSNumberFormat::MINIMUM_FRACTION_DIGITS,
-                JSVal::Int32(minimum_fraction_digits));
-  format->setMinimumFractionDigits(minimum_fraction_digits);
-
-  // TODO(Constellation) use CurrencyDigits(c)
-  const int32_t maximum_fraction_digits_default =
-      (style == CURRENCY_STYLE) ?
-        (std::max)(minimum_fraction_digits, 3) :
-      (style == PERCENT_STYLE) ?
-        (std::max)(minimum_fraction_digits, 0) :
-        (std::max)(minimum_fraction_digits, 3);
-  const int32_t maximum_fraction_digits =
-      opt.GetNumber(ctx,
-                    context::Intern(ctx, "maximumFractionDigits"),
-                    minimum_fraction_digits,
-                    20,
-                    maximum_fraction_digits_default, IV_LV5_ERROR(e));
-  obj->SetField(JSNumberFormat::MAXIMUM_FRACTION_DIGITS,
-                JSVal::Int32(maximum_fraction_digits));
-  format->setMaximumFractionDigits(maximum_fraction_digits);
-
-  if (options->HasProperty(ctx,
-                           context::Intern(ctx, "minimumSignificantDigits")) ||
-      options->HasProperty(ctx,
-                           context::Intern(ctx, "maximumSignificantDigits"))) {
-    const int32_t minimum_significant_digits =
-        opt.GetNumber(ctx,
-                      context::Intern(ctx, "minimumSignificantDigits"),
-                      1,
-                      21,
-                      1, IV_LV5_ERROR(e));
-    obj->SetField(JSNumberFormat::MINIMUM_SIGNIFICANT_DIGITS,
-                  JSVal::Int32(minimum_significant_digits));
-    format->setMinimumSignificantDigits(minimum_significant_digits);
-
-    const int32_t maximum_significant_digits =
-        opt.GetNumber(ctx,
-                      context::Intern(ctx, "maximumSignificantDigits"),
-                      minimum_significant_digits,
-                      21,
-                      21, IV_LV5_ERROR(e));
-    obj->SetField(JSNumberFormat::MAXIMUM_SIGNIFICANT_DIGITS,
-                  JSVal::Int32(maximum_significant_digits));
-    format->setMaximumSignificantDigits(maximum_significant_digits);
-  }
-
-  {
-    const JSVal ug = opt.Get(ctx,
-                             context::Intern(ctx, "useGrouping"),
-                             detail_i18n::Options::BOOLEAN, NULL,
-                             JSTrue, IV_LV5_ERROR(e));
-    obj->SetField(JSNumberFormat::USE_GROUPING, ug);
-    format->setGroupingUsed(JSVal::StrictEqual(ug, JSTrue));
-  }
-  return obj;
-}
-
-inline JSVal JSNumberFormat::SupportedLocalesOf(Context* ctx,
-                                                JSVal val,
-                                                JSVal options, Error* e) {
-  JSVector* requested =
-      CanonicalizeLocaleList(ctx, val, IV_LV5_ERROR(e));
-  return detail_i18n::SupportedLocales(
-      ctx,
-      ICUStringIteration(icu::NumberFormat::getAvailableLocales()),
-      ICUStringIteration(),
-      requested, options, e);
 }
 
 } }  // namespace iv::lv5

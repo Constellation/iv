@@ -1261,21 +1261,10 @@ void Context::InitSet(const ClassSlot& func_cls,
 void Context::InitIntl(const ClassSlot& func_cls,
                        JSObject* obj_proto, bind::Object* global_binder) {
   Error::Dummy dummy;
-  struct ClassSlot cls = {
-    JSIntl::GetClass(),
-    context::Intern(this, "Intl"),
-    JSString::NewAsciiString(this, "Intl", &dummy),
-    NULL,
-    obj_proto
-  };
-  global_data_.RegisterClass<Class::Intl>(cls);
-  JSObject* const intl = JSIntl::NewPlain(this);
-  global_binder->def("Intl", intl, ATTR::W | ATTR::C);
+  intl_ = i18n::JSIntl::New(this);
+  global_binder->def("Intl", intl_, ATTR::W | ATTR::C);
 
-  bind::Object intl_binder =
-      bind::Object(this, intl)
-        .cls(cls.cls)
-        .prototype(obj_proto);
+  bind::Object intl_binder = bind::Object(this, intl_);
 
 #ifdef IV_ENABLE_I18N
   // Currently, Collator, NumberFormat, DateTimeFormat need ICU
@@ -1316,34 +1305,25 @@ void Context::InitIntl(const ClassSlot& func_cls,
 
   {
     // NumberFormat
-    JSObject* const proto =
-        JSNumberFormat::NewPlain(this, Map::NewUniqueMap(this));
-    JSFunction* const constructor =
+    number_format_prototype_ =
+        JSObject::NewPlain(this, Map::NewUniqueMap(this));
+    number_format_constructor_ =
         JSInlinedFunction<&runtime::NumberFormatConstructor, 2>::NewPlain(
             this,
-            context::Intern(this, "NumberFormat"));
+            symbol::NumberFormat());
 
-    struct ClassSlot cls = {
-      JSNumberFormat::GetClass(),
-      context::Intern(this, "NumberFormat"),
-      JSString::NewAsciiString(this, "NumberFormat", &dummy),
-      constructor,
-      proto
-    };
-    global_data_.RegisterClass<Class::NumberFormat>(cls);
-    intl_binder.def(cls.name, constructor, ATTR::W | ATTR::C);
+    intl_binder.def(symbol::NumberFormat(), number_format_constructor(), ATTR::W | ATTR::C);
 
-    bind::Object(this, constructor)
+    bind::Object(this, number_format_constructor())
         .cls(func_cls.cls)
         .prototype(func_cls.prototype)
-        .def(symbol::prototype(), proto, ATTR::NONE)
+        .def(symbol::prototype(), number_format_prototype(), ATTR::NONE)
         .def<&runtime::NumberFormatSupportedLocalesOf, 1>("supportedLocalesOf");
 
-    bind::Object(this, proto)
-        .cls(cls.cls)
+    bind::Object(this, number_format_prototype())
         .prototype(obj_proto)
-        .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
-        .def<&runtime::NumberFormatFormat, 1>("format")
+        .def(symbol::constructor(), number_format_constructor(), ATTR::W | ATTR::C)
+        .def_getter<&runtime::NumberFormatFormatGetter, 0>("format")
         .def_getter<
           &runtime::NumberFormatResolvedOptionsGetter, 0>("resolvedOptions");
   }

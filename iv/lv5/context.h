@@ -105,6 +105,9 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
 
   core::i18n::I18N* i18n() { return &i18n_; }
 
+  JSObject* intl() const { return intl_; }
+  JSObject* number_format_prototype() const { return number_format_prototype_; }
+  JSFunction* number_format_constructor() const { return number_format_constructor_; }
  private:
   void InitGlobal(const ClassSlot& func_cls,
                   JSObject* obj_proto, JSFunction* eval_function,
@@ -156,6 +159,12 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
   JSAPI function_constructor_;
   JSAPI global_eval_;
   core::i18n::I18N i18n_;
+
+  JSObject* intl_;
+  JSObject* collator_constructor_;
+  JSFunction* number_format_constructor_;
+  JSObject* number_format_prototype_;
+  JSObject* date_format_constructor_;
 };
 
 } }  // namespace iv::lv5

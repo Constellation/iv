@@ -32,14 +32,13 @@ class JSString;
   V(Map, 19)\
   V(Set, 20)\
   /* i18n */\
-  V(Intl, 21)\
-  V(LocaleList, 22)\
-  V(Collator, 23)\
-  V(NumberFormat, 24)\
-  V(DateTimeFormat, 25)\
+  V(Collator, 21)\
+  V(NumberFormat, 22)\
+  V(DateTimeFormat, 23)\
+  V(Name, 24)\
   /* added by lv5 */\
-  V(Iterator, 26)\
-  V(NOT_CACHED, 27)
+  V(Iterator, 25)\
+  V(NOT_CACHED, 26)
 
 struct Class {
   enum JSClassType {

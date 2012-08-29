@@ -88,6 +88,11 @@ PropertyDescriptor JSObject::GetProperty(Context* ctx, Symbol name) const {
   return JSEmpty;
 }
 
+bool JSObject::HasOwnProperty(Context* ctx, Symbol name) const {
+  Slot slot;
+  return GetOwnPropertySlot(ctx, name, &slot);
+}
+
 bool JSObject::GetPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
   const JSObject* obj = this;
   do {

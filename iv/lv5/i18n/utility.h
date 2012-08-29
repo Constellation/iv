@@ -1,24 +1,158 @@
-#ifndef IV_LV5_JSI18N_H_
-#define IV_LV5_JSI18N_H_
-#include <iterator>
-#include <string>
+#ifndef IV_LV5_I18N_UTILITY_H_
+#define IV_LV5_I18N_UTILITY_H_
 #include <iv/detail/unique_ptr.h>
-#include <iv/detail/unordered_map.h>
-#include <iv/i18n.h>
-#include <iv/lv5/gc_template.h>
-#include <iv/lv5/jsval.h>
-#include <iv/lv5/jsobject.h>
-#include <iv/lv5/jsfunction.h>
-#include <iv/lv5/map.h>
-#include <iv/lv5/class.h>
-#include <iv/lv5/internal.h>
-#include <iv/lv5/runtime_fwd.h>
-#include <iv/lv5/jsvector.h>
-#include <iv/lv5/i18n/utility.h>
 namespace iv {
 namespace lv5 {
+namespace i18n {
 
-namespace detail_i18n {
+template<typename T>
+class GCHandle : public gc_cleanup {
+ public:
+  core::unique_ptr<T> handle;
+};
+
+
+inline JSVector* CanonicalizeLocaleList(Context* ctx, JSVal locales, Error* e) {
+  if (locales.IsUndefined()) {
+    return JSVector::New(ctx);
+  }
+
+  JSVector* seen = JSVector::New(ctx);
+  std::unordered_set<std::string> checker;
+  JSObject* obj = locales.ToObject(ctx, IV_LV5_ERROR_WITH(e, NULL));
+  const uint32_t len =
+      internal::GetLength(ctx, obj, IV_LV5_ERROR_WITH(e, NULL));
+  for (uint32_t k = 0; k < len; ++k) {
+    const Symbol pk = symbol::MakeSymbolFromIndex(k);
+    if (obj->HasProperty(ctx, pk)) {
+      const JSVal value = obj->Get(ctx, pk, IV_LV5_ERROR_WITH(e, NULL));
+      if (!(value.IsString() || value.IsObject())) {
+        e->Report(Error::Type, "locale should be string or object");
+        return NULL;
+      }
+      JSString* tag = value.ToString(ctx, IV_LV5_ERROR_WITH(e, NULL));
+      core::i18n::LanguageTagScanner scanner(tag->begin(), tag->end());
+      if (!scanner.IsStructurallyValid()) {
+        e->Report(Error::Range, "locale pattern is not well formed");
+        return NULL;
+      }
+      const std::string canonicalized = scanner.Canonicalize();
+      if (checker.find(canonicalized) == checker.end()) {
+        checker.insert(canonicalized);
+        JSString* str =
+            JSString::NewAsciiString(ctx, canonicalized, IV_LV5_ERROR_WITH(e, NULL));
+        seen->push_back(str);
+      }
+    }
+  }
+  return seen;
+}
+
+class Options {
+ public:
+  enum Type {
+    BOOLEAN,
+    STRING,
+    NUMBER
+  };
+
+  struct Equaler {
+   public:
+    explicit Equaler(JSVal value) : target_(value) { }
+
+    bool operator()(JSVal t) const {
+      return JSVal::StrictEqual(t, target_);
+    }
+   private:
+    const JSVal target_;
+  };
+
+  explicit Options(JSObject* options) : options_(options) { }
+
+  template<typename Iter>
+  JSString* GetString(Context* ctx,
+                      Symbol property,
+                      Iter it,
+                      Iter last, const char* fallback, Error* e) {
+    JSVal value = options()->Get(ctx, property, IV_LV5_ERROR_WITH(e, NULL));
+    if (!value.IsNullOrUndefined()) {
+      JSString* str = value.ToString(ctx, IV_LV5_ERROR_WITH(e, NULL));
+      if (it != last) {
+        bool found = false;
+        for (; it != last; ++it) {
+          if (str->compare(*it) == 0) {
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          e->Report(Error::Range, "option out of range");
+          return NULL;
+        }
+        return str;
+      }
+    }
+    if (fallback) {
+      return JSString::NewAsciiString(ctx, fallback, e);
+    }
+    return NULL;
+  }
+
+  JSVal Get(Context* ctx,
+            Symbol property, Type type,
+            JSVector* values, JSVal fallback, Error* e) {
+    JSVal value = options()->Get(ctx, property, IV_LV5_ERROR(e));
+    if (!value.IsNullOrUndefined()) {
+      switch (type) {
+        case BOOLEAN:
+          value = JSVal::Bool(value.ToBoolean());
+          break;
+        case STRING:
+          value = value.ToString(ctx, IV_LV5_ERROR(e));
+          break;
+        case NUMBER:
+          value = value.ToNumber(ctx, IV_LV5_ERROR(e));
+          break;
+      }
+      if (values) {
+        if (std::find_if(values->begin(),
+                         values->end(), Equaler(value)) == values->end()) {
+          e->Report(Error::Range, "option out of range");
+          return JSEmpty;
+        }
+      }
+      return value;
+    }
+    return fallback;
+  }
+
+  JSObject* options() { return options_; }
+
+ private:
+  JSObject* options_;
+};
+
+class NumberOptions : public Options {
+ public:
+  explicit NumberOptions(JSObject* options) : Options(options) { }
+
+  int32_t GetNumber(Context* ctx,
+                    Symbol property,
+                    int32_t minimum,
+                    int32_t maximum, int32_t fallback, Error* e) {
+    const JSVal value =
+        options()->Get(ctx, property, IV_LV5_ERROR_WITH(e, 0));
+    if (!value.IsNullOrUndefined()) {
+      const double res = value.ToNumber(ctx, IV_LV5_ERROR_WITH(e, 0));
+      if (core::math::IsNaN(res) || res < minimum || res > maximum) {
+        e->Report(Error::Range, "number option out of range");
+        return 0;
+      }
+      return static_cast<int32_t>(std::floor(res));
+    }
+    return fallback;
+  }
+};
 
 template<typename AvailIter>
 inline JSVector* LookupSupportedLocales(Context* ctx,
@@ -145,83 +279,6 @@ inline core::i18n::LookupResult ResolveLocale(Context* ctx,
   return res;
 }
 
-class Options {
- public:
-  enum Type {
-    BOOLEAN,
-    STRING,
-    NUMBER
-  };
-
-  struct Equaler {
-   public:
-    explicit Equaler(JSVal value) : target_(value) { }
-
-    bool operator()(JSVal t) const {
-      return JSVal::StrictEqual(t, target_);
-    }
-   private:
-    const JSVal target_;
-  };
-
-  explicit Options(JSObject* options) : options_(options) { }
-
-  JSVal Get(Context* ctx,
-            Symbol property, Type type,
-            JSVector* values, JSVal fallback, Error* e) {
-    JSVal value = options()->Get(ctx, property, IV_LV5_ERROR(e));
-    if (!value.IsNullOrUndefined()) {
-      switch (type) {
-        case BOOLEAN:
-          value = JSVal::Bool(value.ToBoolean());
-          break;
-        case STRING:
-          value = value.ToString(ctx, IV_LV5_ERROR(e));
-          break;
-        case NUMBER:
-          value = value.ToNumber(ctx, IV_LV5_ERROR(e));
-          break;
-      }
-      if (values) {
-        if (std::find_if(values->begin(),
-                         values->end(), Equaler(value)) == values->end()) {
-          e->Report(Error::Range, "option out of range");
-          return JSEmpty;
-        }
-      }
-      return value;
-    }
-    return fallback;
-  }
-
-  JSObject* options() { return options_; }
-
- private:
-  JSObject* options_;
-};
-
-class NumberOptions : public lv5::detail_i18n::Options {
- public:
-  explicit NumberOptions(JSObject* options) : Options(options) { }
-
-  int32_t GetNumber(Context* ctx,
-                    Symbol property,
-                    int32_t minimum,
-                    int32_t maximum, int32_t fallback, Error* e) {
-    const JSVal value =
-        options()->Get(ctx, property, IV_LV5_ERROR_WITH(e, 0));
-    if (!value.IsNullOrUndefined()) {
-      const double res = value.ToNumber(ctx, IV_LV5_ERROR_WITH(e, 0));
-      if (core::math::IsNaN(res) || res < minimum || res > maximum) {
-        e->Report(Error::Range, "number option out of range");
-        return 0;
-      }
-      return static_cast<int32_t>(std::floor(res));
-    }
-    return fallback;
-  }
-};
-
 inline JSObject* ToDateTimeOptions(Context* ctx,
                                    JSVal op, bool date, bool time, Error* e) {
   JSObject* options = NULL;
@@ -307,15 +364,5 @@ inline JSObject* ToDateTimeOptions(Context* ctx,
   return options;
 }
 
-}  // namespace detail_i18n
-} }  // namespace iv::lv5
-
-#include <iv/lv5/i18n/intl.h>
-// #include <iv/lv5/i18n/collator.h>
-#include <iv/lv5/i18n/number_format.h>
-// #include <iv/lv5/i18n/date_time_format.h>
-
-#ifdef IV_ENABLE_I18N
-#include <iv/lv5/jsi18n_icu.h>
-#endif  // IV_ENABLE_I18N
-#endif  // IV_LV5_JSI18N_H_
+} } }  // namespace iv::lv5::i18n
+#endif  // IV_LV5_I18N_UTILITY_H_
