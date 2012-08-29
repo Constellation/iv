@@ -144,9 +144,12 @@ inline JSVal NumberToString(const Arguments& args, Error* e) {
 }
 
 // section 15.7.4.2 Number.prototype.toLocaleString()
+// i18n patched version
+// section 13.2.1 Number.prototype.toLocaleString([locales [, options]])
 inline JSVal NumberToLocaleString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.toLocaleString", args, e);
   const JSVal obj = args.this_binding();
+  Context* const ctx = args.ctx();
   double num;
   if (!obj.IsNumber()) {
     if (obj.IsObject() && obj.object()->IsClass<Class::Number>()) {
@@ -159,11 +162,17 @@ inline JSVal NumberToLocaleString(const Arguments& args, Error* e) {
   } else {
     num = obj.number();
   }
-  std::array<char, 80> buffer;
-  const char* const str = core::DoubleToCString(num,
-                                                buffer.data(),
-                                                buffer.size());
-  return JSString::NewAsciiString(args.ctx(), str, e);
+  const JSVal locales = args.At(0);
+  const JSVal options = args.At(1);
+  // FIXME(Constellation) this isn't abstracted.
+  JSObject* format = JSObject::New(ctx);
+  format->set_prototype(ctx->number_format_prototype());
+  i18n::InitializeNumberFormat(ctx, format, locales, options, IV_LV5_ERROR(e));
+  const PropertyDescriptor desc =
+      format->GetOwnProperty(ctx, ctx->i18n()->symbols().initializedNumberFormat());
+  i18n::JSNumberFormatHolder* f =
+      static_cast<i18n::JSNumberFormatHolder*>(desc.AsDataDescriptor()->value().object());
+  return f->Format(ctx, num, e);
 }
 
 // section 15.7.4.4 Number.prototype.valueOf()
