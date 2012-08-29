@@ -1305,7 +1305,7 @@ void Context::InitIntl(const ClassSlot& func_cls,
   {
     // NumberFormat
     number_format_prototype_ =
-        JSObject::NewPlain(this, Map::NewUniqueMap(this));
+        JSObject::New(this, Map::NewUniqueMap(this));
     number_format_constructor_ =
         JSInlinedFunction<&runtime::NumberFormatConstructor, 0>::NewPlain(
             this,
