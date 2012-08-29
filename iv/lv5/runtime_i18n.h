@@ -75,6 +75,7 @@ inline JSVal CollatorResolvedOptions(const Arguments& args, Error* e) {
 }
 
 inline JSVal CollatorSupportedLocalesOf(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Intl.Collator.supportedLocalesOf", args, e);
   Context* ctx = args.ctx();
   JSVector* requested =
       i18n::CanonicalizeLocaleList(ctx, args.At(0), IV_LV5_ERROR(e));
@@ -160,6 +161,7 @@ inline JSVal NumberFormatResolvedOptions(const Arguments& args, Error* e) {
 }
 
 inline JSVal NumberFormatSupportedLocalesOf(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Intl.NumberFormat.supportedLocalesOf", args, e);
   return i18n::NumberFormatSupportedLocalesOf(args.ctx(),
                                               args.At(0), args.At(1), e);
 }
@@ -248,6 +250,7 @@ inline JSVal DateTimeFormatResolvedOptions(const Arguments& args, Error* e) {
 }
 
 inline JSVal DateTimeFormatSupportedLocalesOf(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Intl.DateTimeFormat.supportedLocalesOf", args, e);
   int32_t num = 0;
   Context* ctx = args.ctx();
   const icu::Locale* avail = icu::DateFormat::getAvailableLocales(num);
