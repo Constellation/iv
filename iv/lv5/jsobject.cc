@@ -19,10 +19,11 @@ namespace lv5 {
 
 JSObject::JSObject(Map* map)
   : cls_(NULL),
-    prototype_(NULL),
-    extensible_(true),
     map_(map),
-    slots_(map->GetSlotsSize()) {
+    prototype_(NULL),
+    slots_(map->GetSlotsSize()),
+    flags_() {
+  set_extensible(true);
 }
 
 JSObject::JSObject(Map* map,
@@ -30,10 +31,11 @@ JSObject::JSObject(Map* map,
                    Class* cls,
                    bool extensible)
   : cls_(cls),
-    prototype_(proto),
-    extensible_(extensible),
     map_(map),
-    slots_(map->GetSlotsSize()) {
+    prototype_(proto),
+    slots_(map->GetSlotsSize()),
+    flags_() {
+  set_extensible(extensible);
 }
 
 #define TRY(context, sym, arg, e)\
@@ -41,7 +43,8 @@ JSObject::JSObject(Map* map,
     const JSVal method = Get(context, sym, IV_LV5_ERROR(e));\
     if (method.IsCallable()) {\
       const JSVal val =\
-        method.object()->AsCallable()->Call(&arg, this, IV_LV5_ERROR(e));\
+        static_cast<JSFunction*>(\
+            method.object())->Call(&arg, this, IV_LV5_ERROR(e));\
       if (val.IsPrimitive() || val.IsNullOrUndefined()) {\
         return val;\
       }\
@@ -216,7 +219,7 @@ void JSObject::Put(Context* ctx, Symbol name, JSVal val, bool th, Error* e) {
       assert(ac->setter());
       ScopedArguments args(ctx, 1, IV_LV5_ERROR_VOID(e));
       args[0] = val;
-      ac->setter()->AsCallable()->Call(&args, this, e);
+      static_cast<JSFunction*>(ac->setter())->Call(&args, this, e);
       return;
     }
   }

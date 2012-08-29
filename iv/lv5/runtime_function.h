@@ -33,7 +33,8 @@ inline JSVal FunctionToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Function.prototype.toString", args, e);
   const JSVal obj = args.this_binding();
   if (obj.IsCallable()) {
-    JSFunction* const func = obj.object()->AsCallable();
+    JSFunction* const func =
+        static_cast<JSFunction*>(obj.object());
     Context* const ctx = args.ctx();
     JSStringBuilder builder;
     builder.Append(detail::kFunctionPrefix);
@@ -61,7 +62,8 @@ inline JSVal FunctionApply(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Function.prototype.apply", args, e);
   const JSVal obj = args.this_binding();
   if (obj.IsCallable()) {
-    JSFunction* const func = obj.object()->AsCallable();
+    JSFunction* const func =
+        static_cast<JSFunction*>(obj.object());
     Context* const ctx = args.ctx();
     const std::size_t args_size = args.size();
     if (args_size < 2) {
@@ -95,7 +97,8 @@ inline JSVal FunctionCall(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Function.prototype.call", args, e);
   const JSVal obj = args.this_binding();
   if (obj.IsCallable()) {
-    JSFunction* const func = obj.object()->AsCallable();
+    JSFunction* const func =
+        static_cast<JSFunction*>(obj.object());
     const std::size_t args_size = args.size();
     ScopedArguments args_list(args.ctx(),
                               (args_size > 1) ? args_size - 1 : 0,
@@ -114,8 +117,9 @@ inline JSVal FunctionBind(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Function.prototype.bind", args, e);
   const JSVal obj = args.this_binding();
   if (obj.IsCallable()) {
-    JSFunction* const target = obj.object()->AsCallable();
-    return JSBoundFunction::New(args.ctx(), target, args.At(0), args);
+    JSFunction* const func =
+        static_cast<JSFunction*>(obj.object());
+    return JSBoundFunction::New(args.ctx(), func, args.At(0), args);
   }
   e->Report(Error::Type, "Function.prototype.bind is not generic function");
   return JSEmpty;

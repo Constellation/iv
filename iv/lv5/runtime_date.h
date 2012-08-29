@@ -266,7 +266,8 @@ inline JSVal DateToString(const Arguments& args, Error* e) {
           sign,
           tz_hour,
           tz_min);
-      return JSString::NewAsciiString(args.ctx(), core::StringPiece(buf, num), e);
+      return JSString::NewAsciiString(
+          args.ctx(), core::StringPiece(buf, num), e);
     }
   }
   e->Report(Error::Type,
@@ -294,7 +295,8 @@ inline JSVal DateToDateString(const Arguments& args, Error* e) {
           core::date::MonthToString(time),
           core::date::DateFromTime(time),
           core::date::YearFromTime(time));
-      return JSString::NewAsciiString(args.ctx(), core::StringPiece(buf, num), e);
+      return JSString::NewAsciiString(
+          args.ctx(), core::StringPiece(buf, num), e);
     }
   }
   e->Report(Error::Type,
@@ -337,7 +339,8 @@ inline JSVal DateToTimeString(const Arguments& args, Error* e) {
           sign,
           tz_hour,
           tz_min);
-      return JSString::NewAsciiString(args.ctx(), core::StringPiece(buf, num), e);
+      return JSString::NewAsciiString(
+          args.ctx(), core::StringPiece(buf, num), e);
     }
   }
   e->Report(Error::Type,
@@ -384,7 +387,8 @@ inline JSVal DateToLocaleString(const Arguments& args, Error* e) {
           sign,
           tz_hour,
           tz_min);
-      return JSString::NewAsciiString(args.ctx(), core::StringPiece(buf, num), e);
+      return JSString::NewAsciiString(
+          args.ctx(), core::StringPiece(buf, num), e);
     }
   }
   e->Report(Error::Type,
@@ -412,7 +416,8 @@ inline JSVal DateToLocaleDateString(const Arguments& args, Error* e) {
           core::date::MonthToString(time),
           core::date::DateFromTime(time),
           core::date::YearFromTime(time));
-      return JSString::NewAsciiString(args.ctx(), core::StringPiece(buf, num), e);
+      return JSString::NewAsciiString(
+          args.ctx(), core::StringPiece(buf, num), e);
     }
   }
   e->Report(Error::Type,
@@ -455,7 +460,8 @@ inline JSVal DateToLocaleTimeString(const Arguments& args, Error* e) {
           sign,
           tz_hour,
           tz_min);
-      return JSString::NewAsciiString(args.ctx(), core::StringPiece(buf, num), e);
+      return JSString::NewAsciiString(
+          args.ctx(), core::StringPiece(buf, num), e);
     }
   }
   e->Report(Error::Type,
@@ -1348,7 +1354,8 @@ inline JSVal DateToUTCString(const Arguments& args, Error* e) {
           core::date::HourFromTime(time),
           core::date::MinFromTime(time),
           core::date::SecFromTime(time));
-      return JSString::NewAsciiString(args.ctx(), core::StringPiece(buf, num), e);
+      return JSString::NewAsciiString(
+          args.ctx(), core::StringPiece(buf, num), e);
     }
   }
   e->Report(Error::Type,
@@ -1378,7 +1385,8 @@ inline JSVal DateToISOString(const Arguments& args, Error* e) {
           core::date::MinFromTime(time),
           core::date::SecFromTime(time),
           core::date::MsFromTime(time));
-      return JSString::NewAsciiString(args.ctx(), core::StringPiece(buf, num), e);
+      return JSString::NewAsciiString(
+          args.ctx(), core::StringPiece(buf, num), e);
     }
   }
   e->Report(Error::Type,
@@ -1409,7 +1417,7 @@ inline JSVal DateToJSON(const Arguments& args, Error* e) {
     return JSUndefined;
   }
   ScopedArguments a(ctx, 0, IV_LV5_ERROR(e));
-  return toISO.object()->AsCallable()->Call(&a, obj, e);
+  return static_cast<JSFunction*>(toISO.object())->Call(&a, obj, e);
 }
 
 // section B.2.4 Date.prototype.getYear()

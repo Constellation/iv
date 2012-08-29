@@ -771,7 +771,8 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
     const JSRegExp* reg = static_cast<JSRegExp*>(args[0].object());
     JSStringBuilder builder;
     if (args_count > 1 && args[1].IsCallable()) {
-      JSFunction* const callable = args[1].object()->AsCallable();
+      JSFunction* const callable =
+          static_cast<JSFunction*>(args[1].object());
       detail::FunctionReplacer replacer(ctx, str, *reg, callable);
       if (reg->global()) {
         replacer.ReplaceGlobal(&builder, IV_LV5_ERROR(e));
@@ -806,7 +807,8 @@ inline JSVal StringReplace(const Arguments& args, Error* e) {
     JSStringBuilder builder;
     builder.AppendJSString(*str, 0, loc);
     if (args_count > 1 && args[1].IsCallable()) {
-      JSFunction* const callable = args[1].object()->AsCallable();
+      JSFunction* const callable =
+          static_cast<JSFunction*>(args[1].object());
       ScopedArguments a(ctx, 3, IV_LV5_ERROR(e));
       a[0] = search_str;
       a[1] = static_cast<double>(loc);

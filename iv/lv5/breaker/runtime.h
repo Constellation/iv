@@ -30,7 +30,7 @@ inline JSVal FunctionConstructor(const Arguments& args, Error* e) {
       railgun::JSSourceScript<EvalSource>::New(ctx, src);
   railgun::Code* code = railgun::CompileFunction(ctx, *func, script, true);
   Compile(ctx, code);
-  return JSFunction::New(ctx, code, ctx->global_env());
+  return JSJITFunction::New(ctx, code, ctx->global_env());
 }
 
 inline JSVal GlobalEval(const Arguments& args, Error* e) {

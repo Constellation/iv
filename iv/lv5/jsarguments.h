@@ -55,7 +55,7 @@ class JSNormalArguments : public JSObject {
     const JSVal v = JSObject::GetSlot(ctx, name, slot, IV_LV5_ERROR(e));
     if (name == symbol::caller() &&
         v.IsCallable() &&
-        v.object()->AsCallable()->IsStrict()) {
+        static_cast<JSFunction*>(v.object())->IsStrict()) {
       e->Report(Error::Type,
                 "access to strict function \"caller\" not allowed");
       return JSUndefined;
@@ -275,7 +275,7 @@ class JSStrictArguments : public JSObject {
     const JSVal v = JSObject::GetSlot(ctx, name, slot, IV_LV5_ERROR(e));
     if (name == symbol::caller() &&
         v.IsCallable() &&
-        v.object()->AsCallable()->IsStrict()) {
+        static_cast<JSFunction*>(v.object())->IsStrict()) {
       e->Report(Error::Type,
                 "access to strict function \"caller\" not allowed");
       return JSUndefined;

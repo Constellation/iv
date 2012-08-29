@@ -8,8 +8,8 @@ namespace iv {
 namespace lv5 {
 namespace breaker {
 
-inline lv5::JSFunction* Context::NewFunction(railgun::Code* code, JSEnv* env) {
-  return breaker::JSFunction::New(this, code, env);
+inline JSFunction* Context::NewFunction(railgun::Code* code, JSEnv* env) {
+  return breaker::JSJITFunction::New(this, code, env);
 }
 
 } } }  // namespace iv::lv5::breaker

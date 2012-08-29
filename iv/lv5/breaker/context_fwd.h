@@ -12,7 +12,7 @@ class Context : public railgun::Context {
     : railgun::Context(FunctionConstructor, GlobalEval) {
   }
 
-  virtual lv5::JSFunction* NewFunction(railgun::Code* code, JSEnv* env);
+  virtual JSFunction* NewFunction(railgun::Code* code, JSEnv* env);
 };
 
 } } }  // namespace iv::lv5::breaker

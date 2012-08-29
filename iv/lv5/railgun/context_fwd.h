@@ -36,7 +36,7 @@ class Context : public lv5::Context {
     return global_map_cache_;
   }
 
-  virtual lv5::JSFunction* NewFunction(Code* code, JSEnv* env);
+  virtual JSFunction* NewFunction(Code* code, JSEnv* env);
 
   inline JSVal& RAX() { return RAX_; }
 

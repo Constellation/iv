@@ -101,7 +101,8 @@ inline JSVal JSONParse(const Arguments& args, Error* e) {
         ctx, empty,
         DataDescriptor(result, ATTR::W | ATTR::E | ATTR::C),
         false, IV_LV5_ERROR(e));
-    return detail::JSONWalk(ctx, root, empty, second.object()->AsCallable(), e);
+    return detail::JSONWalk(
+        ctx, root, empty, static_cast<JSFunction*>(second.object()), e);
   }
   return result;
 }
@@ -121,7 +122,7 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
   if (replacer.IsObject()) {
     JSObject* const rep = replacer.object();
     if (replacer.IsCallable()) {  // 4-a
-      replacer_function = rep->AsCallable();
+      replacer_function = static_cast<JSFunction*>(rep);
     } else if (rep->IsClass<Class::Array>()) {  // 4-b
       maybe = &property_list;
       const uint32_t len = internal::GetLength(ctx, rep, IV_LV5_ERROR(e));

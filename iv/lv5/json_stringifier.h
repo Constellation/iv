@@ -258,8 +258,9 @@ class JSONStringifier : private core::Noncopyable<> {
       if (method.IsCallable()) {
         ScopedArguments args_list(ctx_, 1, IV_LV5_ERROR(e));
         args_list[0] = JSString::New(ctx_, key);
-        value = method.object()->AsCallable()->Call(&args_list, target,
-                                                    IV_LV5_ERROR(e));
+        value =
+           static_cast<JSFunction*>(
+               method.object())->Call(&args_list, target, IV_LV5_ERROR(e));
       }
     }
     if (replacer_) {

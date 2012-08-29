@@ -13,7 +13,7 @@ namespace iv {
 namespace lv5 {
 namespace breaker {
 
-class JSFunction : public railgun::JSVMFunction {
+class JSJITFunction : public railgun::JSVMFunction {
  public:
   virtual JSVal Call(Arguments* args, JSVal this_binding, Error* e) {
     args->set_this_binding(this_binding);
@@ -28,21 +28,21 @@ class JSFunction : public railgun::JSVMFunction {
       obj->set_prototype(proto.object());
     }
     assert(args->IsConstructorCalled());
-    const JSVal val = JSFunction::Call(args, obj, IV_LV5_ERROR(e));
+    const JSVal val = JSJITFunction::Call(args, obj, IV_LV5_ERROR(e));
     if (!val.IsObject()) {
       return obj;
     }
     return val;
   }
 
-  static JSFunction* New(Context* ctx,
-                         railgun::Code* code, JSEnv* env) {
-    return new JSFunction(ctx, code, env);
+  static JSJITFunction* New(Context* ctx,
+                            railgun::Code* code, JSEnv* env) {
+    return new JSJITFunction(ctx, code, env);
   }
 
  private:
-  JSFunction(Context* ctx,
-             railgun::Code* code, JSEnv* env)
+  JSJITFunction(Context* ctx,
+                railgun::Code* code, JSEnv* env)
     : railgun::JSVMFunction(ctx, code, env) { }
 };
 

@@ -421,7 +421,7 @@ inline JSVal ObjectToLocaleString(const Arguments& args, Error* e) {
     return JSUndefined;
   }
   ScopedArguments arguments(ctx, 0, IV_LV5_ERROR(e));
-  return toString.object()->AsCallable()->Call(&arguments, obj, e);
+  return static_cast<JSFunction*>(toString.object())->Call(&arguments, obj, e);
 }
 
 // section 15.2.4.4 Object.prototype.valueOf()

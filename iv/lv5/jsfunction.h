@@ -20,14 +20,6 @@ class JSFunction : public JSObject {
  public:
   IV_LV5_DEFINE_JSCLASS(Function)
 
-  bool IsCallable() const {
-    return true;
-  }
-
-  JSFunction* AsCallable() {
-    return this;
-  }
-
   virtual JSVal Call(Arguments* args, JSVal this_binding, Error* e) = 0;
 
   virtual JSVal Construct(Arguments* args, Error* e) = 0;
@@ -81,7 +73,9 @@ class JSFunction : public JSObject {
   }
  protected:
   explicit JSFunction(Context* ctx)
-    : JSObject(context::GetFunctionMap(ctx)) { }
+    : JSObject(context::GetFunctionMap(ctx)) {
+    set_callable(true);
+  }
 };
 
 class JSNativeFunction : public JSFunction {

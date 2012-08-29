@@ -348,7 +348,7 @@ class Operation {
       a[0] = stored;
       const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
       assert(ac->set());
-      ac->set()->AsCallable()->Call(&a, base, e);
+      static_cast<JSFunction*>(ac->set())->Call(&a, base, e);
       return;
     } else {
       if (strict) {
@@ -453,7 +453,7 @@ class Operation {
       e->Report(Error::Type, "instanceof requires constructor");
       return false;
     }
-    return robj->AsCallable()->HasInstance(ctx_, lhs, e);
+    return static_cast<JSFunction*>(robj)->HasInstance(ctx_, lhs, e);
   }
 
   bool BinaryIn(JSVal lhs,

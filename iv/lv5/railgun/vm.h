@@ -396,7 +396,8 @@ JSVal VM::Execute(Frame* start, Error* e) {
         // opcode | dst
         if (!strict) {
           JSObject* obj = JSNormalArguments::New(
-              ctx(), frame->callee().object()->AsCallable(),
+              ctx(),
+              static_cast<JSFunction*>(frame->callee().object()),
               frame->code()->params(),
               frame->arguments_crbegin(),
               frame->arguments_crend(),
@@ -405,7 +406,8 @@ JSVal VM::Execute(Frame* start, Error* e) {
           REG(instr[1].i32[0]) = obj;
         } else {
           JSObject* obj = JSStrictArguments::New(
-              ctx(), frame->callee().object()->AsCallable(),
+              ctx(),
+              static_cast<JSFunction*>(frame->callee().object()),
               frame->arguments_crbegin(),
               frame->arguments_crend(),
               ERR);
@@ -1950,7 +1952,8 @@ JSVal VM::Execute(Frame* start, Error* e) {
           e->Report(Error::Type, "not callable object");
           DISPATCH_ERROR();
         }
-        JSFunction* func = callee.object()->AsCallable();
+        JSFunction* func =
+            static_cast<JSFunction*>(callee.object());
         if (!func->IsNativeFunction()) {
           // inline call
           JSVMFunction* vm_func = static_cast<JSVMFunction*>(func);
@@ -1991,7 +1994,8 @@ JSVal VM::Execute(Frame* start, Error* e) {
           e->Report(Error::Type, "not callable object");
           DISPATCH_ERROR();
         }
-        JSFunction* func = callee.object()->AsCallable();
+        JSFunction* func =
+            static_cast<JSFunction*>(callee.object());
         if (!func->IsNativeFunction()) {
           // inline call
           JSVMFunction* vm_func = static_cast<JSVMFunction*>(func);
@@ -2036,7 +2040,8 @@ JSVal VM::Execute(Frame* start, Error* e) {
           e->Report(Error::Type, "not callable object");
           DISPATCH_ERROR();
         }
-        JSFunction* func = callee.object()->AsCallable();
+        JSFunction* func =
+            static_cast<JSFunction*>(callee.object());
         if (!func->IsNativeFunction()) {
           // inline call
           JSVMFunction* vm_func = static_cast<JSVMFunction*>(func);

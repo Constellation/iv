@@ -198,7 +198,8 @@ inline Rep BINARY_INSTANCEOF(Frame* stack, JSVal lhs, JSVal rhs) {
     stack->error->Report(Error::Type, "instanceof requires constructor");
     IV_LV5_BREAKER_RAISE();
   }
-  const bool result = robj->AsCallable()->HasInstance(ctx, lhs, ERR);
+  const bool result =
+      static_cast<JSFunction*>(robj)->HasInstance(ctx, lhs, ERR);
   return Extract(JSVal::Bool(result));
 }
 
@@ -447,10 +448,11 @@ inline Rep CALL(Frame* stack,
     stack->error->Report(Error::Type, "not callable object");
     IV_LV5_BREAKER_RAISE();
   }
-  lv5::JSFunction* func = callee.object()->AsCallable();
+  JSFunction* func =
+      static_cast<JSFunction*>(callee.object());
   if (!func->IsNativeFunction()) {
     // inline call
-    JSFunction* vm_func = static_cast<JSFunction*>(func);
+    JSJITFunction* vm_func = static_cast<JSJITFunction*>(func);
     railgun::Code* code = vm_func->code();
     if (code->empty()) {
       return Extract(JSUndefined);
@@ -493,10 +495,11 @@ inline Rep EVAL(Frame* stack,
     stack->error->Report(Error::Type, "not callable object");
     IV_LV5_BREAKER_RAISE();
   }
-  lv5::JSFunction* func = callee.object()->AsCallable();
+  JSFunction* func =
+      static_cast<JSFunction*>(callee.object());
   if (!func->IsNativeFunction()) {
     // inline call
-    JSFunction* vm_func = static_cast<JSFunction*>(func);
+    JSJITFunction* vm_func = static_cast<JSJITFunction*>(func);
     railgun::Code* code = vm_func->code();
     if (code->empty()) {
       return Extract(JSUndefined);
@@ -546,10 +549,11 @@ inline Rep CONSTRUCT(Frame* stack,
     stack->error->Report(Error::Type, "not callable object");
     IV_LV5_BREAKER_RAISE();
   }
-  lv5::JSFunction* func = callee.object()->AsCallable();
+  JSFunction* func =
+      static_cast<JSFunction*>(callee.object());
   if (!func->IsNativeFunction()) {
     // inline call
-    JSFunction* vm_func = static_cast<JSFunction*>(func);
+    JSJITFunction* vm_func = static_cast<JSJITFunction*>(func);
     railgun::Code* code = vm_func->code();
     railgun::Frame* new_frame = ctx->vm()->stack()->NewCodeFrame(
         ctx,
@@ -709,14 +713,16 @@ template<bool Strict>
 inline Rep LOAD_ARGUMENTS(Frame* stack, railgun::Frame* frame) {
   if (Strict) {
     JSObject* obj = JSStrictArguments::New(
-        stack->ctx, frame->callee().object()->AsCallable(),
+        stack->ctx,
+        static_cast<JSFunction*>(frame->callee().object()),
         frame->arguments_crbegin(),
         frame->arguments_crend(),
         ERR);
     return Extract(obj);
   } else {
     JSObject* obj = JSNormalArguments::New(
-        stack->ctx, frame->callee().object()->AsCallable(),
+        stack->ctx,
+        static_cast<JSFunction*>(frame->callee().object()),
         frame->code()->params(),
         frame->arguments_crbegin(),
         frame->arguments_crend(),
@@ -867,7 +873,7 @@ void StorePropPrimitive(Context* ctx,
     a[0] = stored;
     const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
     assert(ac->set());
-    ac->set()->AsCallable()->Call(&a, base, e);
+    static_cast<JSFunction*>(ac->set())->Call(&a, base, e);
     return;
   } else {
     if (Strict) {

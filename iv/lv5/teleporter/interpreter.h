@@ -958,7 +958,8 @@ void Interpreter::Visit(const BinaryOperation* binary) {
           ctx_->error()->Report(Error::Type, "instanceof requires constructor");
           return;
         }
-        const bool res = robj->AsCallable()->HasInstance(ctx_, lhs, CHECK);
+        const bool res =
+            static_cast<JSFunction*>(robj)->HasInstance(ctx_, lhs, CHECK);
         if (res) {
           ctx_->Return(JSTrue);
         } else {
@@ -1380,7 +1381,8 @@ void Interpreter::Visit(const FunctionCall* call) {
     ctx_->error()->Report(Error::Type, "not callable object");
     return;
   }
-  JSFunction* const callable = func.object()->AsCallable();
+  JSFunction* const callable =
+      static_cast<JSFunction*>(func.object());
   JSVal this_binding = JSUndefined;
   if (target.IsReference()) {
     const JSReference* const ref = target.reference();
@@ -1428,7 +1430,8 @@ void Interpreter::Visit(const ConstructorCall* call) {
     ctx_->error()->Report(Error::Type, "not callable object");
     return;
   }
-  ctx_->ret() = func.object()->AsCallable()->Construct(&args, CHECK);
+  ctx_->ret() =
+      static_cast<JSFunction*>(func.object())->Construct(&args, CHECK);
 }
 
 void Interpreter::Visit(const Declaration* dummy) {
@@ -1473,7 +1476,7 @@ JSVal Interpreter::GetValue(JSVal val, Error* e) {
         if (ac->get()) {
           ScopedArguments a(ctx_, 0, IV_LV5_ERROR(e));
           const JSVal res =
-              ac->get()->AsCallable()->Call(&a, base, IV_LV5_ERROR(e));
+              static_cast<JSFunction*>(ac->get())->Call(&a, base, IV_LV5_ERROR(e));
           return res;
         } else {
           return JSUndefined;
@@ -1536,7 +1539,7 @@ void Interpreter::PutValue(JSVal val, JSVal w, Error* e) {
         a[0] = w;
         const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
         assert(ac->set());
-        ac->set()->AsCallable()->Call(&a, base, IV_LV5_ERROR_VOID(e));
+        static_cast<JSFunction*>(ac->set())->Call(&a, base, IV_LV5_ERROR_VOID(e));
       } else {
         if (th) {
           e->Report(Error::Type, "value to symbol in transient object");

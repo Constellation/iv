@@ -66,7 +66,8 @@ inline JSVal Dis(const Arguments& args, Error* e) {
     const JSVal val = args[0];
     if (val.IsObject()) {
       JSObject* obj = val.object();
-      if (JSFunction* func = obj->AsCallable()) {
+      if (obj->IsCallable()) {
+        JSFunction* func = static_cast<JSFunction*>(obj);
         if (!func->IsNativeFunction()) {
           JSVMFunction* vm_func = static_cast<JSVMFunction*>(func);
           OutputDisAssembler dis(static_cast<Context*>(args.ctx()), stdout);

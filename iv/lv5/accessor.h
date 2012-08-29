@@ -28,7 +28,7 @@ class Accessor : public radio::HeapObject<radio::ACCESSOR> {
   JSVal InvokeGetter(Context* ctx, JSVal this_binding, Error* e) {
     if (getter()) {
       ScopedArguments a(ctx, 0, IV_LV5_ERROR(e));
-      return getter()->AsCallable()->Call(&a, this_binding, e);
+      return static_cast<JSFunction*>(getter())->Call(&a, this_binding, e);
     } else {
       return JSUndefined;
     }

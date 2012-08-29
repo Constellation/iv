@@ -152,7 +152,7 @@ inline JSVal ArrayToString(const Arguments& args, Error* e) {
   const JSVal join = obj->Get(args.ctx(), symbol::join(), IV_LV5_ERROR(e));
   if (join.IsCallable()) {
     ScopedArguments a(args.ctx(), 0, IV_LV5_ERROR(e));
-    return join.object()->AsCallable()->Call(&a, obj, e);
+    return static_cast<JSFunction*>(join.object())->Call(&a, obj, e);
   } else {
     ScopedArguments a(args.ctx(), 0, IV_LV5_ERROR(e));
     a.set_this_binding(obj);
@@ -186,9 +186,9 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
         return JSUndefined;
       }
       ScopedArguments args_list(ctx, 0, IV_LV5_ERROR(e));
-      const JSVal R = method.object()->AsCallable()->Call(&args_list,
-                                                          elm_obj,
-                                                          IV_LV5_ERROR(e));
+      const JSVal R =
+          static_cast<JSFunction*>(
+              method.object())->Call(&args_list, elm_obj, IV_LV5_ERROR(e));
       const JSString* const str = R.ToString(ctx, IV_LV5_ERROR(e));
       builder.AppendJSString(*str);
     }
@@ -209,9 +209,9 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
         return JSUndefined;
       }
       ScopedArguments args_list(ctx, 0, IV_LV5_ERROR(e));
-      const JSVal R = method.object()->AsCallable()->Call(&args_list,
-                                                          elm_obj,
-                                                          IV_LV5_ERROR(e));
+      const JSVal R =
+          static_cast<JSFunction*>(
+              method.object())->Call(&args_list, elm_obj, IV_LV5_ERROR(e));
       const JSString* const str = R.ToString(ctx, IV_LV5_ERROR(e));
       builder.AppendJSString(*str);
     }
@@ -567,7 +567,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
   const uint32_t len = internal::GetLength(ctx, obj, IV_LV5_ERROR(e));
   JSFunction* comparefn;
   if (!args.empty() && args[0].IsCallable()) {
-    comparefn = args[0].object()->AsCallable();
+    comparefn = static_cast<JSFunction*>(args[0].object());
   } else {
     comparefn =
         JSInlinedFunction<&detail::CompareFn, 2>::New(ctx, symbol::compare());
@@ -1157,7 +1157,8 @@ inline JSVal ArrayEvery(const Arguments& args, Error* e) {
         "Array.protoype.every requires callable object as 1st argument");
     return JSUndefined;
   }
-  JSFunction* const callbackfn = args.front().object()->AsCallable();
+  JSFunction* const callbackfn =
+      static_cast<JSFunction*>(args.front().object());
 
   const JSVal this_binding = args.At(1);
   for (uint32_t k = 0; k < len; ++k) {
@@ -1190,7 +1191,8 @@ inline JSVal ArraySome(const Arguments& args, Error* e) {
         "Array.protoype.some requires callable object as 1st argument");
     return JSUndefined;
   }
-  JSFunction* const callbackfn = args.front().object()->AsCallable();
+  JSFunction* const callbackfn =
+      static_cast<JSFunction*>(args.front().object());
 
   const JSVal this_binding = args.At(1);
   for (uint32_t k = 0; k < len; ++k) {
@@ -1223,7 +1225,8 @@ inline JSVal ArrayForEach(const Arguments& args, Error* e) {
         "Array.protoype.forEach requires callable object as 1st argument");
     return JSUndefined;
   }
-  JSFunction* const callbackfn = args.front().object()->AsCallable();
+  JSFunction* const callbackfn =
+      static_cast<JSFunction*>(args.front().object());
 
   const JSVal this_binding = args.At(1);
   for (uint32_t k = 0; k < len; ++k) {
@@ -1252,7 +1255,8 @@ inline JSVal ArrayMap(const Arguments& args, Error* e) {
         "Array.protoype.map requires callable object as 1st argument");
     return JSUndefined;
   }
-  JSFunction* const callbackfn = args.front().object()->AsCallable();
+  JSFunction* const callbackfn =
+      static_cast<JSFunction*>(args.front().object());
 
   const JSVal this_binding = args.At(1);
   if (len > JSArray::kMaxVectorSize) {
@@ -1304,7 +1308,8 @@ inline JSVal ArrayFilter(const Arguments& args, Error* e) {
         "Array.protoype.filter requires callable object as 1st argument");
     return JSUndefined;
   }
-  JSFunction* const callbackfn = args.front().object()->AsCallable();
+  JSFunction* const callbackfn =
+      static_cast<JSFunction*>(args.front().object());
 
   JSVector* const vec = JSVector::New(ctx);
   const JSVal this_binding = args.At(1);
@@ -1340,7 +1345,8 @@ inline JSVal ArrayReduce(const Arguments& args, Error* e) {
         "Array.protoype.reduce requires callable object as 1st argument");
     return JSUndefined;
   }
-  JSFunction* const callbackfn = args[0].object()->AsCallable();
+  JSFunction* const callbackfn =
+      static_cast<JSFunction*>(args.front().object());
 
   if (len == 0 && arg_count <= 1) {
     e->Report(
@@ -1402,7 +1408,8 @@ inline JSVal ArrayReduceRight(const Arguments& args, Error* e) {
         "callable object as 1st argument");
     return JSUndefined;
   }
-  JSFunction* const callbackfn = args[0].object()->AsCallable();
+  JSFunction* const callbackfn =
+      static_cast<JSFunction*>(args.front().object());
 
   if (len == 0 && arg_count <= 1) {
     e->Report(

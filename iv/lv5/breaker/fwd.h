@@ -57,7 +57,7 @@ class Compiler;
 class MonoIC;
 class Assembler;
 class NativeCode;
-class JSFunction;
+class JSJITFunction;
 class IC;
 class TemplatesGenerator;
 
@@ -90,7 +90,7 @@ JSVal RunEval(Context* ctx,
               Error* e);
 JSVal Run(Context* ctx, railgun::Code* code, Error* e);
 JSVal Execute(Context* ctx, Arguments* args,
-              JSFunction* func, Error* e);
+              JSJITFunction* func, Error* e);
 void Compile(Context* ctx, railgun::Code* code);
 
 JSVal FunctionConstructor(const Arguments& args, Error* e);

@@ -1678,7 +1678,7 @@ class Compiler {
     asm_->mov(asm_->rdi, asm_->r12);
     asm_->mov(asm_->rsi, core::BitCast<uint64_t>(target));
     asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    asm_->Call(&breaker::JSFunction::New);
+    asm_->Call(&JSJITFunction::New);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Function()));

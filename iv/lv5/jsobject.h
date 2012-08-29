@@ -35,6 +35,9 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
     INCLUDE_NOT_ENUMERABLE
   };
 
+  static const uint32_t kFlagExtensible = 0x1;
+  static const uint32_t kFlagCallable = 0x2;
+
   virtual ~JSObject() { }
 
   virtual JSVal DefaultValue(Context* ctx, Hint::Object hint, Error* e);
@@ -78,24 +81,28 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
                                    PropertyNamesCollector* collector,
                                    EnumerationMode mode) const;
 
-  virtual bool IsCallable() const {
-    return false;
-  }
-
-  virtual JSFunction* AsCallable() {
-    return NULL;
-  }
-
   virtual bool IsNativeObject() const {
     return true;
   }
 
-  bool IsExtensible() const {
-    return extensible_;
+  bool IsCallable() const { return flags_ & kFlagCallable; }
+
+  void set_callable(bool val) {
+    if (val) {
+      flags_ |= kFlagCallable;
+    } else {
+      flags_ &= ~kFlagCallable;
+    }
   }
 
+  bool IsExtensible() const { return flags_ & kFlagExtensible; }
+
   void set_extensible(bool val) {
-    extensible_ = val;
+    if (val) {
+      flags_ |= kFlagExtensible;
+    } else {
+      flags_ &= ~kFlagExtensible;
+    }
   }
 
   JSObject* prototype() const {
@@ -159,10 +166,10 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
   JSObject(Map* map, JSObject* proto, Class* cls, bool extensible);
 
   const Class* cls_;
-  JSObject* prototype_;
-  bool extensible_;
   Map* map_;
+  JSObject* prototype_;
   Slots slots_;
+  uint32_t flags_;
 };
 
 } }  // namespace iv::lv5
