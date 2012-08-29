@@ -1273,7 +1273,7 @@ void Context::InitIntl(const ClassSlot& func_cls,
     JSObject* const proto =
         JSCollator::NewPlain(this, Map::NewUniqueMap(this));
     JSFunction* const constructor =
-        JSInlinedFunction<&runtime::CollatorConstructor, 2>::NewPlain(
+        JSInlinedFunction<&runtime::CollatorConstructor, 0>::NewPlain(
             this,
             context::Intern(this, "Collator"));
 
@@ -1307,7 +1307,7 @@ void Context::InitIntl(const ClassSlot& func_cls,
     number_format_prototype_ =
         JSObject::NewPlain(this, Map::NewUniqueMap(this));
     number_format_constructor_ =
-        JSInlinedFunction<&runtime::NumberFormatConstructor, 2>::NewPlain(
+        JSInlinedFunction<&runtime::NumberFormatConstructor, 0>::NewPlain(
             this,
             symbol::NumberFormat());
 
@@ -1332,7 +1332,7 @@ void Context::InitIntl(const ClassSlot& func_cls,
     JSObject* const proto =
         JSDateTimeFormat::NewPlain(this, Map::NewUniqueMap(this));
     JSFunction* const constructor =
-        JSInlinedFunction<&runtime::DateTimeFormatConstructor, 2>::NewPlain(
+        JSInlinedFunction<&runtime::DateTimeFormatConstructor, 0>::NewPlain(
             this,
             context::Intern(this, "DateTimeFormat"));
 
