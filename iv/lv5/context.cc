@@ -1324,6 +1324,9 @@ void Context::InitIntl(const ClassSlot& func_cls,
         .def(symbol::constructor(), number_format_constructor(), ATTR::W | ATTR::C)
         .def_getter<&runtime::NumberFormatFormatGetter, 0>("format")
         .def<&runtime::NumberFormatResolvedOptions, 0>("resolvedOptions");
+    Error::Dummy dummy;
+    i18n::InitializeNumberFormat(
+        this, number_format_prototype(), JSUndefined, JSUndefined, &dummy);
   }
 
 #ifdef IV_ENABLE_I18N
