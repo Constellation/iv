@@ -309,6 +309,9 @@ class Map : public radio::HeapObject<radio::POINTER> {
     if (AllocateTableIfNeeded()) {
       for (TargetTable::const_iterator it = table_->begin(),
            last = table_->end(); it != last; ++it) {
+        if (symbol::IsPrivateSymbol(it->first)) {
+          continue;
+        }
         if (mode == JSObject::INCLUDE_NOT_ENUMERABLE ||
             it->second.attributes.IsEnumerable()) {
           collector->Add(it->first, it->second.offset);

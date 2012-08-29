@@ -29,7 +29,7 @@ struct SymbolLayout<4, true> {
       uint32_t low_;
     } index_;
     struct {
-      const core::UString* str_;
+      uintptr_t str_;
       uint32_t low_;
     } str_;
     uint64_t bytes_;
@@ -45,7 +45,7 @@ struct SymbolLayout<8, true> {
       uint32_t low_;
     } index_;
     struct {
-      const core::UString* str_;
+      uintptr_t str_;
     } str_;
     uint64_t bytes_;
   };
@@ -61,7 +61,7 @@ struct SymbolLayout<4, false> {
     } index_;
     struct {
       uint32_t low_;
-      const core::UString* str_;
+      uintptr_t str_;
     } str_;
     uint64_t bytes_;
   };
@@ -76,7 +76,7 @@ struct SymbolLayout<8, false> {
       uint32_t high_;
     } index_;
     struct {
-      const core::UString* str_;
+      uintptr_t str_;
     } str_;
     uint64_t bytes_;
   };
@@ -86,7 +86,13 @@ typedef SymbolLayout<core::Size::kPointerSize, core::kLittleEndian> Symbol;
 
 inline Symbol MakeSymbol(const core::UString* str) {
   Symbol symbol = { };
-  symbol.str_.str_ = str;
+  symbol.str_.str_ = (reinterpret_cast<uintptr_t>(str) | 0x1);
+  return symbol;
+}
+
+inline Symbol MakePrivateSymbol(const core::UString* str) {
+  Symbol symbol = { };
+  symbol.str_.str_ = reinterpret_cast<uintptr_t>(str);
   return symbol;
 }
 
@@ -144,7 +150,11 @@ inline bool IsArrayIndexSymbol(Symbol sym) {
 }
 
 inline bool IsStringSymbol(Symbol sym) {
-  return !IsIndexSymbol(sym);
+  return !IsIndexSymbol(sym) && (sym.str_.str_ & 0x1);
+}
+
+inline bool IsPrivateSymbol(Symbol sym) {
+  return !IsIndexSymbol(sym) && !IsStringSymbol(sym);
 }
 
 inline Symbol MakeSymbolFromIndex(uint32_t index) {
@@ -153,7 +163,7 @@ inline Symbol MakeSymbolFromIndex(uint32_t index) {
 
 inline const core::UString* GetStringFromSymbol(Symbol sym) {
   assert(IsStringSymbol(sym));
-  return sym.str_.str_;
+  return reinterpret_cast<const core::UString*>(sym.str_.str_ & ~static_cast<uintptr_t>(1));
 }
 
 inline uint32_t GetIndexFromSymbol(Symbol sym) {
