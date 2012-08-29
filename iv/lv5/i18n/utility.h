@@ -91,6 +91,7 @@ class Options {
         }
         return str;
       }
+      return str;
     }
     if (fallback) {
       return JSString::NewAsciiString(ctx, fallback, e);

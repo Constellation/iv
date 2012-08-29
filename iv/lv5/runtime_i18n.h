@@ -36,8 +36,8 @@ inline JSVal CollatorCompareGetter(const Arguments& args, Error* e) {
   return bound;
 }
 
-inline JSVal CollatorResolvedOptionsGetter(const Arguments& args, Error* e) {
-  IV_LV5_CONSTRUCTOR_CHECK("Intl.Collator.resolvedOptions", args, e);
+inline JSVal CollatorResolvedOptions(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Intl.Collator.prototype.resolvedOptions", args, e);
   Context* ctx = args.ctx();
   JSObject* o = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
   if (!o->IsClass<Class::Collator>()) {
@@ -141,9 +141,8 @@ inline JSVal NumberFormatFormat(const Arguments& args, Error* e) {
   return format->Format(ctx, value, e);
 }
 
-inline JSVal NumberFormatResolvedOptionsGetter(
-    const Arguments& args, Error* e) {
-  IV_LV5_CONSTRUCTOR_CHECK("Intl.NumberFormat.resolvedOptions", args, e);
+inline JSVal NumberFormatResolvedOptions(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Intl.NumberFormat.prototype.resolvedOptions", args, e);
   Context* ctx = args.ctx();
   JSObject* o = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
   if (!o->HasOwnProperty(ctx, ctx->i18n()->symbols().initializedNumberFormat())) {
@@ -191,9 +190,8 @@ inline JSVal DateTimeFormatFormat(const Arguments& args, Error* e) {
   return format->Format(ctx, value, e);
 }
 
-inline JSVal DateTimeFormatResolvedOptionsGetter(
-    const Arguments& args, Error* e) {
-  IV_LV5_CONSTRUCTOR_CHECK("Intl.DateTimeFormat.resolvedOptions", args, e);
+inline JSVal DateTimeFormatResolvedOptions(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Intl.DateTimeFormat.prototype.resolvedOptions", args, e);
   Context* ctx = args.ctx();
   JSObject* o = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
   if (!o->IsClass<Class::DateTimeFormat>()) {

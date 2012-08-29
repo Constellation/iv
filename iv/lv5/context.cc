@@ -1298,8 +1298,7 @@ void Context::InitIntl(const ClassSlot& func_cls,
         .prototype(obj_proto)
         .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
         .def_getter<&runtime::CollatorCompareGetter, 0>(symbol::compare())
-        .def_getter<
-          &runtime::CollatorResolvedOptionsGetter, 0>("resolvedOptions");
+        .def<&runtime::CollatorResolvedOptions, 0>("resolvedOptions");
   }
 #endif  // IV_ENABLE_I18N
 
@@ -1324,8 +1323,7 @@ void Context::InitIntl(const ClassSlot& func_cls,
         .prototype(obj_proto)
         .def(symbol::constructor(), number_format_constructor(), ATTR::W | ATTR::C)
         .def_getter<&runtime::NumberFormatFormatGetter, 0>("format")
-        .def_getter<
-          &runtime::NumberFormatResolvedOptionsGetter, 0>("resolvedOptions");
+        .def<&runtime::NumberFormatResolvedOptions, 0>("resolvedOptions");
   }
 
 #ifdef IV_ENABLE_I18N
@@ -1359,8 +1357,7 @@ void Context::InitIntl(const ClassSlot& func_cls,
         .prototype(obj_proto)
         .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
         .def<&runtime::DateTimeFormatFormat, 1>("format")
-        .def_getter<
-          &runtime::DateTimeFormatResolvedOptionsGetter, 0>("resolvedOptions");
+        .def<&runtime::DateTimeFormatResolvedOptions, 0>("resolvedOptions");
   }
 #endif  // IV_ENABLE_I18N
 }

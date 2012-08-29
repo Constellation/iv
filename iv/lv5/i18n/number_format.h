@@ -14,13 +14,16 @@ class JSNumberFormatHolder : public JSObject {
  public:
   typedef GCHandle<core::i18n::NumberFormat> FormatHandle;
 
-  explicit JSNumberFormatHolder(Context* ctx)
+  explicit JSNumberFormatHolder(Context* ctx, JSString* currency)
     : JSObject(Map::NewUniqueMap(ctx)),
       format_(new FormatHandle()),
+      currency_(currency),
       bound_(NULL) { }
 
-  static JSNumberFormatHolder* New(Context* ctx, core::i18n::NumberFormat* number_format) {
-    JSNumberFormatHolder* const format = new JSNumberFormatHolder(ctx);
+  static JSNumberFormatHolder* New(Context* ctx,
+                                   JSString* currency,
+                                   core::i18n::NumberFormat* number_format) {
+    JSNumberFormatHolder* const format = new JSNumberFormatHolder(ctx, currency);
     format->set_cls(JSObject::GetClass());
     format->set_prototype(
         context::GetClassSlot(ctx, Class::Object).prototype);
@@ -63,10 +66,9 @@ class JSNumberFormatHolder : public JSObject {
         object.def(symbol::style(),
                    JSString::NewAsciiString(ctx, "currency", e),
                    ATTR::W | ATTR::E | ATTR::C);
-        if (const core::i18n::Currency::Data* data = format()->currency()) {
+        if (currency_) {
           object.def(context::Intern(ctx, "currency"),
-                     JSString::NewAsciiString(ctx, data->name, e),
-                     ATTR::W | ATTR::E | ATTR::C);
+                     currency_, ATTR::W | ATTR::E | ATTR::C);
         }
         switch (format()->currency_display()) {
           case core::i18n::Currency::CODE:
@@ -142,6 +144,7 @@ class JSNumberFormatHolder : public JSObject {
   }
 
   FormatHandle* format_;
+  JSString* currency_;
   JSFunction* bound_;
 };
 
@@ -270,6 +273,7 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
   core::i18n::NumberFormat::Style style = core::i18n::NumberFormat::DECIMAL;
   core::i18n::Currency::Display display = core::i18n::Currency::SYMBOL;
   const core::i18n::Currency::Data* currency_data = NULL;
+  JSString* c = NULL;
   {
     static const std::array<core::StringPiece, 3> k15 = { {
       "decimal",
@@ -314,16 +318,8 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
           builder.Append(*it);
         }
       }
-      JSString* c = builder.Build(ctx, false, IV_LV5_ERROR_WITH(e, NULL));
-      // check target currency exists
-      {
-        const std::string currency(c->begin(), c->end());
-        currency_data = core::i18n::Currency::Lookup(currency);
-        if (!currency_data) {
-          e->Report(Error::Range, "target currency code does not exists");
-          return NULL;
-        }
-      }
+      c = builder.Build(ctx, false, IV_LV5_ERROR_WITH(e, NULL));
+      currency_data = core::i18n::Currency::Lookup(std::string(c->begin(), c->end()));
     }
 
     // currencyDisplay option
@@ -349,8 +345,8 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
                         1, IV_LV5_ERROR_WITH(e, NULL));
 
   const int32_t minimum_fraction_digits_default =
-      (style == core::i18n::NumberFormat::CURRENCY) ?
-      currency_data->CurrencyDigits(): 0;
+      (style != core::i18n::NumberFormat::CURRENCY) ? 0 :
+      currency_data ? currency_data->CurrencyDigits() : 2;
   const int32_t minimum_fraction_digits =
       options.GetNumber(ctx,
                         symbol::minimumFractionDigits(),
@@ -362,7 +358,7 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
   const int32_t maximum_fraction_digits_default =
       (style == core::i18n::NumberFormat::CURRENCY) ?
         (std::max)(minimum_fraction_digits,
-                   currency_data->CurrencyDigits()) :
+                   currency_data ? currency_data->CurrencyDigits() : 2) :
       (style == core::i18n::NumberFormat::PERCENT) ?
         (std::max)(minimum_fraction_digits, 0) :
         (std::max)(minimum_fraction_digits, 3);
@@ -407,6 +403,7 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
   JSObject* f =
       JSNumberFormatHolder::New(
           ctx,
+          c,
           new core::i18n::NumberFormat(
               locale,
               style,
