@@ -1,6 +1,7 @@
 import sys
 import re
 from xml.etree.ElementTree import ElementTree
+# Currency.xml is from http://www.currency-iso.org/dl_iso_table_a1.xml
 
 HEADER = """
 // This file is auto-generated header by tools/generate-currency.py.
@@ -93,17 +94,17 @@ def dump_line_currency(u):
   return "{ %s }" % (', '.join(res))
 
 def main(source, s2):
-  PATTERN = re.compile('^(?P<code>.+),(?P<v>\d+|Nil),(?P<digit>(\d+)|-1|0\.7)$')
+  PATTERN = re.compile('^\d+$')
 
   digits = { }
   with open(s2) as c:
-    for line in c:
-      m = PATTERN.match(line)
-      assert m
-      digit = m.group('digit')
-      if digit == '0.7':
-        digit = -1
-      digits[m.group('code')] = int(digit)
+    xml = ElementTree(file=c)
+    for currency in xml.findall('.//ISO_CURRENCY'):
+      code = currency.find('ALPHABETIC_CODE').text
+      digit = currency.find('MINOR_UNIT').text
+      if code is not None and digit is not None:
+        if PATTERN.match(digit):
+          digits[code] = int(digit);
 
   xml = None
   with open(source) as c:

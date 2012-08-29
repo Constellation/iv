@@ -87,7 +87,7 @@ static const CurrencyDataArray kCurrencyData = { {
   { "CSD", "Old Serbian Dinar", -1, { 0U, {  } } },  // NOLINT
   { "CSK", "Czechoslovak Hard Koruna", -1, { 0U, {  } } },  // NOLINT
   { "CUP", "Cuban Peso", 2, { 0U, {  } } },  // NOLINT
-  { "CVE", "Cape Verde Escudo", 0, { 5U, { 0x43, 0x56, 0x45, 0x73, 0x63 } } },  // NOLINT
+  { "CVE", "Cape Verde Escudo", 2, { 5U, { 0x43, 0x56, 0x45, 0x73, 0x63 } } },  // NOLINT
   { "CYP", "Cyprus Pound", -1, { 2U, { 0xa3, 0x43 } } },  // NOLINT
   { "CZK", "Czech Republic Koruna", 2, { 0U, {  } } },  // NOLINT
   { "DDM", "East German Ostmark", -1, { 0U, {  } } },  // NOLINT
@@ -132,13 +132,13 @@ static const CurrencyDataArray kCurrencyData = { {
   { "HRK", "Croatian Kuna", 2, { 0U, {  } } },  // NOLINT
   { "HTG", "Haitian Gourde", 2, { 0U, {  } } },  // NOLINT
   { "HUF", "Hungarian Forint", 2, { 2U, { 0x46, 0x74 } } },  // NOLINT
-  { "IDR", "Indonesian Rupiah", 0, { 2U, { 0x52, 0x70 } } },  // NOLINT
+  { "IDR", "Indonesian Rupiah", 2, { 2U, { 0x52, 0x70 } } },  // NOLINT
   { "IEP", "Irish Pound", -1, { 3U, { 0x49, 0x52, 0xa3 } } },  // NOLINT
   { "ILP", "Israeli Pound", -1, { 0U, {  } } },  // NOLINT
   { "ILS", "Israeli New Sheqel", 2, { 0U, {  } } },  // NOLINT
   { "INR", "Indian Rupee", 2, { 0U, {  } } },  // NOLINT
   { "IQD", "Iraqi Dinar", 3, { 2U, { 0x49, 0x44 } } },  // NOLINT
-  { "IRR", "Iranian Rial", 0, { 2U, { 0x52, 0x49 } } },  // NOLINT
+  { "IRR", "Iranian Rial", 2, { 2U, { 0x52, 0x49 } } },  // NOLINT
   { "ISK", "Icelandic Krona", 0, { 0U, {  } } },  // NOLINT
   { "ITL", "Italian Lira", -1, { 1U, { 0x20a4 } } },  // NOLINT
   { "JMD", "Jamaican Dollar", 2, { 2U, { 0x4a, 0x24 } } },  // NOLINT
@@ -148,13 +148,13 @@ static const CurrencyDataArray kCurrencyData = { {
   { "KGS", "Kyrgystan Som", 2, { 3U, { 0x73, 0x6f, 0x6d } } },  // NOLINT
   { "KHR", "Cambodian Riel", 2, { 2U, { 0x43, 0x52 } } },  // NOLINT
   { "KMF", "Comoro Franc", 0, { 2U, { 0x43, 0x46 } } },  // NOLINT
-  { "KPW", "North Korean Won", 0, { 0U, {  } } },  // NOLINT
+  { "KPW", "North Korean Won", 2, { 0U, {  } } },  // NOLINT
   { "KRW", "South Korean Won", 0, { 0U, {  } } },  // NOLINT
   { "KWD", "Kuwaiti Dinar", 3, { 2U, { 0x4b, 0x44 } } },  // NOLINT
   { "KYD", "Cayman Islands Dollar", 2, { 0U, {  } } },  // NOLINT
   { "KZT", "Kazakhstan Tenge", 2, { 1U, { 0x54 } } },  // NOLINT
-  { "LAK", "Laotian Kip", 0, { 0U, {  } } },  // NOLINT
-  { "LBP", "Lebanese Pound", 0, { 2U, { 0x4c, 0x4c } } },  // NOLINT
+  { "LAK", "Laotian Kip", 2, { 0U, {  } } },  // NOLINT
+  { "LBP", "Lebanese Pound", 2, { 2U, { 0x4c, 0x4c } } },  // NOLINT
   { "LKR", "Sri Lanka Rupee", 2, { 5U, { 0x53, 0x4c, 0x20, 0x52, 0x65 } } },  // NOLINT
   { "LRD", "Liberian Dollar", 2, { 0U, {  } } },  // NOLINT
   { "LSL", "Lesotho Loti", 2, { 1U, { 0x4d } } },  // NOLINT
@@ -170,14 +170,14 @@ static const CurrencyDataArray kCurrencyData = { {
   { "MAD", "Moroccan Dirham", 2, { 0U, {  } } },  // NOLINT
   { "MAF", "Moroccan Franc", -1, { 0U, {  } } },  // NOLINT
   { "MDL", "Moldovan Leu", 2, { 0U, {  } } },  // NOLINT
-  { "MGA", "Madagascar Ariary", -1, { 0U, {  } } },  // NOLINT
+  { "MGA", "Madagascar Ariary", 2, { 0U, {  } } },  // NOLINT
   { "MGF", "Madagascar Franc", -1, { 0U, {  } } },  // NOLINT
   { "MKD", "Macedonian Denar", 2, { 4U, { 0x4d, 0x44, 0x65, 0x6e } } },  // NOLINT
   { "MLF", "Mali Franc", -1, { 0U, {  } } },  // NOLINT
-  { "MMK", "Myanmar Kyat", 0, { 0U, {  } } },  // NOLINT
+  { "MMK", "Myanmar Kyat", 2, { 0U, {  } } },  // NOLINT
   { "MNT", "Mongolian Tugrik", 2, { 3U, { 0x54, 0x75, 0x67 } } },  // NOLINT
   { "MOP", "Macao Pataca", 2, { 0U, {  } } },  // NOLINT
-  { "MRO", "Mauritania Ouguiya", -1, { 2U, { 0x55, 0x4d } } },  // NOLINT
+  { "MRO", "Mauritania Ouguiya", 2, { 2U, { 0x55, 0x4d } } },  // NOLINT
   { "MTL", "Maltese Lira", -1, { 2U, { 0x4c, 0x6d } } },  // NOLINT
   { "MTP", "Maltese Pound", -1, { 0U, {  } } },  // NOLINT
   { "MUR", "Mauritius Rupee", 2, { 0U, {  } } },  // NOLINT
@@ -229,13 +229,13 @@ static const CurrencyDataArray kCurrencyData = { {
   { "SHP", "Saint Helena Pound", 2, { 0U, {  } } },  // NOLINT
   { "SIT", "Slovenia Tolar", -1, { 0U, {  } } },  // NOLINT
   { "SKK", "Slovak Koruna", -1, { 2U, { 0x53, 0x6b } } },  // NOLINT
-  { "SLL", "Sierra Leone Leone", 0, { 0U, {  } } },  // NOLINT
+  { "SLL", "Sierra Leone Leone", 2, { 0U, {  } } },  // NOLINT
   { "SOS", "Somali Shilling", 2, { 7U, { 0x53, 0x6f, 0x2e, 0x20, 0x53, 0x68, 0x2e } } },  // NOLINT
   { "SRD", "Surinam Dollar", 2, { 0U, {  } } },  // NOLINT
   { "SRG", "Suriname Guilder", -1, { 2U, { 0x53, 0x66 } } },  // NOLINT
-  { "STD", "Sao Tome and Principe Dobra", 0, { 2U, { 0x44, 0x62 } } },  // NOLINT
+  { "STD", "Sao Tome and Principe Dobra", 2, { 2U, { 0x44, 0x62 } } },  // NOLINT
   { "SUR", "Soviet Rouble", -1, { 0U, {  } } },  // NOLINT
-  { "SVC", "El Salvador Colon", -1, { 0U, {  } } },  // NOLINT
+  { "SVC", "El Salvador Colon", 2, { 0U, {  } } },  // NOLINT
   { "SYP", "Syrian Pound", 2, { 2U, { 0x4c, 0x53 } } },  // NOLINT
   { "SZL", "Swaziland Lilangeni", 2, { 1U, { 0x45 } } },  // NOLINT
   { "THB", "Thai Baht", 2, { 0U, {  } } },  // NOLINT
