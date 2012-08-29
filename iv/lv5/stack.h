@@ -124,6 +124,13 @@ class Stack : core::Noncopyable<Stack> {
     stack_pointer_ = stack_;
   }
 
+  static std::size_t StackBaseOffset() {
+    return IV_OFFSETOF(Stack, stack_);
+  }
+
+  static std::size_t StackPointerOffset() {
+    return IV_OFFSETOF(Stack, stack_pointer_);
+  }
  private:
   JSVal* stack_;
   JSVal* stack_pointer_;

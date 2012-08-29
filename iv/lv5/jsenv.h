@@ -49,6 +49,10 @@ class JSEnv : public radio::HeapObject<radio::ENVIRONMENT> {
     core->MarkCell(outer_);
   }
 
+  static std::size_t OuterOffset() {
+    return IV_OFFSETOF(JSEnv, outer_);
+  }
+
  protected:
   explicit JSEnv(JSEnv* outer)
     : outer_(outer) {

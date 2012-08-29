@@ -57,6 +57,10 @@ class VM : private Operation {
     statistics_.Dump();
   }
 
+  static std::size_t StackOffset() {
+    return IV_OFFSETOF(VM, stack_);
+  }
+
 #if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
  private:
   // dispatch table get pass

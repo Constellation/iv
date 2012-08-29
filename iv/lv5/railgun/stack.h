@@ -153,6 +153,10 @@ class Stack : public lv5::Stack {
     }
   }
 
+  static std::size_t CurrentFrameOffset() {
+    return IV_OFFSETOF(Stack, current_);
+  }
+
  private:
   static GC_ms_entry* MarkFrame(GC_ms_entry* entry,
                                 GC_ms_entry* mark_sp_limit,

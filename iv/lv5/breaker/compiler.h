@@ -1614,7 +1614,7 @@ class Compiler {
   // opcode
   void EmitPOP_ENV(const Instruction* instr) {
     asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    asm_->mov(asm_->rdi, asm_->ptr[asm_->rdi + IV_OFFSETOF(JSEnv, outer_)]);
+    asm_->mov(asm_->rdi, asm_->ptr[asm_->rdi + JSEnv::OuterOffset()]);
     asm_->mov(asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)], asm_->rdi);
     // save previous register because NOP does nothing
     set_last_used_candidate(last_used());
@@ -2043,7 +2043,7 @@ class Compiler {
     const ptrdiff_t target =
         IV_CAST_OFFSET(JSEnv*, JSDeclEnv*) +
         IV_OFFSETOF(JSDeclEnv, static_) +
-        IV_OFFSETOF(JSDeclEnv::StaticVals, data_);
+        JSDeclEnv::StaticVals::DataOffset();
     // pointer to the data
     asm_->mov(asm_->rax, asm_->qword[asm_->rsi + target]);
     asm_->mov(asm_->rax, asm_->qword[asm_->rax + kJSValSize * offset]);
@@ -2091,7 +2091,7 @@ class Compiler {
     const ptrdiff_t target =
         IV_CAST_OFFSET(JSEnv*, JSDeclEnv*) +
         IV_OFFSETOF(JSDeclEnv, static_) +
-        IV_OFFSETOF(JSDeclEnv::StaticVals, data_);
+        JSDeclEnv::StaticVals::DataOffset();
     // pointer to the data
     asm_->mov(asm_->rdi, asm_->qword[asm_->rsi + target]);
     asm_->mov(asm_->qword[asm_->rdi + kJSValSize * offset], asm_->rax);
@@ -2203,7 +2203,7 @@ class Compiler {
     const ptrdiff_t target =
         IV_CAST_OFFSET(JSEnv*, JSDeclEnv*) +
         IV_OFFSETOF(JSDeclEnv, static_) +
-        IV_OFFSETOF(JSDeclEnv::StaticVals, data_);
+        JSDeclEnv::StaticVals::DataOffset();
     // pointer to the data
     asm_->mov(asm_->rax, asm_->qword[asm_->rsi + target]);
     asm_->mov(asm_->rsi, asm_->qword[asm_->rax + kJSValSize * offset]);
@@ -2265,8 +2265,8 @@ class Compiler {
       // rcx is new stack pointer
       asm_->L(".CALL_UNWIND_OLD");
       asm_->mov(asm_->r10, asm_->ptr[asm_->r12 + IV_OFFSETOF(Context, vm_)]);
-      asm_->mov(asm_->ptr[asm_->r10 + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, stack_pointer_))], asm_->rcx);
-      asm_->mov(asm_->ptr[asm_->r10 + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, current_))], asm_->r13);
+      asm_->mov(asm_->ptr[asm_->r10 + (railgun::VM::StackOffset() + railgun::Stack::StackPointerOffset())], asm_->rcx);
+      asm_->mov(asm_->ptr[asm_->r10 + (railgun::VM::StackOffset() + railgun::Stack::CurrentFrameOffset())], asm_->r13);
 
       asm_->L(".CALL_EXIT");
     }
@@ -2309,8 +2309,8 @@ class Compiler {
       // rcx is new stack pointer
       asm_->L(".CALL_UNWIND_OLD");
       asm_->mov(asm_->r10, asm_->ptr[asm_->r12 + IV_OFFSETOF(Context, vm_)]);
-      asm_->mov(asm_->ptr[asm_->r10 + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, stack_pointer_))], asm_->rcx);
-      asm_->mov(asm_->ptr[asm_->r10 + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, current_))], asm_->r13);
+      asm_->mov(asm_->ptr[asm_->r10 + (railgun::VM::StackOffset() + railgun::Stack::StackPointerOffset())], asm_->rcx);
+      asm_->mov(asm_->ptr[asm_->r10 + (railgun::VM::StackOffset() + railgun::Stack::CurrentFrameOffset())], asm_->r13);
 
       // after call of JS Function
       // rax is result value
@@ -2367,8 +2367,8 @@ class Compiler {
       // rcx is new stack pointer
       asm_->L(".CALL_UNWIND_OLD");
       asm_->mov(asm_->r10, asm_->ptr[asm_->r12 + IV_OFFSETOF(Context, vm_)]);
-      asm_->mov(asm_->ptr[asm_->r10 + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, stack_pointer_))], asm_->rcx);
-      asm_->mov(asm_->ptr[asm_->r10 + (IV_OFFSETOF(railgun::VM, stack_) + IV_OFFSETOF(railgun::Stack, current_))], asm_->r13);
+      asm_->mov(asm_->ptr[asm_->r10 + (railgun::VM::StackOffset() + railgun::Stack::StackPointerOffset())], asm_->rcx);
+      asm_->mov(asm_->ptr[asm_->r10 + (railgun::VM::StackOffset() + railgun::Stack::CurrentFrameOffset())], asm_->r13);
 
       asm_->L(".CALL_EXIT");
     }
@@ -3051,7 +3051,7 @@ class Compiler {
 
   void LookupHeapEnv(const Xbyak::Reg64& target, uint32_t nest) {
     for (uint32_t i = 0; i < nest; ++i) {
-      asm_->mov(target, asm_->ptr[target + IV_OFFSETOF(JSEnv, outer_)]);
+      asm_->mov(target, asm_->ptr[target + JSEnv::OuterOffset()]);
     }
   }
 
