@@ -57,7 +57,7 @@ class PropertyNamesCollector {
     }
   };
 
-  typedef GCVector<SymbolKey>::type Names;
+  typedef trace::Vector<SymbolKey>::type Names;
 
   PropertyNamesCollector()
     : names_(),

@@ -78,7 +78,7 @@ inline JSVector* LookupSupportedLocales(Context* ctx,
     const std::string locale(
         core::i18n::LanguageTagScanner::RemoveExtension(str->begin(),
                                                         str->end()));
-    const AvailIter t = ctx->i18n()->IndexOfMatch(it, last, locale);
+    const AvailIter t = ctx->i18n()->BestAvailableLocale(it, last, locale);
     if (t != last) {
       JSString* str =
           JSString::NewAsciiString(ctx, locale, IV_LV5_ERROR_WITH(e, NULL));
@@ -110,10 +110,6 @@ inline JSArray* SupportedLocales(Context* ctx,
       const std::string res = str->GetUTF8();
       if (res == "lookup") {
         best_fit = false;
-      } else if (res != "best fit") {
-        e->Report(Error::Range,
-                  "localeMatcher should be 'lookup' or 'best fit'");
-        return NULL;
       }
     }
   }
@@ -157,7 +153,8 @@ inline ExtensionMap CreateExtensionMap(
 
 template<typename AvailIter>
 inline core::i18n::LookupResult ResolveLocale(Context* ctx,
-                                              AvailIter it, AvailIter last,
+                                              AvailIter it,
+                                              AvailIter last,
                                               JSVector* requested,
                                               JSVal options, Error* e) {
   bool best_fit = true;
@@ -174,10 +171,6 @@ inline core::i18n::LookupResult ResolveLocale(Context* ctx,
       const std::string res = str->GetUTF8();
       if (res == "lookup") {
         best_fit = false;
-      } else if (res != "best fit") {
-        e->Report(Error::Range,
-                  "localeMatcher should be 'lookup' or 'best fit'");
-        return core::i18n::LookupResult();
       }
     }
   }
@@ -193,8 +186,8 @@ inline core::i18n::LookupResult ResolveLocale(Context* ctx,
     }
   }
   core::i18n::LookupResult res = (best_fit) ?
-      ctx->i18n()->BestFitMatch(it, last, locales.begin(), locales.end()) :
-      ctx->i18n()->LookupMatch(it, last, locales.begin(), locales.end());
+      ctx->i18n()->BestFitMatcher(it, last, locales.begin(), locales.end()) :
+      ctx->i18n()->LookupMatcher(it, last, locales.begin(), locales.end());
   return res;
 }
 
