@@ -57,7 +57,7 @@ class PropertyNamesCollector {
     }
   };
 
-  typedef std::vector<SymbolKey> Names;
+  typedef GCVector<SymbolKey>::type Names;
 
   PropertyNamesCollector()
     : names_(),
