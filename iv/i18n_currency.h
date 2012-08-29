@@ -19,7 +19,7 @@ struct CurrencyData {
   } symbol;
 
   int CurrencyDigits() const {
-    return (digits == -1) ? 0 : digits;
+    return (digits == -1) ? 2 : digits;
   }
 };
 
@@ -608,7 +608,7 @@ class Currency {
     for (const Data* it = kCurrencyData.data(),  // NOLINT
          *last = kCurrencyData.data() + kCurrencyData.size();
          it != last; ++it) {
-      map.insert(std::make_pair(it->name, it));
+      map.insert(std::make_pair(it->code, it));
     }
     return map;
   }

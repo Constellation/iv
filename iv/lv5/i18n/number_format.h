@@ -67,22 +67,22 @@ class JSNumberFormatHolder : public JSObject {
                    JSString::NewAsciiString(ctx, "currency", e),
                    ATTR::W | ATTR::E | ATTR::C);
         if (currency_) {
-          object.def(context::Intern(ctx, "currency"),
+          object.def(symbol::currency(),
                      currency_, ATTR::W | ATTR::E | ATTR::C);
         }
         switch (format()->currency_display()) {
           case core::i18n::Currency::CODE:
-            object.def(symbol::style(),
+            object.def(symbol::currencyDisplay(),
                        JSString::NewAsciiString(ctx, "code", e),
                        ATTR::W | ATTR::E | ATTR::C);
             break;
           case core::i18n::Currency::SYMBOL:
-            object.def(symbol::style(),
+            object.def(symbol::currencyDisplay(),
                        JSString::NewAsciiString(ctx, "symbol", e),
                        ATTR::W | ATTR::E | ATTR::C);
             break;
           case core::i18n::Currency::NAME:
-            object.def(symbol::style(),
+            object.def(symbol::currencyDisplay(),
                        JSString::NewAsciiString(ctx, "name", e),
                        ATTR::W | ATTR::E | ATTR::C);
             break;
