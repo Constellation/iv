@@ -205,7 +205,7 @@ class I18N {
         last_order_() {
     }
 
-#define IV_V(name) Symbol name() const { return detail::MakeSymbol(&name##_); }
+#define IV_V(name) Symbol name() const { return detail::MakePrivateSymbol(&name##_); }
     IV_I18N_LOCALE_SYMBOLS(IV_V)
 #undef IV_V
 
