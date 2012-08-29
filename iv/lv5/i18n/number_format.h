@@ -128,6 +128,11 @@ class JSNumberFormatHolder : public JSObject {
       object.def(context::Intern(ctx, "numberingSystem"),
                  JSString::NewAsciiString(ctx, data->name, e),
                  ATTR::W | ATTR::E | ATTR::C);
+    } else {
+      // default is LATN
+      object.def(context::Intern(ctx, "numberingSystem"),
+                 JSString::NewAsciiString(ctx, "latn", e),
+                 ATTR::W | ATTR::E | ATTR::C);
     }
 
     if (const core::i18n::NumberFormat::Data* data = format()->data()) {
