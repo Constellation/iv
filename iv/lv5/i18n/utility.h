@@ -50,12 +50,6 @@ inline JSVector* CanonicalizeLocaleList(Context* ctx, JSVal locales, Error* e) {
 
 class Options {
  public:
-  enum Type {
-    BOOLEAN,
-    STRING,
-    NUMBER
-  };
-
   struct Equaler {
    public:
     explicit Equaler(JSVal value) : target_(value) { }
@@ -75,7 +69,7 @@ class Options {
                       Iter it,
                       Iter last, const char* fallback, Error* e) {
     JSVal value = options()->Get(ctx, property, IV_LV5_ERROR_WITH(e, NULL));
-    if (!value.IsNullOrUndefined()) {
+    if (!value.IsUndefined()) {
       JSString* str = value.ToString(ctx, IV_LV5_ERROR_WITH(e, NULL));
       if (it != last) {
         bool found = false;
@@ -99,30 +93,10 @@ class Options {
     return NULL;
   }
 
-  JSVal Get(Context* ctx,
-            Symbol property, Type type,
-            JSVector* values, JSVal fallback, Error* e) {
-    JSVal value = options()->Get(ctx, property, IV_LV5_ERROR(e));
-    if (!value.IsNullOrUndefined()) {
-      switch (type) {
-        case BOOLEAN:
-          value = JSVal::Bool(value.ToBoolean());
-          break;
-        case STRING:
-          value = value.ToString(ctx, IV_LV5_ERROR(e));
-          break;
-        case NUMBER:
-          value = value.ToNumber(ctx, IV_LV5_ERROR(e));
-          break;
-      }
-      if (values) {
-        if (std::find_if(values->begin(),
-                         values->end(), Equaler(value)) == values->end()) {
-          e->Report(Error::Range, "option out of range");
-          return JSEmpty;
-        }
-      }
-      return value;
+  bool GetBoolean(Context* ctx, Symbol property, bool fallback, Error* e) {
+    JSVal value = options()->Get(ctx, property, IV_LV5_ERROR_WITH(e, false));
+    if (!value.IsUndefined()) {
+      return value.ToBoolean();
     }
     return fallback;
   }
@@ -143,7 +117,7 @@ class NumberOptions : public Options {
                     int32_t maximum, int32_t fallback, Error* e) {
     const JSVal value =
         options()->Get(ctx, property, IV_LV5_ERROR_WITH(e, 0));
-    if (!value.IsNullOrUndefined()) {
+    if (!value.IsUndefined()) {
       const double res = value.ToNumber(ctx, IV_LV5_ERROR_WITH(e, 0));
       if (core::math::IsNaN(res) || res < minimum || res > maximum) {
         e->Report(Error::Range, "number option out of range");
@@ -196,9 +170,11 @@ inline JSArray* SupportedLocales(Context* ctx,
                  IV_LV5_ERROR_WITH(e, NULL));
     if (!matcher.IsUndefined()) {
       JSString* str = matcher.ToString(ctx, IV_LV5_ERROR_WITH(e, NULL));
-      const std::string res = str->GetUTF8();
-      if (res == "lookup") {
+      if (str->compare("lookup") == 0) {
         best_fit = false;
+      } else if (str->compare("best fit") != 0) {
+        e->Report(Error::Range, "lookupMatcher pattern is not known");
+        return NULL;
       }
     }
   }
@@ -210,10 +186,21 @@ inline JSArray* SupportedLocales(Context* ctx,
   IV_LV5_ERROR_GUARD_WITH(e, NULL);
 
   JSArray* result = subset->ToJSArray();
-  ScopedArguments arguments(ctx, 1, IV_LV5_ERROR_WITH(e, NULL));
-  arguments[0] = result;
-  runtime::ObjectFreeze(arguments, IV_LV5_ERROR_WITH(e, NULL));
-  result->set_extensible(true);
+  PropertyNamesCollector collector;
+  result->GetOwnPropertyNames(ctx, &collector,
+                              JSObject::INCLUDE_NOT_ENUMERABLE);
+  for (PropertyNamesCollector::Names::const_iterator
+       it = collector.names().begin(),
+       last = collector.names().end();
+       it != last; ++it) {
+    const Symbol sym = *it;
+    PropertyDescriptor desc = result->GetOwnProperty(ctx, sym);
+    assert(desc.IsData());
+    desc.AsDataDescriptor()->set_writable(false);
+    desc.set_configurable(false);
+    result->DefineOwnProperty(ctx, sym, desc, true, IV_LV5_ERROR_WITH(e, NULL));
+  }
+
   return result;
 }
 
@@ -257,9 +244,11 @@ inline core::i18n::LookupResult ResolveLocale(Context* ctx,
       JSString* str = matcher.ToString(
           ctx,
           IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
-      const std::string res = str->GetUTF8();
-      if (res == "lookup") {
+      if (str->compare("lookup") == 0) {
         best_fit = false;
+      } else if (str->compare("best fit") != 0) {
+        e->Report(Error::Range, "lookupMatcher pattern is not known");
+        return core::i18n::LookupResult();
       }
     }
   }

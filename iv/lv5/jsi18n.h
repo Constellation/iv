@@ -310,11 +310,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx,
 }  // namespace detail_i18n
 } }  // namespace iv::lv5
 
-#include <iv/lv5/i18n/intl.h>
-// #include <iv/lv5/i18n/collator.h>
-#include <iv/lv5/i18n/number_format.h>
-// #include <iv/lv5/i18n/date_time_format.h>
-
+#include <iv/lv5/i18n/i18n.h>
 #ifdef IV_ENABLE_I18N
 #include <iv/lv5/jsi18n_icu.h>
 #endif  // IV_ENABLE_I18N

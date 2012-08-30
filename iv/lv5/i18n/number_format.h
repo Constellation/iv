@@ -394,14 +394,8 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
                           21, IV_LV5_ERROR_WITH(e, NULL));
   }
 
-  bool use_grouping = false;
-  {
-    const JSVal ug = options.Get(ctx,
-                                 symbol::useGrouping(),
-                                 Options::BOOLEAN, NULL,
-                                 JSTrue, IV_LV5_ERROR_WITH(e, NULL));
-    use_grouping = ug.ToBoolean();
-  }
+  const bool use_grouping =
+      options.GetBoolean(ctx, symbol::useGrouping(), true, IV_LV5_ERROR_WITH(e, NULL));
 
   // TODO(Constellation) positie / negative patterns
 
