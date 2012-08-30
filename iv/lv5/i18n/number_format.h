@@ -1,6 +1,7 @@
 #ifndef IV_LV5_I18N_NUMBER_FORMAT_H_
 #define IV_LV5_I18N_NUMBER_FORMAT_H_
 #include <iv/i18n.h>
+#include <iv/ignore_unused_variable_warning.h>
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/bind.h>
 #include <iv/lv5/context_fwd.h>
@@ -33,7 +34,10 @@ class JSNumberFormatHolder : public JSObject {
 
   static JSNumberFormatHolder* Extract(Context* ctx, JSObject* obj) {
     Slot slot;
-    assert(obj->GetOwnProprtySlot(ctx, ctx->i18n().initializedNumberFormat, &slot));
+    const bool res = obj->GetOwnPropertySlot(
+        ctx, ctx->i18n()->symbols().initializedNumberFormat(), &slot);
+    core::ignore_unused_variable_warning(res);
+    assert(res);
     return static_cast<JSNumberFormatHolder*>(slot.value().object());
   }
 
@@ -402,8 +406,6 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
 
   const bool use_grouping =
       options.GetBoolean(ctx, symbol::useGrouping(), true, IV_LV5_ERROR_WITH(e, NULL));
-
-  // TODO(Constellation) positie / negative patterns
 
   JSObject* f =
       JSNumberFormatHolder::New(

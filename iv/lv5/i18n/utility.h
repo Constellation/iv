@@ -1,6 +1,9 @@
 #ifndef IV_LV5_I18N_UTILITY_H_
 #define IV_LV5_I18N_UTILITY_H_
 #include <iv/detail/unique_ptr.h>
+#include <iv/i18n_date_time_format.h>
+#include <iv/i18n_number_format.h>
+#include <iv/i18n.h>
 namespace iv {
 namespace lv5 {
 namespace i18n {
@@ -93,12 +96,27 @@ class Options {
     return NULL;
   }
 
-  bool GetBoolean(Context* ctx, Symbol property, bool fallback, Error* e) {
-    JSVal value = options()->Get(ctx, property, IV_LV5_ERROR_WITH(e, false));
+  enum TriBool {
+    TRI_FALSE = 0,
+    TRI_TRUE = 1,
+    TRI_INDETERMINATE = 2
+  };
+
+  TriBool GetBoolean(Context* ctx, Symbol property, Error* e) {
+    const JSVal value =
+        options()->Get(ctx, property, IV_LV5_ERROR_WITH(e, TRI_INDETERMINATE));
     if (!value.IsUndefined()) {
-      return value.ToBoolean();
+      return value.ToBoolean() ? TRI_TRUE : TRI_FALSE;
     }
-    return fallback;
+    return TRI_INDETERMINATE;
+  }
+
+  bool GetBoolean(Context* ctx, Symbol property, bool fallback, Error* e) {
+    const TriBool res = GetBoolean(ctx, property, IV_LV5_ERROR_WITH(e, false));
+    if (res == TRI_INDETERMINATE) {
+      return fallback;
+    }
+    return res;
   }
 
   JSObject* options() { return options_; }
@@ -269,12 +287,18 @@ inline core::i18n::LookupResult ResolveLocale(Context* ctx,
   return res;
 }
 
-inline JSObject* ToDateTimeOptions(Context* ctx,
-                                   JSVal op, bool date, bool time, Error* e) {
+enum DateTimeOptionsType {
+  DATE_ANY,
+  DATE_ALL,
+  DATE_DATE,
+  DATE_TIME
+};
+
+inline JSObject* ToDateTimeOptions(Context* ctx, JSVal op,
+                                   DateTimeOptionsType required,
+                                   DateTimeOptionsType defaults, Error* e) {
   JSObject* options = NULL;
-  if (op.IsUndefined()) {
-    options = JSObject::New(ctx);
-  } else {
+  if (!op.IsUndefined()) {
     options = op.ToObject(ctx, IV_LV5_ERROR_WITH(e, NULL));
   }
 
@@ -291,7 +315,18 @@ inline JSObject* ToDateTimeOptions(Context* ctx,
   static const DateProperties kDateProperties = { {
     "weekday", "year", "month", "day"
   } };
-  if (date) {
+
+  typedef std::array<const char*, 3> TimeProperties;
+  static const TimeProperties kTimeProperties = { {
+    "hour", "minute", "second"
+  } };
+
+  typedef std::array<const char*, 3> DatePropertiesOnlyNumeric;
+  static const DatePropertiesOnlyNumeric kDatePropertiesOnlyNumeric = { {
+    "year", "month", "day"
+  } };
+
+  if (required == DATE_DATE || required == DATE_ANY) {
     for (DateProperties::const_iterator it = kDateProperties.begin(),
          last = kDateProperties.end(); it != last; ++it) {
       const Symbol name = context::Intern(ctx, *it);
@@ -302,11 +337,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx,
     }
   }
 
-  typedef std::array<const char*, 3> TimeProperties;
-  static const TimeProperties kTimeProperties = { {
-    "hour", "minute", "second"
-  } };
-  if (time) {
+  if (required == DATE_TIME || required == DATE_ANY) {
     for (TimeProperties::const_iterator it = kTimeProperties.begin(),
          last = kTimeProperties.end(); it != last; ++it) {
       const Symbol name = context::Intern(ctx, *it);
@@ -317,11 +348,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx,
     }
   }
 
-  if (need_default && date) {
-    typedef std::array<const char*, 3> DatePropertiesOnlyNumeric;
-    static const DatePropertiesOnlyNumeric kDatePropertiesOnlyNumeric = { {
-      "year", "month", "day"
-    } };
+  if (need_default && (defaults == DATE_DATE || defaults == DATE_ALL)) {
     for (DatePropertiesOnlyNumeric::const_iterator
          it = kDatePropertiesOnlyNumeric.begin(),
          last = kDatePropertiesOnlyNumeric.end();
@@ -337,7 +364,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx,
     }
   }
 
-  if (need_default && date) {
+  if (need_default && (defaults == DATE_TIME || defaults == DATE_ALL)) {
     for (TimeProperties::const_iterator it = kTimeProperties.begin(),
          last = kTimeProperties.end(); it != last; ++it) {
       const Symbol name = context::Intern(ctx, *it);
@@ -352,6 +379,83 @@ inline JSObject* ToDateTimeOptions(Context* ctx,
   }
 
   return options;
+}
+
+inline void
+BasicFormatMatcher(
+    Context* ctx,
+    const core::i18n::DateTimeFormat::FormatOptions& options,
+    const core::i18n::DateTimeFormat::Data& formats,
+    core::i18n::DateTimeFormat::FormatOptions* best_format,
+    Error* e) {
+  typedef core::i18n::DateTimeFormat DateTimeFormat;
+  const int32_t removal_penalty = 120;
+  const int32_t addition_penalty = 20;
+  const int32_t long_less_penalty = 8;
+  const int32_t long_more_penalty = 6;
+  const int32_t short_less_penalty = 6;
+  const int32_t short_more_penalty = 3;
+
+  int32_t best_score = INT32_MIN;
+  for (std::size_t i = 0, iz = formats.size; i < iz; ++i) {
+    const DateTimeFormat::Data::FormatsSet set = formats.formats[i];
+    for (std::size_t j = 0, jz = set.size; j < jz; ++j) {
+      const DateTimeFormat::FormatOptions& format = set.formats[j];
+      int32_t score = 0;
+      std::size_t index = 0;
+      for (DateTimeFormat::DateTimeOptions::const_iterator
+           it = core::i18n::kDateTimeOptions.begin(),
+           last = core::i18n::kDateTimeOptions.end();
+           it != last; ++it, ++index) {
+        const DateTimeFormat::FormatValue options_prop = options[index];
+        const DateTimeFormat::FormatValue format_prop = format[index];
+
+        if (options_prop == DateTimeFormat::UNSPECIFIED && format_prop != DateTimeFormat::UNSPECIFIED) {
+          score -= addition_penalty;
+        } else if (options_prop != DateTimeFormat::UNSPECIFIED && format_prop == DateTimeFormat::UNSPECIFIED) {
+          score -= removal_penalty;
+        } else {
+          int32_t options_prop_index = static_cast<int32_t>(options_prop) - 1;
+          int32_t format_prop_index = static_cast<int32_t>(format_prop) - 1;
+          const int32_t delta =
+              (std::max)(
+                  (std::min)(format_prop_index - options_prop_index, 2), -2);
+          switch (delta) {
+            case 2: {
+              score -= long_more_penalty;
+              break;
+            }
+            case 1: {
+              score -= short_more_penalty;
+              break;
+            }
+            case -1: {
+              score -= short_less_penalty;
+              break;
+            }
+            case -2: {
+              score -= long_less_penalty;
+              break;
+            }
+          }
+        }
+      }
+      if (score > best_score) {
+        best_score = score;
+        *best_format = format;
+      }
+    }
+  }
+}
+
+inline void
+BestFitFormatMatcher(
+    Context* ctx,
+    const core::i18n::DateTimeFormat::FormatOptions& options,
+    const core::i18n::DateTimeFormat::Data& formats,
+    core::i18n::DateTimeFormat::FormatOptions* best_format,
+    Error* e) {
+  BasicFormatMatcher(ctx, options, formats, best_format, e);
 }
 
 } } }  // namespace iv::lv5::i18n

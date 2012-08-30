@@ -58,6 +58,9 @@ namespace symbol {
     V(minimumSignificantDigits)\
     V(maximumSignificantDigits)\
     V(useGrouping)\
+    V(timeZone)\
+    V(hour12)\
+    V(formatMatcher)\
     V(raw)
 
 class DefaultSymbolProvider : public core::Singleton<DefaultSymbolProvider> {

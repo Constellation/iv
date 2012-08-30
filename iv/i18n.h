@@ -178,22 +178,8 @@ class I18N {
 
 #define IV_I18N_LOCALE_SYMBOLS(V)\
   V(initializedIntlObject)\
-  V(usage)\
-  V(locale)\
-  V(numberingSystem)\
-  V(style)\
-  V(currency)\
-  V(currencyDisplay)\
-  V(minimumIntegerDigits)\
-  V(minimumFractionDigits)\
-  V(maximumFractionDigits)\
-  V(minimumSignificantDigits)\
-  V(maximumSignificantDigits)\
-  V(useGrouping)\
-  V(positivePattern)\
-  V(negativePattern)\
-  V(boundFormat)\
   V(initializedNumberFormat)\
+  V(initializedDateTimeFormat)\
 
   class Symbols {
    public:
@@ -215,6 +201,8 @@ class I18N {
 #undef IV_V
     int last_order_;
   };
+
+#undef IV_I18N_LOCALE_SYMBOLS
 
   const Symbols& symbols() const { return symbols_; }
  private:
