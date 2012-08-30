@@ -116,11 +116,8 @@ inline JSVal NumberFormatFormatGetter(const Arguments& args, Error* e) {
               "Intl.NumberFormat.prototype.format is not generic function");
     return JSEmpty;
   }
-
-  const PropertyDescriptor desc =
-      o->GetOwnProperty(ctx, ctx->i18n()->symbols().initializedNumberFormat());
   i18n::JSNumberFormatHolder* format =
-      static_cast<i18n::JSNumberFormatHolder*>(desc.AsDataDescriptor()->value().object());
+      i18n::JSNumberFormatHolder::Extract(ctx, o);
   return format->Bound(ctx, e);
 }
 
@@ -134,10 +131,8 @@ inline JSVal NumberFormatFormat(const Arguments& args, Error* e) {
     return JSEmpty;
   }
 
-  const PropertyDescriptor desc =
-      o->GetOwnProperty(ctx, ctx->i18n()->symbols().initializedNumberFormat());
   i18n::JSNumberFormatHolder* format =
-      static_cast<i18n::JSNumberFormatHolder*>(desc.AsDataDescriptor()->value().object());
+      i18n::JSNumberFormatHolder::Extract(ctx, o);
   const double value = args.At(0).ToNumber(ctx, IV_LV5_ERROR(e));
   return format->Format(ctx, value, e);
 }
@@ -153,10 +148,8 @@ inline JSVal NumberFormatResolvedOptions(const Arguments& args, Error* e) {
     return JSEmpty;
   }
 
-  const PropertyDescriptor desc =
-      o->GetOwnProperty(ctx, ctx->i18n()->symbols().initializedNumberFormat());
   i18n::JSNumberFormatHolder* format =
-      static_cast<i18n::JSNumberFormatHolder*>(desc.AsDataDescriptor()->value().object());
+      i18n::JSNumberFormatHolder::Extract(ctx, o);
   return format->ResolveOptions(ctx, e);
 }
 

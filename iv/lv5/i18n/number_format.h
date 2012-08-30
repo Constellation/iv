@@ -31,6 +31,12 @@ class JSNumberFormatHolder : public JSObject {
     return format;
   }
 
+  static JSNumberFormatHolder* Extract(Context* ctx, JSObject* obj) {
+    Slot slot;
+    assert(obj->GetOwnProprtySlot(ctx, ctx->i18n().initializedNumberFormat, &slot));
+    return static_cast<JSNumberFormatHolder*>(slot.value().object());
+  }
+
   core::i18n::NumberFormat* format() const {
     return format_->handle.get();
   }
