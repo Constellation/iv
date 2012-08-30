@@ -246,8 +246,10 @@ class Scope : public ScopeBase<Factory> {
       }
     }
 
+    // This is function expression name
     if (expression) {
-      if (already.find(expression->symbol()) == already.end()) {
+      if (already.find(expression->symbol()) == already.end() &&
+          symbol::arguments() != expression->symbol()) {
         expression->set_function_name(true);
         assigneds_.push_back(expression);
       }
