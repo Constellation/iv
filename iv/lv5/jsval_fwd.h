@@ -204,111 +204,111 @@ class JSLayout {
     }
   };
 
-  inline JSString* TypeOf(Context* ctx) const;
+  JSString* TypeOf(Context* ctx) const;
 
-  inline JSObject* GetPrimitiveProto(Context* ctx) const;
+  JSObject* GetPrimitiveProto(Context* ctx) const;
 
-  inline JSObject* ToObject(Context* ctx, Error* e) const;
+  JSObject* ToObject(Context* ctx, Error* e) const;
 
   // Assertion failed when this is null or undefined
   JSObject* ToObject(Context* ctx) const;
 
-  inline JSString* ToString(Context* ctx, Error* e) const;
+  JSString* ToString(Context* ctx, Error* e) const;
 
-  inline Symbol ToSymbol(Context* ctx, Error* e) const;
+  Symbol ToSymbol(Context* ctx, Error* e) const;
 
-  inline core::UString ToUString(Context* ctx, Error* e) const;
+  core::UString ToUString(Context* ctx, Error* e) const;
 
   double ToNumber(Context* ctx, Error* e) const;
 
   double ToInteger(Context* ctx, Error* e) const;
 
-  inline int32_t ToInt32(Context* ctx, Error* e) const;
+  int32_t ToInt32(Context* ctx, Error* e) const;
 
-  inline uint32_t ToUInt32(Context* ctx, Error* e) const;
+  uint32_t ToUInt32(Context* ctx, Error* e) const;
 
-  inline uint32_t GetUInt32() const;
+  uint32_t GetUInt32() const;
 
-  inline bool GetUInt32(uint32_t* result) const;
+  bool GetUInt32(uint32_t* result) const;
 
-  inline bool IsCallable() const;
+  bool IsCallable() const;
 
-  inline void CheckObjectCoercible(Error* e) const;
+  void CheckObjectCoercible(Error* e) const;
 
-  inline bool ToBoolean() const;
+  bool ToBoolean() const;
 
   // 32 / 64bit system separately
-  inline bool IsEmpty() const;
+  bool IsEmpty() const;
 
-  inline bool IsUndefined() const;
+  bool IsUndefined() const;
 
-  inline bool IsNull() const;
+  bool IsNull() const;
 
-  inline bool IsNullOrUndefined() const;
+  bool IsNullOrUndefined() const;
 
-  inline bool IsBoolean() const;
+  bool IsBoolean() const;
 
-  inline bool IsInt32() const;
+  bool IsInt32() const;
 
-  inline bool IsNumber() const;
+  bool IsNumber() const;
 
-  inline bool IsCell() const;
+  bool IsCell() const;
 
-  inline bool IsString() const;
+  bool IsString() const;
 
-  inline bool IsObject() const;
+  bool IsObject() const;
 
-  inline bool IsReference() const;
+  bool IsReference() const;
 
-  inline bool IsEnvironment() const;
+  bool IsEnvironment() const;
 
-  inline bool IsOtherCell() const;
+  bool IsOtherCell() const;
 
-  inline bool IsPrimitive() const;
+  bool IsPrimitive() const;
 
-  inline JSReference* reference() const;
+  JSReference* reference() const;
 
-  inline JSEnv* environment() const;
+  JSEnv* environment() const;
 
-  inline JSString* string() const;
+  JSString* string() const;
 
-  inline JSObject* object() const;
+  JSObject* object() const;
 
-  inline bool boolean() const;
+  bool boolean() const;
 
-  inline int32_t int32() const;
+  int32_t int32() const;
 
-  inline double number() const;
+  double number() const;
 
-  inline radio::Cell* cell() const;
+  radio::Cell* cell() const;
 
-  inline void set_value_int32(int32_t val);
+  void set_value_int32(int32_t val);
 
-  inline void set_value_uint32(uint32_t val);
+  void set_value_uint32(uint32_t val);
 
-  inline void set_value(double val);
+  void set_value(double val);
 
-  inline void set_value_cell(radio::Cell* val);
+  void set_value_cell(radio::Cell* val);
 
-  inline void set_value(JSObject* val);
+  void set_value(JSObject* val);
 
-  inline void set_value(JSString* val);
+  void set_value(JSString* val);
 
-  inline void set_value(JSReference* val);
+  void set_value(JSReference* val);
 
-  inline void set_value(JSEnv* val);
+  void set_value(JSEnv* val);
 
-  inline void set_value(detail::JSTrueType val);
+  void set_value(detail::JSTrueType val);
 
-  inline void set_value(detail::JSFalseType val);
+  void set_value(detail::JSFalseType val);
 
-  inline void set_value(detail::JSNaNType val);
+  void set_value(detail::JSNaNType val);
 
-  inline void set_null();
+  void set_null();
 
-  inline void set_undefined();
+  void set_undefined();
 
-  inline void set_empty();
+  void set_empty();
 
   inline const value_type& Layout() const {
     return value_;
@@ -323,11 +323,11 @@ class JSLayout {
     return lhs.swap(rhs);
   }
 
-  static inline bool SameValue(this_type lhs, this_type rhs);
+  static bool SameValue(this_type lhs, this_type rhs);
 
-  static inline bool StrictEqual(this_type lhs, this_type rhs);
+  static bool StrictEqual(this_type lhs, this_type rhs);
 
-  static inline bool BitEqual(this_type lhs, this_type rhs);
+  static bool BitEqual(this_type lhs, this_type rhs);
 
   value_type value_;
 };
@@ -446,9 +446,9 @@ class JSVal : public JSLayout {
     IV_STATIC_ASSERT(!(cond::value));
   }
 
-  inline JSVal ToPrimitive(Context* ctx, Hint::Object hint, Error* e) const;
+  JSVal ToPrimitive(Context* ctx, Hint::Object hint, Error* e) const;
 
-  inline JSVal ToNumberValue(Context* ctx, Error* e) const;
+  JSVal ToNumberValue(Context* ctx, Error* e) const;
 
   // type specified factory functions
   static inline JSVal Bool(bool val) {
@@ -484,9 +484,9 @@ class JSVal : public JSLayout {
     return JSVal(cell, detail::OtherCellTag());
   }
 
-  static inline bool AbstractEqual(Context* ctx,
-                                   this_type lhs,
-                                   this_type rhs, Error* e);
+  static bool AbstractEqual(Context* ctx,
+                            this_type lhs,
+                            this_type rhs, Error* e);
 
   static inline bool SameValue(this_type lhs, this_type rhs) {
     return JSLayout::SameValue(lhs, rhs);
@@ -511,9 +511,9 @@ class JSVal : public JSLayout {
   }
 
   template<bool LeftFirst>
-  static inline CompareResult Compare(Context* ctx,
-                                      this_type lhs,
-                                      this_type rhs, Error* e);
+  static CompareResult Compare(Context* ctx,
+                               this_type lhs,
+                               this_type rhs, Error* e);
 
   bool GetPropertySlot(Context* ctx, Symbol name, Slot* slot, Error* e) const;
 
