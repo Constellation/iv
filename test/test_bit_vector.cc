@@ -8,16 +8,16 @@ TEST(BitVectorCase, MainTest) {
   EXPECT_FALSE(vec.any());
   EXPECT_EQ(10u, vec.size());
   for (std::size_t i = 0; i < 10u; ++i) {
-    EXPECT_EQ(false, vec.test(i));
+    EXPECT_FALSE(vec.test(i));
   }
   vec.set(0);
-  EXPECT_EQ(true, vec[0]);
+  EXPECT_TRUE(vec[0]);
   vec.resize(20, false);
-  EXPECT_EQ(true, vec[0]);
+  EXPECT_TRUE(vec[0]);
   EXPECT_TRUE(vec.any());
   EXPECT_FALSE(vec.none());
   for (std::size_t i = 1; i < 20u; ++i) {
-    EXPECT_EQ(false, vec.test(i));
+    EXPECT_FALSE(vec.test(i));
   }
 }
 
@@ -25,14 +25,14 @@ TEST(BitVectorCase, FlipTest) {
   iv::core::BitVector<> vec(10, false);
   const iv::core::BitVector<> vec2 = ~vec;
   for (std::size_t i = 0; i < 10u; ++i) {
-    EXPECT_EQ(false, vec.test(i));
-    EXPECT_EQ(true, vec2.test(i));
+    EXPECT_FALSE(vec.test(i));
+    EXPECT_TRUE(vec2.test(i));
   }
   EXPECT_TRUE(vec != vec2);
   EXPECT_FALSE(vec == vec2);
   vec.flip();
   for (std::size_t i = 0; i < 10u; ++i) {
-    EXPECT_EQ(true, vec.test(i));
+    EXPECT_TRUE(vec.test(i));
   }
   EXPECT_FALSE(vec != vec2);
   EXPECT_TRUE(vec == vec2);
