@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <fstream>
 #include <iv/platform.h>
 #include <iv/lv5/lv5.h>
 #include <iv/lv5/railgun/command.h>
@@ -27,58 +28,16 @@ lv5::railgun::Code* Compile(lv5::railgun::Context* ctx,
   }
 }
 
-static const char* kSpecFileNames[] = {
-  "test/lv5/suite/spec/error-constructing.js",
-  "test/lv5/suite/spec/function-expression-name.js",
-  "test/lv5/suite/spec/date-parse.js",
-  "test/lv5/suite/spec/int32-min.js",
-  "test/lv5/suite/spec/arguments.js",
-  "test/lv5/suite/spec/iterator.js",
-  "test/lv5/suite/spec/regexp.js",
-  "test/lv5/suite/spec/math-log10.js",
-  "test/lv5/suite/spec/math-log2.js",
-  "test/lv5/suite/spec/math-log1p.js",
-  "test/lv5/suite/spec/math-expm1.js",
-  "test/lv5/suite/spec/math-cosh.js",
-  "test/lv5/suite/spec/math-sinh.js",
-  "test/lv5/suite/spec/math-tanh.js",
-  "test/lv5/suite/spec/math-acosh.js",
-  "test/lv5/suite/spec/math-asinh.js",
-  "test/lv5/suite/spec/math-atanh.js",
-  "test/lv5/suite/spec/math-hypot.js",
-  "test/lv5/suite/spec/math-sign.js",
-  "test/lv5/suite/spec/math-trunc.js",
-  "test/lv5/suite/spec/math-cbrt.js",
-  "test/lv5/suite/spec/number-isnan.js",
-  "test/lv5/suite/spec/number-isfinite.js",
-  "test/lv5/suite/spec/number-isinteger.js",
-  "test/lv5/suite/spec/number-toint.js",
-  "test/lv5/suite/spec/lhs-assignment.js",
-  "test/lv5/suite/spec/rhs-assignment.js",
-  "test/lv5/suite/spec/arith-mod.js",
-  "test/lv5/suite/spec/string/string-repeat.js",
-  "test/lv5/suite/spec/string/string-startswith.js",
-  "test/lv5/suite/spec/string/string-endswith.js",
-  "test/lv5/suite/spec/string/string-contains.js",
-  "test/lv5/suite/spec/string/string-object-length.js",
-  "test/lv5/suite/spec/string/string-reverse.js",
-  "test/lv5/suite/spec/string/string-fromcodepoint.js",
-  "test/lv5/suite/spec/string/string-raw.js",
-  "test/lv5/suite/spec/string/string-codepointat.js",
-  "test/lv5/suite/spec/string/string-length-limit.js",
-  "test/lv5/suite/spec/map/map-constructor.js",
-  "test/lv5/suite/spec/map/map-has.js",
-  "test/lv5/suite/spec/map/map-get.js",
-  "test/lv5/suite/spec/map/map-set.js",
-  "test/lv5/suite/spec/map/map-delete.js",
-  "test/lv5/suite/spec/set/set-constructor.js",
-  "test/lv5/suite/spec/set/set-has.js",
-  "test/lv5/suite/spec/set/set-add.js",
-  "test/lv5/suite/spec/set/set-delete.js",
-  "test/lv5/suite/spec/global-registers/global-registers-writable.js",
-};
-static const std::size_t kSpecFileNamesSize =
-  sizeof(kSpecFileNames) / sizeof(const char*);
+static std::vector<std::string> GetTests() {
+  const std::string prefix("test/lv5/suite/");
+  std::vector<std::string> vec;
+  std::ifstream stream((prefix + "spec.list").c_str());
+  std::string line;
+  while (std::getline(stream, line)) {
+    vec.push_back(prefix + line);
+  }
+  return vec;
+}
 
 }  // namespace anonymous
 
@@ -113,9 +72,10 @@ TEST(SuiteCase, BreakerPassTest) {
   ASSERT_FALSE(e);
   ExecuteInBreakerContext(&ctx, "test/lv5/suite/resources/ConsoleReporter.js", &e);
   ASSERT_FALSE(e);
-  for (std::size_t i = 0; i < kSpecFileNamesSize; ++i) {
-    const std::string filename(kSpecFileNames[i]);
-    ExecuteInBreakerContext(&ctx, filename, &e);
+  const std::vector<std::string> files = GetTests();
+  for (std::vector<std::string>::const_iterator it = files.begin(),
+       last = files.end(); it != last; ++it) {
+    ExecuteInBreakerContext(&ctx, *it, &e);
     ASSERT_FALSE(e);
   }
   ExecuteInBreakerContext(&ctx, "test/lv5/suite/resources/driver.js", &e);
@@ -150,9 +110,10 @@ TEST(SuiteCase, RailgunPassTest) {
   ASSERT_FALSE(e);
   ExecuteInRailgunContext(&ctx, "test/lv5/suite/resources/ConsoleReporter.js", &e);
   ASSERT_FALSE(e);
-  for (std::size_t i = 0; i < kSpecFileNamesSize; ++i) {
-    const std::string filename(kSpecFileNames[i]);
-    ExecuteInRailgunContext(&ctx, filename, &e);
+  const std::vector<std::string> files = GetTests();
+  for (std::vector<std::string>::const_iterator it = files.begin(),
+       last = files.end(); it != last; ++it) {
+    ExecuteInRailgunContext(&ctx, *it, &e);
     ASSERT_FALSE(e);
   }
   ExecuteInRailgunContext(&ctx, "test/lv5/suite/resources/driver.js", &e);
