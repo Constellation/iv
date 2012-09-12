@@ -1525,7 +1525,7 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
   inline const Scope<Factory>& scope() const { return *scope_; }
   inline bool strict() const { return strict_; }
   inline bool IsFunctionNameExposed() const {
-    return (type_ == STATEMENT || type_  == EXPRESSION) && name();
+    return (type_ == STATEMENT || type_  == EXPRESSION) && name() && name().Address()->symbol() != symbol::arguments();
   }
 
   inline std::size_t block_begin_position() const {

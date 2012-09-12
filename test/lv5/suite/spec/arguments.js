@@ -16,4 +16,9 @@ describe("Arguments", function() {
     };
     expect(v()).not.toBe(v);
   });
+
+  it("not exposed function name", function() {
+    var v = function arguments() { };
+    expect(v.name).toBe('arguments');
+  });
 });
