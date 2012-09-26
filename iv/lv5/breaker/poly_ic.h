@@ -91,9 +91,53 @@ class PolyIC : public IC, public core::IntrusiveList<PolyICUnit> {
 class LoadPropertyIC : public PolyIC {
  public:
   static const std::size_t kMaxPolyICSize = 5;
+  static const std::size_t kCallOffset = 5;
+  static const std::size_t k64MovImmOffset = 2;
 
   explicit LoadPropertyIC(uintptr_t* direct_call)
     : direct_call_(direct_call) { }
+
+  static bool CanEmitDirectCall(Xbyak::CodeGenerator* as, const void* addr) {
+    return Xbyak::inner::IsInInt32(reinterpret_cast<const uint8_t*>(addr) - as->getCurr());
+  }
+
+  class GuardGenerator {
+   public:
+    GuardGenerator(LoadPropertyIC* ic, Xbyak::CodeGenerator* as, bool f) : ic_(ic), asm_(as), first_(f) {
+      if (first()) {
+        // check target is Cell
+        asm_->mov(asm_->r10, detail::jsval64::kValueMask);
+        asm_->test(asm_->rdi, asm_->r10);
+        asm_->jnz("POLY_IC_GUARD_GENERIC");
+
+        // target is guaranteed asm_ cell
+        asm_->mov(asm_->word[asm_->rdi + radio::Cell::TagOffset()], radio::OBJECT);
+        asm_->jne("POLY_IC_GUARD_STRING");  // we should purge this to string check path
+      }
+    }
+
+    ~GuardGenerator() {
+      if (first()) {
+        asm_->L("POLY_IC_GUARD_GENERIC");
+        asm_->mov(asm_->rax, core::BitCast<uint64_t>(stub::LOAD_PROP_GENERIC));
+        asm_->jmp(asm_->rax);
+
+        asm_->L("POLY_IC_GUARD_STRING");
+        const uint64_t dummy64 = UINT64_C(0x0FFF000000000000);
+        ic_->set_string_rewrite_position(ic_->string_rewrite_position() + (asm_->getSize() + k64MovImmOffset));
+        asm_->mov(asm_->rax, dummy64);
+        asm_->jmp(asm_->rax);
+      }
+    }
+
+    bool first() const { return first_; }
+
+   private:
+
+    LoadPropertyIC* ic_;
+    Xbyak::CodeGenerator* asm_;
+    bool first_;
+  };
 
   void LoadOwnProperty(NativeCode* code, Map* map, uint32_t offset) {
     if (size() >= kMaxPolyICSize) {
@@ -105,18 +149,12 @@ class LoadPropertyIC : public PolyIC {
     NativeCode::Pages::Buffer buffer = code->pages()->Gain(256);
     Xbyak::CodeGenerator as(buffer.size, buffer.ptr);
 
-    // TODO(Constellation)
-    // we should purge these cell jump (only first time)
     as.inLocalLabel();
     {
-      // check target is Cell
-      as.mov(as.r10, detail::jsval64::kValueMask);
-      as.test(as.rdi, as.r10);
-      as.jnz(".EXIT");  // we should purge this to generic
-
-      // target is guaranteed as cell
-      as.mov(as.word[as.rdi + radio::Cell::TagOffset()], radio::OBJECT);
-      as.jne(".EXIT");  // we should purge this to string check path
+      const GuardGenerator guard(this, &as, empty());
+      if (guard.first()) {
+        set_string_rewrite_position(reinterpret_cast<uint8_t*>(buffer.ptr));
+      }
 
       // map guard
       as.mov(as.r10, core::BitCast<uintptr_t>(map));
@@ -164,6 +202,14 @@ class LoadPropertyIC : public PolyIC {
     Chaining(ic, core::BitCast<uintptr_t>(as.getCode()));
   }
 
+  void set_string_rewrite_position(uint8_t* position) {
+    string_rewrite_position_ = position;
+  }
+
+  uint8_t* string_rewrite_position() const {
+    return string_rewrite_position_;
+  }
+
  private:
   void Chaining(Unit* ic, uintptr_t code) {
     if (empty()) {
@@ -183,6 +229,7 @@ class LoadPropertyIC : public PolyIC {
   }
 
   uintptr_t* direct_call_;
+  uint8_t* string_rewrite_position_;
 };
 
 class StorePropertyIC : public PolyIC {
