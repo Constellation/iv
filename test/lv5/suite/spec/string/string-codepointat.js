@@ -17,8 +17,8 @@ describe("String", function() {
   });
 
   it("codePointAt out of range", function() {
-    expect(isNaN('\ud842\udfb7'.codePointAt(2))).toBe(true);
-    expect(isNaN('\ud842\udfb7'.codePointAt(-2))).toBe(true);
-    expect(isNaN('\ud842\udfb7'.codePointAt(2.5))).toBe(true);
+    expect('\ud842\udfb7'.codePointAt(2)).toBe(undefined);
+    expect('\ud842\udfb7'.codePointAt(-2)).toBe(undefined);
+    expect('\ud842\udfb7'.codePointAt(2.5)).toBe(undefined);
   });
 });

@@ -622,12 +622,12 @@ inline JSVal StringCodePointAt(const Arguments& args, Error* e) {
   uint32_t pos;
   if (arg1.GetUInt32(&pos)) {
     if (pos >= str->size()) {
-      return JSNaN;
+      return JSUndefined;
     }
   } else {
     const double position = arg1.ToInteger(args.ctx(), IV_LV5_ERROR(e));
     if (position < 0 || position >= str->size()) {
-      return JSNaN;
+      return JSUndefined;
     }
     pos = static_cast<uint32_t>(position);
   }
