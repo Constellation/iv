@@ -29,16 +29,15 @@ class JSString;
   V(URIError, 16)\
   V(global, 17)\
   V(Arguments, 18)\
-  V(Map, 19)\
-  V(Set, 20)\
+  V(Set, 19)\
   /* i18n */\
-  V(Collator, 21)\
-  V(NumberFormat, 22)\
-  V(DateTimeFormat, 23)\
-  V(Name, 24)\
+  V(Collator, 20)\
+  V(NumberFormat, 21)\
+  V(DateTimeFormat, 22)\
+  V(Name, 23)\
   /* added by lv5 */\
-  V(Iterator, 25)\
-  V(NOT_CACHED, 26)
+  V(Iterator, 24)\
+  V(NOT_CACHED, 25)
 
 struct Class {
   enum JSClassType {

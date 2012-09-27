@@ -333,9 +333,13 @@ JSObject* JSObject::New(Context* ctx) {
 }
 
 JSObject* JSObject::New(Context* ctx, Map* map) {
+  return New(ctx, map, context::GetClassSlot(ctx, Class::Object).prototype);
+}
+
+JSObject* JSObject::New(Context* ctx, Map* map, JSObject* prototype) {
   JSObject* const obj = NewPlain(ctx, map);
   obj->set_cls(JSObject::GetClass());
-  obj->set_prototype(context::GetClassSlot(ctx, Class::Object).prototype);
+  obj->set_prototype(prototype);
   return obj;
 }
 

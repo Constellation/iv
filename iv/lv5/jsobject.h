@@ -136,6 +136,8 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
 
   static JSObject* New(Context* ctx, Map* map);
 
+  static JSObject* New(Context* ctx, Map* map, JSObject* prototype);
+
   static JSObject* NewPlain(Context* ctx);
 
   static JSObject* NewPlain(Context* ctx, Map* map);

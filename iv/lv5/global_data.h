@@ -57,6 +57,7 @@ class GlobalData {
       date_map_(Map::New(ctx)),
       regexp_map_(NULL),
       error_map_(Map::New(ctx)),
+      map_map_(Map::New(ctx)),
       gc_hook_(this) {
     {
       Error::Dummy e;
@@ -191,11 +192,19 @@ class GlobalData {
 
   Map* GetErrorMap() const { return error_map_; }
 
+  Map* GetMapMap() const { return map_map_; }
+
   void OnGarbageCollect() { }
 
   void RegExpClear() { regs_.clear(); }
 
   core::SymbolTable* symbol_table() { return &symbol_table_; }
+
+  void set_map_prototype(JSObject* proto) {
+    map_prototype_ = proto;
+  }
+
+  JSObject* map_prototype() const { return map_prototype_; }
 
  private:
   RandomGenerator random_generator_;
@@ -218,6 +227,18 @@ class GlobalData {
   JSString* string_boolean_;
   JSString* string_empty_regexp_;
 
+  // prototypes
+  JSObject* object_prototype_;
+  JSObject* function_prototype_;
+  JSObject* array_prototype_;
+  JSObject* string_prototype_;
+  JSObject* boolean_prototype_;
+  JSObject* number_prototype_;
+  JSObject* date_prototype_;
+  JSObject* regexp_prototype_;
+  JSObject* error_prototype_;
+  JSObject* map_prototype_;
+
   // builtin maps
   Map* empty_object_map_;
   Map* function_map_;
@@ -228,6 +249,7 @@ class GlobalData {
   Map* date_map_;
   Map* regexp_map_;
   Map* error_map_;
+  Map* map_map_;
 
   GCHook<GlobalData> gc_hook_;
 };

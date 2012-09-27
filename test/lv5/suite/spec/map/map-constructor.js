@@ -18,36 +18,6 @@ describe("Map", function() {
       }).toThrow();
     });
 
-    it("with number", function() {
-      expect(function() {
-        var map = new Map(0);
-      }).toThrow();
-      expect(function() {
-        var map = new Map(-0);
-      }).toThrow();
-      expect(function() {
-        var map = new Map(NaN);
-      }).toThrow();
-    });
-
-    it("with string", function() {
-      expect(function() {
-        var map = new Map('a');
-      }).toThrow();
-      expect(function() {
-        var map = new Map('abc');
-      }).toThrow();
-    });
-
-    it("with boolean", function() {
-      expect(function() {
-        var map = new Map(true);
-      }).toThrow();
-      expect(function() {
-        var map = new Map(false);
-      }).toThrow();
-    });
-
     it("with initializer", function() {
       var map = new Map([[0, 0], [-0, 1], ['0', 2]]);
       expect(map.has(0)).toBe(true);

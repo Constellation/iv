@@ -1192,21 +1192,13 @@ void Context::InitMap(const ClassSlot& func_cls,
   // ES.next Map
   // http://wiki.ecmascript.org/doku.php?id=harmony:simple_maps_and_sets
   Error::Dummy dummy;
-  JSObject* const proto = JSMap::NewPlain(this, Map::NewUniqueMap(this));
+  JSObject* const proto = JSObject::NewPlain(this, Map::NewUniqueMap(this));
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::MapConstructor, 0>::NewPlain(
           this,
           context::Intern(this, "Map"));
 
-  struct ClassSlot cls = {
-    JSMap::GetClass(),
-    context::Intern(this, "Map"),
-    JSString::NewAsciiString(this, "Map", &dummy),
-    constructor,
-    proto
-  };
-  global_data_.RegisterClass<Class::Map>(cls);
-  global_binder->def(cls.name, constructor, ATTR::W | ATTR::C);
+  global_binder->def("Map", constructor, ATTR::W | ATTR::C);
 
   bind::Object(this, constructor)
       .cls(func_cls.cls)
@@ -1214,13 +1206,18 @@ void Context::InitMap(const ClassSlot& func_cls,
       .def(symbol::prototype(), proto, ATTR::NONE);
 
   bind::Object(this, proto)
-      .cls(cls.cls)
       .prototype(obj_proto)
       .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
-      .def<&runtime::MapHas, 1>("has")
+      .def(context::Intern(this, "@@toStringTag"),
+           JSString::NewAsciiString(this, "Map", &dummy), ATTR::W | ATTR::C)
+      .def<&runtime::MapDelete, 1>("delete")
+      .def<&runtime::MapForEach, 1>("forEach")
       .def<&runtime::MapGet, 1>("get")
+      .def<&runtime::MapHas, 1>("has")
       .def<&runtime::MapSet, 2>("set")
-      .def<&runtime::MapDelete, 1>("delete");
+      .def<&runtime::MapSize, 0>("size");
+
+  global_data()->set_map_prototype(proto);
 }
 
 void Context::InitSet(const ClassSlot& func_cls,
