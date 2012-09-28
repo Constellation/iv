@@ -26,6 +26,9 @@ namespace detail {
 void DefinePropertiesHelper(Context* ctx, JSObject* obj,
                             JSObject* props, Error* e);
 
+std::unordered_set<core::UString> CreateNativeBrandSet();
+const std::unordered_set<core::UString>& NativeBrandSet();
+
 }  // namespace detail
 
 // section 15.2.1.1 Object([value])
@@ -392,20 +395,74 @@ inline JSVal ObjectIs(const Arguments& args, Error* e) {
   return JSVal::Bool(JSVal::SameValue(args.At(0), args.At(1)));
 }
 
+inline std::unordered_set<core::UString> detail::CreateNativeBrandSet() {
+  std::unordered_set<core::UString> set;
+  set.insert(core::ToUString("Arguments"));
+  set.insert(core::ToUString("Array"));
+  set.insert(core::ToUString("Boolean"));
+  set.insert(core::ToUString("Date"));
+  set.insert(core::ToUString("Error"));
+  set.insert(core::ToUString("Function"));
+  set.insert(core::ToUString("JSON"));
+  set.insert(core::ToUString("Math"));
+  set.insert(core::ToUString("Number"));
+  set.insert(core::ToUString("Object"));
+  set.insert(core::ToUString("RegExp"));
+  set.insert(core::ToUString("String"));
+  return set;
+}
+
+inline const std::unordered_set<core::UString>& detail::NativeBrandSet() {
+  static const std::unordered_set<core::UString>
+      set(detail::CreateNativeBrandSet());
+  return set;
+}
+
 // section 15.2.4.2 Object.prototype.toString()
 inline JSVal ObjectToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.toString", args, e);
   const JSVal this_binding = args.this_binding();
+  Context* const ctx = args.ctx();
   if (this_binding.IsUndefined()) {
     return JSString::NewAsciiString(args.ctx(), "[object Undefined]", e);
   }
   if (this_binding.IsNull()) {
     return JSString::NewAsciiString(args.ctx(), "[object Null]", e);
   }
+
   JSObject* const obj = this_binding.ToObject(args.ctx(), IV_LV5_ERROR(e));
   JSStringBuilder builder;
   builder.Append("[object ");
-  builder.Append(obj->cls()->name);
+
+  // This is ECMA262 6th
+  // TODO(Constellation) we should gradually change Class to NativeBrand
+  if (obj->IsClass<Class::Object>()) {
+    const Symbol name = context::Intern(ctx, "@@toStringTag");
+    if (obj->HasProperty(ctx, name)) {
+      const JSVal tagv = obj->Get(ctx, name, e);
+      core::UString tag;
+      if (*e) {
+        e->Clear();
+        tag = core::ToUString("???");
+      } else if (!tagv.IsString()) {
+        tag = core::ToUString("???");
+      } else {
+        tag = tagv.string()->GetUString();
+      }
+      if (detail::NativeBrandSet().find(tag) ==
+          detail::NativeBrandSet().end()) {
+        builder.Append(tag);
+      } else {
+        builder.Append('~');
+        builder.Append(tag);
+      }
+    } else {
+      builder.Append("Object");
+    }
+  } else {
+    // NativeBrand
+    builder.Append(obj->cls()->name);
+  }
   builder.Append("]");
   return builder.Build(args.ctx(), false, e);
 }
