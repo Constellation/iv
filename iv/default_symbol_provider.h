@@ -61,7 +61,8 @@ namespace symbol {
     V(timeZone)\
     V(hour12)\
     V(formatMatcher)\
-    V(raw)
+    V(raw)\
+    V(byteLength)
 
 class DefaultSymbolProvider : public core::Singleton<DefaultSymbolProvider> {
  public:

@@ -35,9 +35,11 @@ class JSString;
   V(NumberFormat, 21)\
   V(DateTimeFormat, 22)\
   V(Name, 23)\
-  /* added by lv5 */\
+  /* iterator */\
   V(Iterator, 24)\
-  V(NOT_CACHED, 25)
+  /* Binary Blocks */\
+  V(ArrayBuffer, 25)\
+  V(NOT_CACHED, 26)
 
 struct Class {
   enum JSClassType {

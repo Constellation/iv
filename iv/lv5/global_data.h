@@ -58,6 +58,7 @@ class GlobalData {
       regexp_map_(NULL),
       error_map_(Map::New(ctx)),
       map_map_(Map::New(ctx)),
+      array_buffer_map_(NULL),
       gc_hook_(this) {
     {
       Error::Dummy e;
@@ -74,13 +75,23 @@ class GlobalData {
 
       // RegExp Map
       // see also jsregexp.h, JSRegExp::FIELD
-      MapBuilder builder(ctx);
-      builder.Add(symbol::source(), ATTR::CreateData(ATTR::N));
-      builder.Add(symbol::global(), ATTR::CreateData(ATTR::N));
-      builder.Add(symbol::ignoreCase(), ATTR::CreateData(ATTR::N));
-      builder.Add(symbol::multiline(), ATTR::CreateData(ATTR::N));
-      builder.Add(symbol::lastIndex(), ATTR::CreateData(ATTR::W));
-      regexp_map_ = builder.Build();
+      {
+        MapBuilder builder(ctx);
+        builder.Add(symbol::source(), ATTR::CreateData(ATTR::N));
+        builder.Add(symbol::global(), ATTR::CreateData(ATTR::N));
+        builder.Add(symbol::ignoreCase(), ATTR::CreateData(ATTR::N));
+        builder.Add(symbol::multiline(), ATTR::CreateData(ATTR::N));
+        builder.Add(symbol::lastIndex(), ATTR::CreateData(ATTR::W));
+        regexp_map_ = builder.Build();
+      }
+
+      // ArrayBuffer Map
+      //   see also jsarray_buffer.h, JSArrayBuffer::FIELD
+      {
+        MapBuilder builder(ctx);
+        builder.Add(symbol::byteLength(), ATTR::CreateData(ATTR::N));
+        array_buffer_map_ = builder.Build();
+      }
     }
   }
 
@@ -194,6 +205,8 @@ class GlobalData {
 
   Map* GetMapMap() const { return map_map_; }
 
+  Map* GetArrayBufferMap() const { return array_buffer_map_; }
+
   void OnGarbageCollect() { }
 
   void RegExpClear() { regs_.clear(); }
@@ -205,6 +218,12 @@ class GlobalData {
   }
 
   JSObject* map_prototype() const { return map_prototype_; }
+
+  void set_array_buffer_prototype(JSObject* proto) {
+    array_buffer_prototype_ = proto;
+  }
+
+  JSObject* array_buffer_prototype() const { return array_buffer_prototype_; }
 
  private:
   RandomGenerator random_generator_;
@@ -238,6 +257,7 @@ class GlobalData {
   JSObject* regexp_prototype_;
   JSObject* error_prototype_;
   JSObject* map_prototype_;
+  JSObject* array_buffer_prototype_;
 
   // builtin maps
   Map* empty_object_map_;
@@ -250,6 +270,7 @@ class GlobalData {
   Map* regexp_map_;
   Map* error_map_;
   Map* map_map_;
+  Map* array_buffer_map_;
 
   GCHook<GlobalData> gc_hook_;
 };

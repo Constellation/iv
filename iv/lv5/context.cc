@@ -26,6 +26,7 @@
 #include <iv/lv5/bind.h>
 #include <iv/lv5/internal.h>
 #include <iv/lv5/radio/radio.h>
+#include <iv/lv5/jsarray_buffer.h>
 namespace iv {
 namespace lv5 {
 namespace context {
@@ -293,6 +294,7 @@ void Context::Initialize() {
   InitIntl(func_cls, obj_proto, &global_binder);
   InitMap(func_cls, obj_proto, &global_binder);
   InitSet(func_cls, obj_proto, &global_binder);
+  InitBinaryBlocks(func_cls, obj_proto, &global_binder);
 
   {
     // Arguments
@@ -1360,6 +1362,38 @@ void Context::InitIntl(const ClassSlot& func_cls,
         .def<&runtime::DateTimeFormatResolvedOptions, 0>("resolvedOptions");
   }
 #endif  // IV_ENABLE_I18N
+}
+
+void Context::InitBinaryBlocks(const ClassSlot& func_cls,
+                               JSObject* obj_proto, bind::Object* global_binder) {
+  Error::Dummy dummy;
+  JSObject* const proto =
+      JSArrayBuffer::NewPlain(this, 0, Map::NewUniqueMap(this, global_data_.GetArrayBufferMap()));
+  JSFunction* const constructor =
+      JSInlinedFunction<&runtime::ArrayBufferConstructor, 0>::NewPlain(
+          this,
+          context::Intern(this, "ArrayBuffer"));
+
+  struct ClassSlot cls = {
+    JSArrayBuffer::GetClass(),
+    context::Intern(this, "ArrayBuffer"),
+    JSString::NewAsciiString(this, "ArrayBuffer", &dummy),
+    constructor,
+    proto
+  };
+  global_data_.RegisterClass<Class::ArrayBuffer>(cls);
+  global_binder->def(cls.name, constructor, ATTR::W | ATTR::C);
+  global_data_.set_array_buffer_prototype(proto);
+
+  bind::Object(this, constructor)
+      .cls(func_cls.cls)
+      .prototype(func_cls.prototype)
+      .def(symbol::prototype(), proto, ATTR::NONE);
+
+  bind::Object(this, proto)
+      .cls(cls.cls)
+      .prototype(obj_proto)
+      .def(symbol::constructor(), constructor, ATTR::W | ATTR::C);
 }
 
 } }  // namespace iv::lv5
