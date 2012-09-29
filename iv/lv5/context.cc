@@ -27,6 +27,7 @@
 #include <iv/lv5/internal.h>
 #include <iv/lv5/radio/radio.h>
 #include <iv/lv5/jsarray_buffer.h>
+#include <iv/lv5/jsdata_view.h>
 namespace iv {
 namespace lv5 {
 namespace context {
@@ -1368,34 +1369,87 @@ void Context::InitIntl(const ClassSlot& func_cls,
 void Context::InitBinaryBlocks(const ClassSlot& func_cls,
                                JSObject* obj_proto, bind::Object* global_binder) {
   Error::Dummy dummy;
-  JSObject* const proto =
-      JSArrayBuffer::NewPlain(
-          this, 0, Map::NewUniqueMap(this, global_data_.GetArrayBufferMap()), &dummy);
-  JSFunction* const constructor =
-      JSInlinedFunction<&runtime::ArrayBufferConstructor, 1>::NewPlain(
-          this,
-          context::Intern(this, "ArrayBuffer"));
+  // ArrayBuffer
+  {
+    JSObject* const proto =
+        JSArrayBuffer::NewPlain(
+            this, 0, Map::NewUniqueMap(this, global_data_.GetArrayBufferMap()), &dummy);
+    JSFunction* const constructor =
+        JSInlinedFunction<&runtime::ArrayBufferConstructor, 1>::NewPlain(
+            this,
+            context::Intern(this, "ArrayBuffer"));
 
-  struct ClassSlot cls = {
-    JSArrayBuffer::GetClass(),
-    context::Intern(this, "ArrayBuffer"),
-    JSString::NewAsciiString(this, "ArrayBuffer", &dummy),
-    constructor,
-    proto
-  };
-  global_data_.RegisterClass<Class::ArrayBuffer>(cls);
-  global_binder->def(cls.name, constructor, ATTR::W | ATTR::C);
-  global_data_.set_array_buffer_prototype(proto);
+    struct ClassSlot cls = {
+      JSArrayBuffer::GetClass(),
+      context::Intern(this, "ArrayBuffer"),
+      JSString::NewAsciiString(this, "ArrayBuffer", &dummy),
+      constructor,
+      proto
+    };
+    global_data_.RegisterClass<Class::ArrayBuffer>(cls);
+    global_binder->def(cls.name, constructor, ATTR::W | ATTR::C);
+    global_data_.set_array_buffer_prototype(proto);
 
-  bind::Object(this, constructor)
-      .cls(func_cls.cls)
-      .prototype(func_cls.prototype)
-      .def(symbol::prototype(), proto, ATTR::NONE);
+    bind::Object(this, constructor)
+        .cls(func_cls.cls)
+        .prototype(func_cls.prototype)
+        .def(symbol::prototype(), proto, ATTR::NONE);
 
-  bind::Object(this, proto)
-      .cls(cls.cls)
-      .prototype(obj_proto)
-      .def(symbol::constructor(), constructor, ATTR::W | ATTR::C);
+    bind::Object(this, proto)
+        .cls(cls.cls)
+        .prototype(obj_proto)
+        .def(symbol::constructor(), constructor, ATTR::W | ATTR::C);
+  }
+
+  // DataView
+  {
+    JSObject* const proto =
+        JSDataView::NewPlain(
+            this,
+            JSArrayBuffer::New(this, 0, &dummy),
+            0, 0, Map::NewUniqueMap(this, global_data_.GetDataViewMap()));
+    JSFunction* const constructor =
+        JSInlinedFunction<&runtime::DataViewConstructor, 1>::NewPlain(
+            this,
+            context::Intern(this, "DataView"));
+
+    struct ClassSlot cls = {
+      JSDataView::GetClass(),
+      context::Intern(this, "DataView"),
+      JSString::NewAsciiString(this, "DataView", &dummy),
+      constructor,
+      proto
+    };
+    global_data_.RegisterClass<Class::DataView>(cls);
+    global_binder->def(cls.name, constructor, ATTR::W | ATTR::C);
+    global_data_.set_data_view_prototype(proto);
+
+    bind::Object(this, constructor)
+        .cls(func_cls.cls)
+        .prototype(func_cls.prototype)
+        .def(symbol::prototype(), proto, ATTR::NONE);
+
+    bind::Object(this, proto)
+        .cls(cls.cls)
+        .prototype(obj_proto)
+        .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
+        .def<&runtime::DataViewGetInt8, 1>("getInt8")
+        .def<&runtime::DataViewGetUint8, 1>("getUint8")
+        .def<&runtime::DataViewGetInt16, 2>("getInt16")
+        .def<&runtime::DataViewGetUint16, 2>("getUint16")
+        .def<&runtime::DataViewGetInt32, 2>("getInt32")
+        .def<&runtime::DataViewGetUint32, 2>("getUint32")
+        .def<&runtime::DataViewGetFloat32, 2>("getFloat32")
+        .def<&runtime::DataViewGetFloat64, 2>("getFloat64")
+        .def<&runtime::DataViewSetInt8, 2>("setInt8")
+        .def<&runtime::DataViewSetUint8, 2>("setUint8")
+        .def<&runtime::DataViewSetInt16, 3>("setInt16")
+        .def<&runtime::DataViewSetUint16, 3>("setUint16")
+        .def<&runtime::DataViewSetInt32, 3>("setInt32")
+        .def<&runtime::DataViewSetUint32, 3>("setUint32")
+        .def<&runtime::DataViewSetFloat32, 3>("setFloat32")
+        .def<&runtime::DataViewSetFloat64, 3>("setFloat64");
+  }
 }
 
 } }  // namespace iv::lv5

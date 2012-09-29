@@ -39,7 +39,8 @@ class JSString;
   V(Iterator, 24)\
   /* Binary Blocks */\
   V(ArrayBuffer, 25)\
-  V(NOT_CACHED, 26)
+  V(DataView, 26)\
+  V(NOT_CACHED, 27)
 
 struct Class {
   enum JSClassType {

@@ -62,7 +62,9 @@ namespace symbol {
     V(hour12)\
     V(formatMatcher)\
     V(raw)\
-    V(byteLength)
+    V(byteLength)\
+    V(buffer)\
+    V(byteOffset)
 
 class DefaultSymbolProvider : public core::Singleton<DefaultSymbolProvider> {
  public:

@@ -460,6 +460,18 @@ class JSVal : public JSLayout {
   }
 
   template<typename T>
+  static inline JSVal Signed(T val,
+      typename enable_if_c<std::is_same<int32_t, T>::value || std::is_same<int16_t, T>::value || std::is_same<int8_t, T>::value>::type* = 0) {
+    return JSVal(val, detail::Int32Tag());
+  }
+
+  template<typename T>
+  static inline JSVal UnSigned(T val,
+      typename enable_if_c<std::is_same<uint32_t, T>::value || std::is_same<uint16_t, T>::value || std::is_same<uint8_t, T>::value>::type* = 0) {
+    return JSVal(val, detail::UInt32Tag());
+  }
+
+  template<typename T>
   static inline JSVal UInt32(
       T val,
       typename enable_if<std::is_same<uint32_t, T> >::type* = 0) {

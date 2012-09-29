@@ -20,5 +20,6 @@
 #include <iv/lv5/runtime_set.h>
 #include <iv/lv5/runtime_i18n.h>
 #include <iv/lv5/runtime_array_buffer.h>
+#include <iv/lv5/runtime_data_view.h>
 
 #endif  // IV_LV5_RUNTIME_H_

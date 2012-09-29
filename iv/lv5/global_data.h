@@ -59,6 +59,7 @@ class GlobalData {
       error_map_(Map::New(ctx)),
       map_map_(Map::New(ctx)),
       array_buffer_map_(NULL),
+      data_view_map_(NULL),
       gc_hook_(this) {
     {
       Error::Dummy e;
@@ -91,6 +92,16 @@ class GlobalData {
         MapBuilder builder(ctx);
         builder.Add(symbol::byteLength(), ATTR::CreateData(ATTR::N));
         array_buffer_map_ = builder.Build();
+      }
+
+      // DataView Map
+      //   see also jsdata_view.h, JSDataView::FIELD
+      {
+        MapBuilder builder(ctx);
+        builder.Add(symbol::byteLength(), ATTR::CreateData(ATTR::N));
+        builder.Add(symbol::buffer(), ATTR::CreateData(ATTR::N));
+        builder.Add(symbol::byteOffset(), ATTR::CreateData(ATTR::N));
+        data_view_map_ = builder.Build();
       }
     }
   }
@@ -207,6 +218,8 @@ class GlobalData {
 
   Map* GetArrayBufferMap() const { return array_buffer_map_; }
 
+  Map* GetDataViewMap() const { return data_view_map_; }
+
   void OnGarbageCollect() { }
 
   void RegExpClear() { regs_.clear(); }
@@ -224,6 +237,12 @@ class GlobalData {
   }
 
   JSObject* array_buffer_prototype() const { return array_buffer_prototype_; }
+
+  void set_data_view_prototype(JSObject* proto) {
+    data_view_prototype_ = proto;
+  }
+
+  JSObject* data_view_prototype() const { return data_view_prototype_; }
 
  private:
   RandomGenerator random_generator_;
@@ -258,6 +277,7 @@ class GlobalData {
   JSObject* error_prototype_;
   JSObject* map_prototype_;
   JSObject* array_buffer_prototype_;
+  JSObject* data_view_prototype_;
 
   // builtin maps
   Map* empty_object_map_;
@@ -271,6 +291,7 @@ class GlobalData {
   Map* error_map_;
   Map* map_map_;
   Map* array_buffer_map_;
+  Map* data_view_map_;
 
   GCHook<GlobalData> gc_hook_;
 };
