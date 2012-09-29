@@ -1209,6 +1209,7 @@ void Context::InitMap(const ClassSlot& func_cls,
 
   bind::Object(this, proto)
       .prototype(obj_proto)
+      .cls(JSObject::GetClass())
       .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
       .def(context::Intern(this, "@@toStringTag"),
            JSString::NewAsciiString(this, "Map", &dummy), ATTR::W | ATTR::C)

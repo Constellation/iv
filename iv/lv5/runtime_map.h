@@ -18,16 +18,16 @@ namespace runtime {
 inline JSVal MapConstructor(const Arguments& args, Error* e) {
   Context* ctx = args.ctx();
   const JSVal first = args.At(0);
+  const JSVal this_binding = args.this_binding();
   JSObject* map = NULL;
-  if (args.IsConstructorCalled() ||
-      args.empty() ||
-      JSVal::StrictEqual(first, ctx->global_data()->map_prototype())) {
+  if (this_binding.IsUndefined() ||
+      JSVal::StrictEqual(this_binding, ctx->global_data()->map_prototype())) {
     map = JSObject::New(
         ctx,
         ctx->global_data()->GetMapMap(),
         ctx->global_data()->map_prototype());
   } else {
-    map = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
+    map = this_binding.ToObject(ctx, IV_LV5_ERROR(e));
   }
   return JSMap::Initialize(ctx, map, first, IV_LV5_ERROR(e));
 }
