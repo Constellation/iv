@@ -1404,10 +1404,7 @@ void Context::InitBinaryBlocks(const ClassSlot& func_cls,
   // DataView
   {
     JSObject* const proto =
-        JSDataView::NewPlain(
-            this,
-            JSArrayBuffer::New(this, 0, &dummy),
-            0, 0, Map::NewUniqueMap(this, global_data_.GetDataViewMap()));
+        JSObject::New(this, Map::NewUniqueMap(this, global_data_.GetDataViewMap()));
     JSFunction* const constructor =
         JSInlinedFunction<&runtime::DataViewConstructor, 1>::NewPlain(
             this,
@@ -1430,8 +1427,6 @@ void Context::InitBinaryBlocks(const ClassSlot& func_cls,
         .def(symbol::prototype(), proto, ATTR::NONE);
 
     bind::Object(this, proto)
-        .cls(cls.cls)
-        .prototype(obj_proto)
         .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
         .def<&runtime::DataViewGetInt8, 1>("getInt8")
         .def<&runtime::DataViewGetUint8, 1>("getUint8")
