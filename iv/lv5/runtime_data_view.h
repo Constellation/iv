@@ -25,6 +25,10 @@ inline JSVal DataViewConstructor(const Arguments& args, Error* e) {
     offset = args[1].ToUInt32(args.ctx(), IV_LV5_ERROR(e));
   }
   const uint32_t original = buffer->length();
+  if (original < offset) {
+    e->Report(Error::Range, "too big offset");
+    return JSEmpty;
+  }
   uint32_t len = original - offset;
   if (args.size() >= 3) {
     len = args[2].ToUInt32(args.ctx(), IV_LV5_ERROR(e));
