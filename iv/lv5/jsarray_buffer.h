@@ -22,7 +22,38 @@ class JSArrayBuffer : public JSObject {
     double* f64;
   };
 
-  JSArrayBuffer(Context* ctx, uint32_t len, Map* map)
+  static const uint32_t kMaxLength = INT32_MAX;
+
+  uint32_t length() const {
+    return Direct(FIELD_BYTE_LENGTH).int32();
+  }
+
+  bool static IsTooBigBuffer(uint32_t len) {
+    return len > kMaxLength;
+  }
+
+  static JSArrayBuffer* New(Context* ctx, uint32_t len, Error* e) {
+    JSArrayBuffer* obj =
+        NewPlain(
+            ctx, len,
+            ctx->global_data()->GetArrayBufferMap(),
+            IV_LV5_ERROR_WITH(e, NULL));
+    obj->set_cls(GetClass());
+    obj->set_prototype(ctx->global_data()->array_buffer_prototype());
+    return obj;
+  }
+
+  static JSArrayBuffer* NewPlain(Context* ctx,
+                                 uint32_t len, Map* map, Error* e) {
+    if (IsTooBigBuffer(len)) {
+      e->Report(Error::Range, "too big buffer");
+      return NULL;
+    }
+    return new JSArrayBuffer(ctx, len, map, e);
+  }
+
+ private:
+  JSArrayBuffer(Context* ctx, uint32_t len, Map* map, Error* e)
     : JSObject(map) {
     Direct(FIELD_BYTE_LENGTH) = JSVal::UInt32(len);
     if (len) {
@@ -33,18 +64,6 @@ class JSArrayBuffer : public JSObject {
     }
   }
 
-  static JSArrayBuffer* New(Context* ctx, uint32_t len) {
-    JSArrayBuffer* obj =
-        NewPlain(ctx, len, ctx->global_data()->GetArrayBufferMap());
-    obj->set_cls(GetClass());
-    obj->set_prototype(ctx->global_data()->array_buffer_prototype());
-    return obj;
-  }
-
-  static JSArrayBuffer* NewPlain(Context* ctx, uint32_t len, Map* map) {
-    return new JSArrayBuffer(ctx, len, map);
-  }
- private:
  Data data_;
 };
 

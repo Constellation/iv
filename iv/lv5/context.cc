@@ -1369,7 +1369,8 @@ void Context::InitBinaryBlocks(const ClassSlot& func_cls,
                                JSObject* obj_proto, bind::Object* global_binder) {
   Error::Dummy dummy;
   JSObject* const proto =
-      JSArrayBuffer::NewPlain(this, 0, Map::NewUniqueMap(this, global_data_.GetArrayBufferMap()));
+      JSArrayBuffer::NewPlain(
+          this, 0, Map::NewUniqueMap(this, global_data_.GetArrayBufferMap()), &dummy);
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::ArrayBufferConstructor, 1>::NewPlain(
           this,

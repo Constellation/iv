@@ -14,7 +14,7 @@ namespace runtime {
 // section 15.13.5.2.1 new ArrayBuffer(len)
 inline JSVal ArrayBufferConstructor(const Arguments& args, Error* e) {
   const uint32_t len = args.At(0).ToUInt32(args.ctx(), IV_LV5_ERROR(e));
-  return JSArrayBuffer::New(args.ctx(), len);
+  return JSArrayBuffer::New(args.ctx(), len, e);
 }
 
 } } }  // namespace iv::lv5::runtime
