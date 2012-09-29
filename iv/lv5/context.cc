@@ -1371,7 +1371,7 @@ void Context::InitBinaryBlocks(const ClassSlot& func_cls,
   JSObject* const proto =
       JSArrayBuffer::NewPlain(this, 0, Map::NewUniqueMap(this, global_data_.GetArrayBufferMap()));
   JSFunction* const constructor =
-      JSInlinedFunction<&runtime::ArrayBufferConstructor, 0>::NewPlain(
+      JSInlinedFunction<&runtime::ArrayBufferConstructor, 1>::NewPlain(
           this,
           context::Intern(this, "ArrayBuffer"));
 
