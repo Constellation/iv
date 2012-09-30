@@ -1423,10 +1423,10 @@ void Context::InitBinaryBlocks(const ClassSlot& func_cls,
     bind::Object(this, constructor)\
         .cls(func_cls.cls)\
         .prototype(func_cls.prototype)\
-        .def(symbol::prototype(), proto, ATTR::NONE);\
+        .def(symbol::prototype(), proto, ATTR::NONE)\
+        .def("BYTES_PER_ELEMENT", JSVal::UnSigned(static_cast<uint32_t>(sizeof(TYPE))), ATTR::NONE);\
     bind::Object(this, proto)\
         .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)\
-        .def("BYTES_PER_ELEMENT", JSVal::UnSigned(static_cast<uint32_t>(sizeof(TYPE))), ATTR::N)\
         .def<&runtime::TypedArraySet<TYPE, JS##NAME##Array>, 1>("set")\
         .def<&runtime::TypedArraySubarray<TYPE, JS##NAME##Array>, 1>("subarray");\
   } while (0)
