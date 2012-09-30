@@ -59,6 +59,9 @@ class AlignOfImpl {
 #define IV_CAST_OFFSET(from, to)\
 /* NOLINT */  (reinterpret_cast<uintptr_t>(static_cast<to>((reinterpret_cast<from>(0x2000)))) - 0x2000)
 
+#define IV_TO_STRING_IMPL(s) #s
+#define IV_TO_STRING(s) IV_TO_STRING_IMPL(s)
+
 template<class T>
 T LowestOneBit(T value) {
   return value & (~value + 1u);

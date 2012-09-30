@@ -18,6 +18,7 @@
 #include <iv/lv5/jsfunction.h>
 #include <iv/lv5/jsglobal.h>
 #include <iv/lv5/attributes.h>
+#include <iv/lv5/binary_blocks.h>
 namespace iv {
 namespace lv5 {
 
@@ -60,6 +61,7 @@ class GlobalData {
       map_map_(Map::New(ctx)),
       array_buffer_map_(NULL),
       data_view_map_(NULL),
+      typed_array_map_(NULL),
       gc_hook_(this) {
     {
       Error::Dummy e;
@@ -102,6 +104,17 @@ class GlobalData {
         builder.Add(symbol::buffer(), ATTR::CreateData(ATTR::N));
         builder.Add(symbol::byteOffset(), ATTR::CreateData(ATTR::N));
         data_view_map_ = builder.Build();
+      }
+
+      // TypedArray Map
+      //   see also jstyped_array.h, TypedArrayImpl::FIELD
+      {
+        MapBuilder builder(ctx);
+        builder.Add(symbol::length(), ATTR::CreateData(ATTR::N));
+        builder.Add(symbol::byteLength(), ATTR::CreateData(ATTR::N));
+        builder.Add(symbol::buffer(), ATTR::CreateData(ATTR::N));
+        builder.Add(symbol::byteOffset(), ATTR::CreateData(ATTR::N));
+        typed_array_map_ = builder.Build();
       }
     }
   }
@@ -220,6 +233,8 @@ class GlobalData {
 
   Map* GetDataViewMap() const { return data_view_map_; }
 
+  Map* GetTypedArrayMap() const { return typed_array_map_; }
+
   void OnGarbageCollect() { }
 
   void RegExpClear() { regs_.clear(); }
@@ -243,6 +258,13 @@ class GlobalData {
   }
 
   JSObject* data_view_prototype() const { return data_view_prototype_; }
+
+  void set_typed_array_prototype(TypedCode::Code code, JSObject* proto) {
+    typed_array_prototypes_[code] = proto;
+  }
+
+  JSObject* typed_array_prototype(TypedCode::Code code) const { return typed_array_prototypes_[code]; }
+
 
  private:
   RandomGenerator random_generator_;
@@ -278,6 +300,7 @@ class GlobalData {
   JSObject* map_prototype_;
   JSObject* array_buffer_prototype_;
   JSObject* data_view_prototype_;
+  std::array<JSObject*, TypedCode::kNumOfCodes> typed_array_prototypes_;
 
   // builtin maps
   Map* empty_object_map_;
@@ -292,6 +315,7 @@ class GlobalData {
   Map* map_map_;
   Map* array_buffer_map_;
   Map* data_view_map_;
+  Map* typed_array_map_;
 
   GCHook<GlobalData> gc_hook_;
 };

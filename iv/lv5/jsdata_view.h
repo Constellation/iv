@@ -41,8 +41,8 @@ class JSDataView : public JSObject {
   template<typename Type>
   Type GetValue(uint32_t off, bool is_little_endian, Error* e) const {
     JSArrayBuffer* buf = buffer();
-    const uint64_t total = off + offset();
-    if (total >= length()) {
+    const uint64_t total = off + offset() + sizeof(Type);
+    if (total > buf->length()) {
       e->Report(Error::Range, "offset out of range");
       return Type();
     }
@@ -53,8 +53,8 @@ class JSDataView : public JSObject {
   template<typename Type>
   void SetValue(uint32_t off, bool is_little_endian, Type value, Error* e) {
     JSArrayBuffer* buf = buffer();
-    const uint64_t total = off + offset();
-    if (total >= length()) {
+    const uint64_t total = off + offset() + sizeof(Type);
+    if (total > buf->length()) {
       e->Report(Error::Range, "offset out of range");
       return;
     }

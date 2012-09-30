@@ -1401,6 +1401,47 @@ void Context::InitBinaryBlocks(const ClassSlot& func_cls,
         .def(symbol::constructor(), constructor, ATTR::W | ATTR::C);
   }
 
+  // TypedArray
+#define IV_LV5_DEFINE_TYPED_ARRAY(TYPE, NAME)\
+  do {\
+    JSObject* const proto =\
+        JSObject::New(this, Map::NewUniqueMap(this, global_data_.GetTypedArrayMap()));\
+    JSFunction* const constructor =\
+        JSInlinedFunction<&runtime::TypedArrayConstructor<TYPE, JS##NAME##Array>, 1>::NewPlain(\
+            this,\
+            context::Intern(this, IV_TO_STRING(NAME##Array)));\
+    struct ClassSlot cls = {\
+      JS##NAME##Array::GetClass(),\
+      context::Intern(this, IV_TO_STRING(NAME##Array)),\
+      JSString::NewAsciiString(this, IV_TO_STRING(NAME##Array), &dummy),\
+      constructor,\
+      proto\
+    };\
+    global_data_.RegisterClass<Class::NAME##Array>(cls);\
+    global_binder->def(cls.name, constructor, ATTR::W | ATTR::C);\
+    global_data_.set_typed_array_prototype(TypedArrayTraits<TYPE>::code, proto);\
+    bind::Object(this, constructor)\
+        .cls(func_cls.cls)\
+        .prototype(func_cls.prototype)\
+        .def(symbol::prototype(), proto, ATTR::NONE);\
+    bind::Object(this, proto)\
+        .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)\
+        .def("BYTES_PER_ELEMENT", JSVal::UnSigned(static_cast<uint32_t>(sizeof(TYPE))), ATTR::N)\
+        .def<&runtime::TypedArraySet<TYPE, JS##NAME##Array>, 1>("set")\
+        .def<&runtime::TypedArraySubarray<TYPE, JS##NAME##Array>, 1>("subarray");\
+  } while (0)
+
+  IV_LV5_DEFINE_TYPED_ARRAY(int8_t, Int8);
+  IV_LV5_DEFINE_TYPED_ARRAY(uint8_t, Uint8);
+  IV_LV5_DEFINE_TYPED_ARRAY(int16_t, Int16);
+  IV_LV5_DEFINE_TYPED_ARRAY(uint16_t, Uint16);
+  IV_LV5_DEFINE_TYPED_ARRAY(int32_t, Int32);
+  IV_LV5_DEFINE_TYPED_ARRAY(uint32_t, Uint32);
+  IV_LV5_DEFINE_TYPED_ARRAY(float, Float32);
+  IV_LV5_DEFINE_TYPED_ARRAY(double, Float64);
+
+#undef IV_LV5_DEFINE_TYPED_ARRAY
+
   // DataView
   {
     JSObject* const proto =
