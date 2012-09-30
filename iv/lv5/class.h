@@ -48,7 +48,8 @@ class JSString;
   V(Uint32Array, 32)\
   V(Float32Array, 33)\
   V(Float64Array, 34)\
-  V(NOT_CACHED, 35)
+  V(Uint8ClampedArray, 35)\
+  V(NOT_CACHED, 36)
 
 struct Class {
   enum JSClassType {

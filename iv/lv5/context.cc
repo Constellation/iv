@@ -1439,6 +1439,7 @@ void Context::InitBinaryBlocks(const ClassSlot& func_cls,
   IV_LV5_DEFINE_TYPED_ARRAY(uint32_t, Uint32);
   IV_LV5_DEFINE_TYPED_ARRAY(float, Float32);
   IV_LV5_DEFINE_TYPED_ARRAY(double, Float64);
+  IV_LV5_DEFINE_TYPED_ARRAY(Uint8Clamped, Uint8Clamped);
 
 #undef IV_LV5_DEFINE_TYPED_ARRAY
 

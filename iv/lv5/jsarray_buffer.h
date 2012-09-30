@@ -25,6 +25,11 @@ inline T GetFromBuffer(
   return data.raw;
 }
 
+template<>
+inline Uint8Clamped GetFromBuffer<Uint8Clamped>(const uint8_t* bytes, bool is_little_endian) {
+  return Uint8Clamped::UInt8(*bytes);
+}
+
 template<typename T>
 inline void SetToBuffer(uint8_t* bytes, bool is_little_endian, T value) {
   union {
@@ -41,6 +46,11 @@ inline void SetToBuffer(uint8_t* bytes, bool is_little_endian, T value) {
       bytes[sizeof(T) - i - 1] = data.bytes[i];
     }
   }
+}
+
+template<>
+inline void SetToBuffer<Uint8Clamped>(uint8_t* bytes, bool is_little_endian, Uint8Clamped value) {
+  *bytes = value;
 }
 
 class JSArrayBuffer : public JSObject {
