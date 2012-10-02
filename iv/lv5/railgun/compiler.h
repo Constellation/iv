@@ -234,7 +234,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     }
 
     uint32_t string_index(const core::UStringPiece& str) {
-      return string_index(str);
+      return string_index(core::UString(str));
     }
 
     uint32_t number_index(double val) {
