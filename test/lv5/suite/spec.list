@@ -46,3 +46,4 @@ spec/set/set-has.js
 spec/set/set-add.js
 spec/set/set-delete.js
 spec/global-registers/global-registers-writable.js
+spec/function/function-type-error.js
