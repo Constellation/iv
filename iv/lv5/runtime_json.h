@@ -9,6 +9,7 @@
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsarray.h>
 #include <iv/lv5/jsstring.h>
+#include <iv/lv5/context.h>
 #include <iv/lv5/internal.h>
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/eval_source.h>
@@ -96,7 +97,7 @@ inline JSVal JSONParse(const Arguments& args, Error* e) {
   const JSVal second = args.At(1);
   if (second.IsCallable()) {
     JSObject* const root = JSObject::New(ctx);
-    const Symbol empty = context::Intern(ctx, "");
+    const Symbol empty = ctx->Intern("");
     root->DefineOwnProperty(
         ctx, empty,
         DataDescriptor(result, ATTR::W | ATTR::E | ATTR::C),
@@ -195,7 +196,7 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
   JSObject* const wrapper = JSObject::New(ctx);
 
   // step 10
-  const Symbol empty = context::Intern(ctx, "");
+  const Symbol empty = ctx->Intern("");
   wrapper->DefineOwnProperty(
       ctx, empty,
       DataDescriptor(value, ATTR::W | ATTR::E | ATTR::C),

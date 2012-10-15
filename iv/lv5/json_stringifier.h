@@ -123,8 +123,7 @@ class JSONStringifier : private core::Noncopyable<> {
 
     for (trace::Vector<JSString*>::type::const_iterator it = k->begin(),
          last = k->end(); it != last; ++it) {
-      const JSVal result = Str(
-          context::Intern(ctx_, *it), value, IV_LV5_ERROR(e));
+      const JSVal result = Str(ctx_->Intern(*it), value, IV_LV5_ERROR(e));
       if (!result.IsUndefined()) {
         core::UString member;
         JSString* ret = Quote(**it, IV_LV5_ERROR(e));
@@ -195,7 +194,7 @@ class JSONStringifier : private core::Noncopyable<> {
 
     const uint32_t len = internal::GetLength(ctx_, value, IV_LV5_ERROR(e));
     for (uint32_t index = 0; index < len; ++index) {
-      JSVal str = Str(context::Intern(ctx_, index), value, IV_LV5_ERROR(e));
+      JSVal str = Str(ctx_->Intern(index), value, IV_LV5_ERROR(e));
       if (str.IsUndefined()) {
         partial.push_back(detail::kJSONNullString);
       } else {

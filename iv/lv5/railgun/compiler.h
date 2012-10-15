@@ -619,9 +619,9 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   // may return dummy symbol (symbol::kDummySymbol)
   Symbol PropertyName(const Expression* key) const {
     if (const StringLiteral* str = key->AsStringLiteral()) {
-      return context::Intern(ctx_, str->value());
+      return ctx_->Intern(str->value());
     } else if (const NumberLiteral* num = key->AsNumberLiteral()) {
-      return context::Intern(ctx_, num->value());
+      return ctx_->Intern(num->value());
     } else {
       return symbol::kDummySymbol;
     }

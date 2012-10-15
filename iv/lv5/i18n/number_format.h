@@ -4,8 +4,7 @@
 #include <iv/ignore_unused_variable_warning.h>
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/bind.h>
-#include <iv/lv5/context_fwd.h>
-#include <iv/lv5/context_utils.h>
+#include <iv/lv5/context.h>
 #include <iv/lv5/i18n/utility.h>
 namespace iv {
 namespace lv5 {
@@ -27,7 +26,7 @@ class JSNumberFormatHolder : public JSObject {
     JSNumberFormatHolder* const format = new JSNumberFormatHolder(ctx, currency);
     format->set_cls(JSObject::GetClass());
     format->set_prototype(
-        context::GetClassSlot(ctx, Class::Object).prototype);
+        ctx->global_data()->GetClassSlot(Class::Object).prototype);
     format->set_format(number_format);
     return format;
   }
@@ -101,52 +100,52 @@ class JSNumberFormatHolder : public JSObject {
     }
 
     if (format()->minimum_integer_digits() != core::i18n::NumberFormat::kUnspecified) {
-      object.def(context::Intern(ctx, "minimumIntegerDigits"),
+      object.def(ctx->Intern("minimumIntegerDigits"),
                  JSVal::Int32(format()->minimum_integer_digits()),
                  ATTR::W | ATTR::E | ATTR::C);
     }
 
     if (format()->minimum_fraction_digits() != core::i18n::NumberFormat::kUnspecified) {
-      object.def(context::Intern(ctx, "minimumFractionDigits"),
+      object.def(ctx->Intern("minimumFractionDigits"),
                  JSVal::Int32(format()->minimum_fraction_digits()),
                  ATTR::W | ATTR::E | ATTR::C);
     }
 
     if (format()->maximum_fraction_digits() != core::i18n::NumberFormat::kUnspecified) {
-      object.def(context::Intern(ctx, "maximumFractionDigits"),
+      object.def(ctx->Intern("maximumFractionDigits"),
                  JSVal::Int32(format()->maximum_fraction_digits()),
                  ATTR::W | ATTR::E | ATTR::C);
     }
 
     if (format()->minimum_significant_digits() != core::i18n::NumberFormat::kUnspecified) {
-      object.def(context::Intern(ctx, "minimumSignificantDigits"),
+      object.def(ctx->Intern("minimumSignificantDigits"),
                  JSVal::Int32(format()->minimum_significant_digits()),
                  ATTR::W | ATTR::E | ATTR::C);
     }
 
     if (format()->maximum_significant_digits() != core::i18n::NumberFormat::kUnspecified) {
-      object.def(context::Intern(ctx, "maximumSignificantDigits"),
+      object.def(ctx->Intern("maximumSignificantDigits"),
                  JSVal::Int32(format()->maximum_significant_digits()),
                  ATTR::W | ATTR::E | ATTR::C);
     }
 
-    object.def(context::Intern(ctx, "useGrouping"),
+    object.def(ctx->Intern("useGrouping"),
                JSVal::Bool(format()->use_grouping()),
                ATTR::W | ATTR::E | ATTR::C);
 
     if (const core::i18n::NumberingSystem::Data* data = format()->numbering_system()) {
-      object.def(context::Intern(ctx, "numberingSystem"),
+      object.def(ctx->Intern("numberingSystem"),
                  JSString::NewAsciiString(ctx, data->name, e),
                  ATTR::W | ATTR::E | ATTR::C);
     } else {
       // default is LATN
-      object.def(context::Intern(ctx, "numberingSystem"),
+      object.def(ctx->Intern("numberingSystem"),
                  JSString::NewAsciiString(ctx, "latn", e),
                  ATTR::W | ATTR::E | ATTR::C);
     }
 
     if (const core::i18n::NumberFormat::Data* data = format()->data()) {
-      object.def(context::Intern(ctx, "locale"),
+      object.def(ctx->Intern("locale"),
                  JSString::NewAsciiString(ctx, data->name, e),
                  ATTR::W | ATTR::E | ATTR::C);
     }

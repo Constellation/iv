@@ -6,6 +6,7 @@
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsi18n.h>
+#include <iv/lv5/context.h>
 #include <iv/lv5/runtime_array.h>
 namespace iv {
 namespace lv5 {
@@ -48,27 +49,27 @@ inline JSVal CollatorResolvedOptions(const Arguments& args, Error* e) {
   JSCollator* collator = static_cast<JSCollator*>(o);
   JSObject* obj = JSObject::New(ctx);
   bind::Object(ctx, obj)
-      .def(context::Intern(ctx, "collation"),
+      .def(ctx->Intern("collation"),
            collator->GetField(JSCollator::COLLATION),
            ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "usage"),
+      .def(ctx->Intern("usage"),
            collator->GetField(JSCollator::USAGE),
            ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "sensitivity"),
+      .def(ctx->Intern("sensitivity"),
            collator->GetField(JSCollator::SENSITIVITY),
            ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "numeric"),
+      .def(ctx->Intern("numeric"),
            collator->GetField(JSCollator::NUMERIC),
            ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "normalization"),
+      .def(ctx->Intern("normalization"),
            collator->GetField(JSCollator::NORMALIZATION),
            ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "caseFirst"),
+      .def(ctx->Intern("caseFirst"),
            collator->GetField(JSCollator::CASE_FIRST),
            ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "ignorePunctuation"),
+      .def(ctx->Intern("ignorePunctuation"),
            collator->GetField(JSCollator::IGNORE_PUNCTUATION))
-      .def(context::Intern(ctx, "locale"),
+      .def(ctx->Intern("locale"),
            collator->GetField(JSCollator::LOCALE),
            ATTR::W | ATTR::E | ATTR::C);
   return obj;
@@ -198,45 +199,45 @@ inline JSVal DateTimeFormatResolvedOptions(const Arguments& args, Error* e) {
   JSDateTimeFormat* format = static_cast<JSDateTimeFormat*>(o);
   JSObject* obj = JSObject::New(ctx);
   bind::Object(ctx, obj)
-      .def(context::Intern(ctx, "calendar"),
+      .def(ctx->Intern("calendar"),
            format->GetField(JSDateTimeFormat::CALENDAR),
            ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "timeZone"),
+      .def(ctx->Intern("timeZone"),
            format->GetField(JSDateTimeFormat::TIME_ZONE),
            ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "hour12"),
+      .def(ctx->Intern("hour12"),
            format->GetField(JSDateTimeFormat::HOUR12),
            ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "locale"),
+      .def(ctx->Intern("locale"),
            format->GetField(JSDateTimeFormat::LOCALE),
            ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "numberingSystem"),
+      .def(ctx->Intern("numberingSystem"),
            format->GetField(JSDateTimeFormat::NUMBERING_SYSTEM),
            ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "weekday"),
+      .def(ctx->Intern("weekday"),
            format->GetField(JSDateTimeFormat::WEEKDAY),
            ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "era"),
+      .def(ctx->Intern("era"),
            format->GetField(JSDateTimeFormat::ERA),
            ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "year"),
+      .def(ctx->Intern("year"),
            format->GetField(JSDateTimeFormat::YEAR))
-      .def(context::Intern(ctx, "month"),
+      .def(ctx->Intern("month"),
            format->GetField(JSDateTimeFormat::MONTH),
            ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "day"),
+      .def(ctx->Intern("day"),
            format->GetField(JSDateTimeFormat::DAY),
            ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "hour"),
+      .def(ctx->Intern("hour"),
            format->GetField(JSDateTimeFormat::HOUR),
            ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "minute"),
+      .def(ctx->Intern("minute"),
            format->GetField(JSDateTimeFormat::MINUTE),
            ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "second"),
+      .def(ctx->Intern("second"),
            format->GetField(JSDateTimeFormat::SECOND),
            ATTR::W | ATTR::E | ATTR::C)
-      .def(context::Intern(ctx, "timeZoneName"),
+      .def(ctx->Intern("timeZoneName"),
            format->GetField(JSDateTimeFormat::TIME_ZONE_NAME),
            ATTR::W | ATTR::E | ATTR::C);
   return obj;

@@ -7,7 +7,7 @@
 #include <iv/lv5/jsfunction.h>
 #include <iv/lv5/arguments.h>
 #include <iv/lv5/attributes.h>
-#include <iv/lv5/context_utils.h>
+#include <iv/lv5/context.h>
 namespace iv {
 namespace lv5 {
 
@@ -39,7 +39,7 @@ class Object : public Scope {
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
   Object& def(const core::StringPiece& string) {
-    return def<func, n>(context::Intern(ctx_, string));
+    return def<func, n>(ctx_->Intern(string));
   }
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
@@ -55,7 +55,7 @@ class Object : public Scope {
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
   Object& def(const core::StringPiece& string, int attr) {
-    return def<func, n>(context::Intern(ctx_, string), attr);
+    return def<func, n>(ctx_->Intern(string), attr);
   }
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
@@ -70,7 +70,7 @@ class Object : public Scope {
   }
 
   Object& def(const core::StringPiece& string, JSVal val) {
-    return def(context::Intern(ctx_, string), val);
+    return def(ctx_->Intern(string), val);
   }
 
   Object& def(const Symbol& name, JSVal val) {
@@ -82,7 +82,7 @@ class Object : public Scope {
   }
 
   Object& def(const core::StringPiece& string, JSVal val, int attr) {
-    return def(context::Intern(ctx_, string), val, attr);
+    return def(ctx_->Intern(string), val, attr);
   }
 
   Object& def(const Symbol& name, JSVal val, int attr) {
@@ -96,7 +96,7 @@ class Object : public Scope {
   Object& def_accessor(const core::StringPiece& string,
                        JSObject* getter,
                        JSObject* setter, int attr) {
-    return def_accessor(context::Intern(ctx_, string), getter, setter, attr);
+    return def_accessor(ctx_->Intern(string), getter, setter, attr);
   }
 
   Object& def_accessor(const Symbol& name,
@@ -110,7 +110,7 @@ class Object : public Scope {
 
   Object& def_getter(const core::StringPiece& string,
                      JSObject* getter, int attr) {
-    return def_accessor(context::Intern(ctx_, string), getter, NULL, attr);
+    return def_accessor(ctx_->Intern(string), getter, NULL, attr);
   }
 
   Object& def_getter(const Symbol& name, JSObject* getter, int attr) {
@@ -119,7 +119,7 @@ class Object : public Scope {
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
   Object& def_getter(const core::StringPiece& string) {
-    return def_getter<func, n>(context::Intern(ctx_, string));
+    return def_getter<func, n>(ctx_->Intern(string));
   }
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
@@ -135,7 +135,7 @@ class Object : public Scope {
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
   Object& def_getter(const core::StringPiece& string, int attr) {
-    return def_getter<func, n>(context::Intern(ctx_, string), attr);
+    return def_getter<func, n>(ctx_->Intern(string), attr);
   }
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
@@ -151,7 +151,7 @@ class Object : public Scope {
 
   Object& def_setter(const core::StringPiece& string,
                      JSObject* setter, int attr) {
-    return def_accessor(context::Intern(ctx_, string), NULL, setter, attr);
+    return def_accessor(ctx_->Intern(string), NULL, setter, attr);
   }
 
   Object& def_setter(const Symbol& name, JSObject* setter, int attr) {
@@ -160,7 +160,7 @@ class Object : public Scope {
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
   Object& def_setter(const core::StringPiece& string) {
-    return def_setter<func, n>(context::Intern(ctx_, string));
+    return def_setter<func, n>(ctx_->Intern(string));
   }
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
@@ -176,7 +176,7 @@ class Object : public Scope {
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
   Object& def_setter(const core::StringPiece& string, int attr) {
-    return def_setter<func, n>(context::Intern(ctx_, string), attr);
+    return def_setter<func, n>(ctx_->Intern(string), attr);
   }
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>

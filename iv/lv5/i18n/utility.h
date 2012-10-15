@@ -184,7 +184,7 @@ inline JSArray* SupportedLocales(Context* ctx,
   if (!options.IsUndefined()) {
     JSObject* opt = options.ToObject(ctx, IV_LV5_ERROR_WITH(e, NULL));
     const JSVal matcher =
-        opt->Get(ctx, context::Intern(ctx, "localeMatcher"),
+        opt->Get(ctx, ctx->Intern("localeMatcher"),
                  IV_LV5_ERROR_WITH(e, NULL));
     if (!matcher.IsUndefined()) {
       JSString* str = matcher.ToString(ctx, IV_LV5_ERROR_WITH(e, NULL));
@@ -256,7 +256,7 @@ inline core::i18n::LookupResult ResolveLocale(Context* ctx,
     JSObject* opt = options.ToObject(
         ctx, IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
     const JSVal matcher =
-        opt->Get(ctx, context::Intern(ctx, "localeMatcher"),
+        opt->Get(ctx, ctx->Intern("localeMatcher"),
                  IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
     if (!matcher.IsUndefined()) {
       JSString* str = matcher.ToString(
@@ -329,7 +329,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx, JSVal op,
   if (required == DATE_DATE || required == DATE_ANY) {
     for (DateProperties::const_iterator it = kDateProperties.begin(),
          last = kDateProperties.end(); it != last; ++it) {
-      const Symbol name = context::Intern(ctx, *it);
+      const Symbol name = ctx->Intern(*it);
       const JSVal res = options->Get(ctx, name, IV_LV5_ERROR_WITH(e, NULL));
       if (!res.IsUndefined()) {
         need_default = false;
@@ -340,7 +340,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx, JSVal op,
   if (required == DATE_TIME || required == DATE_ANY) {
     for (TimeProperties::const_iterator it = kTimeProperties.begin(),
          last = kTimeProperties.end(); it != last; ++it) {
-      const Symbol name = context::Intern(ctx, *it);
+      const Symbol name = ctx->Intern(*it);
       const JSVal res = options->Get(ctx, name, IV_LV5_ERROR_WITH(e, NULL));
       if (!res.IsUndefined()) {
         need_default = false;
@@ -353,7 +353,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx, JSVal op,
          it = kDatePropertiesOnlyNumeric.begin(),
          last = kDatePropertiesOnlyNumeric.end();
          it != last; ++it) {
-      const Symbol name = context::Intern(ctx, *it);
+      const Symbol name = ctx->Intern(*it);
       options->DefineOwnProperty(
           ctx,
           name,
@@ -367,7 +367,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx, JSVal op,
   if (need_default && (defaults == DATE_TIME || defaults == DATE_ALL)) {
     for (TimeProperties::const_iterator it = kTimeProperties.begin(),
          last = kTimeProperties.end(); it != last; ++it) {
-      const Symbol name = context::Intern(ctx, *it);
+      const Symbol name = ctx->Intern(*it);
       options->DefineOwnProperty(
           ctx,
           name,

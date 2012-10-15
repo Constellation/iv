@@ -22,13 +22,6 @@ namespace context {
 
 const ClassSlot& GetClassSlot(const Context* ctx, Class::JSClassType type);
 
-Symbol Intern(Context* ctx, const core::StringPiece& str);
-Symbol Intern(Context* ctx, const core::UStringPiece& str);
-Symbol Intern(Context* ctx, const JSString* str);
-Symbol Intern(Context* ctx, uint32_t index);
-Symbol Intern(Context* ctx, double number);
-Symbol Intern64(Context* ctx, uint64_t index);
-
 GlobalData* Global(Context* ctx);
 
 JSString* EmptyString(Context* ctx);

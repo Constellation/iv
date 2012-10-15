@@ -34,12 +34,6 @@ class JSObjectEnv;
 
 class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
  public:
-  friend Symbol context::Intern(Context* ctx, const core::StringPiece& str);
-  friend Symbol context::Intern(Context* ctx, const core::UStringPiece& str);
-  friend Symbol context::Intern(Context* ctx, uint32_t index);
-  friend Symbol context::Intern(Context* ctx, double number);
-  friend Symbol context::Intern64(Context* ctx, uint64_t index);
-
   friend void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg);
 
   Context(JSAPI fc, JSAPI ge);
@@ -69,7 +63,7 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
                       std::size_t n) {
     Error::Dummy e;
     JSFunction* const func = JSNativeFunction::New(this, f, n);
-    const Symbol name = context::Intern(this, func_name);
+    const Symbol name = Intern(func_name);
     global_env_->CreateMutableBinding(this, name, false, IV_LV5_ERROR_VOID(&e));
     global_env_->SetMutableBinding(this, name, func, false, &e);
   }
@@ -77,7 +71,7 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
   void DefineFunction(const core::StringPiece& func_name) {
     Error::Dummy e;
-    const Symbol name = context::Intern(this, func_name);
+    const Symbol name = Intern(func_name);
     JSFunction* const f = JSInlinedFunction<func, n>::New(this, name);
     global_env_->CreateMutableBinding(this, name, false, IV_LV5_ERROR_VOID(&e));
     global_env_->SetMutableBinding(this, name, f, false, &e);

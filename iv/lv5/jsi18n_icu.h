@@ -413,7 +413,7 @@ inline JSObject* BasicFormatMatch(Context* ctx,
     int32_t score = 0;
     for (DateTimeOptions::const_iterator it = kDateTimeOptions.begin(),
          last = kDateTimeOptions.end(); it != last; ++it) {
-      const Symbol name = context::Intern(ctx, it->key);
+      const Symbol name = ctx->Intern(it->key);
       const JSVal options_prop =
           options->Get(ctx, name, IV_LV5_ERROR_WITH(e, NULL));
       const PropertyDescriptor format_prop_desc =
@@ -514,7 +514,7 @@ inline JSVal JSCollator::Initialize(Context* ctx,
     vec->push_back(sort);
     vec->push_back(search);
     const JSVal u = opt.Get(ctx,
-                            context::Intern(ctx, "usage"),
+                            ctx->Intern("usage"),
                             detail_i18n::Options::STRING, vec,
                             sort, IV_LV5_ERROR(e));
     assert(u.IsString());
@@ -550,7 +550,7 @@ inline JSVal JSCollator::Initialize(Context* ctx,
         }
       }
       JSVal value = opt.Get(ctx,
-                            context::Intern(ctx, it->property),
+                            ctx->Intern(it->property),
                             it->type, vec,
                             JSUndefined, IV_LV5_ERROR(e));
       if (it->type == detail_i18n::Options::BOOLEAN) {
@@ -618,7 +618,7 @@ inline JSVal JSCollator::Initialize(Context* ctx,
     vec->push_back(o_case);
     vec->push_back(o_variant);
     JSVal s = opt.Get(ctx,
-                      context::Intern(ctx, "sensitivity"),
+                      ctx->Intern("sensitivity"),
                       detail_i18n::Options::STRING, vec,
                       JSUndefined, IV_LV5_ERROR(e));
     if (s.IsUndefined()) {
@@ -634,7 +634,7 @@ inline JSVal JSCollator::Initialize(Context* ctx,
 
   {
     const JSVal ip = opt.Get(ctx,
-                             context::Intern(ctx, "ignorePunctuation"),
+                             ctx->Intern("ignorePunctuation"),
                              detail_i18n::Options::BOOLEAN, NULL,
                              JSFalse, IV_LV5_ERROR(e));
     obj->SetField(JSCollator::IGNORE_PUNCTUATION, ip);
@@ -754,7 +754,7 @@ inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
   }
 
   JSVal tz =
-      options->Get(ctx, context::Intern(ctx, "timeZone"), IV_LV5_ERROR(e));
+      options->Get(ctx, ctx->Intern("timeZone"), IV_LV5_ERROR(e));
   if (!tz.IsUndefined()) {
     JSString* str = tz.ToString(ctx, IV_LV5_ERROR(e));
     std::vector<uint16_t> vec;
@@ -762,8 +762,7 @@ inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
          last = str->end(); it != last; ++it) {
       vec.push_back(core::i18n::ToLocaleIdentifierUpperCase(*it));
     }
-    if (vec.size() != 3 ||
-        vec[0] != 'U' || vec[1] != 'T' || vec[2] != 'C') {
+    if (vec.size() != 3 || vec[0] != 'U' || vec[1] != 'T' || vec[2] != 'C') {
       e->Report(Error::Range, "tz is not UTC");
       return JSEmpty;
     }
@@ -772,7 +771,7 @@ inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
 
   {
     const JSVal hour12 = opt.Get(ctx,
-                                 context::Intern(ctx, "hour12"),
+                                 ctx->Intern("hour12"),
                                  detail_i18n::Options::BOOLEAN, NULL,
                                  JSUndefined, IV_LV5_ERROR(e));
     obj->SetField(JSDateTimeFormat::HOUR12, hour12);
@@ -783,7 +782,7 @@ inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
          it = detail_i18n::kDateTimeOptions.begin(),
          last = detail_i18n::kDateTimeOptions.end();
          it != last; ++it) {
-      const Symbol prop = context::Intern(ctx, it->key);
+      const Symbol prop = ctx->Intern(it->key);
       JSVector* vec = JSVector::New(ctx);
       for (detail_i18n::DateTimeOption::Values::const_iterator
            dit = it->values.begin(),
@@ -808,7 +807,7 @@ inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
     vec->push_back(basic);
     vec->push_back(best_fit);
     const JSVal matcher = opt.Get(ctx,
-                                  context::Intern(ctx, "formatMatch"),
+                                  ctx->Intern("formatMatch"),
                                   detail_i18n::Options::STRING,
                                   vec,
                                   best_fit, IV_LV5_ERROR(e));
@@ -817,9 +816,7 @@ inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
 
   {
     const JSVal pattern =
-        options->Get(ctx,
-                     context::Intern(ctx, "pattern"),
-                     IV_LV5_ERROR(e));
+        options->Get(ctx, ctx->Intern("pattern"), IV_LV5_ERROR(e));
     obj->SetField(JSDateTimeFormat::PATTERN, pattern);
   }
 

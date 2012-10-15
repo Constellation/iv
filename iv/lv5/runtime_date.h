@@ -1408,9 +1408,8 @@ inline JSVal DateToJSON(const Arguments& args, Error* e) {
     }
   }
 
-  const JSVal toISO = obj->Get(
-      ctx,
-      context::Intern(ctx, "toISOString"), IV_LV5_ERROR(e));
+  const JSVal toISO =
+      obj->Get(ctx, ctx->Intern("toISOString"), IV_LV5_ERROR(e));
 
   if (!toISO.IsCallable()) {
     e->Report(Error::Type, "toISOString is not function");

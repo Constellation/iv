@@ -975,8 +975,7 @@ void Interpreter::Visit(const BinaryOperation* binary) {
         }
         const JSString* const name = lhs.ToString(ctx_, CHECK);
         const bool res =
-            rhs.object()->HasProperty(ctx_,
-                                      context::Intern(ctx_, name));
+            rhs.object()->HasProperty(ctx_, ctx_->Intern(name));
         if (res) {
           ctx_->Return(JSTrue);
         } else {
@@ -1357,10 +1356,7 @@ void Interpreter::Visit(const IndexAccess* prop) {
   base_value.CheckObjectCoercible(CHECK);
   const JSString* const name = name_value.ToString(ctx_, CHECK);
   ctx_->Return(
-      JSReference::New(ctx_,
-                       base_value,
-                       context::Intern(ctx_, name),
-                       ctx_->IsStrict()));
+      JSReference::New(ctx_, base_value, ctx_->Intern(name), ctx_->IsStrict()));
 }
 
 

@@ -24,7 +24,7 @@ class JSDateTimeFormatHolder : public JSObject {
     JSDateTimeFormatHolder* const format = new JSDateTimeFormatHolder(ctx);
     format->set_cls(JSObject::GetClass());
     format->set_prototype(
-        context::GetClassSlot(ctx, Class::Object).prototype);
+        ctx->global_data()->GetClassSlot(Class::Object).prototype);
     format->set_format(number_format);
     return format;
   }
@@ -186,7 +186,7 @@ inline JSObject* InitializeDateTimeFormat(Context* ctx,
          it = core::i18n::kDateTimeOptions.begin(),
          last = core::i18n::kDateTimeOptions.end();
          it != last; ++it, ++i) {
-      const Symbol prop = context::Intern(ctx, it->key);
+      const Symbol prop = ctx->Intern(it->key);
       JSString* str =
           options.GetString(
               ctx, prop,

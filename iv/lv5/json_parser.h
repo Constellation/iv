@@ -172,7 +172,7 @@ class JSONParser : private core::Noncopyable<> {
 
   Symbol ParseSymbol(const std::vector<uint16_t>& range) {
     const Symbol res =
-        context::Intern(ctx_, core::UStringPiece(range.data(), range.size()));
+        ctx_->Intern(core::UStringPiece(range.data(), range.size()));
     Next();
     return res;
   }

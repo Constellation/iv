@@ -10,7 +10,7 @@
 #include <iv/lv5/jsarray.h>
 #include <iv/lv5/jsvector.h>
 #include <iv/lv5/jsstring.h>
-#include <iv/lv5/context_utils.h>
+#include <iv/lv5/context.h>
 #include <iv/lv5/runtime_object.h>
 
 namespace iv {
@@ -410,11 +410,7 @@ inline JSVal ArrayPush(const Arguments& args, Error* e) {
           true, IV_LV5_ERROR(e));
     }
     for (; it != last; ++it, ++n) {
-      obj->Put(
-          ctx,
-          context::Intern64(ctx, n),
-          *it,
-          true, IV_LV5_ERROR(e));
+      obj->Put(ctx, ctx->Intern64(n), *it, true, IV_LV5_ERROR(e));
     }
   }
 
