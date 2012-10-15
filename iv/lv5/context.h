@@ -87,6 +87,13 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
     return throw_type_error_;
   }
 
+  Symbol Intern(const core::StringPiece& str);
+  Symbol Intern(const core::UStringPiece& str);
+  Symbol Intern(const JSString* str);
+  Symbol Intern(uint32_t index);
+  Symbol Intern(double number);
+  Symbol Intern64(uint64_t index);
+
   double Random() { return global_data_.Random(); }
 
   GlobalData* global_data() { return &global_data_; }

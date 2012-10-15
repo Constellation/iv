@@ -37,31 +37,27 @@ const ClassSlot& GetClassSlot(const Context* ctx, Class::JSClassType type) {
 }
 
 Symbol Intern(Context* ctx, const core::StringPiece& str) {
-  return ctx->global_data()->Intern(str);
+  return ctx->Intern(str);
 }
 
 Symbol Intern(Context* ctx, const core::UStringPiece& str) {
-  return ctx->global_data()->Intern(str);
+  return ctx->Intern(str);
 }
 
 Symbol Intern(Context* ctx, const JSString* str) {
-  if (str->Is8Bit()) {
-    return ctx->global_data()->Intern(*str->Get8Bit());
-  } else {
-    return ctx->global_data()->Intern(*str->Get16Bit());
-  }
+  return ctx->Intern(str);
 }
 
 Symbol Intern(Context* ctx, uint32_t index) {
-  return ctx->global_data()->InternUInt32(index);
+  return ctx->Intern(index);
 }
 
 Symbol Intern(Context* ctx, double number) {
-  return ctx->global_data()->InternDouble(number);
+  return ctx->Intern(number);
 }
 
 Symbol Intern64(Context* ctx, uint64_t number) {
-  return ctx->global_data()->Intern64(number);
+  return ctx->Intern64(number);
 }
 
 GlobalData* Global(Context* ctx) {
@@ -1487,6 +1483,34 @@ void Context::InitBinaryBlocks(const ClassSlot& func_cls,
         .def<&runtime::DataViewSetFloat32, 3>("setFloat32")
         .def<&runtime::DataViewSetFloat64, 3>("setFloat64");
   }
+}
+
+Symbol Context::Intern(const core::StringPiece& str) {
+  return global_data()->Intern(str);
+}
+
+Symbol Context::Intern(const core::UStringPiece& str) {
+  return global_data()->Intern(str);
+}
+
+Symbol Context::Intern(const JSString* str) {
+  if (str->Is8Bit()) {
+    return global_data()->Intern(*str->Get8Bit());
+  } else {
+    return global_data()->Intern(*str->Get16Bit());
+  }
+}
+
+Symbol Context::Intern(uint32_t index) {
+  return global_data()->InternUInt32(index);
+}
+
+Symbol Context::Intern(double number) {
+  return global_data()->InternDouble(number);
+}
+
+Symbol Context::Intern64(uint64_t index) {
+  return global_data()->Intern64(index);
 }
 
 } }  // namespace iv::lv5

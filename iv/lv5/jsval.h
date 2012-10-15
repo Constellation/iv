@@ -9,7 +9,6 @@
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/context.h>
-#include <iv/lv5/context_utils.h>
 #include <iv/lv5/jsenv.h>
 #include <iv/lv5/jsreference.h>
 #include <iv/lv5/jsbooleanobject.h>
@@ -630,11 +629,11 @@ inline JSString* JSLayout::TypeOf(Context* ctx) const {
 inline JSObject* JSLayout::GetPrimitiveProto(Context* ctx) const {
   assert(IsPrimitive());
   if (IsString()) {
-    return context::GetClassSlot(ctx, Class::String).prototype;
+    return ctx->global_data()->GetClassSlot(Class::String).prototype;
   } else if (IsNumber()) {
-    return context::GetClassSlot(ctx, Class::Number).prototype;
+    return ctx->global_data()->GetClassSlot(Class::Number).prototype;
   } else {  // IsBoolean()
-    return context::GetClassSlot(ctx, Class::Boolean).prototype;
+    return ctx->global_data()->GetClassSlot(Class::Boolean).prototype;
   }
 }
 
@@ -695,24 +694,23 @@ inline Symbol JSLayout::ToSymbol(Context* ctx, Error* e) const {
     return symbol::MakeSymbolFromIndex(index);
   } else {
     if (IsString()) {
-      return context::Intern(ctx, string());
+      return ctx->Intern(string());
     } else if (IsNumber()) {
       // int32 short cut
       if (IsInt32()) {
         std::array<char, 15> buffer;
         char* end = core::Int32ToString(int32(), buffer.data());
-        return context::Intern(
-            ctx,
+        return ctx->Intern(
             core::StringPiece(buffer.data(),
                               std::distance(buffer.data(), end)));
       } else {
         std::array<char, 80> buffer;
         const char* const str =
             core::DoubleToCString(number(), buffer.data(), buffer.size());
-        return context::Intern(ctx, str);
+        return ctx->Intern(str);
       }
     } else if (IsBoolean()) {
-      return context::Intern(ctx, (boolean() ? "true" : "false"));
+      return ctx->Intern((boolean() ? "true" : "false"));
     } else if (IsNull()) {
       return symbol::null();
     } else if (IsUndefined()) {
@@ -1009,12 +1007,8 @@ inline JSVal JSVal::GetSlot(Context* ctx,
           return slot->value();
         }
       }
-      proto = context::GetClassSlot(ctx, Class::String).prototype;
-    } else if (IsNumber()) {
-      proto = context::GetClassSlot(ctx, Class::Number).prototype;
-    } else {  // IsBoolean()
-      proto = context::GetClassSlot(ctx, Class::Boolean).prototype;
     }
+    proto = GetPrimitiveProto(ctx);
     if (proto->GetPropertySlot(ctx, name, slot)) {
       return slot->Get(ctx, *this, e);
     }
@@ -1051,12 +1045,8 @@ inline bool JSVal::GetPropertySlot(Context* ctx,
           return true;
         }
       }
-      obj = context::GetClassSlot(ctx, Class::String).prototype;
-    } else if (IsNumber()) {
-      obj = context::GetClassSlot(ctx, Class::Number).prototype;
-    } else {  // IsBoolean()
-      obj = context::GetClassSlot(ctx, Class::Boolean).prototype;
     }
+    obj = GetPrimitiveProto(ctx);
   } else {
     obj = object();
   }
