@@ -14,7 +14,7 @@
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsarray.h>
 #include <iv/lv5/error.h>
-#include <iv/lv5/context_utils.h>
+#include <iv/lv5/context.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/internal.h>
 
@@ -422,7 +422,6 @@ inline const std::unordered_set<core::UString>& detail::NativeBrandSet() {
 inline JSVal ObjectToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.toString", args, e);
   const JSVal this_binding = args.this_binding();
-  Context* const ctx = args.ctx();
   if (this_binding.IsUndefined()) {
     return JSString::NewAsciiString(args.ctx(), "[object Undefined]", e);
   }
@@ -433,36 +432,7 @@ inline JSVal ObjectToString(const Arguments& args, Error* e) {
   JSObject* const obj = this_binding.ToObject(args.ctx(), IV_LV5_ERROR(e));
   JSStringBuilder builder;
   builder.Append("[object ");
-
-  // This is ECMA262 6th
-  // TODO(Constellation) we should gradually change Class to NativeBrand
-  if (obj->IsClass<Class::Object>()) {
-    const Symbol name = context::Intern(ctx, "@@toStringTag");
-    if (obj->HasProperty(ctx, name)) {
-      const JSVal tagv = obj->Get(ctx, name, e);
-      core::UString tag;
-      if (*e) {
-        e->Clear();
-        tag = core::ToUString("???");
-      } else if (!tagv.IsString()) {
-        tag = core::ToUString("???");
-      } else {
-        tag = tagv.string()->GetUString();
-      }
-      if (detail::NativeBrandSet().find(tag) ==
-          detail::NativeBrandSet().end()) {
-        builder.Append(tag);
-      } else {
-        builder.Append('~');
-        builder.Append(tag);
-      }
-    } else {
-      builder.Append("Object");
-    }
-  } else {
-    // NativeBrand
-    builder.Append(obj->cls()->name);
-  }
+  builder.Append(obj->cls()->name);
   builder.Append("]");
   return builder.Build(args.ctx(), false, e);
 }
