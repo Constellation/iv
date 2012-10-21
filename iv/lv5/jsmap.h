@@ -97,8 +97,7 @@ class JSMap : public core::AllStatic {
     if (iterable) {
       // TODO(Constellation) iv / lv5 doesn't have iterator system
       PropertyNamesCollector collector;
-      iterable->GetOwnPropertyNames(ctx, &collector,
-                                    JSObject::EXCLUDE_NOT_ENUMERABLE);
+      iterable->GetOwnPropertyNames(ctx, &collector, EXCLUDE_NOT_ENUMERABLE);
       for (PropertyNamesCollector::Names::const_iterator
            it = collector.names().begin(),
            last = collector.names().end();

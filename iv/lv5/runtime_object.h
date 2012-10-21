@@ -106,8 +106,7 @@ inline JSVal ObjectGetOwnPropertyNames(const Arguments& args, Error* e) {
       JSObject* const obj = first.object();
       Context* const ctx = args.ctx();
       PropertyNamesCollector collector;
-      obj->GetOwnPropertyNames(ctx, &collector,
-                               JSObject::INCLUDE_NOT_ENUMERABLE);
+      obj->GetOwnPropertyNames(ctx, &collector, INCLUDE_NOT_ENUMERABLE);
       JSVector* const vec = JSVector::New(ctx, collector.names().size());
       JSVector::iterator res = vec->begin();
       for (PropertyNamesCollector::Names::const_iterator
@@ -128,7 +127,7 @@ inline void detail::DefinePropertiesHelper(Context* ctx,
                                            JSObject* props, Error* e) {
   typedef trace::Vector<PropertyDescriptor>::type Descriptors;
   PropertyNamesCollector collector;
-  props->GetOwnPropertyNames(ctx, &collector, JSObject::EXCLUDE_NOT_ENUMERABLE);
+  props->GetOwnPropertyNames(ctx, &collector, EXCLUDE_NOT_ENUMERABLE);
   Descriptors descriptors(collector.names().size());
   {
     Descriptors::iterator descs = descriptors.begin();
@@ -269,8 +268,7 @@ inline JSVal ObjectIsSealed(const Arguments& args, Error* e) {
     if (first.IsObject()) {
       JSObject* const obj = first.object();
       PropertyNamesCollector collector;
-      obj->GetOwnPropertyNames(ctx, &collector,
-                               JSObject::INCLUDE_NOT_ENUMERABLE);
+      obj->GetOwnPropertyNames(ctx, &collector, INCLUDE_NOT_ENUMERABLE);
       for (PropertyNamesCollector::Names::const_iterator
            it = collector.names().begin(),
            last = collector.names().end();
@@ -296,8 +294,7 @@ inline JSVal ObjectIsFrozen(const Arguments& args, Error* e) {
     if (first.IsObject()) {
       JSObject* const obj = first.object();
       PropertyNamesCollector collector;
-      obj->GetOwnPropertyNames(ctx, &collector,
-                               JSObject::INCLUDE_NOT_ENUMERABLE);
+      obj->GetOwnPropertyNames(ctx, &collector, INCLUDE_NOT_ENUMERABLE);
       for (PropertyNamesCollector::Names::const_iterator
            it = collector.names().begin(),
            last = collector.names().end();
@@ -340,8 +337,7 @@ inline JSVal ObjectKeys(const Arguments& args, Error* e) {
     if (first.IsObject()) {
       JSObject* const obj = first.object();
       PropertyNamesCollector collector;
-      obj->GetOwnPropertyNames(ctx, &collector,
-                               JSObject::EXCLUDE_NOT_ENUMERABLE);
+      obj->GetOwnPropertyNames(ctx, &collector, EXCLUDE_NOT_ENUMERABLE);
       JSVector* const vec = JSVector::New(ctx, collector.names().size());
       JSVector::iterator res = vec->begin();
       for (PropertyNamesCollector::Names::const_iterator

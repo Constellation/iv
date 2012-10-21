@@ -2,12 +2,16 @@
 #define IV_LV5_CLASS_H_
 #include <iv/none.h>
 #include <iv/lv5/symbol.h>
+#include <iv/lv5/enumeration_mode.h>
+#include <iv/lv5/property_fwd.h>
 namespace iv {
 namespace lv5 {
 
+class Error;
 class JSObject;
 class JSFunction;
 class JSString;
+class PropertyNamesCollector;
 
 #define IV_JS_CLASS_LIST(V)\
   V(Object, 0)\
@@ -52,6 +56,26 @@ class JSString;
   V(NOT_CACHED, 36)
 
 struct MethodTable {
+  typedef JSVal (*GetSlotType)(Context* ctx, JSObject* obj, Symbol name, Slot* slot, Error* e);  // NOLINT
+  typedef bool (*GetPropertySlotType)(Context* ctx, const JSObject* obj, Symbol name, Slot* slot);  // NOLINT
+  typedef bool (*GetOwnPropertySlotType)(Context* ctx, const JSObject* obj, Symbol name, Slot* slot);  // NOLINT
+  typedef void (*PutType)(Context* context, JSObject* obj, Symbol name, JSVal val, bool th, Error* e);  // NOLINT
+  typedef bool (*HasPropertyType)(Context* ctx, const JSObject* obj, Symbol name);  // NOLINT
+  typedef bool (*DeleteType)(Context* ctx, const JSObject* obj, Symbol name, bool th, Error* e);  // NOLINT
+  typedef bool (*DefineOwnPropertyType)(Context* ctx, JSObject* obj, Symbol name, const PropertyDescriptor& desc, bool th, Error* e);  // NOLINT
+  typedef void (*GetPropertyNamesType)(Context* ctx, const JSObject* obj, PropertyNamesCollector* collector, EnumerationMode mode);  // NOLINT
+  typedef void (*GetOwnPropertyNamesType)(Context* ctx, const JSObject* obj, PropertyNamesCollector* collector, EnumerationMode mode);  // NOLINT
+
+  // actual members
+  GetSlotType GetSlot;
+  GetPropertySlotType GetPropertySlot;
+  GetOwnPropertySlotType GetOwnPropertySlot;
+  PutType Put;
+  HasPropertyType HasProperty;
+  DeleteType Delete;
+  DefineOwnPropertyType DefineOwnProperty;
+  GetPropertyNamesType GetPropertyNames;
+  GetOwnPropertyNamesType GetOwnPropertyNames;
 };
 
 struct Class {

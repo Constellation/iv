@@ -10,6 +10,7 @@
 #include <vector>
 #include <iv/lv5/symbol.h>
 #include <iv/sorted_vector.h>
+#include <iv/lv5/enumeration_mode.h>
 namespace iv {
 namespace lv5 {
 

@@ -33,7 +33,7 @@ class NativeIterator
 
   void Fill(Context* ctx, JSObject* obj) {
     Clear();
-    obj->GetPropertyNames(ctx, this, JSObject::EXCLUDE_NOT_ENUMERABLE);
+    obj->GetPropertyNames(ctx, this, EXCLUDE_NOT_ENUMERABLE);
     iter_ = names().begin();
   }
 
@@ -44,8 +44,7 @@ class NativeIterator
       Add(i);
     }
     JSObject* proto = context::GetClassSlot(ctx, Class::String).prototype;
-    proto->GetPropertyNames(ctx, LevelUp(),
-                            JSObject::EXCLUDE_NOT_ENUMERABLE);
+    proto->GetPropertyNames(ctx, LevelUp(), EXCLUDE_NOT_ENUMERABLE);
     iter_ = names().begin();
   }
  private:

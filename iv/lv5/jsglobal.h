@@ -99,7 +99,7 @@ class JSGlobal : public JSObject {
                                    EnumerationMode mode) const {
     for (SymbolMap::const_iterator it = symbol_map_.begin(),
          last = symbol_map_.end(); it != last; ++it) {
-      if (mode == JSObject::INCLUDE_NOT_ENUMERABLE ||
+      if (mode == INCLUDE_NOT_ENUMERABLE ||
           variables_[it->second].attributes().IsEnumerable()) {
         collector->Add(it->first, it->second);
       }

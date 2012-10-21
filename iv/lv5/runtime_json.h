@@ -44,8 +44,7 @@ inline JSVal JSONWalk(Context* ctx, JSObject* holder,
       }
     } else {
       PropertyNamesCollector collector;
-      obj->GetOwnPropertyNames(ctx, &collector,
-                               JSObject::EXCLUDE_NOT_ENUMERABLE);
+      obj->GetOwnPropertyNames(ctx, &collector, EXCLUDE_NOT_ENUMERABLE);
       for (PropertyNamesCollector::Names::const_iterator
            it = collector.names().begin(),
            last = collector.names().end();

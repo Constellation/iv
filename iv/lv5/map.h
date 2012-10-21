@@ -304,16 +304,14 @@ class Map : public radio::HeapObject<radio::POINTER> {
     return (table_) ? table_->size() + deleted_.size() : calculated_size_;
   }
 
-  void GetOwnPropertyNames(PropertyNamesCollector* collector,
-                           JSObject::EnumerationMode mode) {
+  void GetOwnPropertyNames(PropertyNamesCollector* collector, bool include) {
     if (AllocateTableIfNeeded()) {
       for (TargetTable::const_iterator it = table_->begin(),
            last = table_->end(); it != last; ++it) {
         if (symbol::IsPrivateSymbol(it->first)) {
           continue;
         }
-        if (mode == JSObject::INCLUDE_NOT_ENUMERABLE ||
-            it->second.attributes.IsEnumerable()) {
+        if (include || it->second.attributes.IsEnumerable()) {
           collector->Add(it->first, it->second.offset);
         }
       }

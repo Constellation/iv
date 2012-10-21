@@ -205,8 +205,7 @@ inline JSArray* SupportedLocales(Context* ctx,
 
   JSArray* result = subset->ToJSArray();
   PropertyNamesCollector collector;
-  result->GetOwnPropertyNames(ctx, &collector,
-                              JSObject::INCLUDE_NOT_ENUMERABLE);
+  result->GetOwnPropertyNames(ctx, &collector, INCLUDE_NOT_ENUMERABLE);
   for (PropertyNamesCollector::Names::const_iterator
        it = collector.names().begin(),
        last = collector.names().end();

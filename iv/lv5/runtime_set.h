@@ -29,8 +29,7 @@ inline JSVal SetConstructor(const Arguments& args, Error* e) {
 
   JSObject* const obj = first.object();
   PropertyNamesCollector collector;
-  obj->GetOwnPropertyNames(ctx, &collector,
-                           JSObject::EXCLUDE_NOT_ENUMERABLE);
+  obj->GetOwnPropertyNames(ctx, &collector, EXCLUDE_NOT_ENUMERABLE);
   for (PropertyNamesCollector::Names::const_iterator
        it = collector.names().begin(),
        last = collector.names().end();

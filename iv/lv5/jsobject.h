@@ -32,11 +32,6 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
 
   typedef Storage<JSVal> Slots;
 
-  enum EnumerationMode {
-    EXCLUDE_NOT_ENUMERABLE,
-    INCLUDE_NOT_ENUMERABLE
-  };
-
   static const uint32_t kFlagExtensible = 0x1;
   static const uint32_t kFlagCallable = 0x2;
 
@@ -63,8 +58,7 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
 
   bool CanPut(Context* ctx, Symbol name) const;
 
-  virtual void Put(Context* context, Symbol name,
-                   JSVal val, bool th, Error* e);
+  virtual void Put(Context* context, Symbol name, JSVal val, bool th, Error* e);
 
   virtual bool HasProperty(Context* ctx, Symbol name) const;
 
