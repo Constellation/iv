@@ -3,11 +3,13 @@
 #include <vector>
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/jsval_fwd.h>
+#include <iv/lv5/error_check.h>
 #include <iv/lv5/property_fwd.h>
 #include <iv/lv5/property_names_collector.h>
 #include <iv/lv5/hint.h>
 #include <iv/lv5/symbol.h>
 #include <iv/lv5/class.h>
+#include <iv/lv5/error.h>
 #include <iv/lv5/storage.h>
 #include <iv/lv5/radio/cell.h>
 #include <iv/lv5/radio/core_fwd.h>
@@ -84,6 +86,45 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
                                    EnumerationMode mode) const;
 
   virtual bool IsNativeObject() const {
+    return true;
+  }
+
+  virtual bool Freeze(Context* ctx, Error* e) {
+    PropertyNamesCollector collector;
+    GetOwnPropertyNames(ctx, &collector, INCLUDE_NOT_ENUMERABLE);
+    for (PropertyNamesCollector::Names::const_iterator
+         it = collector.names().begin(),
+         last = collector.names().end();
+         it != last; ++it) {
+      const Symbol sym = *it;
+      PropertyDescriptor desc = GetOwnProperty(ctx, sym);
+      if (desc.IsData()) {
+        desc.AsDataDescriptor()->set_writable(false);
+      }
+      if (desc.IsConfigurable()) {
+        desc.set_configurable(false);
+      }
+      DefineOwnProperty(ctx, sym, desc, true, IV_LV5_ERROR_WITH(e, false));
+    }
+    set_extensible(false);
+    return true;
+  }
+
+  virtual bool Seal(Context* ctx, Error* e) {
+    PropertyNamesCollector collector;
+    GetOwnPropertyNames(ctx, &collector, INCLUDE_NOT_ENUMERABLE);
+    for (PropertyNamesCollector::Names::const_iterator
+         it = collector.names().begin(),
+         last = collector.names().end();
+         it != last; ++it) {
+      const Symbol sym = *it;
+      PropertyDescriptor desc = GetOwnProperty(ctx, sym);
+      if (desc.IsConfigurable()) {
+        desc.set_configurable(false);
+      }
+      DefineOwnProperty(ctx, sym, desc, true, IV_LV5_ERROR_WITH(e, false));
+    }
+    set_extensible(false);
     return true;
   }
 

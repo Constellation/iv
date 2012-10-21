@@ -51,6 +51,9 @@ class JSString;
   V(Uint8ClampedArray, 35)\
   V(NOT_CACHED, 36)
 
+struct MethodTable {
+};
+
 struct Class {
   enum JSClassType {
 #define V(name, num) name = num,

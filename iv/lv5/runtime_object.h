@@ -221,21 +221,7 @@ inline JSVal ObjectSeal(const Arguments& args, Error* e) {
     const JSVal first = args.front();
     if (first.IsObject()) {
       JSObject* const obj = first.object();
-      PropertyNamesCollector collector;
-      obj->GetOwnPropertyNames(ctx, &collector,
-                               JSObject::INCLUDE_NOT_ENUMERABLE);
-      for (PropertyNamesCollector::Names::const_iterator
-           it = collector.names().begin(),
-           last = collector.names().end();
-           it != last; ++it) {
-        const Symbol sym = *it;
-        PropertyDescriptor desc = obj->GetOwnProperty(ctx, sym);
-        if (desc.IsConfigurable()) {
-          desc.set_configurable(false);
-        }
-        obj->DefineOwnProperty(ctx, sym, desc, true, IV_LV5_ERROR(e));
-      }
-      obj->set_extensible(false);
+      obj->Seal(ctx, IV_LV5_ERROR(e));
       return obj;
     }
   }
@@ -251,24 +237,7 @@ inline JSVal ObjectFreeze(const Arguments& args, Error* e) {
     const JSVal first = args.front();
     if (first.IsObject()) {
       JSObject* const obj = first.object();
-      PropertyNamesCollector collector;
-      obj->GetOwnPropertyNames(ctx, &collector,
-                               JSObject::INCLUDE_NOT_ENUMERABLE);
-      for (PropertyNamesCollector::Names::const_iterator
-           it = collector.names().begin(),
-           last = collector.names().end();
-           it != last; ++it) {
-        const Symbol sym = *it;
-        PropertyDescriptor desc = obj->GetOwnProperty(ctx, sym);
-        if (desc.IsData()) {
-          desc.AsDataDescriptor()->set_writable(false);
-        }
-        if (desc.IsConfigurable()) {
-          desc.set_configurable(false);
-        }
-        obj->DefineOwnProperty(ctx, sym, desc, true, IV_LV5_ERROR(e));
-      }
-      obj->set_extensible(false);
+      obj->Freeze(ctx, IV_LV5_ERROR(e));
       return obj;
     }
   }
