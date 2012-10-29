@@ -51,6 +51,10 @@ class JSMap : public core::AllStatic {
       data_[key] = val;
     }
 
+    void Clear() {
+      data_.clear();
+    }
+
     const Mapping& mapping() const { return data_; }
 
    private:

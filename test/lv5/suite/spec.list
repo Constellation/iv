@@ -41,6 +41,7 @@ spec/map/map-has.js
 spec/map/map-get.js
 spec/map/map-set.js
 spec/map/map-delete.js
+spec/map/map-clear.js
 spec/set/set-constructor.js
 spec/set/set-has.js
 spec/set/set-add.js

@@ -32,7 +32,22 @@ inline JSVal MapConstructor(const Arguments& args, Error* e) {
   return JSMap::Initialize(ctx, map, first, IV_LV5_ERROR(e));
 }
 
-// section 15.14.5.2 Map.prototype.delete(key)
+// section 15.14.5.2 Map.prototype.clear()
+inline JSVal MapClear(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.clear", args, e);
+  Context* ctx = args.ctx();
+  JSObject* map = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
+  Slot slot;
+  if (!map->GetOwnPropertySlot(ctx, JSMap::symbol(), &slot)) {
+    e->Report(Error::Type, "Map.prototype.clear is not generic function");
+    return JSEmpty;
+  }
+  JSMap::Data* entries = static_cast<JSMap::Data*>(slot.value().cell());
+  entries->Clear();
+  return JSUndefined;
+}
+
+// section 15.14.5.3 Map.prototype.delete(key)
 inline JSVal MapDelete(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.delete", args, e);
   Context* ctx = args.ctx();
@@ -46,7 +61,7 @@ inline JSVal MapDelete(const Arguments& args, Error* e) {
   return JSVal::Bool(entries->Delete(args.At(0)));
 }
 
-// 15.14.5.3 Map.prototype.forEach(callbackfn, thisArg = undefined)
+// 15.14.5.4 Map.prototype.forEach(callbackfn, thisArg = undefined)
 inline JSVal MapForEach(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.forEach", args, e);
   Context* ctx = args.ctx();

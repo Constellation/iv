@@ -1186,6 +1186,7 @@ void Context::InitMap(const ClassSlot& func_cls,
       .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
       .def(Intern("@@toStringTag"),
            JSString::NewAsciiString(this, "Map", &dummy), ATTR::W | ATTR::C)
+      .def<&runtime::MapClear, 0>("clear")
       .def<&runtime::MapDelete, 1>("delete")
       .def<&runtime::MapForEach, 1>("forEach")
       .def<&runtime::MapGet, 1>("get")
