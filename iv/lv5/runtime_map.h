@@ -90,7 +90,7 @@ inline JSVal MapForEach(const Arguments& args, Error* e) {
   return JSUndefined;
 }
 
-// section 15.14.5.4 Map.prototype.get(key)
+// section 15.14.5.5 Map.prototype.get(key)
 inline JSVal MapGet(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.get", args, e);
   Context* ctx = args.ctx();
@@ -104,7 +104,7 @@ inline JSVal MapGet(const Arguments& args, Error* e) {
   return entries->Get(args.At(0));
 }
 
-// section 15.14.5.5 Map.prototype.get(key)
+// section 15.14.5.6 Map.prototype.has(key)
 inline JSVal MapHas(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.has", args, e);
   Context* ctx = args.ctx();
@@ -119,10 +119,10 @@ inline JSVal MapHas(const Arguments& args, Error* e) {
 }
 
 // TODO(Constellation) iv / lv5 doesn't have iterator system
-// 15.14.5.6 Map.prototype.items()
-// 15.14.5.7 Map.prototype.keys()
+// 15.14.5.7 Map.prototype.items()
+// 15.14.5.8 Map.prototype.keys()
 
-// 15.14.5.8 Map.prototype.set(key, value)
+// 15.14.5.9 Map.prototype.set(key, value)
 inline JSVal MapSet(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.set", args, e);
   Context* ctx = args.ctx();
@@ -137,7 +137,7 @@ inline JSVal MapSet(const Arguments& args, Error* e) {
   return JSUndefined;
 }
 
-// 15.14.5.9 Map.prototype.size()
+// 15.14.5.9 get Map.prototype.size
 inline JSVal MapSize(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.size", args, e);
   Context* ctx = args.ctx();
@@ -150,7 +150,6 @@ inline JSVal MapSize(const Arguments& args, Error* e) {
   JSMap::Data* entries = static_cast<JSMap::Data*>(slot.value().cell());
   return JSVal::UInt32(static_cast<uint32_t>(entries->mapping().size()));
 }
-
 
 // TODO(Constellation) iv / lv5 doesn't have iterator system
 // 15.14.5.10 Map.prototype.values()

@@ -1192,7 +1192,7 @@ void Context::InitMap(const ClassSlot& func_cls,
       .def<&runtime::MapGet, 1>("get")
       .def<&runtime::MapHas, 1>("has")
       .def<&runtime::MapSet, 2>("set")
-      .def<&runtime::MapSize, 0>("size");
+      .def_getter<&runtime::MapSize, 0>("size");
 
   global_data()->set_map_prototype(proto);
 }
