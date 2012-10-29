@@ -1202,21 +1202,13 @@ void Context::InitSet(const ClassSlot& func_cls,
   // ES.next Set
   // http://wiki.ecmascript.org/doku.php?id=harmony:simple_maps_and_sets
   Error::Dummy dummy;
-  JSObject* const proto = JSSet::NewPlain(this, Map::NewUniqueMap(this));
+  JSObject* const proto = JSObject::NewPlain(this, Map::NewUniqueMap(this));
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::SetConstructor, 0>::NewPlain(
           this,
           Intern("Set"));
 
-  struct ClassSlot cls = {
-    JSSet::GetClass(),
-    Intern("Set"),
-    JSString::NewAsciiString(this, "Set", &dummy),
-    constructor,
-    proto
-  };
-  global_data_.RegisterClass<Class::Set>(cls);
-  global_binder->def(cls.name, constructor, ATTR::W | ATTR::C);
+  global_binder->def("Set", constructor, ATTR::W | ATTR::C);
 
   bind::Object(this, constructor)
       .cls(func_cls.cls)
@@ -1224,12 +1216,19 @@ void Context::InitSet(const ClassSlot& func_cls,
       .def(symbol::prototype(), proto, ATTR::NONE);
 
   bind::Object(this, proto)
-      .cls(cls.cls)
       .prototype(obj_proto)
+      .cls(JSObject::GetClass())
       .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
-      .def<&runtime::SetHas, 1>("has")
+      .def(Intern("@@toStringTag"),
+           JSString::NewAsciiString(this, "Set", &dummy), ATTR::W | ATTR::C)
       .def<&runtime::SetAdd, 1>("add")
-      .def<&runtime::SetDelete, 1>("delete");
+      .def<&runtime::SetClear, 0>("clear")
+      .def<&runtime::SetDelete, 1>("delete")
+      .def<&runtime::SetForEach, 1>("forEach")
+      .def<&runtime::SetHas, 1>("has")
+      .def_getter<&runtime::SetSize, 0>("size");
+
+  global_data()->set_set_prototype(proto);
 }
 
 void Context::InitIntl(const ClassSlot& func_cls,

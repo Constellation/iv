@@ -18,36 +18,6 @@ describe("Set", function() {
       }).toThrow();
     });
 
-    it("with number", function() {
-      expect(function() {
-        var set = new Set(0);
-      }).toThrow();
-      expect(function() {
-        var set = new Set(-0);
-      }).toThrow();
-      expect(function() {
-        var set = new Set(NaN);
-      }).toThrow();
-    });
-
-    it("with string", function() {
-      expect(function() {
-        var set = new Set('a');
-      }).toThrow();
-      expect(function() {
-        var set = new Set('abc');
-      }).toThrow();
-    });
-
-    it("with boolean", function() {
-      expect(function() {
-        var set = new Set(true);
-      }).toThrow();
-      expect(function() {
-        var set = new Set(false);
-      }).toThrow();
-    });
-
     it("with initializer", function() {
       var set = new Set([0, -0, '0']);
       expect(set.has(0)).toBe(true);

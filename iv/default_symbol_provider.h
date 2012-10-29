@@ -64,7 +64,8 @@ namespace symbol {
     V(raw)\
     V(byteLength)\
     V(buffer)\
-    V(byteOffset)
+    V(byteOffset)\
+    V(add)
 
 class DefaultSymbolProvider : public core::Singleton<DefaultSymbolProvider> {
  public:
