@@ -112,5 +112,9 @@ Rep LOAD_PROP_GENERIC(Frame* stack,
                       JSVal base, Symbol name,
                       railgun::Instruction* instr);
 
+Rep LOAD_PROP(Frame* stack,
+              JSVal base, Symbol name,
+              railgun::Instruction* instr);
+
 } } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_FWD_H_

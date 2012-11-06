@@ -8,6 +8,7 @@
 #include <iv/lv5/breaker/jsfunction.h>
 #include <iv/lv5/breaker/context_fwd.h>
 #include <iv/lv5/breaker/mono_ic.h>
+#include <iv/lv5/breaker/poly_ic.h>
 #include <iv/lv5/accessor.h>
 namespace iv {
 namespace lv5 {
@@ -968,10 +969,6 @@ inline Rep STORE_PROP_GENERIC(Frame* stack,
   return 0;
 }
 
-Rep LOAD_PROP(Frame* stack,
-              JSVal base, Symbol name,
-              railgun::Instruction* instr);
-
 inline Rep LOAD_PROP_GENERIC(Frame* stack,
                              JSVal base, Symbol name,
                              railgun::Instruction* instr) {
@@ -1066,10 +1063,6 @@ inline Rep LOAD_PROP_CHAIN(Frame* stack,
     const JSVal res = LoadPropImpl(ctx, base, name, ERR);
     return Extract(res);
   }
-}
-
-inline Rep LOAD_PROP_CHAINING(Frame* stack, JSVal base, Symbol name) {
-  return 0;
 }
 
 inline Rep LOAD_PROP(Frame* stack,

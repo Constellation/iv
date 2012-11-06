@@ -3,6 +3,7 @@
 #define IV_BREAKER_POLY_IC_H_
 #include <iv/lv5/breaker/assembler.h>
 #include <iv/lv5/breaker/ic.h>
+#include <iv/lv5/breaker/fwd.h>
 #include <iv/intrusive_list.h>
 namespace iv {
 namespace lv5 {
@@ -14,9 +15,7 @@ class PolyICUnit: public core::IntrusiveListBase {
     LOAD_OWN_PROPERTY,
     LOAD_PROTOTYPE_PROPERTY,
     LOAD_CHAIN_PROPERTY,
-    LOAD_STRING_OWN_PROPERTY,
-    LOAD_STRING_PROTO_PROPERTY,
-    LOAD_STRING_CHAIN_PROPERTY
+    LOAD_STRING_LENGTH
   };
 
   explicit PolyICUnit(Type type)
@@ -27,8 +26,11 @@ class PolyICUnit: public core::IntrusiveListBase {
   }
 
   Map* own() const { return own_; }
+  void set_own(Map* map) { own_ = map; }
   Map* proto() const { return proto_; }
+  void set_proto(Map* map) { proto_ = map; }
   Chain* chain() const { return chain_; }
+  void set_chain(Chain* chain) { chain_ = chain; }
 
   void Redirect(uintptr_t ptr) {
 		for (std::size_t i = 0; i < sizeof(uintptr_t); ++i) {
@@ -94,8 +96,12 @@ class LoadPropertyIC : public PolyIC {
   static const std::size_t kCallOffset = 5;
   static const std::size_t k64MovImmOffset = 2;
 
-  explicit LoadPropertyIC(uintptr_t* direct_call)
-    : direct_call_(direct_call) {
+  explicit LoadPropertyIC(uint8_t* direct_call, bool length)
+    : direct_call_(direct_call),
+      length_call_(length ? direct_call_ : NULL),
+      main_path_(NULL),
+      object_chain_(NULL),
+      length_property_(length) {
   }
 
   static bool CanEmitDirectCall(Xbyak::CodeGenerator* as, const void* addr) {
@@ -111,26 +117,52 @@ class LoadPropertyIC : public PolyIC {
     return result;
   }
 
+  template<bool TRAILING_STRING>
   void GenerateGuardPrologue(Xbyak::CodeGenerator* as) {
     // check target is Cell
     as->mov(as->r10, detail::jsval64::kValueMask);
-    as->test(as->rdi, as->r10);
+    as->test(as->rsi, as->r10);
     as->jnz("POLY_IC_GUARD_GENERIC");
 
     // target is guaranteed as cell
-    as->mov(as->word[as->rdi + radio::Cell::TagOffset()], radio::OBJECT);
-    as->jne("POLY_IC_GUARD_STRING");  // we should purge this to string check path
+    as->cmp(as->word[as->rsi + radio::Cell::TagOffset()], radio::OBJECT);
+    if (TRAILING_STRING) {
+      assert(length_property());
+      as->je("POLY_IC_GUARD_OTHER");
+    } else {
+      as->jne("POLY_IC_GUARD_OTHER");  // we should purge this to string check path
+    }
+    as->mov(as->r8, as->rdi);
+    as->L("POLY_IC_START_MAIN");
+    main_path_ = const_cast<uint8_t*>(as->getCurr());
   }
 
-  void GenerateGuardEpilogue(Xbyak::CodeGenerator* as) {
+  template<bool LEADING_STRING>
+  void GenerateGuardEpilogue(Context* ctx, Xbyak::CodeGenerator* as) {
+    as->L("POLY_IC_GUARD_OTHER");
+    if (LEADING_STRING) {
+      // object path
+      const std::size_t pos = GenerateTail(as);
+      direct_call_ = const_cast<uint8_t*>(as->getCode()) + pos;
+      Rewrite(direct_call(), core::BitCast<uintptr_t>(&stub::LOAD_PROP), k64Size);
+    } else {
+      // string path
+      if (length_property()) {
+        const std::size_t pos = GenerateTail(as);
+        length_call_ = const_cast<uint8_t*>(as->getCode()) + pos;
+        Rewrite(length_call(), core::BitCast<uintptr_t>(main_path()), k64Size);
+      } else {
+        // use String.prototype object
+        JSObject* prototype = ctx->global_data()->GetClassSlot(Class::String).prototype;
+        as->mov(as->r8, core::BitCast<uintptr_t>(prototype));
+        as->jmp("POLY_IC_START_MAIN");
+      }
+    }
+
     // They are used as last entry
     as->L("POLY_IC_GUARD_GENERIC");
     as->mov(as->rax, core::BitCast<uint64_t>(&stub::LOAD_PROP_GENERIC));
     as->jmp(as->rax);
-
-    as->L("POLY_IC_GUARD_STRING");
-    set_string_rewrite_position(GenerateTail(as));
-    as->rewrite(string_rewrite_position(), core::BitCast<uint64_t>(&stub::LOAD_PROP), k64Size);
   }
 
   // load to rax
@@ -157,10 +189,10 @@ class LoadPropertyIC : public PolyIC {
     void operator()(LoadPropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
       // own map guard
       as->mov(as->r10, core::BitCast<uintptr_t>(map_));
-      as->cmp(as->r10, as->qword[as->rdi + JSObject::MapOffset()]);
+      as->cmp(as->r10, as->qword[as->r8 + JSObject::MapOffset()]);
       as->jne(fail);
       // load
-      site->GenerateFastLoad(as, as->rdi, offset_);
+      site->GenerateFastLoad(as, as->r8, offset_);
     }
 
    private:
@@ -182,10 +214,10 @@ class LoadPropertyIC : public PolyIC {
     void operator()(LoadPropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
       // own map guard
       as->mov(as->r10, core::BitCast<uintptr_t>(map_));
-      as->cmp(as->r10, as->qword[as->rdi + JSObject::MapOffset()]);
+      as->cmp(as->r10, as->qword[as->r8 + JSObject::MapOffset()]);
       as->jne(fail);
       // prototype map guard
-      as->mov(as->r11, as->qword[as->rdi + JSObject::PrototypeOffset()]);
+      as->mov(as->r11, as->qword[as->r8 + JSObject::PrototypeOffset()]);
       as->mov(as->r10, core::BitCast<uintptr_t>(prototype_));
       as->or(as->r11, as->r11);
       as->jz(fail);
@@ -220,9 +252,9 @@ class LoadPropertyIC : public PolyIC {
         assert(it != last);
         {
           as->mov(as->r10, core::BitCast<uintptr_t>(*it));
-          as->cmp(as->r10, as->qword[as->rdi + JSObject::MapOffset()]);
+          as->cmp(as->r10, as->qword[as->r8 + JSObject::MapOffset()]);
           as->jne(fail);
-          as->mov(as->r11, as->qword[as->rdi + JSObject::PrototypeOffset()]);
+          as->mov(as->r11, as->qword[as->r8 + JSObject::PrototypeOffset()]);
           ++it;
         }
         for (; it != last; ++it) {
@@ -234,12 +266,12 @@ class LoadPropertyIC : public PolyIC {
           as->mov(as->r11, as->qword[as->r11 + JSObject::PrototypeOffset()]);
         }
       } else {
-        as->mov(as->r11, as->rdi);
-        as->mov(as->r8, core::BitCast<uintptr_t>(chain_->data()));
+        as->mov(as->r11, as->r8);
+        as->mov(as->r10, core::BitCast<uintptr_t>(chain_->data()));
         as->xor(as->r9, as->r9);
         as->L(".LOOP_HEAD");
         {
-          as->mov(as->r10, as->qword[as->r8 + as->r9 * k64Size]);
+          as->mov(as->r10, as->qword[as->r10 + as->r9 * k64Size]);
           as->or(as->r11, as->r11);
           as->jz(fail);
           as->cmp(as->r10, as->qword[as->r11 + JSObject::MapOffset()]);
@@ -267,34 +299,57 @@ class LoadPropertyIC : public PolyIC {
     uint32_t offset_;
   };
 
-  void LoadOwnProperty(NativeCode* code, Map* map, uint32_t offset) {
-    Generate(code, LoadOwnPropertyCompiler(map, offset));
+  void LoadOwnProperty(Context* ctx, NativeCode* code, Map* map, uint32_t offset) {
+    if (Unit* ic = Generate(ctx, code, LoadOwnPropertyCompiler(map, offset))) {
+      ic->set_own(map);
+    }
   }
 
-  void LoadPrototypeProperty(NativeCode* code,
+  void LoadPrototypeProperty(Context* ctx,
+                             NativeCode* code,
                              Map* map, Map* proto, uint32_t offset) {
-    Generate(code, LoadPrototypePropertyCompiler(map, proto, offset));
+    if (Unit* ic = Generate(ctx, code, LoadPrototypePropertyCompiler(map, proto, offset))) {
+      ic->set_own(map);
+      ic->set_proto(proto);
+    }
   }
 
-  void LoadChainProperty(NativeCode* code,
+  void LoadChainProperty(Context* ctx,
+                         NativeCode* code,
                          Map* map, Chain* chain, uint32_t offset) {
-    Generate(code, LoadChainPropertyCompiler(map, chain, offset));
+    if (Unit* ic = Generate(ctx, code, LoadChainPropertyCompiler(map, chain, offset))) {
+      ic->set_chain(chain);
+      ic->set_own(map);
+    }
   }
 
-  void set_string_rewrite_position(std::size_t position) {
-    string_rewrite_position_ = position;
-  }
+  void LoadStringLength(Context* ctx, NativeCode* code) {
+    // inject string length check
+    Unit* ic = new Unit(Unit::LOAD_STRING_LENGTH);
+    NativeCode::Pages::Buffer buffer = code->pages()->Gain(256);
+    Xbyak::CodeGenerator as(buffer.size, buffer.ptr);
+    const bool generate_guard = empty();
 
-  std::size_t string_rewrite_position() const {
-    return string_rewrite_position_;
+    if (generate_guard) {
+      GenerateGuardPrologue<true>(&as);
+    }
+
+    as.mov(as.rax, core::BitCast<uint64_t>(Templates<>::string_length()));
+    as.jmp(as.rax);
+
+    if (generate_guard) {
+      GenerateGuardEpilogue<true>(ctx, &as);
+    }
+    Rewrite(length_call(), core::BitCast<uintptr_t>(as.getCode()), k64Size);
+    push_back(*ic);
   }
 
  private:
   // main generation path
   template<typename Generator>
-  void Generate(NativeCode* code, const Generator& gen) {
+  Unit* Generate(Context* ctx, NativeCode* code, const Generator& gen) {
     if (size() >= kMaxPolyICSize) {
-      return;
+      return NULL;
     }
 
     Unit* ic = new Unit(Generator::kType);
@@ -304,7 +359,7 @@ class LoadPropertyIC : public PolyIC {
     const bool generate_guard = empty();
 
     if (generate_guard) {
-      GenerateGuardPrologue(&as);
+      GenerateGuardPrologue<false>(&as);
     }
 
     as.inLocalLabel();
@@ -315,30 +370,47 @@ class LoadPropertyIC : public PolyIC {
     as.outLocalLabel();
 
     if (generate_guard) {
-      GenerateGuardEpilogue(&as);
+      GenerateGuardEpilogue<false>(ctx, &as);
     }
 
-    Chaining(ic, core::BitCast<uintptr_t>(as.getCode()));
+    ChainingObjectLoad(ic, core::BitCast<uintptr_t>(as.getCode()));
+    return ic;
   }
 
-  void Chaining(Unit* ic, uintptr_t code) {
-    if (empty()) {
-      *direct_call_ = code;
+  void ChainingObjectLoad(Unit* ic, uintptr_t code) {
+    if (!object_chain()) {
+      Rewrite(direct_call(), code, k64Size);
     } else {
-      back().Redirect(code);
+      object_chain()->Redirect(code);
     }
 
     if ((size() + 1) == kMaxPolyICSize) {
       // last one
       ic->Redirect(core::BitCast<uintptr_t>(&stub::LOAD_PROP_GENERIC));
     } else {
-      ic->Redirect(core::BitCast<uintptr_t>(&stub::LOAD_PROP_CHAINING));
+      ic->Redirect(core::BitCast<uintptr_t>(&stub::LOAD_PROP));
     }
     push_back(*ic);
+    object_chain_ = ic;
   }
 
-  uintptr_t* direct_call_;
-  std::size_t string_rewrite_position_;
+  static void Rewrite(uint8_t* data, uint64_t disp, std::size_t size) {
+		for (size_t i = 0; i < size; i++) {
+			data[i] = static_cast<uint8_t>(disp >> (i * 8));
+		}
+  }
+
+  uint8_t* direct_call() const { return direct_call_; }
+  uint8_t* length_call() const { return length_call_; }
+  uint8_t* main_path() const { return main_path_; }
+  Unit* object_chain() const { return object_chain_; }
+  bool length_property() const { return length_property_; }
+
+  uint8_t* direct_call_;
+  uint8_t* length_call_;
+  uint8_t* main_path_;
+  Unit* object_chain_;
+  bool length_property_;
 };
 
 class StorePropertyIC : public PolyIC {
