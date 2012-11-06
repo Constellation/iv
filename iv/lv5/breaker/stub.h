@@ -969,105 +969,13 @@ inline Rep STORE_PROP_GENERIC(Frame* stack,
   return 0;
 }
 
-inline Rep LOAD_PROP_GENERIC(Frame* stack,
-                             JSVal base, Symbol name,
-                             railgun::Instruction* instr) {
+inline Rep LOAD_PROP_GENERIC(Frame* stack, JSVal base, Symbol name, LoadPropertyIC* site) {  // NOLINT
   const JSVal res = LoadPropImpl(stack->ctx, base, name, ERR);
   return Extract(res);
 }
 
-inline Rep LOAD_PROP_OWN(Frame* stack,
-                         JSVal base, Symbol name,
-                         railgun::Instruction* instr) {
-  Context* ctx = stack->ctx;
-  JSObject* obj = NULL;
-  if (base.IsPrimitive()) {
-    // primitive prototype cache
-    JSVal res;
-    if (GetPrimitiveOwnProperty(ctx, base, name, &res)) {
-      return Extract(res);
-    } else {
-      obj = base.GetPrimitiveProto(ctx);
-    }
-  } else {
-    obj = base.object();
-  }
-  assert(obj);
-  if (instr[2].map == obj->map()) {
-    // cache hit
-    return Extract(obj->Direct(instr[3].u32[0]));
-  } else {
-    // not found => uncache
-    instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
-    Assembler::RepatchSite::RepatchAfterCall(
-        stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP));
-    const JSVal res = LoadPropImpl(ctx, base, name, ERR);
-    return Extract(res);
-  }
-}
-
-inline Rep LOAD_PROP_PROTO(Frame* stack,
-                           JSVal base, Symbol name,
-                           railgun::Instruction* instr) {
-  Context* ctx = stack->ctx;
-  JSObject* obj = NULL;
-  if (base.IsPrimitive()) {
-    // primitive prototype cache
-    JSVal res;
-    if (GetPrimitiveOwnProperty(ctx, base, name, &res)) {
-      return Extract(res);
-    } else {
-      obj = base.GetPrimitiveProto(ctx);
-    }
-  } else {
-    obj = base.object();
-  }
-  JSObject* proto = obj->prototype();
-  if (instr[2].map == obj->map() && proto && instr[3].map == proto->map()) {
-    // cache hit
-    return Extract(proto->Direct(instr[4].u32[0]));
-  } else {
-    // uncache
-    instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
-    Assembler::RepatchSite::RepatchAfterCall(
-        stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP));
-    const JSVal res = LoadPropImpl(ctx, base, name, ERR);
-    return Extract(res);
-  }
-}
-
-inline Rep LOAD_PROP_CHAIN(Frame* stack,
-                           JSVal base, Symbol name,
-                           railgun::Instruction* instr) {
-  Context* ctx = stack->ctx;
-  JSObject* obj = NULL;
-  if (base.IsPrimitive()) {
-    // primitive prototype cache
-    JSVal res;
-    if (GetPrimitiveOwnProperty(ctx, base, name, &res)) {
-      return Extract(res);
-    } else {
-      obj = base.GetPrimitiveProto(ctx);
-    }
-  } else {
-    obj = base.object();
-  }
-  if (JSObject* cached = instr[2].chain->Validate(obj, instr[3].map)) {
-    // cache hit
-    return Extract(cached->Direct(instr[4].u32[0]));
-  } else {
-    // uncache
-    instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP);
-    Assembler::RepatchSite::RepatchAfterCall(
-        stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP));
-    const JSVal res = LoadPropImpl(ctx, base, name, ERR);
-    return Extract(res);
-  }
-}
-
-inline Rep LOAD_PROP(Frame* stack,
-                     JSVal base, Symbol name,
-                     railgun::Instruction* instr) {
+inline Rep LOAD_PROP(Frame* stack, JSVal base, Symbol name, LoadPropertyIC* site) {  // NOLINT
+  assert(!symbol::IsArrayIndexSymbol(name));
   Context* ctx = stack->ctx;
   Slot slot;
   const JSVal res = base.GetSlot(ctx, name, &slot, ERR);
@@ -1080,25 +988,20 @@ inline Rep LOAD_PROP(Frame* stack,
 
   // string length fast path
   if (base.IsString() && name == symbol::length()) {
-    Assembler::RepatchSite::RepatchAfterCall(
-        stack->ret, core::BitCast<uint64_t>(Templates<>::string_length()));
+    site->LoadStringLength(ctx);
     return Extract(res);
   }
 
   // uncacheable path
-  if (!slot.IsLoadCacheable()) {
+  if (!slot.IsLoadCacheable() || !base.IsCell()) {
     // bailout to generic
-    instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP_GENERIC);
-    Assembler::RepatchSite::RepatchAfterCall(
-        stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP_GENERIC));
+    // TODO(Constellation) insert generic IC
     return Extract(res);
   }
 
   JSObject* obj = NULL;
-  if (base.IsPrimitive()) {
-    // if base is primitive, property not found in "this" object
-    // so, lookup from proto
-    obj = base.GetPrimitiveProto(ctx);
+  if (base.IsString()) {
+    obj = ctx->global_data()->GetClassSlot(Class::String).prototype;
   } else {
     obj = base.object();
   }
@@ -1107,33 +1010,19 @@ inline Rep LOAD_PROP(Frame* stack,
   // own property / proto property / chain lookup property
   if (slot.base() == obj) {
     // own property
-    instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP_OWN);
-    Assembler::RepatchSite::RepatchAfterCall(
-        stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP_OWN));
-    instr[2].map = obj->map();
-    instr[3].u32[0] = slot.offset();
+    site->LoadOwnProperty(ctx, obj->map(), slot.offset());
     return Extract(res);
   }
 
   if (slot.base() == obj->prototype()) {
     // proto property
     obj->FlattenMap();
-    instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP_PROTO);
-    Assembler::RepatchSite::RepatchAfterCall(
-        stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP_PROTO));
-    instr[2].map = obj->map();
-    instr[3].map = slot.base()->map();
-    instr[4].u32[0] = slot.offset();
+    site->LoadPrototypeProperty(ctx, obj->map(), slot.base()->map(), slot.offset());
     return Extract(res);
   }
 
   // chain property
-  instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::LOAD_PROP_CHAIN);
-  Assembler::RepatchSite::RepatchAfterCall(
-      stack->ret, core::BitCast<uint64_t>(&stub::LOAD_PROP_CHAIN));
-  instr[2].chain = Chain::New(obj, slot.base());
-  instr[3].map = slot.base()->map();
-  instr[4].u32[0] = slot.offset();
+  site->LoadChainProperty(ctx, Chain::New(obj, slot.base()), slot.base()->map(), slot.offset());
   return Extract(res);
 }
 

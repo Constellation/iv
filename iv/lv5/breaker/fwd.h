@@ -61,6 +61,8 @@ class JSJITFunction;
 class IC;
 class TemplatesGenerator;
 
+class LoadPropertyIC;
+
 // JIT Frame layout. This frame layout is constructed on breaker prologue
 struct Frame {
   void* r12;
@@ -108,13 +110,8 @@ template<bool Strict>
 Rep STORE_GLOBAL(Frame* stack, Symbol name,
                  MonoIC* ic, Assembler* as, JSVal src);
 
-Rep LOAD_PROP_GENERIC(Frame* stack,
-                      JSVal base, Symbol name,
-                      railgun::Instruction* instr);
-
-Rep LOAD_PROP(Frame* stack,
-              JSVal base, Symbol name,
-              railgun::Instruction* instr);
+Rep LOAD_PROP_GENERIC(Frame* stack, JSVal base, Symbol name, LoadPropertyIC* site);  // NOLINT
+Rep LOAD_PROP(Frame* stack, JSVal base, Symbol name, LoadPropertyIC* site);
 
 } } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_FWD_H_

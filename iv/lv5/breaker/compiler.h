@@ -1442,24 +1442,32 @@ class Compiler {
       // check element is not JSEmpty
       NotEmptyGuard(asm_->rax, ".ARRAY_FAST_PATH_EXIT");
       asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      set_last_used_candidate(dst);
       asm_->jmp(".EXIT");
       asm_->L(".ARRAY_FAST_PATH_EXIT");
+
+      // load from value
+      asm_->mov(asm_->rdi, asm_->r14);
+      CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
+      asm_->mov(asm_->rdx, Extract(JSVal::UInt32(index)));
+      asm_->Call(&stub::LOAD_ELEMENT);
+    } else {
+      asm_->mov(asm_->rdi, asm_->r14);
+      CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
+      asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+
+      std::shared_ptr<LoadPropertyIC> ic(new LoadPropertyIC(native_code(), name == symbol::length()));
+      native_code()->BindIC(ic);
+      asm_->mov(asm_->rcx, core::BitCast<uint64_t>(ic.get()));
+      Assembler::RepatchSite site;
+      site.MovRepatchableAligned(asm_, asm_->rax);
+      site.Repatch(asm_, core::BitCast<uint64_t>(&stub::LOAD_PROP));
+      asm_->call(asm_->rax);
+      ic->BindDirectCall(const_cast<uint8_t*>(asm_->getCode()) + site.offset());
     }
-
-    asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
-    asm_->mov(asm_->rcx, core::BitCast<uint64_t>(instr));
-
-    Assembler::RepatchSite site;
-    site.MovRepatchableAligned(asm_, asm_->rax);
-    site.Repatch(asm_, core::BitCast<uint64_t>(&stub::LOAD_PROP));
-    asm_->call(asm_->rax);
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-    set_last_used_candidate(dst);
     asm_->L(".EXIT");
 
+    set_last_used_candidate(dst);
     type_record_.Put(dst, dst_entry);
   }
 

@@ -96,12 +96,20 @@ class LoadPropertyIC : public PolyIC {
   static const std::size_t kCallOffset = 5;
   static const std::size_t k64MovImmOffset = 2;
 
-  explicit LoadPropertyIC(uint8_t* direct_call, bool length)
-    : direct_call_(direct_call),
-      length_call_(length ? direct_call_ : NULL),
+  explicit LoadPropertyIC(NativeCode* native_code, bool length)
+    : direct_call_(NULL),
+      length_call_(),
       main_path_(NULL),
       object_chain_(NULL),
+      native_(native_code),
       length_property_(length) {
+  }
+
+  void BindDirectCall(uint8_t* direct_call) {
+    direct_call_ = direct_call;
+    if (length_property()) {
+      length_call_ = direct_call;
+    }
   }
 
   static bool CanEmitDirectCall(Xbyak::CodeGenerator* as, const void* addr) {
@@ -238,8 +246,8 @@ class LoadPropertyIC : public PolyIC {
     static const Unit::Type kType = Unit::LOAD_CHAIN_PROPERTY;
     static const int kSize = 256;
 
-    LoadChainPropertyCompiler(Map* map, Chain* chain, uint32_t offset)
-      : map_(map),
+    LoadChainPropertyCompiler(Chain* chain, Map* last, uint32_t offset)
+      : map_(last),
         chain_(chain),
         offset_(offset) {
     }
@@ -299,34 +307,31 @@ class LoadPropertyIC : public PolyIC {
     uint32_t offset_;
   };
 
-  void LoadOwnProperty(Context* ctx, NativeCode* code, Map* map, uint32_t offset) {
-    if (Unit* ic = Generate(ctx, code, LoadOwnPropertyCompiler(map, offset))) {
+  void LoadOwnProperty(Context* ctx, Map* map, uint32_t offset) {
+    if (Unit* ic = Generate(ctx, LoadOwnPropertyCompiler(map, offset))) {
       ic->set_own(map);
     }
   }
 
   void LoadPrototypeProperty(Context* ctx,
-                             NativeCode* code,
                              Map* map, Map* proto, uint32_t offset) {
-    if (Unit* ic = Generate(ctx, code, LoadPrototypePropertyCompiler(map, proto, offset))) {
+    if (Unit* ic = Generate(ctx, LoadPrototypePropertyCompiler(map, proto, offset))) {
       ic->set_own(map);
       ic->set_proto(proto);
     }
   }
 
-  void LoadChainProperty(Context* ctx,
-                         NativeCode* code,
-                         Map* map, Chain* chain, uint32_t offset) {
-    if (Unit* ic = Generate(ctx, code, LoadChainPropertyCompiler(map, chain, offset))) {
+  void LoadChainProperty(Context* ctx, Chain* chain, Map* last, uint32_t offset) {
+    if (Unit* ic = Generate(ctx, LoadChainPropertyCompiler(chain, last, offset))) {
       ic->set_chain(chain);
-      ic->set_own(map);
+      ic->set_own(last);
     }
   }
 
-  void LoadStringLength(Context* ctx, NativeCode* code) {
+  void LoadStringLength(Context* ctx) {
     // inject string length check
     Unit* ic = new Unit(Unit::LOAD_STRING_LENGTH);
-    NativeCode::Pages::Buffer buffer = code->pages()->Gain(256);
+    NativeCode::Pages::Buffer buffer = native_->pages()->Gain(256);
     Xbyak::CodeGenerator as(buffer.size, buffer.ptr);
     const bool generate_guard = empty();
 
@@ -344,17 +349,23 @@ class LoadPropertyIC : public PolyIC {
     push_back(*ic);
   }
 
+  uint8_t* direct_call() const { return direct_call_; }
+  uint8_t* length_call() const { return length_call_; }
+  uint8_t* main_path() const { return main_path_; }
+  Unit* object_chain() const { return object_chain_; }
+  bool length_property() const { return length_property_; }
+
  private:
   // main generation path
   template<typename Generator>
-  Unit* Generate(Context* ctx, NativeCode* code, const Generator& gen) {
+  Unit* Generate(Context* ctx, const Generator& gen) {
     if (size() >= kMaxPolyICSize) {
       return NULL;
     }
 
     Unit* ic = new Unit(Generator::kType);
 
-    NativeCode::Pages::Buffer buffer = code->pages()->Gain(Generator::kSize);
+    NativeCode::Pages::Buffer buffer = native_->pages()->Gain(Generator::kSize);
     Xbyak::CodeGenerator as(buffer.size, buffer.ptr);
     const bool generate_guard = empty();
 
@@ -379,6 +390,7 @@ class LoadPropertyIC : public PolyIC {
 
   void ChainingObjectLoad(Unit* ic, uintptr_t code) {
     if (!object_chain()) {
+      assert(direct_call());
       Rewrite(direct_call(), code, k64Size);
     } else {
       object_chain()->Redirect(code);
@@ -400,16 +412,11 @@ class LoadPropertyIC : public PolyIC {
 		}
   }
 
-  uint8_t* direct_call() const { return direct_call_; }
-  uint8_t* length_call() const { return length_call_; }
-  uint8_t* main_path() const { return main_path_; }
-  Unit* object_chain() const { return object_chain_; }
-  bool length_property() const { return length_property_; }
-
   uint8_t* direct_call_;
   uint8_t* length_call_;
   uint8_t* main_path_;
   Unit* object_chain_;
+  NativeCode* native_;
   bool length_property_;
 };
 
