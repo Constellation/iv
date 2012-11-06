@@ -93,7 +93,6 @@ class PolyIC : public IC, public core::IntrusiveList<PolyICUnit> {
 class LoadPropertyIC : public PolyIC {
  public:
   static const std::size_t kMaxPolyICSize = 5;
-  static const std::size_t kCallOffset = 5;
   static const std::size_t k64MovImmOffset = 2;
 
   explicit LoadPropertyIC(NativeCode* native_code, bool length)
