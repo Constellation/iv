@@ -133,6 +133,7 @@ class LoadPropertyIC : public PolyIC {
     as->jnz("POLY_IC_GUARD_GENERIC");
 
     // target is guaranteed as cell
+    as->mov(as->r8, as->rsi);
     as->cmp(as->word[as->rsi + radio::Cell::TagOffset()], radio::OBJECT);
     if (TRAILING_STRING) {
       assert(length_property());
@@ -140,7 +141,6 @@ class LoadPropertyIC : public PolyIC {
     } else {
       as->jne("POLY_IC_GUARD_OTHER");  // we should purge this to string check path
     }
-    as->mov(as->r8, as->rdi);
     as->L("POLY_IC_START_MAIN");
     main_path_ = const_cast<uint8_t*>(as->getCurr());
   }
@@ -379,6 +379,7 @@ class LoadPropertyIC : public PolyIC {
     as.L(".EXIT");
     ic->set_tail(const_cast<uint8_t*>(as.getCode()) + GenerateTail(&as));
     as.outLocalLabel();
+
 
     if (generate_guard) {
       GenerateGuardEpilogue<false>(ctx, &as);
