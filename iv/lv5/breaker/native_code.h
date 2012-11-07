@@ -1,5 +1,6 @@
 #ifndef IV_LV5_BREAKER_NATIVE_CODE_H_
 #define IV_LV5_BREAKER_NATIVE_CODE_H_
+#include <iv/functor.h>
 #include <iv/lv5/breaker/assembler.h>
 
 namespace iv {
@@ -10,7 +11,7 @@ class NativeCode {
  public:
   typedef std::pair<std::size_t, std::size_t> PCOffsetAndBytecodeOffset;
   typedef core::SortedVector<PCOffsetAndBytecodeOffset> BytecodeOffsets;
-  typedef std::vector<std::shared_ptr<IC> > ICVector;
+  typedef std::vector<IC*> ICVector;
   typedef ExecutablePages<> Pages;
 
   NativeCode(Assembler* as)
@@ -20,6 +21,10 @@ class NativeCode {
       asm_() {
     bytecode_offsets_.reserve(1024);
     asm_.reset(as);
+  }
+
+  ~NativeCode() {
+    std::for_each(ics_.begin(), ics_.end(), core::Deleter<IC>());
   }
 
   std::size_t PCToBytecodeOffset(void* pc) const {
@@ -65,7 +70,7 @@ class NativeCode {
     }
   }
 
-  void BindIC(std::shared_ptr<IC> ic) {
+  void BindIC(IC* ic) {
     ics_.push_back(ic);
   }
 
@@ -73,9 +78,11 @@ class NativeCode {
                             GC_ms_entry* entry,
                             GC_ms_entry* mark_sp_limit,
                             GC_word env) {
+    std::size_t index = 0;
     for (ICVector::const_iterator it = ics_.begin(),
-         last = ics_.end(); it != last; ++it) {
-      entry = (*it)->MarkChildren(top, entry, mark_sp_limit, env);
+         last = ics_.end(); it != last; ++it, ++index) {
+      IC* ic = *it;
+      entry = ic->MarkChildren(top, entry, mark_sp_limit, env);
     }
     return entry;
   }
@@ -89,6 +96,7 @@ class NativeCode {
 
   Pages* pages() { return &pages_; }
   const Pages* pages() const { return &pages_; }
+  Assembler* assembler() const { return asm_.get(); }
 
  private:
   BytecodeOffsets bytecode_offsets_;

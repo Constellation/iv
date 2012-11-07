@@ -2,6 +2,7 @@
 #ifndef IV_BREAKER_EXECUTABLE_PAGES_H_
 #define IV_BREAKER_EXECUTABLE_PAGES_H_
 #include <vector>
+#include <new>
 #include <iv/detail/array.h>
 #include <iv/functor.h>
 #include <iv/lv5/breaker/fwd.h>
@@ -35,7 +36,12 @@ class ExecutablePages {
   }
 
   ~ExecutablePages() {
-    std::for_each(pages_.begin(), pages_.end(), core::Deleter<Page>());
+    for (typename Pages::iterator it = pages_.begin(),
+         last = pages_.end(); it != last; ++it) {
+      Page* page = *it;
+      page->~Page();
+      Xbyak::AlignedFree(page);
+    }
   }
 
   struct Buffer {
@@ -57,7 +63,8 @@ class ExecutablePages {
       return buffer;
     }
 
-    Page* page = new Page;
+    void* mem = Xbyak::AlignedMalloc(PageSize, PageSize);
+    Page* page = new(mem)Page;
     pages_.push_back(page);
     buffer.ptr = page->data();
     cursor_ = reserve;

@@ -1454,14 +1454,14 @@ class Compiler {
       CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
       asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
 
-      std::shared_ptr<LoadPropertyIC> ic(new LoadPropertyIC(native_code(), name == symbol::length()));
+      LoadPropertyIC* ic(new LoadPropertyIC(native_code(), name == symbol::length()));
       native_code()->BindIC(ic);
-      asm_->mov(asm_->rcx, core::BitCast<uint64_t>(ic.get()));
-      Assembler::RepatchSite site;
-      site.MovRepatchableAligned(asm_, asm_->rax);
-      site.Repatch(asm_, core::BitCast<uint64_t>(&stub::LOAD_PROP));
+
+      asm_->mov(asm_->rcx, core::BitCast<uint64_t>(ic));
+
+      const std::size_t offset = PolyIC::Generate64Mov(asm_);
+      ic->BindOriginal(offset);
       asm_->call(asm_->rax);
-      ic->BindDirectCall(const_cast<uint8_t*>(asm_->getCode()) + site.offset());
     }
     asm_->L(".EXIT");
     asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
@@ -1951,7 +1951,7 @@ class Compiler {
       asm_->mov(asm_->rax, Extract(constant.second));
       dst_entry = TypeEntry(constant.second);
     } else {
-      std::shared_ptr<MonoIC> ic(new MonoIC());
+      MonoIC* ic(new MonoIC());
       ic->CompileLoad(asm_, ctx_->global_obj(), code_, name);
       native_code()->BindIC(ic);
     }
@@ -1966,7 +1966,7 @@ class Compiler {
     const register_t src = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
     LoadVR(asm_->rax, src);
-    std::shared_ptr<MonoIC> ic(new MonoIC());
+    MonoIC* ic(new MonoIC());
     ic->CompileStore(asm_, ctx_->global_obj(), code_, name);
     native_code()->BindIC(ic);
   }

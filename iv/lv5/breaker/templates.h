@@ -21,7 +21,6 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     dispatch_exception_handler = CompileDispatchExceptionHandler();
     exception_handler_is_not_found = CompileExceptionHandlerIsNotFound();
     prologue = CompileBreakerPrologue();
-    string_length = CompileStringLength();
   }
 
   void* CompileDispatchExceptionHandler() {
@@ -95,42 +94,10 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     return core::BitCast<PrologueType>(getCode() + size);
   }
 
-  // rdi : frame
-  // rsi : base
-  // don't break rdx and rcx
-  void* CompileStringLength() {
-    const std::size_t size = getSize();
-    inLocalLabel();
-    {
-      mov(rax, detail::jsval64::kValueMask);
-      test(rax, rsi);
-      jnz(".FAIL");
-
-      mov(eax, word[rsi + radio::Cell::TagOffset()]);
-      cmp(eax, radio::STRING);
-      jne(".FAIL");
-
-      const std::ptrdiff_t length_offset =
-          IV_CAST_OFFSET(radio::Cell*, JSString*) +
-          JSString::SizeOffset();
-      mov(eax, word[rsi + length_offset]);
-
-      or(rax, r15);
-      ret();
-
-      L(".FAIL");
-      mov(rax, core::BitCast<uint64_t>(&stub::LOAD_PROP_GENERIC));
-      jmp(rax);
-    }
-    outLocalLabel();
-    return core::BitCast<void*>(getCode() + size);
-  }
-
  public:  // opened
   PrologueType prologue;
   void* dispatch_exception_handler;
   void* exception_handler_is_not_found;
-  void* string_length;
 };
 
 template<typename D = void>
@@ -141,10 +108,6 @@ struct Templates {
 
   static void* exception_handler_is_not_found() {
     return Templates<>::generator.exception_handler_is_not_found;
-  }
-
-  static void* string_length() {
-    return Templates<>::generator.string_length;
   }
 
   static MIE_ALIGN(4096) char code[4096];

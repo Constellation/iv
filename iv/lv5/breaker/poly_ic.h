@@ -54,6 +54,7 @@ class PolyICUnit: public core::IntrusiveListBase {
 
 class PolyIC : public IC, public core::IntrusiveList<PolyICUnit> {
  public:
+  static const std::size_t k64MovImmOffset = 2;
   typedef PolyICUnit Unit;
 
   PolyIC() : IC(IC::POLY) { }
@@ -65,6 +66,20 @@ class PolyIC : public IC, public core::IntrusiveList<PolyICUnit> {
       ic->Unlink();
       delete ic;
     }
+  }
+
+  static std::size_t Generate64Mov(Xbyak::CodeGenerator* as) {
+    const uint64_t dummy64 = UINT64_C(0x0FFF000000000000);
+    const std::size_t result = as->getSize() + k64MovImmOffset;
+    as->mov(as->rax, dummy64);
+    return result;
+  }
+
+  // Generate Tail position
+  static std::size_t GenerateTail(Xbyak::CodeGenerator* as) {
+    const std::size_t result = Generate64Mov(as);
+    as->jmp(as->rax);
+    return result;
   }
 
   virtual GC_ms_entry* MarkChildren(GC_word* top,
@@ -93,35 +108,22 @@ class PolyIC : public IC, public core::IntrusiveList<PolyICUnit> {
 class LoadPropertyIC : public PolyIC {
  public:
   static const std::size_t kMaxPolyICSize = 5;
-  static const std::size_t k64MovImmOffset = 2;
 
   explicit LoadPropertyIC(NativeCode* native_code, bool length)
-    : direct_call_(NULL),
-      length_call_(),
+    : from_original_(),
       main_path_(NULL),
       object_chain_(NULL),
-      native_(native_code),
+      native_code_(native_code),
       length_property_(length) {
   }
 
-  void BindDirectCall(uint8_t* direct_call) {
-    direct_call_ = direct_call;
-    if (length_property()) {
-      length_call_ = direct_call;
-    }
+  void BindOriginal(std::size_t from_original) {
+    from_original_ = from_original;
+    native_code()->assembler()->rewrite(from_original_, core::BitCast<uintptr_t>(&stub::LOAD_PROP), k64Size);
   }
 
   static bool CanEmitDirectCall(Xbyak::CodeGenerator* as, const void* addr) {
     return Xbyak::inner::IsInInt32(reinterpret_cast<const uint8_t*>(addr) - as->getCurr());
-  }
-
-  // Generate Tail position
-  static std::size_t GenerateTail(Xbyak::CodeGenerator* as) {
-    const uint64_t dummy64 = UINT64_C(0x0FFF000000000000);
-    const std::size_t result = as->getSize() + k64MovImmOffset;
-    as->mov(as->rax, dummy64);
-    as->jmp(as->rax);
-    return result;
   }
 
   template<bool TRAILING_STRING>
@@ -150,14 +152,13 @@ class LoadPropertyIC : public PolyIC {
     if (LEADING_STRING) {
       // object path
       const std::size_t pos = GenerateTail(as);
-      direct_call_ = const_cast<uint8_t*>(as->getCode()) + pos;
-      Rewrite(direct_call(), core::BitCast<uintptr_t>(&stub::LOAD_PROP), k64Size);
+      from_object_guard_ = const_cast<uint8_t*>(as->getCode()) + pos;
     } else {
       // string path
       if (length_property()) {
         const std::size_t pos = GenerateTail(as);
-        length_call_ = const_cast<uint8_t*>(as->getCode()) + pos;
-        Rewrite(length_call(), core::BitCast<uintptr_t>(main_path()), k64Size);
+        from_string_guard_ = const_cast<uint8_t*>(as->getCode()) + pos;
+        Rewrite(from_string_guard_, core::BitCast<uintptr_t>(main_path()), k64Size);
       } else {
         // use String.prototype object
         JSObject* prototype = ctx->global_data()->GetClassSlot(Class::String).prototype;
@@ -226,7 +227,7 @@ class LoadPropertyIC : public PolyIC {
       // prototype map guard
       as->mov(as->r11, as->qword[as->r8 + JSObject::PrototypeOffset()]);
       as->mov(as->r10, core::BitCast<uintptr_t>(prototype_));
-      as->or(as->r11, as->r11);
+      as->test(as->r11, as->r11);
       as->jz(fail);
       as->cmp(as->r10, as->qword[as->r11 + JSObject::MapOffset()]);
       as->jne(fail);
@@ -266,7 +267,7 @@ class LoadPropertyIC : public PolyIC {
         }
         for (; it != last; ++it) {
           as->mov(as->r10, core::BitCast<uintptr_t>(*it));
-          as->or(as->r11, as->r11);
+          as->test(as->r11, as->r11);
           as->jz(fail);
           as->cmp(as->r10, as->qword[as->r11 + JSObject::MapOffset()]);
           as->jne(fail);
@@ -279,7 +280,7 @@ class LoadPropertyIC : public PolyIC {
         as->L(".LOOP_HEAD");
         {
           as->mov(as->r10, as->qword[as->r10 + as->r9 * k64Size]);
-          as->or(as->r11, as->r11);
+          as->test(as->r11, as->r11);
           as->jz(fail);
           as->cmp(as->r10, as->qword[as->r11 + JSObject::MapOffset()]);
           as->jne(fail);
@@ -292,7 +293,7 @@ class LoadPropertyIC : public PolyIC {
 
       // last check
       as->mov(as->r10, core::BitCast<uintptr_t>(map_));
-      as->or(as->r11, as->r11);
+      as->test(as->r11, as->r11);
       as->jz(fail);
       as->cmp(as->r10, as->qword[as->r11 + JSObject::MapOffset()]);
       as->jne(fail);
@@ -330,7 +331,7 @@ class LoadPropertyIC : public PolyIC {
   void LoadStringLength(Context* ctx) {
     // inject string length check
     Unit* ic = new Unit(Unit::LOAD_STRING_LENGTH);
-    NativeCode::Pages::Buffer buffer = native_->pages()->Gain(256);
+    NativeCode::Pages::Buffer buffer = native_code()->pages()->Gain(256);
     Xbyak::CodeGenerator as(buffer.size, buffer.ptr);
     const bool generate_guard = empty();
 
@@ -338,18 +339,25 @@ class LoadPropertyIC : public PolyIC {
       GenerateGuardPrologue<true>(&as);
     }
 
-    as.mov(as.rax, core::BitCast<uint64_t>(Templates<>::string_length()));
-    as.jmp(as.rax);
+    // load string length
+    const std::ptrdiff_t length_offset =
+        IV_CAST_OFFSET(radio::Cell*, JSString*) + JSString::SizeOffset();
+    as.mov(as.eax, as.word[as.r8 + length_offset]);
+    as.or(as.rax, as.r15);
+    as.ret();
 
+    if (empty()) {
+      native_code()->assembler()->rewrite(from_original_, core::BitCast<uintptr_t>(as.getCode()), k64Size);
+    } else {
+      Rewrite(from_string_guard_, core::BitCast<uintptr_t>(as.getCode()), k64Size);
+    }
     if (generate_guard) {
       GenerateGuardEpilogue<true>(ctx, &as);
     }
-    Rewrite(length_call(), core::BitCast<uintptr_t>(as.getCode()), k64Size);
     push_back(*ic);
   }
 
-  uint8_t* direct_call() const { return direct_call_; }
-  uint8_t* length_call() const { return length_call_; }
+  NativeCode* native_code() const { return native_code_; }
   uint8_t* main_path() const { return main_path_; }
   Unit* object_chain() const { return object_chain_; }
   bool length_property() const { return length_property_; }
@@ -364,7 +372,7 @@ class LoadPropertyIC : public PolyIC {
 
     Unit* ic = new Unit(Generator::kType);
 
-    NativeCode::Pages::Buffer buffer = native_->pages()->Gain(Generator::kSize);
+    NativeCode::Pages::Buffer buffer = native_code()->pages()->Gain(Generator::kSize);
     Xbyak::CodeGenerator as(buffer.size, buffer.ptr);
     const bool generate_guard = empty();
 
@@ -373,27 +381,34 @@ class LoadPropertyIC : public PolyIC {
     }
 
     as.inLocalLabel();
-    gen(this, &as, ".EXIT");
+    // gen(this, &as, ".EXIT");
     // fail path
     as.L(".EXIT");
-    ic->set_tail(const_cast<uint8_t*>(as.getCode()) + GenerateTail(&as));
+    const std::size_t pos = GenerateTail(&as);
+    ic->set_tail(const_cast<uint8_t*>(as.getCode()) + pos);
     as.outLocalLabel();
 
 
+    ChainingObjectLoad(ic, core::BitCast<uintptr_t>(as.getCode()));
     if (generate_guard) {
       GenerateGuardEpilogue<false>(ctx, &as);
     }
-
-    ChainingObjectLoad(ic, core::BitCast<uintptr_t>(as.getCode()));
+    push_back(*ic);
+    object_chain_ = ic;
     return ic;
   }
 
   void ChainingObjectLoad(Unit* ic, uintptr_t code) {
-    if (!object_chain()) {
-      assert(direct_call());
-      Rewrite(direct_call(), code, k64Size);
+    if (empty()) {
+      // rewrite original
+      native_code()->assembler()->rewrite(from_original_, code, k64Size);
     } else {
-      object_chain()->Redirect(code);
+      if (!object_chain()) {
+        // rewrite object guard
+        Rewrite(from_object_guard_, code, k64Size);
+      } else {
+        object_chain()->Redirect(code);
+      }
     }
 
     if ((size() + 1) == kMaxPolyICSize) {
@@ -402,8 +417,6 @@ class LoadPropertyIC : public PolyIC {
     } else {
       ic->Redirect(core::BitCast<uintptr_t>(&stub::LOAD_PROP));
     }
-    push_back(*ic);
-    object_chain_ = ic;
   }
 
   static void Rewrite(uint8_t* data, uint64_t disp, std::size_t size) {
@@ -412,11 +425,14 @@ class LoadPropertyIC : public PolyIC {
 		}
   }
 
-  uint8_t* direct_call_;
-  uint8_t* length_call_;
+  union {
+    std::size_t from_original_;
+    uint8_t* from_object_guard_;
+    uint8_t* from_string_guard_;
+  };
   uint8_t* main_path_;
   Unit* object_chain_;
-  NativeCode* native_;
+  NativeCode* native_code_;
   bool length_property_;
 };
 

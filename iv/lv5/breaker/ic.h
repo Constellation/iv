@@ -16,6 +16,8 @@ class IC {
     : type_(type) {
   }
 
+  virtual ~IC() { }
+
   virtual void MarkChildren(radio::Core* core) { }
   virtual GC_ms_entry* MarkChildren(GC_word* top,
                                     GC_ms_entry* entry,
