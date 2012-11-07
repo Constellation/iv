@@ -245,7 +245,7 @@ class LoadPropertyIC : public PolyIC {
   class LoadChainPropertyCompiler {
    public:
     static const Unit::Type kType = Unit::LOAD_CHAIN_PROPERTY;
-    static const int kSize = 160;
+    static const int kSize = 256;
 
     LoadChainPropertyCompiler(Chain* chain, Map* last, uint32_t offset)
       : map_(last),
