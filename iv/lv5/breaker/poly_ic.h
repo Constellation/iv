@@ -153,6 +153,7 @@ class LoadPropertyIC : public PolyIC {
       // object path
       const std::size_t pos = GenerateTail(as);
       from_object_guard_ = const_cast<uint8_t*>(as->getCode()) + pos;
+      Rewrite(from_object_guard_, core::BitCast<uintptr_t>(&stub::LOAD_PROP), k64Size);
     } else {
       // string path
       if (length_property()) {
