@@ -129,16 +129,16 @@ class LoadPropertyIC : public PolyIC {
     // check target is Cell
     as->mov(as->r10, detail::jsval64::kValueMask);
     as->test(as->rsi, as->r10);
-    as->jnz("POLY_IC_GUARD_GENERIC");
+    as->jnz("POLY_IC_GUARD_GENERIC", Xbyak::CodeGenerator::T_NEAR);
 
     // target is guaranteed as cell
     as->mov(as->r8, as->rsi);
     as->cmp(as->word[as->rsi + radio::Cell::TagOffset()], radio::OBJECT);
     if (TRAILING_STRING) {
       assert(length_property());
-      as->je("POLY_IC_GUARD_OTHER");
+      as->je("POLY_IC_GUARD_OTHER", Xbyak::CodeGenerator::T_NEAR);
     } else {
-      as->jne("POLY_IC_GUARD_OTHER");  // we should purge this to string check path
+      as->jne("POLY_IC_GUARD_OTHER", Xbyak::CodeGenerator::T_NEAR);  // we should purge this to string check path
     }
     as->L("POLY_IC_START_MAIN");
     main_path_ = const_cast<uint8_t*>(as->getCurr());
@@ -162,7 +162,7 @@ class LoadPropertyIC : public PolyIC {
         // use String.prototype object
         JSObject* prototype = ctx->global_data()->GetClassSlot(Class::String).prototype;
         as->mov(as->r8, core::BitCast<uintptr_t>(prototype));
-        as->jmp("POLY_IC_START_MAIN");
+        as->jmp("POLY_IC_START_MAIN", Xbyak::CodeGenerator::T_NEAR);
       }
     }
 
