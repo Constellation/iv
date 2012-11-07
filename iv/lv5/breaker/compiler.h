@@ -1441,7 +1441,6 @@ class Compiler {
 
       // check element is not JSEmpty
       NotEmptyGuard(asm_->rax, ".ARRAY_FAST_PATH_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
       asm_->jmp(".EXIT");
       asm_->L(".ARRAY_FAST_PATH_EXIT");
 
@@ -1464,8 +1463,8 @@ class Compiler {
       asm_->call(asm_->rax);
       ic->BindDirectCall(const_cast<uint8_t*>(asm_->getCode()) + site.offset());
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
     asm_->L(".EXIT");
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
 
     set_last_used_candidate(dst);
     type_record_.Put(dst, dst_entry);
@@ -1756,8 +1755,6 @@ class Compiler {
 
       // check element is not JSEmpty
       NotEmptyGuard(asm_->rax, ".ARRAY_FAST_PATH_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-      set_last_used_candidate(dst);
       asm_->jmp(".EXIT");
       asm_->L(".ARRAY_FAST_PATH_EXIT");
     }
@@ -1765,10 +1762,11 @@ class Compiler {
     asm_->mov(asm_->rdi, asm_->r14);
     CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
     asm_->Call(&stub::LOAD_ELEMENT);
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
-    set_last_used_candidate(dst);
-    asm_->L(".EXIT");
 
+    asm_->L(".EXIT");
+    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+
+    set_last_used_candidate(dst);
     type_record_.Put(dst, dst_entry);
   }
 

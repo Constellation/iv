@@ -4,6 +4,7 @@
 #include <iv/platform.h>
 #include <iv/static_assert.h>
 #include <iv/detail/cstdint.h>
+#include <iv/lv5/jsval_fwd.h>
 
 #if defined(IV_ENABLE_JIT)
 // xbyak assembler
@@ -51,6 +52,7 @@ namespace breaker {
 
 static const int k64Size = sizeof(uint64_t);  // NOLINT
 static const int k32Size = sizeof(uint32_t);  // NOLINT
+static const int kJSValSize = sizeof(JSVal);  // NOLINT
 
 class Context;
 class Compiler;

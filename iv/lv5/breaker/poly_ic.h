@@ -179,7 +179,7 @@ class LoadPropertyIC : public PolyIC {
         JSObject::SlotsOffset() +
         JSObject::Slots::DataOffset();
     as->mov(as->rax, as->qword[reg + data_offset]);
-    as->mov(as->rax, as->qword[as->rax + offset]);
+    as->mov(as->rax, as->qword[as->rax + kJSValSize * offset]);
     as->ret();
   }
 
