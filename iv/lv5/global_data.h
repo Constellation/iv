@@ -238,7 +238,8 @@ class GlobalData {
 
   Map* GetTypedArrayMap() const { return typed_array_map_; }
 
-  void OnGarbageCollect() { }
+  void OnGarbageCollect() {
+  }
 
   void RegExpClear() { regs_.clear(); }
 

@@ -69,7 +69,7 @@ inline GC_ms_entry* CoreData::MarkChildren(GC_word* top,
       n += instr.GetLength();
     }
   }
-  return entry;
+  return native_code_->MarkChildren(top, entry, mark_sp_limit, env);
 }
 
 inline void CoreData::MarkChildren(radio::Core* core) {
