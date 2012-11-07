@@ -33,9 +33,9 @@ class PolyICUnit: public core::IntrusiveListBase {
   void set_chain(Chain* chain) { chain_ = chain; }
 
   void Redirect(uintptr_t ptr) {
-		for (std::size_t i = 0; i < sizeof(uintptr_t); ++i) {
-			tail_[i] = static_cast<uint8_t>(ptr >> (i * 8));
-		}
+    for (std::size_t i = 0; i < sizeof(uintptr_t); ++i) {
+      tail_[i] = static_cast<uint8_t>(ptr >> (i * 8));
+    }
   }
 
   void set_tail(uint8_t* tail) {
@@ -422,9 +422,9 @@ class LoadPropertyIC : public PolyIC {
   }
 
   static void Rewrite(uint8_t* data, uint64_t disp, std::size_t size) {
-		for (size_t i = 0; i < size; i++) {
-			data[i] = static_cast<uint8_t>(disp >> (i * 8));
-		}
+    for (size_t i = 0; i < size; i++) {
+      data[i] = static_cast<uint8_t>(disp >> (i * 8));
+    }
   }
 
   union {
