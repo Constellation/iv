@@ -187,7 +187,7 @@ class LoadPropertyIC : public PolyIC {
   class LoadOwnPropertyCompiler {
    public:
     static const Unit::Type kType = Unit::LOAD_OWN_PROPERTY;
-    static const int kSize = 256;
+    static const int kSize = 128;
 
     LoadOwnPropertyCompiler(Map* map, uint32_t offset)
       : map_(map),
@@ -211,7 +211,7 @@ class LoadPropertyIC : public PolyIC {
   class LoadPrototypePropertyCompiler {
    public:
     static const Unit::Type kType = Unit::LOAD_PROTOTYPE_PROPERTY;
-    static const int kSize = 256;
+    static const int kSize = 128;
 
     LoadPrototypePropertyCompiler(Map* map, Map* prototype, uint32_t offset)
       : map_(map),
@@ -244,7 +244,7 @@ class LoadPropertyIC : public PolyIC {
   class LoadChainPropertyCompiler {
    public:
     static const Unit::Type kType = Unit::LOAD_CHAIN_PROPERTY;
-    static const int kSize = 256;
+    static const int kSize = 160;
 
     LoadChainPropertyCompiler(Chain* chain, Map* last, uint32_t offset)
       : map_(last),
@@ -381,7 +381,7 @@ class LoadPropertyIC : public PolyIC {
     }
 
     as.inLocalLabel();
-    // gen(this, &as, ".EXIT");
+    gen(this, &as, ".EXIT");
     // fail path
     as.L(".EXIT");
     const std::size_t pos = GenerateTail(&as);
@@ -395,6 +395,7 @@ class LoadPropertyIC : public PolyIC {
     }
     push_back(*ic);
     object_chain_ = ic;
+    assert(as.getSize() <= Generator::kSize);
     return ic;
   }
 
