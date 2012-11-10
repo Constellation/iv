@@ -311,7 +311,7 @@ class LoadPropertyIC : public PolyIC {
 
   class LoadArrayLengthCompiler {
    public:
-    static const Unit::Type kType = Unit::LOAD_CHAIN_PROPERTY;
+    static const Unit::Type kType = Unit::LOAD_ARRAY_LENGTH;
     static const int kSize = 128;
     void operator()(LoadPropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
       const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
