@@ -2907,11 +2907,10 @@ class Compiler {
   }
 
   void CompareClassType(const Xbyak::Reg64& target,
-                        const Xbyak::Reg64& tmp,
-                        uint8_t tag) {
+                        const Xbyak::Reg64& tmp, const Class* ptr) {
     const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
-    asm_->mov(tmp, asm_->qword[target + offset]);
-    asm_->cmp(asm_->word[tmp + IV_OFFSETOF(Class, type)], tag);
+    asm_->mov(tmp, core::BitCast<uintptr_t>(ptr));
+    asm_->cmp(asm_->qword[target + offset], tmp);
   }
 
   void EmptyGuard(const Xbyak::Reg64& target,
@@ -2991,7 +2990,7 @@ class Compiler {
     // target is guaranteed as object
     // load Class tag from object and check it is Array
     if (!type_entry.type().IsArray()) {
-      CompareClassType(target, tmp, Class::Array);
+      CompareClassType(target, tmp, JSArray::GetClass());
       asm_->jne(label, type);
     }
 

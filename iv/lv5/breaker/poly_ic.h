@@ -15,7 +15,8 @@ class PolyICUnit: public core::IntrusiveListBase {
     LOAD_OWN_PROPERTY,
     LOAD_PROTOTYPE_PROPERTY,
     LOAD_CHAIN_PROPERTY,
-    LOAD_STRING_LENGTH
+    LOAD_STRING_LENGTH,
+    LOAD_ARRAY_LENGTH
   };
 
   explicit PolyICUnit(Type type)
@@ -201,7 +202,7 @@ class LoadPropertyIC : public PolyIC {
       as->cmp(as->r10, as->qword[as->r8 + JSObject::MapOffset()]);
       as->jne(fail);
       // load
-      site->GenerateFastLoad(as, as->r8, offset_);
+      LoadPropertyIC::GenerateFastLoad(as, as->r8, offset_);
     }
 
    private:
@@ -233,7 +234,7 @@ class LoadPropertyIC : public PolyIC {
       as->cmp(as->r10, as->qword[as->r11 + JSObject::MapOffset()]);
       as->jne(fail);
       // load
-      site->GenerateFastLoad(as, as->r11, offset_);
+      LoadPropertyIC::GenerateFastLoad(as, as->r11, offset_);
     }
 
    private:
@@ -299,13 +300,28 @@ class LoadPropertyIC : public PolyIC {
       as->cmp(as->r10, as->qword[as->r11 + JSObject::MapOffset()]);
       as->jne(fail);
       // load
-      site->GenerateFastLoad(as, as->r11, offset_);
+      LoadPropertyIC::GenerateFastLoad(as, as->r11, offset_);
     }
 
    private:
     Map* map_;
     Chain* chain_;
     uint32_t offset_;
+  };
+
+  class LoadArrayLengthCompiler {
+   public:
+    static const Unit::Type kType = Unit::LOAD_CHAIN_PROPERTY;
+    static const int kSize = 128;
+    void operator()(LoadPropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
+      const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
+      // check target class is Array
+      as->mov(as->r10, core::BitCast<uintptr_t>(JSArray::GetClass()));
+      as->cmp(as->r10, as->qword[as->r8 + offset]);
+      as->jne(fail);
+      // load
+      as->mov(as->rax, as->qword[as->r8 + JSArray::LengthOffset()]);
+    }
   };
 
   void LoadOwnProperty(Context* ctx, Map* map, uint32_t offset) {
@@ -327,6 +343,10 @@ class LoadPropertyIC : public PolyIC {
       ic->set_chain(chain);
       ic->set_own(last);
     }
+  }
+
+  void LoadArrayLength(Context* ctx) {
+    Generate(ctx, LoadArrayLengthCompiler());
   }
 
   void LoadStringLength(Context* ctx) {

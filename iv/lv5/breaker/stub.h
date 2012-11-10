@@ -986,10 +986,15 @@ inline Rep LOAD_PROP(Frame* stack, JSVal base, Symbol name, LoadPropertyIC* site
 
   // property found
 
-  // string length fast path
-  if (base.IsString() && name == symbol::length()) {
-    site->LoadStringLength(ctx);
-    return Extract(res);
+  // String / Array length fast path
+  if (name == symbol::length()) {
+    if (base.IsString()) {
+      site->LoadStringLength(ctx);
+      return Extract(res);
+    } else if (base.IsObject() && base.object()->IsClass<Class::Array>()) {
+      site->LoadArrayLength(ctx);
+      return Extract(res);
+    }
   }
 
   // uncacheable path
