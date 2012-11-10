@@ -844,8 +844,9 @@ inline JSVal LoadPropImpl(Context* ctx, JSVal base, Symbol name, Error* e) {
 
 inline Rep LOAD_ELEMENT(Frame* stack, JSVal base, JSVal element) {
   Context* ctx = stack->ctx;
+  Slot slot;
   const Symbol name = element.ToSymbol(ctx, ERR);
-  const JSVal res = LoadPropImpl(ctx, base, name, ERR);
+  const JSVal res = base.GetSlot(ctx, name, &slot, ERR);
   return Extract(res);
 }
 
@@ -969,8 +970,9 @@ inline Rep STORE_PROP_GENERIC(Frame* stack,
   return 0;
 }
 
-inline Rep LOAD_PROP_GENERIC(Frame* stack, JSVal base, Symbol name, LoadPropertyIC* site) {  // NOLINT
-  const JSVal res = LoadPropImpl(stack->ctx, base, name, ERR);
+inline Rep LOAD_PROP_GENERIC(Frame* stack, JSVal base, Symbol name) {  // NOLINT
+  Slot slot;
+  const JSVal res = base.GetSlot(stack->ctx, name, &slot, ERR);
   return Extract(res);
 }
 

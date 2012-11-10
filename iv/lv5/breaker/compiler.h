@@ -1446,12 +1446,10 @@ class Compiler {
 
       // load from value
       asm_->mov(asm_->rdi, asm_->r14);
-      CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
       asm_->mov(asm_->rdx, Extract(JSVal::UInt32(index)));
       asm_->Call(&stub::LOAD_ELEMENT);
     } else {
       asm_->mov(asm_->rdi, asm_->r14);
-      CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
       asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
 
       LoadPropertyIC* ic(new LoadPropertyIC(native_code(), name == symbol::length()));
@@ -1760,7 +1758,6 @@ class Compiler {
     }
 
     asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
     asm_->Call(&stub::LOAD_ELEMENT);
 
     asm_->L(".EXIT");
