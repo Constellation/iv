@@ -210,8 +210,8 @@ inline Rep BINARY_IN(Frame* stack, JSVal lhs, JSVal rhs) {
     stack->error->Report(Error::Type, "in requires object");
     IV_LV5_BREAKER_RAISE();
   }
-  const Symbol s = lhs.ToSymbol(ctx, ERR);
-  return Extract(JSVal::Bool(rhs.object()->HasProperty(ctx, s)));
+  const Symbol name = lhs.ToSymbol(ctx, ERR);
+  return Extract(JSVal::Bool(rhs.object()->HasProperty(ctx, name)));
 }
 
 inline Rep BINARY_EQ(Frame* stack, JSVal lhs, JSVal rhs) {
@@ -408,26 +408,26 @@ inline Rep INCREMENT_HEAP(Frame* stack, JSEnv* env, uint32_t offset) {
 
 template<int Target, std::size_t Returned, bool Strict>
 inline JSVal IncrementName(Context* ctx,
-                           JSEnv* env, Symbol s, Error* e) {
-  if (JSEnv* current = GetEnv(ctx, env, s)) {
-    const JSVal w = current->GetBindingValue(ctx, s, Strict, IV_LV5_ERROR(e));
+                           JSEnv* env, Symbol name, Error* e) {
+  if (JSEnv* current = GetEnv(ctx, env, name)) {
+    const JSVal w = current->GetBindingValue(ctx, name, Strict, IV_LV5_ERROR(e));
     if (w.IsInt32() &&
         railgun::detail::IsIncrementOverflowSafe<Target>(w.int32())) {
       std::tuple<JSVal, JSVal> results;
       const int32_t target = w.int32();
       std::get<0>(results) = w;
       std::get<1>(results) = JSVal::Int32(target + Target);
-      current->SetMutableBinding(ctx, s, std::get<1>(results), Strict, e);
+      current->SetMutableBinding(ctx, name, std::get<1>(results), Strict, e);
       return std::get<Returned>(results);
     } else {
       std::tuple<double, double> results;
       std::get<0>(results) = w.ToNumber(ctx, IV_LV5_ERROR(e));
       std::get<1>(results) = std::get<0>(results) + Target;
-      current->SetMutableBinding(ctx, s, std::get<1>(results), Strict, e);
+      current->SetMutableBinding(ctx, name, std::get<1>(results), Strict, e);
       return std::get<Returned>(results);
     }
   }
-  RaiseReferenceError(s, e);
+  RaiseReferenceError(name, e);
   return 0.0;
 }
 
@@ -834,14 +834,6 @@ inline JSVal LoadPropPrimitive(Context* ctx,
   }
 }
 
-inline JSVal LoadPropImpl(Context* ctx, JSVal base, Symbol name, Error* e) {
-  if (base.IsPrimitive()) {
-    return LoadPropPrimitive(ctx, base, name, e);
-  } else {
-    return base.object()->Get(ctx, name, e);
-  }
-}
-
 inline Rep LOAD_ELEMENT(Frame* stack, JSVal base, JSVal element) {
   Context* ctx = stack->ctx;
   Slot slot;
@@ -922,21 +914,22 @@ inline Rep DELETE_ELEMENT(Frame* stack, JSVal base, JSVal element) {
 template<int Target, std::size_t Returned, bool Strict>
 inline Rep INCREMENT_ELEMENT(Frame* stack, JSVal base, JSVal element) {
   Context* ctx = stack->ctx;
-  const Symbol s = element.ToSymbol(ctx, ERR);
-  const JSVal w = LoadPropImpl(ctx, base, s, ERR);
+  const Symbol name = element.ToSymbol(ctx, ERR);
+  Slot slot;
+  const JSVal w = base.GetSlot(ctx, name, &slot, ERR);
   if (w.IsInt32() &&
       railgun::detail::IsIncrementOverflowSafe<Target>(w.int32())) {
     std::tuple<JSVal, JSVal> results;
     const int32_t target = w.int32();
     std::get<0>(results) = w;
     std::get<1>(results) = JSVal::Int32(target + Target);
-    StorePropImpl<Strict>(ctx, base, s, std::get<1>(results), ERR);
+    StorePropImpl<Strict>(ctx, base, name, std::get<1>(results), ERR);
     return Extract(std::get<Returned>(results));
   } else {
     std::tuple<double, double> results;
     std::get<0>(results) = w.ToNumber(ctx, ERR);
     std::get<1>(results) = std::get<0>(results) + Target;
-    StorePropImpl<Strict>(ctx, base, s, std::get<1>(results), ERR);
+    StorePropImpl<Strict>(ctx, base, name, std::get<1>(results), ERR);
     return Extract(JSVal(std::get<Returned>(results)));
   }
 }
@@ -1081,7 +1074,8 @@ inline Rep DELETE_PROP(Frame* stack, JSVal base, Symbol name) {
 template<int Target, std::size_t Returned, bool Strict>
 inline Rep INCREMENT_PROP(Frame* stack, JSVal base, Symbol name) {
   Context* ctx = stack->ctx;
-  const JSVal w = LoadPropImpl(ctx, base, name, ERR);
+  Slot slot;
+  const JSVal w = base.GetSlot(ctx, name, &slot, ERR);
   if (w.IsInt32() &&
       railgun::detail::IsIncrementOverflowSafe<Target>(w.int32())) {
     std::tuple<JSVal, JSVal> results;
