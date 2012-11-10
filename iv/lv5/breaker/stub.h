@@ -970,16 +970,17 @@ inline Rep STORE_PROP_GENERIC(Frame* stack,
   return 0;
 }
 
-inline Rep LOAD_PROP_GENERIC(Frame* stack, JSVal base, Symbol name) {  // NOLINT
+inline Rep LOAD_PROP_GENERIC(Frame* stack, JSVal base, LoadPropertyIC* site) {  // NOLINT
   Slot slot;
-  const JSVal res = base.GetSlot(stack->ctx, name, &slot, ERR);
+  const JSVal res = base.GetSlot(stack->ctx, site->name(), &slot, ERR);
   return Extract(res);
 }
 
-inline Rep LOAD_PROP(Frame* stack, JSVal base, Symbol name, LoadPropertyIC* site) {  // NOLINT
-  assert(!symbol::IsArrayIndexSymbol(name));
+inline Rep LOAD_PROP(Frame* stack, JSVal base, LoadPropertyIC* site) {  // NOLINT
+  assert(!symbol::IsArrayIndexSymbol(site->name()));
   Context* ctx = stack->ctx;
   Slot slot;
+  const Symbol name = site->name();
   const JSVal res = base.GetSlot(ctx, name, &slot, ERR);
 
   if (slot.IsNotFound()) {

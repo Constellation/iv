@@ -110,12 +110,12 @@ class LoadPropertyIC : public PolyIC {
  public:
   static const std::size_t kMaxPolyICSize = 5;
 
-  explicit LoadPropertyIC(NativeCode* native_code, bool length)
+  explicit LoadPropertyIC(NativeCode* native_code, Symbol name)
     : from_original_(),
       main_path_(NULL),
       object_chain_(NULL),
       native_code_(native_code),
-      length_property_(length) {
+      name_(name) {
   }
 
   void BindOriginal(std::size_t from_original) {
@@ -382,7 +382,8 @@ class LoadPropertyIC : public PolyIC {
   NativeCode* native_code() const { return native_code_; }
   uint8_t* main_path() const { return main_path_; }
   Unit* object_chain() const { return object_chain_; }
-  bool length_property() const { return length_property_; }
+  bool length_property() const { return name_ == symbol::length(); }
+  Symbol name() const { return name_; }
 
  private:
   // main generation path
@@ -456,7 +457,7 @@ class LoadPropertyIC : public PolyIC {
   uint8_t* main_path_;
   Unit* object_chain_;
   NativeCode* native_code_;
-  bool length_property_;
+  Symbol name_;
 };
 
 class StorePropertyIC : public PolyIC {

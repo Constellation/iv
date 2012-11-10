@@ -1450,13 +1450,9 @@ class Compiler {
       asm_->Call(&stub::LOAD_ELEMENT);
     } else {
       asm_->mov(asm_->rdi, asm_->r14);
-      asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
-
-      LoadPropertyIC* ic(new LoadPropertyIC(native_code(), name == symbol::length()));
+      LoadPropertyIC* ic(new LoadPropertyIC(native_code(), name));
       native_code()->BindIC(ic);
-
-      asm_->mov(asm_->rcx, core::BitCast<uint64_t>(ic));
-
+      asm_->mov(asm_->rdx, core::BitCast<uint64_t>(ic));
       const std::size_t offset = PolyIC::Generate64Mov(asm_);
       ic->BindOriginal(offset);
       asm_->call(asm_->rax);
