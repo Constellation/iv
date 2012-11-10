@@ -147,7 +147,10 @@ def Build():
     env.ParseConfig('icu-config --ldflags --cppflags')
 
   # XCode 4.3 clang allow this option
-  env.Append(CCFLAGS="-fno-operator-names")
+  env.Append(CCFLAGS=["-fno-operator-names"])
+
+  # old shared_ptr require RTTI
+  # env.Append(CCFLAGS=["-fno-rtti"])
 
   env.Append(
     CCFLAGS=[
