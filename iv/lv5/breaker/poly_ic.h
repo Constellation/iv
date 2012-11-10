@@ -321,6 +321,7 @@ class LoadPropertyIC : public PolyIC {
       as->jne(fail);
       // load
       as->mov(as->rax, as->qword[as->r8 + JSArray::LengthOffset()]);
+      as->ret();
     }
   };
 
