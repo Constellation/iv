@@ -24,6 +24,7 @@ class PolyICUnit: public core::IntrusiveListBase {
   explicit PolyICUnit(Type type)
     : own_(NULL),
       proto_(NULL),
+      transit_(NULL),
       type_(type),
       tail_(0) {
   }
@@ -34,16 +35,13 @@ class PolyICUnit: public core::IntrusiveListBase {
   void set_proto(Map* map) { proto_ = map; }
   Chain* chain() const { return chain_; }
   void set_chain(Chain* chain) { chain_ = chain; }
+  Map* transit() const { return transit_; }
+  void set_transit(Map* transit) { transit_ = transit; }
+  uint8_t* tail() const { return tail_; }
+  void set_tail(uint8_t* tail) { tail_ = tail; }
 
-  void Redirect(uintptr_t ptr) {
-    for (std::size_t i = 0; i < sizeof(uintptr_t); ++i) {
-      tail_[i] = static_cast<uint8_t>(ptr >> (i * 8));
-    }
-  }
+  void Redirect(uintptr_t ptr) { IC::Rewrite(tail(), ptr, k64Size); }
 
-  void set_tail(uint8_t* tail) {
-    tail_ = tail;
-  }
  protected:
 
   Map* own_;
@@ -51,13 +49,13 @@ class PolyICUnit: public core::IntrusiveListBase {
     Chain* chain_;
     Map* proto_;
   };
+  Map* transit_;
   Type type_;
   uint8_t* tail_;
 };
 
 class PolyIC : public IC, public core::IntrusiveList<PolyICUnit> {
  public:
-  static const std::size_t k64MovImmOffset = 2;
   typedef PolyICUnit Unit;
 
   PolyIC() : IC(IC::POLY) { }
@@ -68,26 +66,6 @@ class PolyIC : public IC, public core::IntrusiveList<PolyICUnit> {
       ++it;
       ic->Unlink();
       delete ic;
-    }
-  }
-
-  static std::size_t Generate64Mov(Xbyak::CodeGenerator* as) {
-    const uint64_t dummy64 = UINT64_C(0x0FFF000000000000);
-    const std::size_t result = as->getSize() + k64MovImmOffset;
-    as->mov(as->rax, dummy64);
-    return result;
-  }
-
-  // Generate Tail position
-  static std::size_t GenerateTail(Xbyak::CodeGenerator* as) {
-    const std::size_t result = Generate64Mov(as);
-    as->jmp(as->rax);
-    return result;
-  }
-
-  static void Rewrite(uint8_t* data, uint64_t disp, std::size_t size) {
-    for (size_t i = 0; i < size; i++) {
-      data[i] = static_cast<uint8_t>(disp >> (i * 8));
     }
   }
 
@@ -106,6 +84,9 @@ class PolyIC : public IC, public core::IntrusiveList<PolyICUnit> {
       entry = GC_MARK_AND_PUSH(
           it->proto(),
           entry, mark_sp_limit, reinterpret_cast<void**>(this));
+      entry = GC_MARK_AND_PUSH(
+          it->transit(),
+          entry, mark_sp_limit, reinterpret_cast<void**>(this));
     }
     return entry;
   }
@@ -114,6 +95,7 @@ class PolyIC : public IC, public core::IntrusiveList<PolyICUnit> {
     for (iterator it = begin(), last = end(); it != last; ++it) {
       core->MarkCell(it->own());
       core->MarkCell(it->proto());
+      core->MarkCell(it->transit());
     }
   }
 };
@@ -288,7 +270,6 @@ class LoadPropertyIC : public PolyIC {
   void LoadOwnProperty(Context* ctx, Map* map, uint32_t offset) {
     if (Unit* ic = Generate(ctx, LoadOwnPropertyCompiler(map, offset))) {
       ic->set_own(map);
-      ic->set_proto(NULL);
     }
   }
 
@@ -516,19 +497,20 @@ class StorePropertyIC : public PolyIC {
   class StoreNewPropertyCompiler {
    public:
     static const Unit::Type kType = Unit::STORE_NEW_PROPERTY;
-    static const int kSize = 128;
+    static const int kSize = 256;
 
-    StoreNewPropertyCompiler(Map* prev, Map* next, uint32_t offset)
-      : prev_(prev),
+    StoreNewPropertyCompiler(Chain* chain, Map* prev, Map* next, uint32_t offset)
+      : chain_(chain),
+        prev_(prev),
         next_(next),
         offset_(offset) {
     }
 
     void operator()(StorePropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
-      // TODO(Constellation) not implemented yet
     }
 
    private:
+    Chain* chain_;
     Map* prev_;
     Map* next_;
     uint32_t offset_;
@@ -537,14 +519,13 @@ class StorePropertyIC : public PolyIC {
   void StoreReplaceProperty(Map* map, uint32_t offset) {
     if (Unit* ic = Generate(StoreReplacePropertyCompiler(map, offset))) {
       ic->set_own(map);
-      ic->set_proto(NULL);
     }
   }
 
-  void StoreNewProperty(Map* prev, Map* next, uint32_t offset) {
+  void StoreNewProperty(Chain* chain, Map* prev, Map* next, uint32_t offset) {
     // TODO(Constellation) not implemented yet
     return;
-    if (Unit* ic = Generate(StoreNewPropertyCompiler(prev, next, offset))) {
+    if (Unit* ic = Generate(StoreNewPropertyCompiler(chain, prev, next, offset))) {
       ic->set_own(prev);
       ic->set_proto(next);
     }
