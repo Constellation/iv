@@ -256,7 +256,7 @@ int main(int argc, char **argv) {
   }
 
   if (cmd.Exist("copyright")) {
-    std::printf("lv5 - Copyright (C) 2010 %s\n", IV_DEVELOPER);
+    std::printf("lv5 - %s\n", IV_COPYRIGHT);
     return EXIT_SUCCESS;
   }
 
