@@ -8,6 +8,7 @@
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/map.h>
 #include <iv/lv5/class.h>
+#include <iostream>
 namespace iv {
 namespace lv5 {
 
@@ -45,6 +46,7 @@ class JSWeakMap : public core::AllStatic {
             point.key->set(cell);
             point.value = value;
             point.state = USED;
+            size_ += 1;
             inserted = true;
             break;
           }
@@ -53,6 +55,7 @@ class JSWeakMap : public core::AllStatic {
             point.key = Box::New(cell);
             point.value = value;
             point.state = USED;
+            size_ += 1;
             inserted = true;
             break;
           }
@@ -79,8 +82,6 @@ class JSWeakMap : public core::AllStatic {
         }
         GrowForce();
       } while (true);
-
-      size_ += 1;
       Grow();
     }
 
