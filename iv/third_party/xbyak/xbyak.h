@@ -9,8 +9,15 @@
 	@note modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#if not +0
-	#error "use -fno-operator-names to use 'not', 'xor, 'and' as function names"
+/*
+	XBYAK_NO_OP_NAMES will result in the instructions and(), or(), xor() and not()
+	to be replaced by and_(), or_(), xor_() and not_(), which is useful for compilers
+	that don't support -fno-operator-names
+*/
+#ifndef XBYAK_NO_OP_NAMES
+	#if not +0 // trick to detect whether 'not' is operator or not
+		#error "use -fno-operator-names to use 'not', 'xor', 'or', 'and' as function names or define XBYAK_NO_OP_NAMES to get 'not_', 'xor_', 'or_', 'and_' instead."
+	#endif
 #endif
 
 #include <stdio.h> // for debug print
@@ -28,7 +35,7 @@
 	#include <stdlib.h>
 #endif
 
-#ifdef __x86_64__
+#if defined(__x86_64__) && !defined(__MINGW64__)
 		#define XBYAK64_GCC
 #elif defined(_WIN64)
 		#define XBYAK64_WIN
@@ -55,7 +62,7 @@ namespace Xbyak {
 
 enum {
 	DEFAULT_MAX_CODE_SIZE = 4096,
-	VERSION = 0x3600 /* 0xABCD = A.BC(D) */
+	VERSION = 0x3700 /* 0xABCD = A.BC(D) */
 };
 
 #ifndef MIE_INTEGER_TYPE_DEFINED
@@ -148,7 +155,9 @@ inline const char *ConvertErrorToString(Error err)
 
 inline void *AlignedMalloc(size_t size, size_t alignment)
 {
-#ifdef _WIN32
+#ifdef __MINGW32__
+	return __mingw_aligned_malloc(size, alignment);
+#elif defined(_WIN32)
 	return _aligned_malloc(size, alignment);
 #else
 	void *p;
@@ -159,7 +168,9 @@ inline void *AlignedMalloc(size_t size, size_t alignment)
 
 inline void AlignedFree(void *p)
 {
-#ifdef _MSC_VER
+#ifdef __MINGW32__
+	__mingw_aligned_free(p);
+#elif defined(_MSC_VER)
 	_aligned_free(p);
 #else
 	free(p);
