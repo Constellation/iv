@@ -182,11 +182,9 @@ class JSWeakMap : public core::AllStatic {
     }
 
     void GrowForce() {
-      Vector current(vector_);
-
-      // grow size
-      Clear();
-      vector_.resize(current.size() * 2);
+      Vector current(vector_.size() * 2);
+      current.swap(vector_);
+      size_ = 0;
 
       for (Vector::iterator it = current.begin(), last = current.end(); it != last; ++it) {
         const Vector::value_type& point = *it;
