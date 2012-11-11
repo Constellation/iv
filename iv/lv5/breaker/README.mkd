@@ -9,3 +9,12 @@ This compiler parses railgun::opcodes and emits native code.
 Some primitive operations and branch operations are emitted as raw native code,
 and basic complex opcodes are emitted as call to stub function,
 that is, Context Threading JIT.
+
+## Features
+
+* RegisterVM bytecode to x64 machine code compiler
+* Monomorphic Inline Cache (MonoIC) for Global variable load / store
+* Polymorphic Inline Cache (PolyIC)
+* Static Type Analysis
+* Simple Constant Folding
+
