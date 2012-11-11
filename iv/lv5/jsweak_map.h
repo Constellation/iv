@@ -8,7 +8,6 @@
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/map.h>
 #include <iv/lv5/class.h>
-#include <iostream>
 namespace iv {
 namespace lv5 {
 
