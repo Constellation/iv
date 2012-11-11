@@ -1057,7 +1057,7 @@ inline void Compiler::Visit(const ObjectLiteral* lit) {
     }
   }
   Map* map = builder.Build();
-  temporary_.push_back(map);
+  code_->RegisterMap(map);
   Instruction inst(0u);
   inst.map = map;
   EmitArgAt(inst, arg_index);

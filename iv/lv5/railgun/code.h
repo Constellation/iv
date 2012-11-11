@@ -32,6 +32,7 @@ class Code : public radio::HeapObject<radio::POINTER> {
   typedef GCVector<Symbol>::type Names;
   typedef CoreData::Data Data;
   typedef GCVector<Code*>::type Codes;
+  typedef GCVector<Map*>::type Maps;
 
   Code(Context* ctx,
        JSScript* script,
@@ -57,6 +58,7 @@ class Code : public radio::HeapObject<radio::POINTER> {
       names_(),
       params_(func.params().size()),
       constants_(),
+      maps_(),
       exception_table_(),
       construct_map_(NULL),
       executable_(NULL) {
@@ -192,6 +194,7 @@ class Code : public radio::HeapObject<radio::POINTER> {
     std::for_each(codes_.begin(), codes_.end(), radio::Core::Marker(core));
     std::for_each(constants_.begin(),
                   constants_.end(), radio::Core::Marker(core));
+    std::for_each(maps_.begin(), maps_.end(), radio::Core::Marker(core));
     core->MarkCell(construct_map_);
   }
 
@@ -211,6 +214,10 @@ class Code : public radio::HeapObject<radio::POINTER> {
   CoreData* core_data() { return core_; }
 
   void* executable() const { return executable_; }
+
+  void RegisterMap(Map* map) {
+    maps_.push_back(map);
+  }
 
  private:
 
@@ -249,6 +256,7 @@ class Code : public radio::HeapObject<radio::POINTER> {
   Names names_;
   Names params_;
   JSVals constants_;
+  Maps maps_;
   ExceptionTable exception_table_;
   Map* construct_map_;
   void* executable_;

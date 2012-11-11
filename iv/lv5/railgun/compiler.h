@@ -312,8 +312,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
       constant_pool_(ctx),
       function_literal_to_code_map_(),
       continuation_status_(),
-      current_variable_scope_(),
-      temporary_() {
+      current_variable_scope_() {
   }
 
   // entry points
@@ -1308,7 +1307,6 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   FunctionLiteralToCodeMap function_literal_to_code_map_;
   ContinuationStatus continuation_status_;
   std::shared_ptr<VariableScope> current_variable_scope_;
-  trace::Vector<Map*>::type temporary_;
 };
 
 inline Code* CompileGlobal(Context* ctx,
