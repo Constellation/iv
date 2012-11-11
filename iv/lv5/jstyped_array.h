@@ -106,13 +106,12 @@ class TypedArrayImpl : public JSObject {
     class JS##NAME : public TypedArrayImpl<TYPE, JS##NAME> {\
      public:\
       IV_LV5_DEFINE_JSCLASS(NAME)\
-      typedef JS##NAME this_type;\
       typedef TypedArrayImpl<TYPE, JS##NAME> impl_type;\
       static const Class::JSClassType ClassCode = Class::NAME;\
       JS##NAME(Context* ctx,\
-                JSArrayBuffer* buf,\
-                uint32_t byte_offset,\
-                uint32_t byte_length, uint32_t length, Map* map)\
+               JSArrayBuffer* buf,\
+               uint32_t byte_offset,\
+               uint32_t byte_length, uint32_t length, Map* map)\
         : impl_type(ctx, buf, byte_offset, byte_length, length, map) { }\
     }
 

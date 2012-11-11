@@ -1374,46 +1374,15 @@ void Context::InitBinaryBlocks(const ClassSlot& func_cls,
   }
 
   // TypedArray
-#define IV_LV5_DEFINE_TYPED_ARRAY(TYPE, NAME)\
-  do {\
-    JSObject* const proto =\
-        JSObject::New(this, Map::NewUniqueMap(this, global_data_.GetTypedArrayMap()));\
-    JSFunction* const constructor =\
-        JSInlinedFunction<&runtime::TypedArrayConstructor<TYPE, JS##NAME##Array>, 1>::NewPlain(\
-            this,\
-            Intern(IV_TO_STRING(NAME##Array)));\
-    struct ClassSlot cls = {\
-      JS##NAME##Array::GetClass(),\
-      Intern(IV_TO_STRING(NAME##Array)),\
-      JSString::NewAsciiString(this, IV_TO_STRING(NAME##Array), &dummy),\
-      constructor,\
-      proto\
-    };\
-    global_data_.RegisterClass<Class::NAME##Array>(cls);\
-    global_binder->def(cls.name, constructor, ATTR::W | ATTR::C);\
-    global_data_.set_typed_array_prototype(TypedArrayTraits<TYPE>::code, proto);\
-    bind::Object(this, constructor)\
-        .cls(func_cls.cls)\
-        .prototype(func_cls.prototype)\
-        .def(symbol::prototype(), proto, ATTR::NONE)\
-        .def("BYTES_PER_ELEMENT", JSVal::UnSigned(static_cast<uint32_t>(sizeof(TYPE))), ATTR::NONE);\
-    bind::Object(this, proto)\
-        .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)\
-        .def<&runtime::TypedArraySet<TYPE, JS##NAME##Array>, 1>("set")\
-        .def<&runtime::TypedArraySubarray<TYPE, JS##NAME##Array>, 1>("subarray");\
-  } while (0)
-
-  IV_LV5_DEFINE_TYPED_ARRAY(int8_t, Int8);
-  IV_LV5_DEFINE_TYPED_ARRAY(uint8_t, Uint8);
-  IV_LV5_DEFINE_TYPED_ARRAY(int16_t, Int16);
-  IV_LV5_DEFINE_TYPED_ARRAY(uint16_t, Uint16);
-  IV_LV5_DEFINE_TYPED_ARRAY(int32_t, Int32);
-  IV_LV5_DEFINE_TYPED_ARRAY(uint32_t, Uint32);
-  IV_LV5_DEFINE_TYPED_ARRAY(float, Float32);
-  IV_LV5_DEFINE_TYPED_ARRAY(double, Float64);
-  IV_LV5_DEFINE_TYPED_ARRAY(Uint8Clamped, Uint8Clamped);
-
-#undef IV_LV5_DEFINE_TYPED_ARRAY
+  InitTypedArray<JSInt8Array, Class::Int8Array>(func_cls, global_binder);
+  InitTypedArray<JSUint8Array, Class::Uint8Array>(func_cls, global_binder);
+  InitTypedArray<JSInt16Array, Class::Int16Array>(func_cls, global_binder);
+  InitTypedArray<JSUint16Array, Class::Uint16Array>(func_cls, global_binder);
+  InitTypedArray<JSInt32Array, Class::Int32Array>(func_cls, global_binder);
+  InitTypedArray<JSUint32Array, Class::Uint32Array>(func_cls, global_binder);
+  InitTypedArray<JSFloat32Array, Class::Float32Array>(func_cls, global_binder);
+  InitTypedArray<JSFloat64Array, Class::Float64Array>(func_cls, global_binder);
+  InitTypedArray<JSUint8ClampedArray, Class::Uint8ClampedArray>(func_cls, global_binder);
 
   // DataView
   {
@@ -1459,6 +1428,37 @@ void Context::InitBinaryBlocks(const ClassSlot& func_cls,
         .def<&runtime::DataViewSetFloat32, 3>("setFloat32")
         .def<&runtime::DataViewSetFloat64, 3>("setFloat64");
   }
+}
+
+template<typename TypedArray, Class::JSClassType CLS>
+inline void Context::InitTypedArray(const ClassSlot& func_cls, bind::Object* global_binder) {
+  Error::Dummy dummy;
+  JSObject* const proto =
+      JSObject::New(this, Map::NewUniqueMap(this, global_data_.GetTypedArrayMap()));
+  const Class* cls = TypedArray::GetClass();
+  JSFunction* const constructor =
+      JSInlinedFunction<&runtime::TypedArrayConstructor<typename TypedArray::Element, TypedArray>, 1>::NewPlain(
+          this,
+          Intern(cls->name));
+  struct ClassSlot slot = {
+    TypedArray::GetClass(),
+    Intern(IV_TO_STRING(cls->name)),
+    JSString::NewAsciiString(this, cls->name, &dummy),
+    constructor,
+    proto
+  };
+  global_data_.RegisterClass<CLS>(slot);
+  global_binder->def(slot.name, constructor, ATTR::W | ATTR::C);
+  global_data_.set_typed_array_prototype(TypedArrayTraits<typename TypedArray::Element>::code, proto);
+  bind::Object(this, constructor)
+      .cls(func_cls.cls)
+      .prototype(func_cls.prototype)
+      .def(symbol::prototype(), proto, ATTR::NONE)
+      .def("BYTES_PER_ELEMENT", JSVal::UnSigned(static_cast<uint32_t>(sizeof(typename TypedArray::Element))), ATTR::NONE);
+  bind::Object proto_binder(this, proto);
+  proto_binder.def(symbol::constructor(), constructor, ATTR::W | ATTR::C);
+  proto_binder.def<&runtime::TypedArraySet<typename TypedArray::Element, TypedArray>, 1>("set");
+  proto_binder.def<&runtime::TypedArraySubarray<typename TypedArray::Element, TypedArray>, 1>("subarray");
 }
 
 Symbol Context::Intern(const core::StringPiece& str) {
