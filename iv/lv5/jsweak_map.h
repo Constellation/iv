@@ -32,7 +32,9 @@ class JSWeakMap : public core::AllStatic {
 
     typedef GCVector<Element>::type Vector;
 
-    WeakCellMap() : vector_(1 << 2), size_(0) { }
+    static const int kInitialSize = 1 << 2;
+
+    WeakCellMap() : vector_(kInitialSize), size_(0) { }
 
     void Set(radio::Cell* cell, JSVal value) {
       do {
@@ -160,6 +162,7 @@ class JSWeakMap : public core::AllStatic {
 
     void Clear() {
       vector_.clear();
+      vector_.resize(kInitialSize);
       size_ = 0;
     }
 
