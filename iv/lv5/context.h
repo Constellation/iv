@@ -145,6 +145,9 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
   void InitMap(const ClassSlot& func_cls,
                JSObject* obj_proto, bind::Object* global_binder);
 
+  void InitWeakMap(const ClassSlot& func_cls,
+                   JSObject* obj_proto, bind::Object* global_binder);
+
   void InitSet(const ClassSlot& func_cls,
                JSObject* obj_proto, bind::Object* global_binder);
 

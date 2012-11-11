@@ -9,6 +9,7 @@
 #include <iv/lv5/jsenv.h>
 #include <iv/lv5/jsjson.h>
 #include <iv/lv5/jsmap.h>
+#include <iv/lv5/jsweak_map.h>
 #include <iv/lv5/jsset.h>
 #include <iv/lv5/jsglobal.h>
 #include <iv/lv5/jsfunction.h>
@@ -266,6 +267,7 @@ void Context::Initialize() {
   // ES.next
   InitIntl(func_cls, obj_proto, &global_binder);
   InitMap(func_cls, obj_proto, &global_binder);
+  InitWeakMap(func_cls, obj_proto, &global_binder);
   InitSet(func_cls, obj_proto, &global_binder);
   InitBinaryBlocks(func_cls, obj_proto, &global_binder);
 
@@ -1195,6 +1197,36 @@ void Context::InitMap(const ClassSlot& func_cls,
       .def_getter<&runtime::MapSize, 0>("size");
 
   global_data()->set_map_prototype(proto);
+}
+
+void Context::InitWeakMap(const ClassSlot& func_cls,
+                          JSObject* obj_proto, bind::Object* global_binder) {
+  Error::Dummy dummy;
+  JSObject* const proto = JSObject::NewPlain(this, Map::NewUniqueMap(this));
+  JSFunction* const constructor =
+      JSInlinedFunction<&runtime::WeakMapConstructor, 0>::NewPlain(
+          this, Intern("WeakMap"));
+
+  global_binder->def("WeakMap", constructor, ATTR::W | ATTR::C);
+
+  bind::Object(this, constructor)
+      .cls(func_cls.cls)
+      .prototype(func_cls.prototype)
+      .def(symbol::prototype(), proto, ATTR::NONE);
+
+  bind::Object(this, proto)
+      .prototype(obj_proto)
+      .cls(JSObject::GetClass())
+      .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
+      .def(Intern("@@toStringTag"),
+           JSString::NewAsciiString(this, "WeakMap", &dummy), ATTR::W | ATTR::C)
+      .def<&runtime::WeakMapClear, 0>("clear")
+      .def<&runtime::WeakMapDelete, 1>("delete")
+      .def<&runtime::WeakMapGet, 1>("get")
+      .def<&runtime::WeakMapHas, 1>("has")
+      .def<&runtime::WeakMapSet, 2>("set");
+
+  global_data()->set_weak_map_prototype(proto);
 }
 
 void Context::InitSet(const ClassSlot& func_cls,

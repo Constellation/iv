@@ -14,6 +14,7 @@
 #include <new>
 #include <iterator>
 #include <iv/thread_safe_ref_counted.h>
+#include <gc/gc.h>
 namespace iv {
 namespace lv5 {
 

@@ -59,6 +59,7 @@ class GlobalData {
       regexp_map_(NULL),
       error_map_(Map::New(ctx)),
       map_map_(Map::New(ctx)),
+      weak_map_map_(Map::New(ctx)),
       set_map_(Map::New(ctx)),
       array_buffer_map_(NULL),
       data_view_map_(NULL),
@@ -230,6 +231,8 @@ class GlobalData {
 
   Map* GetMapMap() const { return map_map_; }
 
+  Map* GetWeakMapMap() const { return weak_map_map_; }
+
   Map* GetSetMap() const { return set_map_; }
 
   Map* GetArrayBufferMap() const { return array_buffer_map_; }
@@ -250,6 +253,12 @@ class GlobalData {
   }
 
   JSObject* map_prototype() const { return map_prototype_; }
+
+  void set_weak_map_prototype(JSObject* proto) {
+    weak_map_prototype_ = proto;
+  }
+
+  JSObject* weak_map_prototype() const { return weak_map_prototype_; }
 
   void set_set_prototype(JSObject* proto) {
     set_prototype_ = proto;
@@ -308,6 +317,7 @@ class GlobalData {
   JSObject* regexp_prototype_;
   JSObject* error_prototype_;
   JSObject* map_prototype_;
+  JSObject* weak_map_prototype_;
   JSObject* set_prototype_;
   JSObject* array_buffer_prototype_;
   JSObject* data_view_prototype_;
@@ -324,6 +334,7 @@ class GlobalData {
   Map* regexp_map_;
   Map* error_map_;
   Map* map_map_;
+  Map* weak_map_map_;
   Map* set_map_;
   Map* array_buffer_map_;
   Map* data_view_map_;

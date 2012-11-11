@@ -17,6 +17,7 @@
 #include <iv/lv5/runtime_error.h>
 #include <iv/lv5/runtime_json.h>
 #include <iv/lv5/runtime_map.h>
+#include <iv/lv5/runtime_weak_map.h>
 #include <iv/lv5/runtime_set.h>
 #include <iv/lv5/runtime_i18n.h>
 #include <iv/lv5/runtime_array_buffer.h>
