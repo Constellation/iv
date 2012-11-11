@@ -1796,8 +1796,7 @@ class Compiler {
       const std::ptrdiff_t data_offset =
           vector_offset + JSArray::JSValVector::DataOffset();
       asm_->mov(asm_->rax, asm_->qword[asm_->rsi + data_offset]);
-      asm_->lea(asm_->rax, asm_->ptr[asm_->rax + asm_->rdi * kJSValSize]);
-      asm_->mov(asm_->qword[asm_->rax], asm_->rdx);
+      asm_->mov(asm_->qword[asm_->rax + asm_->rdi * kJSValSize], asm_->rdx);
       asm_->jmp(".EXIT");
       asm_->L(".ARRAY_FAST_PATH_EXIT");
     }

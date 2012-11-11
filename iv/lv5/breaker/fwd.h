@@ -64,6 +64,7 @@ class IC;
 class TemplatesGenerator;
 
 class LoadPropertyIC;
+class StorePropertyIC;
 
 // JIT Frame layout. This frame layout is constructed on breaker prologue
 struct Frame {
@@ -114,6 +115,9 @@ Rep STORE_GLOBAL(Frame* stack, Symbol name,
 
 Rep LOAD_PROP_GENERIC(Frame* stack, JSVal base, LoadPropertyIC* site);
 Rep LOAD_PROP(Frame* stack, JSVal base, LoadPropertyIC* site);
+
+Rep STORE_PROP(Frame* stack, JSVal base, JSVal src, StorePropertyIC* ic);
+Rep STORE_PROP_GENERIC(Frame* stack, JSVal base, JSVal src, StorePropertyIC* ic);
 
 } } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_FWD_H_

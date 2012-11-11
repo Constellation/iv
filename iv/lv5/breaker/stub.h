@@ -887,7 +887,7 @@ inline void StorePropImpl(Context* ctx,
 }
 
 template<bool Strict>
-inline Rep STORE_ELEMENT(Frame* stack, JSVal base, JSVal element, JSVal src) {
+inline Rep STORE_ELEMENT(Frame* stack, JSVal base, JSVal src, JSVal element) {
   Context* ctx = stack->ctx;
   const Symbol name = element.ToSymbol(ctx, ERR);
   StorePropImpl<Strict>(ctx, base, name, src, ERR);
@@ -955,11 +955,12 @@ inline JSEnv* TRY_CATCH_SETUP(Context* ctx,
   return JSStaticEnv::New(ctx, outer, sym, value);
 }
 
-template<bool Strict>
-inline Rep STORE_PROP_GENERIC(Frame* stack,
-                              JSVal base, Symbol name, JSVal src,
-                              railgun::Instruction* instr) {
-  StorePropImpl<Strict>(stack->ctx, base, name, src, ERR);
+inline Rep STORE_PROP_GENERIC(Frame* stack, JSVal base, JSVal src, StorePropertyIC* ic) {
+  if (ic->strict()) {
+    StorePropImpl<true>(stack->ctx, base, ic->name(), src, ERR);
+  } else {
+    StorePropImpl<false>(stack->ctx, base, ic->name(), src, ERR);
+  }
   return 0;
 }
 
@@ -1027,39 +1028,34 @@ inline Rep LOAD_PROP(Frame* stack, JSVal base, LoadPropertyIC* site) {  // NOLIN
   return Extract(res);
 }
 
-template<bool Strict>
-inline Rep STORE_PROP(Frame* stack,
-                      JSVal base, Symbol name, JSVal src,
-                      railgun::Instruction* instr) {
+inline Rep STORE_PROP(Frame* stack, JSVal base, JSVal src, StorePropertyIC* ic) {
   Context* ctx = stack->ctx;
+  const Symbol name = ic->name();
   if (base.IsPrimitive()) {
-    StorePropPrimitive<Strict>(ctx, base, name, src, ERR);
-  } else {
-    // cache patten
-    JSObject* obj = base.object();
-    if (instr[2].map == obj->map()) {
-      // map is cached, so use previous index code
-      obj->Direct(instr[3].u32[0]) = src;
+    if (ic->strict()) {
+      StorePropPrimitive<true>(ctx, base, name, src, ERR);
     } else {
-      Slot slot;
-      if (obj->GetOwnPropertySlot(ctx, name, &slot)) {
-        if (slot.IsStoreCacheable()) {
-          instr[2].map = obj->map();
-          instr[3].u32[0] = slot.offset();
-          obj->Direct(slot.offset()) = src;
-        } else {
-          // dispatch generic path
-          obj->Put(ctx, name, src, Strict, ERR);
-          instr[0] = railgun::Instruction::GetOPInstruction(railgun::OP::STORE_PROP_GENERIC);
-          Assembler::RepatchSite::RepatchAfterCall(
-              stack->ret, core::BitCast<uint64_t>(&stub::STORE_PROP_GENERIC<Strict>));
-        }
-      } else {
-        instr[2].map = NULL;
-        obj->Put(ctx, name, src, Strict, ERR);
-      }
+      StorePropPrimitive<false>(ctx, base, name, src, ERR);
     }
+    return 0;
   }
+
+  JSObject* obj = base.object();
+  Slot slot;
+  if (!obj->GetOwnPropertySlot(ctx, name, &slot)) {
+    // new property
+    obj->Put(ctx, name, src, ic->strict(), ERR);
+    return 0;
+  }
+
+  if (!slot.IsStoreCacheable()) {
+    obj->Put(ctx, name, src, ic->strict(), ERR);
+    return 0;
+  }
+
+  // cache, replace property
+  ic->StoreReplaceProperty(obj->map(), slot.offset());
+  obj->Direct(slot.offset()) = src;
   return 0;
 }
 

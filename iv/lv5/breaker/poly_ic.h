@@ -16,7 +16,9 @@ class PolyICUnit: public core::IntrusiveListBase {
     LOAD_PROTOTYPE_PROPERTY,
     LOAD_CHAIN_PROPERTY,
     LOAD_STRING_LENGTH,
-    LOAD_ARRAY_LENGTH
+    LOAD_ARRAY_LENGTH,
+    STORE_REPLACE_PROPERTY,
+    STORE_NEW_PROPERTY
   };
 
   explicit PolyICUnit(Type type)
@@ -83,6 +85,16 @@ class PolyIC : public IC, public core::IntrusiveList<PolyICUnit> {
     return result;
   }
 
+  static void Rewrite(uint8_t* data, uint64_t disp, std::size_t size) {
+    for (size_t i = 0; i < size; i++) {
+      data[i] = static_cast<uint8_t>(disp >> (i * 8));
+    }
+  }
+
+  static bool CanEmitDirectCall(Xbyak::CodeGenerator* as, const void* addr) {
+    return Xbyak::inner::IsInInt32(reinterpret_cast<const uint8_t*>(addr) - as->getCurr());
+  }
+
   virtual GC_ms_entry* MarkChildren(GC_word* top,
                                     GC_ms_entry* entry,
                                     GC_ms_entry* mark_sp_limit,
@@ -110,7 +122,7 @@ class LoadPropertyIC : public PolyIC {
  public:
   static const std::size_t kMaxPolyICSize = 5;
 
-  explicit LoadPropertyIC(NativeCode* native_code, Symbol name)
+  LoadPropertyIC(NativeCode* native_code, Symbol name)
     : from_original_(),
       main_path_(NULL),
       object_chain_(NULL),
@@ -121,58 +133,6 @@ class LoadPropertyIC : public PolyIC {
   void BindOriginal(std::size_t from_original) {
     from_original_ = from_original;
     native_code()->assembler()->rewrite(from_original_, core::BitCast<uintptr_t>(&stub::LOAD_PROP), k64Size);
-  }
-
-  static bool CanEmitDirectCall(Xbyak::CodeGenerator* as, const void* addr) {
-    return Xbyak::inner::IsInInt32(reinterpret_cast<const uint8_t*>(addr) - as->getCurr());
-  }
-
-  template<bool TRAILING_STRING>
-  void GenerateGuardPrologue(Xbyak::CodeGenerator* as) {
-    // check target is Cell
-    as->mov(as->r10, detail::jsval64::kValueMask);
-    as->test(as->rsi, as->r10);
-    as->jnz("POLY_IC_GUARD_GENERIC", Xbyak::CodeGenerator::T_NEAR);
-
-    // target is guaranteed as cell
-    as->mov(as->r8, as->rsi);
-    as->cmp(as->word[as->rsi + radio::Cell::TagOffset()], radio::OBJECT);
-    if (TRAILING_STRING) {
-      assert(length_property());
-      as->je("POLY_IC_GUARD_OTHER", Xbyak::CodeGenerator::T_NEAR);
-    } else {
-      as->jne("POLY_IC_GUARD_OTHER", Xbyak::CodeGenerator::T_NEAR);  // we should purge this to string check path
-    }
-    as->L("POLY_IC_START_MAIN");
-    main_path_ = const_cast<uint8_t*>(as->getCurr());
-  }
-
-  template<bool LEADING_STRING>
-  void GenerateGuardEpilogue(Context* ctx, Xbyak::CodeGenerator* as) {
-    as->L("POLY_IC_GUARD_OTHER");
-    if (LEADING_STRING) {
-      // object path
-      const std::size_t pos = GenerateTail(as);
-      from_object_guard_ = const_cast<uint8_t*>(as->getCode()) + pos;
-      Rewrite(from_object_guard_, core::BitCast<uintptr_t>(&stub::LOAD_PROP), k64Size);
-    } else {
-      // string path
-      if (length_property()) {
-        const std::size_t pos = GenerateTail(as);
-        from_string_guard_ = const_cast<uint8_t*>(as->getCode()) + pos;
-        Rewrite(from_string_guard_, core::BitCast<uintptr_t>(main_path()), k64Size);
-      } else {
-        // use String.prototype object
-        JSObject* prototype = ctx->global_data()->GetClassSlot(Class::String).prototype;
-        as->mov(as->r8, core::BitCast<uintptr_t>(prototype));
-        as->jmp("POLY_IC_START_MAIN", Xbyak::CodeGenerator::T_NEAR);
-      }
-    }
-
-    // They are used as last entry
-    as->L("POLY_IC_GUARD_GENERIC");
-    as->mov(as->rax, core::BitCast<uint64_t>(&stub::LOAD_PROP_GENERIC));
-    as->jmp(as->rax);
   }
 
   // load to rax
@@ -328,6 +288,7 @@ class LoadPropertyIC : public PolyIC {
   void LoadOwnProperty(Context* ctx, Map* map, uint32_t offset) {
     if (Unit* ic = Generate(ctx, LoadOwnPropertyCompiler(map, offset))) {
       ic->set_own(map);
+      ic->set_proto(NULL);
     }
   }
 
@@ -386,6 +347,54 @@ class LoadPropertyIC : public PolyIC {
   Symbol name() const { return name_; }
 
  private:
+  template<bool TRAILING_STRING>
+  void GenerateGuardPrologue(Xbyak::CodeGenerator* as) {
+    // check target is Cell
+    as->mov(as->r10, detail::jsval64::kValueMask);
+    as->test(as->rsi, as->r10);
+    as->jnz("POLY_IC_GUARD_GENERIC", Xbyak::CodeGenerator::T_NEAR);
+
+    // target is guaranteed as cell
+    as->mov(as->r8, as->rsi);
+    as->cmp(as->word[as->rsi + radio::Cell::TagOffset()], radio::OBJECT);
+    if (TRAILING_STRING) {
+      assert(length_property());
+      as->je("POLY_IC_GUARD_OTHER", Xbyak::CodeGenerator::T_NEAR);
+    } else {
+      as->jne("POLY_IC_GUARD_OTHER", Xbyak::CodeGenerator::T_NEAR);  // we should purge this to string check path
+    }
+    as->L("POLY_IC_START_MAIN");
+    main_path_ = const_cast<uint8_t*>(as->getCurr());
+  }
+
+  template<bool LEADING_STRING>
+  void GenerateGuardEpilogue(Context* ctx, Xbyak::CodeGenerator* as) {
+    as->L("POLY_IC_GUARD_OTHER");
+    if (LEADING_STRING) {
+      // object path
+      const std::size_t pos = GenerateTail(as);
+      from_object_guard_ = const_cast<uint8_t*>(as->getCode()) + pos;
+      Rewrite(from_object_guard_, core::BitCast<uintptr_t>(&stub::LOAD_PROP), k64Size);
+    } else {
+      // string path
+      if (length_property()) {
+        const std::size_t pos = GenerateTail(as);
+        from_string_guard_ = const_cast<uint8_t*>(as->getCode()) + pos;
+        Rewrite(from_string_guard_, core::BitCast<uintptr_t>(main_path()), k64Size);
+      } else {
+        // use String.prototype object
+        JSObject* prototype = ctx->global_data()->GetClassSlot(Class::String).prototype;
+        as->mov(as->r8, core::BitCast<uintptr_t>(prototype));
+        as->jmp("POLY_IC_START_MAIN", Xbyak::CodeGenerator::T_NEAR);
+      }
+    }
+
+    // They are used as last entry
+    as->L("POLY_IC_GUARD_GENERIC");
+    as->mov(as->rax, core::BitCast<uint64_t>(&stub::LOAD_PROP_GENERIC));
+    as->jmp(as->rax);
+  }
+
   // main generation path
   template<typename Generator>
   Unit* Generate(Context* ctx, const Generator& gen) {
@@ -443,12 +452,6 @@ class LoadPropertyIC : public PolyIC {
     }
   }
 
-  static void Rewrite(uint8_t* data, uint64_t disp, std::size_t size) {
-    for (size_t i = 0; i < size; i++) {
-      data[i] = static_cast<uint8_t>(disp >> (i * 8));
-    }
-  }
-
   union {
     std::size_t from_original_;
     uint8_t* from_object_guard_;
@@ -461,7 +464,169 @@ class LoadPropertyIC : public PolyIC {
 };
 
 class StorePropertyIC : public PolyIC {
+ public:
   static const std::size_t kMaxPolyICSize = 5;
+
+  StorePropertyIC(NativeCode* native_code, Symbol name, bool strict)
+    : from_original_(),
+      native_code_(native_code),
+      name_(name),
+      strict_(strict) {
+  }
+
+  void BindOriginal(std::size_t from_original) {
+    from_original_ = from_original;
+    const uintptr_t call = core::BitCast<uintptr_t>(&stub::STORE_PROP);
+    native_code()->assembler()->rewrite(from_original_, call, k64Size);
+  }
+
+  static void GenerateFastStore(Xbyak::CodeGenerator* as, const Xbyak::Reg64& reg, uint32_t offset) {
+    const std::ptrdiff_t data_offset =
+        JSObject::SlotsOffset() +
+        JSObject::Slots::DataOffset();
+    as->mov(as->rax, as->qword[reg + data_offset]);
+    as->mov(as->qword[as->rax + kJSValSize * offset], as->rdx);
+    as->ret();
+  }
+
+  class StoreReplacePropertyCompiler {
+   public:
+    static const Unit::Type kType = Unit::STORE_REPLACE_PROPERTY;
+    static const int kSize = 128;
+
+    StoreReplacePropertyCompiler(Map* map, uint32_t offset)
+      : map_(map),
+        offset_(offset) {
+    }
+
+    void operator()(StorePropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
+      // own map guard
+      as->mov(as->r10, core::BitCast<uintptr_t>(map_));
+      as->cmp(as->r10, as->qword[as->rsi + JSObject::MapOffset()]);
+      as->jne(fail);
+      // store
+      StorePropertyIC::GenerateFastStore(as, as->rsi, offset_);
+    }
+
+   private:
+    Map* map_;
+    uint32_t offset_;
+  };
+
+  class StoreNewPropertyCompiler {
+   public:
+    static const Unit::Type kType = Unit::STORE_NEW_PROPERTY;
+    static const int kSize = 128;
+
+    StoreNewPropertyCompiler(Map* prev, Map* next, uint32_t offset)
+      : prev_(prev),
+        next_(next),
+        offset_(offset) {
+    }
+
+    void operator()(StorePropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
+      // TODO(Constellation) not implemented yet
+    }
+
+   private:
+    Map* prev_;
+    Map* next_;
+    uint32_t offset_;
+  };
+
+  void StoreReplaceProperty(Map* map, uint32_t offset) {
+    if (Unit* ic = Generate(StoreReplacePropertyCompiler(map, offset))) {
+      ic->set_own(map);
+      ic->set_proto(NULL);
+    }
+  }
+
+  void StoreNewProperty(Map* prev, Map* next, uint32_t offset) {
+    // TODO(Constellation) not implemented yet
+    return;
+    if (Unit* ic = Generate(StoreNewPropertyCompiler(prev, next, offset))) {
+      ic->set_own(prev);
+      ic->set_proto(next);
+    }
+  }
+
+  NativeCode* native_code() const { return native_code_; }
+  bool strict() const { return strict_; }
+  Symbol name() const { return name_; }
+
+ private:
+  void GenerateGuardPrologue(Xbyak::CodeGenerator* as) {
+    // check target is Cell
+    as->mov(as->r10, detail::jsval64::kValueMask);
+    as->test(as->rsi, as->r10);
+    as->jnz("POLY_IC_GUARD_GENERIC", Xbyak::CodeGenerator::T_NEAR);
+
+    // target is guaranteed as cell
+    as->cmp(as->word[as->rsi + radio::Cell::TagOffset()], radio::OBJECT);
+    as->jne("POLY_IC_GUARD_GENERIC", Xbyak::CodeGenerator::T_NEAR);  // we should purge this to string check path
+  }
+
+  void GenerateGuardEpilogue(Xbyak::CodeGenerator* as) {
+    // They are used as last entry
+    const uintptr_t call = core::BitCast<uintptr_t>(&stub::STORE_PROP_GENERIC);
+    as->L("POLY_IC_GUARD_GENERIC");
+    as->mov(as->rax, call);
+    as->jmp(as->rax);
+  }
+
+  template<typename Generator>
+  Unit* Generate(const Generator& gen) {
+    if (size() >= kMaxPolyICSize) {
+      return NULL;
+    }
+
+    Unit* ic = new Unit(Generator::kType);
+
+    NativeCode::Pages::Buffer buffer = native_code()->pages()->Gain(Generator::kSize);
+    Xbyak::CodeGenerator as(buffer.size, buffer.ptr);
+    const bool generate_guard = empty();
+
+    if (generate_guard) {
+      GenerateGuardPrologue(&as);
+    }
+
+    as.inLocalLabel();
+    gen(this, &as, ".EXIT");
+    // fail path
+    as.L(".EXIT");
+    const std::size_t pos = GenerateTail(&as);
+    ic->set_tail(const_cast<uint8_t*>(as.getCode()) + pos);
+    as.outLocalLabel();
+
+    Chaining(ic, core::BitCast<uintptr_t>(as.getCode()));
+    if (generate_guard) {
+      GenerateGuardEpilogue(&as);
+    }
+    push_back(*ic);
+    assert(as.getSize() <= Generator::kSize);
+    return ic;
+  }
+
+  void Chaining(Unit* ic, uintptr_t code) {
+    if (empty()) {
+      // rewrite original
+      native_code()->assembler()->rewrite(from_original_, code, k64Size);
+    } else {
+      back().Redirect(code);
+    }
+
+    if ((size() + 1) == kMaxPolyICSize) {
+      // last one
+      ic->Redirect(core::BitCast<uintptr_t>(&stub::STORE_PROP_GENERIC));
+    } else {
+      ic->Redirect(core::BitCast<uintptr_t>(&stub::STORE_PROP));
+    }
+  }
+
+  std::size_t from_original_;
+  NativeCode* native_code_;
+  Symbol name_;
+  bool strict_;
 };
 
 } } }  // namespace iv::lv5::breaker
