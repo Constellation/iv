@@ -15,11 +15,11 @@
 #include <iv/lv5/breaker/fwd.h>
 #include <iv/lv5/railgun/railgun.h>
 #include <iv/lv5/breaker/assembler.h>
-#include <iv/lv5/breaker/stub.h>
 #include <iv/lv5/breaker/jsfunction.h>
 #include <iv/lv5/breaker/type.h>
 #include <iv/lv5/breaker/mono_ic.h>
 #include <iv/lv5/breaker/poly_ic.h>
+#include <iv/lv5/breaker/stub.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {
@@ -1472,11 +1472,7 @@ class Compiler {
 
     const Assembler::LocalLabelScope scope(asm_);
 
-    LoadVR(asm_->rsi, base);
-
-    // NOTE
-    // Do not break rax before this LoadVR
-    LoadVR(asm_->rcx, src);
+    LoadVRs(asm_->rsi, base, asm_->rdx, src);
 
     if (symbol::IsArrayIndexSymbol(name)) {
       // generate Array index fast path
@@ -1495,25 +1491,27 @@ class Compiler {
       const std::ptrdiff_t data_offset =
           vector_offset + JSArray::JSValVector::DataOffset();
       asm_->mov(asm_->rax, asm_->qword[asm_->rsi + data_offset]);
-      asm_->mov(asm_->qword[asm_->rax + kJSValSize * index], asm_->rcx);
+      asm_->mov(asm_->qword[asm_->rax + kJSValSize * index], asm_->rdx);
       asm_->jmp(".EXIT");
       asm_->L(".ARRAY_FAST_PATH_EXIT");
-    }
 
-    CheckObjectCoercible(base, asm_->rsi, asm_->rdx);
-
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
-    asm_->mov(asm_->r8, core::BitCast<uint64_t>(instr));
-
-    Assembler::RepatchSite site;
-    site.MovRepatchableAligned(asm_, asm_->rax);
-    if (code_->strict()) {
-      site.Repatch(asm_, core::BitCast<uint64_t>(&stub::STORE_PROP<true>));
+      // store element
+      asm_->mov(asm_->rdi, asm_->r14);
+      asm_->mov(asm_->rcx, Extract(JSVal::UInt32(index)));
+      if (code_->strict()) {
+        asm_->Call(&stub::STORE_ELEMENT<true>);
+      } else {
+        asm_->Call(&stub::STORE_ELEMENT<false>);
+      }
     } else {
-      site.Repatch(asm_, core::BitCast<uint64_t>(&stub::STORE_PROP<false>));
+      asm_->mov(asm_->rdi, asm_->r14);
+      StorePropertyIC* ic(new StorePropertyIC(native_code(), name, code_->strict()));
+      native_code()->BindIC(ic);
+      asm_->mov(asm_->rcx, core::BitCast<uint64_t>(ic));
+      const std::size_t offset = PolyIC::Generate64Mov(asm_);
+      ic->BindOriginal(offset);
+      asm_->call(asm_->rax);
     }
-    asm_->call(asm_->rax);
     asm_->L(".EXIT");
   }
 
@@ -1753,6 +1751,7 @@ class Compiler {
       asm_->L(".ARRAY_FAST_PATH_EXIT");
     }
 
+    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
     asm_->mov(asm_->rdi, asm_->r14);
     asm_->Call(&stub::LOAD_ELEMENT);
 
@@ -1771,13 +1770,13 @@ class Compiler {
 
     const Assembler::LocalLabelScope scope(asm_);
 
-    LoadVRs(asm_->rsi, base, asm_->rdx, element);
-    LoadVR(asm_->rcx, src);
+    LoadVRs(asm_->rsi, base, asm_->rcx, element);
+    LoadVR(asm_->rdx, src);
 
     {
       // check element is int32_t and element >= 0
-      Int32Guard(element, asm_->rdx, ".ARRAY_FAST_PATH_EXIT");
-      asm_->cmp(asm_->edx, 0);
+      Int32Guard(element, asm_->rcx, ".ARRAY_FAST_PATH_EXIT");
+      asm_->cmp(asm_->ecx, 0);
       asm_->jl(".ARRAY_FAST_PATH_EXIT");
 
       // generate Array index fast path
@@ -1789,7 +1788,7 @@ class Compiler {
       const std::ptrdiff_t size_offset =
           vector_offset + JSArray::JSValVector::SizeOffset();
       // TODO(Constellation): change Storage size to uint32_t
-      asm_->mov(asm_->edi, asm_->edx);
+      asm_->mov(asm_->edi, asm_->ecx);
       asm_->cmp(asm_->rdi, asm_->qword[asm_->rsi + size_offset]);
       asm_->jae(".ARRAY_FAST_PATH_EXIT");
 
@@ -1798,7 +1797,7 @@ class Compiler {
           vector_offset + JSArray::JSValVector::DataOffset();
       asm_->mov(asm_->rax, asm_->qword[asm_->rsi + data_offset]);
       asm_->lea(asm_->rax, asm_->ptr[asm_->rax + asm_->rdi * kJSValSize]);
-      asm_->mov(asm_->qword[asm_->rax], asm_->rcx);
+      asm_->mov(asm_->qword[asm_->rax], asm_->rdx);
       asm_->jmp(".EXIT");
       asm_->L(".ARRAY_FAST_PATH_EXIT");
     }
