@@ -191,6 +191,10 @@ class Storage {
     return IV_OFFSETOF(this_type, size_);
   }
 
+  static std::size_t CapacityOffset() {
+    return IV_OFFSETOF(this_type, capacity_);
+  }
+
  private:
   T* data_;  // This is GC target pointer
   size_type size_;
