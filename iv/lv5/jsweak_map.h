@@ -13,7 +13,7 @@ namespace lv5 {
 
 class JSWeakMap : public core::AllStatic {
  public:
-  // use very simple open-addres hash table
+  // use very simple open-address hash table
   class WeakCellMap : public radio::HeapObject<> {
    public:
     typedef WeakBox<radio::Cell> Box;
