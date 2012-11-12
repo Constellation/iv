@@ -120,8 +120,16 @@ class JSWeakMap : public core::AllStatic {
         if (point.state == EMPTY) {
           return false;
         }
-        if (point.state == USED && !point.key->IsCollected() && point.key->get() == cell) {
-          return true;
+        if (point.state == USED) {
+          if (!point.key->IsCollected()) {
+            if (point.key->get() == cell) {
+              return true;
+            }
+          } else {
+            point.value = JSUndefined;
+            point.state = DELETED;
+            size_ -= 1;
+          }
         }
         // next
         key += 1;
@@ -148,9 +156,9 @@ class JSWeakMap : public core::AllStatic {
               return true;
             }
           } else {
-              point.value = JSUndefined;
-              point.state = DELETED;
-              size_ -= 1;
+            point.value = JSUndefined;
+            point.state = DELETED;
+            size_ -= 1;
           }
         }
         // next
