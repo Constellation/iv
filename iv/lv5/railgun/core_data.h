@@ -11,6 +11,13 @@
 class iv::lv5::breaker::NativeCode {
  public:
   void MarkChildren(radio::Core* core) { }
+
+  GC_ms_entry* MarkChildren(GC_word* top,
+                            GC_ms_entry* entry,
+                            GC_ms_entry* mark_sp_limit,
+                            GC_word env) {
+    return entry;
+  }
 };
 #endif
 

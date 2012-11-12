@@ -1,6 +1,7 @@
 #ifndef IV_NOTFOUND_H_
 #define IV_NOTFOUND_H_
 #include <limits>
+#include <iv/detail/cstdint.h>
 namespace iv {
 namespace core {
 
