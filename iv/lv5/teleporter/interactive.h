@@ -14,6 +14,7 @@
 #include <iv/lv5/jsstring.h>
 #include <iv/lv5/command.h>
 #include <iv/lv5/teleporter/teleporter.h>
+#include <iv/lv5/melt/melt.h>
 namespace iv {
 namespace lv5 {
 namespace teleporter {
@@ -28,9 +29,11 @@ class Interactive {
  public:
   Interactive()
     : ctx_() {
+    Error::Dummy dummy;
     ctx_.DefineFunction<&lv5::Print, 1>("print");
     ctx_.DefineFunction<&lv5::Quit, 1>("quit");
     ctx_.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
+    melt::Console::Export(&ctx_, &dummy);
   }
   int Run() {
     std::vector<char> buffer;

@@ -57,24 +57,26 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
 
   void Initialize();
 
+  void Import(const core::StringPiece& name, JSObject* obj) {
+    Error::Dummy e;
+    const Symbol sym = Intern(name);
+    global_env_->CreateMutableBinding(this, sym, false, IV_LV5_ERROR_VOID(&e));
+    global_env_->SetMutableBinding(this, sym, obj, false, &e);
+  }
+
   template<typename Func>
   void DefineFunction(const Func& f,
                       const core::StringPiece& func_name,
                       std::size_t n) {
-    Error::Dummy e;
     JSFunction* const func = JSNativeFunction::New(this, f, n);
-    const Symbol name = Intern(func_name);
-    global_env_->CreateMutableBinding(this, name, false, IV_LV5_ERROR_VOID(&e));
-    global_env_->SetMutableBinding(this, name, func, false, &e);
+    Import(func_name, func);
   }
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
   void DefineFunction(const core::StringPiece& func_name) {
-    Error::Dummy e;
     const Symbol name = Intern(func_name);
     JSFunction* const f = JSInlinedFunction<func, n>::New(this, name);
-    global_env_->CreateMutableBinding(this, name, false, IV_LV5_ERROR_VOID(&e));
-    global_env_->SetMutableBinding(this, name, f, false, &e);
+    Import(func_name, f);
   }
 
   JSFunction* throw_type_error() {

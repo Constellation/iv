@@ -11,26 +11,31 @@
 #include <iv/lv5/railgun/command.h>
 #include <iv/lv5/railgun/interactive.h>
 #include <iv/lv5/teleporter/interactive.h>
-#include <iv/lv5/breaker/breaker.h>
+#include <iv/lv5/melt/melt.h>
 #if defined(IV_OS_MACOSX) || defined(IV_OS_LINUX) || defined(IV_OS_BSD)
 #include <signal.h>
 #endif
 
 namespace {
 
+void InitContext(iv::lv5::Context* ctx) {
+  iv::lv5::Error::Dummy dummy;
+  ctx->DefineFunction<&iv::lv5::Print, 1>("print");
+  ctx->DefineFunction<&iv::lv5::Log, 1>("log");  // this is simply output log function
+  ctx->DefineFunction<&iv::lv5::Quit, 1>("quit");
+  ctx->DefineFunction<&iv::lv5::CollectGarbage, 0>("gc");
+  ctx->DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
+  ctx->DefineFunction<&iv::lv5::railgun::Dis, 1>("dis");
+  ctx->DefineFunction<&iv::lv5::breaker::Run, 0>("run");
+  iv::lv5::melt::Console::Export(ctx, &dummy);
+}
+
 #if defined(IV_ENABLE_JIT)
 int BreakerExecute(const iv::core::StringPiece& data,
                    const std::string& filename, bool statistics) {
   iv::lv5::Error::Standard e;
   iv::lv5::breaker::Context ctx;
-  ctx.DefineFunction<&iv::lv5::Print, 1>("print");
-  ctx.DefineFunction<&iv::lv5::Log, 1>("log");  // this is simply output log function
-  ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
-  ctx.DefineFunction<&iv::lv5::CollectGarbage, 0>("gc");
-  ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
-  ctx.DefineFunction<&iv::lv5::railgun::Dis, 1>("dis");
-  ctx.DefineFunction<&iv::lv5::breaker::Run, 0>("run");
-
+  InitContext(&ctx);
   std::shared_ptr<iv::core::FileSource>
       src(new iv::core::FileSource(data, filename));
   iv::lv5::breaker::ExecuteInGlobal(&ctx, src, &e);
@@ -45,13 +50,7 @@ int BreakerExecute(const iv::core::StringPiece& data,
 int BreakerExecuteFiles(const std::vector<std::string>& filenames) {
   iv::lv5::Error::Standard e;
   iv::lv5::breaker::Context ctx;
-  ctx.DefineFunction<&iv::lv5::Print, 1>("print");
-  ctx.DefineFunction<&iv::lv5::Log, 1>("log");
-  ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
-  ctx.DefineFunction<&iv::lv5::CollectGarbage, 0>("gc");
-  ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
-  ctx.DefineFunction<&iv::lv5::railgun::Dis, 1>("dis");
-  ctx.DefineFunction<&iv::lv5::breaker::Run, 0>("run");
+  InitContext(&ctx);
 
   std::vector<char> res;
   for (std::vector<std::string>::const_iterator it = filenames.begin(),
@@ -78,13 +77,7 @@ int RailgunExecute(const iv::core::StringPiece& data,
                    const std::string& filename, bool statistics) {
   iv::lv5::Error::Standard e;
   iv::lv5::railgun::Context ctx;
-  ctx.DefineFunction<&iv::lv5::Print, 1>("print");
-  ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
-  ctx.DefineFunction<&iv::lv5::CollectGarbage, 0>("gc");
-  ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
-  ctx.DefineFunction<&iv::lv5::railgun::Dis, 1>("dis");
-  ctx.DefineFunction<&iv::lv5::railgun::Run, 0>("run");
-  ctx.DefineFunction<&iv::lv5::railgun::StackDepth, 0>("StackDepth");
+  InitContext(&ctx);
 
   std::shared_ptr<iv::core::FileSource>
       src(new iv::core::FileSource(data, filename));
@@ -103,13 +96,7 @@ int RailgunExecute(const iv::core::StringPiece& data,
 int RailgunExecuteFiles(const std::vector<std::string>& filenames) {
   iv::lv5::Error::Standard e;
   iv::lv5::railgun::Context ctx;
-  ctx.DefineFunction<&iv::lv5::Print, 1>("print");
-  ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
-  ctx.DefineFunction<&iv::lv5::CollectGarbage, 0>("gc");
-  ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
-  ctx.DefineFunction<&iv::lv5::railgun::Dis, 1>("dis");
-  ctx.DefineFunction<&iv::lv5::railgun::Run, 0>("run");
-  ctx.DefineFunction<&iv::lv5::railgun::StackDepth, 0>("StackDepth");
+  InitContext(&ctx);
 
   std::vector<char> res;
   for (std::vector<std::string>::const_iterator it = filenames.begin(),

@@ -15,6 +15,7 @@
 #include <iv/lv5/command.h>
 #include <iv/lv5/railgun/railgun.h>
 #include <iv/lv5/railgun/command.h>
+#include <iv/lv5/melt/melt.h>
 namespace iv {
 namespace lv5 {
 namespace railgun {
@@ -30,6 +31,7 @@ class Interactive {
   explicit Interactive(bool disassemble)
     : ctx_(),
       disassemble_(disassemble) {
+    Error::Dummy dummy;
     ctx_.DefineFunction<&Print, 1>("print");
     ctx_.DefineFunction<&Quit, 1>("quit");
     ctx_.DefineFunction<&CollectGarbage, 0>("gc");
@@ -37,6 +39,7 @@ class Interactive {
     ctx_.DefineFunction<&railgun::Run, 0>("run");
     ctx_.DefineFunction<&railgun::StackDepth, 0>("StackDepth");
     ctx_.DefineFunction<&railgun::Dis, 1>("dis");
+    melt::Console::Export(&ctx_, &dummy);
   }
 
   int Run() {
