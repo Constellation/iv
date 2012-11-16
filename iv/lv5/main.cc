@@ -8,9 +8,10 @@
 #include <iv/about.h>
 #include <iv/cmdline.h>
 #include <iv/lv5/lv5.h>
+#include <iv/lv5/teleporter/interactive.h>
 #include <iv/lv5/railgun/command.h>
 #include <iv/lv5/railgun/interactive.h>
-#include <iv/lv5/teleporter/interactive.h>
+#include <iv/lv5/breaker/command.h>
 #include <iv/lv5/melt/melt.h>
 #if defined(IV_OS_MACOSX) || defined(IV_OS_LINUX) || defined(IV_OS_BSD)
 #include <signal.h>
