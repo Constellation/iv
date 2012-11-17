@@ -76,21 +76,21 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
   static JSArray* New(Context* ctx) {
     JSArray* const ary = new JSArray(ctx, 0u);
     ary->set_cls(GetClass());
-    ary->set_prototype(context::GetClassSlot(ctx, Class::Array).prototype);
+    ary->set_prototype(ctx->global_data()->array_prototype());
     return ary;
   }
 
   static JSArray* New(Context* ctx, uint32_t n) {
     JSArray* const ary = new JSArray(ctx, n);
     ary->set_cls(GetClass());
-    ary->set_prototype(context::GetClassSlot(ctx, Class::Array).prototype);
+    ary->set_prototype(ctx->global_data()->array_prototype());
     return ary;
   }
 
   static JSArray* New(Context* ctx, JSArray* array) {
     JSArray* const ary = new JSArray(ctx, array);
     ary->set_cls(GetClass());
-    ary->set_prototype(context::GetClassSlot(ctx, Class::Array).prototype);
+    ary->set_prototype(ctx->global_data()->array_prototype());
     return ary;
   }
 

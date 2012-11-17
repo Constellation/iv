@@ -248,44 +248,43 @@ class GlobalData {
 
   core::SymbolTable* symbol_table() { return &symbol_table_; }
 
-  void set_map_prototype(JSObject* proto) {
-    map_prototype_ = proto;
-  }
-
+  // prototypes getter
+  JSObject* object_prototype() const { return object_prototype_; }
+  JSObject* function_prototype() const { return function_prototype_; }
+  JSObject* array_prototype() const { return array_prototype_; }
+  JSObject* string_prototype() const { return string_prototype_; }
+  JSObject* boolean_prototype() const { return boolean_prototype_; }
+  JSObject* number_prototype() const { return number_prototype_; }
+  JSObject* date_prototype() const { return date_prototype_; }
+  JSObject* regexp_prototype() const { return regexp_prototype_; }
+  JSObject* error_prototype() const { return error_prototype_; }
+  JSObject* iterator_prototype() const { return iterator_prototype_; }
   JSObject* map_prototype() const { return map_prototype_; }
-
-  void set_weak_map_prototype(JSObject* proto) {
-    weak_map_prototype_ = proto;
-  }
-
   JSObject* weak_map_prototype() const { return weak_map_prototype_; }
-
-  void set_set_prototype(JSObject* proto) {
-    set_prototype_ = proto;
-  }
-
   JSObject* set_prototype() const { return set_prototype_; }
-
-  void set_array_buffer_prototype(JSObject* proto) {
-    array_buffer_prototype_ = proto;
-  }
-
   JSObject* array_buffer_prototype() const { return array_buffer_prototype_; }
-
-  void set_data_view_prototype(JSObject* proto) {
-    data_view_prototype_ = proto;
-  }
-
   JSObject* data_view_prototype() const { return data_view_prototype_; }
-
-  void set_typed_array_prototype(TypedCode::Code code, JSObject* proto) {
-    typed_array_prototypes_[code] = proto;
-  }
-
   JSObject* typed_array_prototype(TypedCode::Code code) const { return typed_array_prototypes_[code]; }
 
-
  private:
+  // prototypes setter
+  void set_object_prototype(JSObject* proto) { object_prototype_ = proto; }
+  void set_function_prototype(JSObject* proto) { function_prototype_ = proto; }
+  void set_array_prototype(JSObject* proto) { array_prototype_ = proto; }
+  void set_string_prototype(JSObject* proto) { string_prototype_ = proto; }
+  void set_boolean_prototype(JSObject* proto) { boolean_prototype_ = proto; }
+  void set_number_prototype(JSObject* proto) { number_prototype_ = proto; }
+  void set_date_prototype(JSObject* proto) { date_prototype_ = proto; }
+  void set_regexp_prototype(JSObject* proto) { regexp_prototype_ = proto; }
+  void set_error_prototype(JSObject* proto) { error_prototype_ = proto; }
+  void set_map_prototype(JSObject* proto) { map_prototype_ = proto; }
+  void set_weak_map_prototype(JSObject* proto) { weak_map_prototype_ = proto; }
+  void set_set_prototype(JSObject* proto) { set_prototype_ = proto; }
+  void set_array_buffer_prototype(JSObject* proto) { array_buffer_prototype_ = proto; }
+  void set_data_view_prototype(JSObject* proto) { data_view_prototype_ = proto; }
+  void set_typed_array_prototype(TypedCode::Code code, JSObject* proto) { typed_array_prototypes_[code] = proto; }
+
+
   RandomGenerator random_generator_;
   trace::Vector<JSRegExpImpl*>::type regs_;
   core::SymbolTable symbol_table_;
@@ -316,6 +315,7 @@ class GlobalData {
   JSObject* date_prototype_;
   JSObject* regexp_prototype_;
   JSObject* error_prototype_;
+  JSObject* iterator_prototype_;
   JSObject* map_prototype_;
   JSObject* weak_map_prototype_;
   JSObject* set_prototype_;

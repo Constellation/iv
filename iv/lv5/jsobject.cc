@@ -328,12 +328,12 @@ bool JSObject::GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
 JSObject* JSObject::New(Context* ctx) {
   JSObject* const obj = NewPlain(ctx);
   obj->set_cls(JSObject::GetClass());
-  obj->set_prototype(context::GetClassSlot(ctx, Class::Object).prototype);
+  obj->set_prototype(ctx->global_data()->object_prototype());
   return obj;
 }
 
 JSObject* JSObject::New(Context* ctx, Map* map) {
-  return New(ctx, map, context::GetClassSlot(ctx, Class::Object).prototype);
+  return New(ctx, map, ctx->global_data()->object_prototype());
 }
 
 JSObject* JSObject::New(Context* ctx, Map* map, JSObject* prototype) {

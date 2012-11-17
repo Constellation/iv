@@ -364,7 +364,7 @@ class LoadPropertyIC : public PolyIC {
         Rewrite(from_string_guard_, core::BitCast<uintptr_t>(main_path()), k64Size);
       } else {
         // use String.prototype object
-        JSObject* prototype = ctx->global_data()->GetClassSlot(Class::String).prototype;
+        JSObject* prototype = ctx->global_data()->string_prototype();
         as->mov(as->r8, core::BitCast<uintptr_t>(prototype));
         as->jmp("POLY_IC_START_MAIN", Xbyak::CodeGenerator::T_NEAR);
       }

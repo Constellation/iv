@@ -220,6 +220,7 @@ void Context::Initialize() {
       .def<&runtime::FunctionCall, 1>("call")
       // section 15.3.4.5 Function.prototype.bind(thisArg[, arg1[, arg2, ...]])
       .def<&runtime::FunctionBind, 1>("bind");
+  global_data()->set_function_prototype(func_proto);
 
   bind::Object(this, obj_proto)
       .cls(obj_cls.cls)
@@ -238,6 +239,7 @@ void Context::Initialize() {
       .def<&runtime::ObjectIsPrototypeOf, 1>("isPrototypeOf")
       // section 15.2.4.7 Object.prototype.propertyIsEnumerable(V)
       .def<&runtime::ObjectPropertyIsEnumerable, 1>("propertyIsEnumerable");
+  global_data()->set_object_prototype(obj_proto);
 
   global_binder.def(func_cls.name, func_constructor, ATTR::W | ATTR::C);
   global_binder.def(obj_cls.name, obj_constructor, ATTR::W | ATTR::C);
@@ -415,6 +417,7 @@ void Context::InitArray(const ClassSlot& func_cls,
       // section 15.4.4.22
       // Array.prototype.reduceRight(callbackfn[, initialValue])
       .def<&runtime::ArrayReduceRight, 1>("reduceRight");
+  global_data()->set_array_prototype(proto);
 }
 
 void Context::InitString(const ClassSlot& func_cls,
@@ -509,6 +512,7 @@ void Context::InitString(const ClassSlot& func_cls,
       // section B.2.3 String.prototype.substr(start, length)
       // this method is deprecated.
       .def<&runtime::StringSubstr, 2>("substr");
+  global_data()->set_string_prototype(proto);
 }
 
 void Context::InitBoolean(const ClassSlot& func_cls,
@@ -548,6 +552,7 @@ void Context::InitBoolean(const ClassSlot& func_cls,
       .def<&runtime::BooleanToString, 0>(symbol::toString())
       // section 15.6.4.3 Boolean.prototype.valueOf()
       .def<&runtime::BooleanValueOf, 0>(symbol::valueOf());
+  global_data()->set_boolean_prototype(proto);
 }
 
 void Context::InitNumber(const ClassSlot& func_cls,
@@ -623,6 +628,7 @@ void Context::InitNumber(const ClassSlot& func_cls,
       .def<&runtime::NumberToPrecision, 1>("toPrecision")
       // section 15.7.4.8 Number.prototype.clz()
       .def<&runtime::NumberCLZ, 0>("clz");
+  global_data()->set_number_prototype(proto);
 }
 
 void Context::InitMath(const ClassSlot& func_cls,
@@ -862,6 +868,7 @@ void Context::InitDate(const ClassSlot& func_cls,
       .def<&runtime::DateSetYear, 1>("setYear")
       // section B.2.6 Date.prototype.toGMTString()
       .def("toGMTString", toUTCString, ATTR::W | ATTR::C);
+  global_data()->set_date_prototype(proto);
 }
 
 void Context::InitRegExp(const ClassSlot& func_cls,
@@ -904,6 +911,7 @@ void Context::InitRegExp(const ClassSlot& func_cls,
       .def<&runtime::RegExpToString, 0>("toString")
       // Not Standard RegExp.prototype.compile(pattern, flags)
       .def<&runtime::RegExpCompile, 2>("compile");
+  global_data()->set_regexp_prototype(proto);
 }
 
 void Context::InitError(const ClassSlot& func_cls,
@@ -945,6 +953,7 @@ void Context::InitError(const ClassSlot& func_cls,
       .def("message", JSString::NewEmptyString(this), ATTR::W | ATTR::C)
       // section 15.11.4.4 Error.prototype.toString()
       .def<&runtime::ErrorToString, 0>(symbol::toString());
+  global_data()->set_error_prototype(proto);
 
   {
     // section 15.11.6.1 EvalError
@@ -1195,7 +1204,6 @@ void Context::InitMap(const ClassSlot& func_cls,
       .def<&runtime::MapHas, 1>("has")
       .def<&runtime::MapSet, 2>("set")
       .def_getter<&runtime::MapSize, 0>("size");
-
   global_data()->set_map_prototype(proto);
 }
 
@@ -1225,7 +1233,6 @@ void Context::InitWeakMap(const ClassSlot& func_cls,
       .def<&runtime::WeakMapGet, 1>("get")
       .def<&runtime::WeakMapHas, 1>("has")
       .def<&runtime::WeakMapSet, 2>("set");
-
   global_data()->set_weak_map_prototype(proto);
 }
 
@@ -1259,7 +1266,6 @@ void Context::InitSet(const ClassSlot& func_cls,
       .def<&runtime::SetForEach, 1>("forEach")
       .def<&runtime::SetHas, 1>("has")
       .def_getter<&runtime::SetSize, 0>("size");
-
   global_data()->set_set_prototype(proto);
 }
 
@@ -1479,9 +1485,9 @@ inline void Context::InitTypedArray(const ClassSlot& func_cls, bind::Object* glo
     constructor,
     proto
   };
-  global_data_.RegisterClass<CLS>(slot);
+  global_data()->RegisterClass<CLS>(slot);
   global_binder->def(slot.name, constructor, ATTR::W | ATTR::C);
-  global_data_.set_typed_array_prototype(TypedArrayTraits<typename TypedArray::Element>::code, proto);
+  global_data()->set_typed_array_prototype(TypedArrayTraits<typename TypedArray::Element>::code, proto);
   bind::Object(this, constructor)
       .cls(func_cls.cls)
       .prototype(func_cls.prototype)

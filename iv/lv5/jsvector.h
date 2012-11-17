@@ -103,7 +103,7 @@ class JSVector : private JSArray {
   static JSVector* New(Context* ctx) {
     JSVector* vec = new JSVector(ctx);
     vec->set_cls(JSArray::GetClass());
-    vec->set_prototype(context::GetClassSlot(ctx, Class::Array).prototype);
+    vec->set_prototype(ctx->global_data()->array_prototype());
     return vec;
   }
 
@@ -111,7 +111,7 @@ class JSVector : private JSArray {
                        const JSVal& v = JSUndefined) {
     JSVector* vec = new JSVector(ctx, n, v);
     vec->set_cls(JSArray::GetClass());
-    vec->set_prototype(context::GetClassSlot(ctx, Class::Array).prototype);
+    vec->set_prototype(ctx->global_data()->array_prototype());
     return vec;
   }
 

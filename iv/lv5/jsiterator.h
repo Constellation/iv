@@ -12,7 +12,7 @@ class JSIterator : public JSObject {
   static JSIterator* New(Context* ctx) {
     JSIterator* const obj = new JSIterator(ctx, value);
     obj->set_cls(JSIterator::GetClass());
-    obj->set_prototype(context::GetClassSlot(ctx, Class::Iterator).prototype);
+    obj->set_prototype(ctx->global_data()->object_prototype());
     return obj;
   }
  private:

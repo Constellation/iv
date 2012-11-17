@@ -43,7 +43,7 @@ class NativeIterator
     for (uint32_t i = 0, len = str->size(); i < len; ++i) {
       Add(i);
     }
-    JSObject* proto = context::GetClassSlot(ctx, Class::String).prototype;
+    JSObject* proto = ctx->global_data()->string_prototype();
     proto->GetPropertyNames(ctx, LevelUp(), EXCLUDE_NOT_ENUMERABLE);
     iter_ = names().begin();
   }

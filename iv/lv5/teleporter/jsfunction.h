@@ -122,7 +122,7 @@ class JSCodeFunction : public JSFunction {
         false, &e);
     // section 13.2 Creating Function Objects
     set_cls(JSFunction::GetClass());
-    set_prototype(context::GetClassSlot(ctx, Class::Function).prototype);
+    set_prototype(ctx->global_data()->function_prototype());
 
     JSObject* const proto = JSObject::New(ctx);
     proto->DefineOwnProperty(

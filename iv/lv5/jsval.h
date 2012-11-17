@@ -629,11 +629,11 @@ inline JSString* JSLayout::TypeOf(Context* ctx) const {
 inline JSObject* JSLayout::GetPrimitiveProto(Context* ctx) const {
   assert(IsPrimitive());
   if (IsString()) {
-    return ctx->global_data()->GetClassSlot(Class::String).prototype;
+    return ctx->global_data()->string_prototype();
   } else if (IsNumber()) {
-    return ctx->global_data()->GetClassSlot(Class::Number).prototype;
+    return ctx->global_data()->number_prototype();
   } else {  // IsBoolean()
-    return ctx->global_data()->GetClassSlot(Class::Boolean).prototype;
+    return ctx->global_data()->boolean_prototype();
   }
 }
 

@@ -41,7 +41,7 @@ class JSNormalArguments : public JSObject {
     JSNormalArguments* const obj = new JSNormalArguments(ctx, env);
     const uint32_t len = static_cast<uint32_t>(std::distance(it, last));
     obj->set_cls(JSArguments::GetClass());
-    obj->set_prototype(context::GetClassSlot(ctx, Class::Arguments).prototype);
+    obj->set_prototype(ctx->global_data()->object_prototype());
     bind::Object binder(ctx, obj);
     binder
         .def(symbol::length(),
@@ -247,7 +247,7 @@ class JSStrictArguments : public JSObject {
     JSStrictArguments* const obj = new JSStrictArguments(ctx);
     const uint32_t len = static_cast<uint32_t>(std::distance(it, last));
     obj->set_cls(JSArguments::GetClass());
-    obj->set_prototype(context::GetClassSlot(ctx, Class::Arguments).prototype);
+    obj->set_prototype(ctx->global_data()->object_prototype());
     bind::Object binder(ctx, obj);
     binder
         .def(symbol::length(),

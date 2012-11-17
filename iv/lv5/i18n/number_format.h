@@ -25,8 +25,7 @@ class JSNumberFormatHolder : public JSObject {
                                    core::i18n::NumberFormat* number_format) {
     JSNumberFormatHolder* const format = new JSNumberFormatHolder(ctx, currency);
     format->set_cls(JSObject::GetClass());
-    format->set_prototype(
-        ctx->global_data()->GetClassSlot(Class::Object).prototype);
+    format->set_prototype(ctx->global_data()->object_prototype());
     format->set_format(number_format);
     return format;
   }

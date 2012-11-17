@@ -29,7 +29,7 @@ class JSError : public JSObject {
   static JSError* New(Context* ctx, Error::Code code, JSString* str) {
     JSError* const err = new JSError(ctx, code, str);
     err->set_cls(JSError::GetClass());
-    err->set_prototype(context::GetClassSlot(ctx, Class::Error).prototype);
+    err->set_prototype(ctx->global_data()->error_prototype());
     return err;
   }
 

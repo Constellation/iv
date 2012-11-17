@@ -20,7 +20,7 @@ class JSDate : public JSObject {
   static JSDate* New(Context* ctx, double val) {
     JSDate* const date = new JSDate(ctx, val);
     date->set_cls(JSDate::GetClass());
-    date->set_prototype(context::GetClassSlot(ctx, Class::Date).prototype);
+    date->set_prototype(ctx->global_data()->date_prototype());
     return date;
   }
 

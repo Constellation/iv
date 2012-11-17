@@ -38,7 +38,7 @@ class JSRegExp : public JSObject {
   static JSRegExp* New(Context* ctx) {
     JSRegExp* const reg = new JSRegExp(ctx);
     reg->set_cls(JSRegExp::GetClass());
-    reg->set_prototype(context::GetClassSlot(ctx, Class::RegExp).prototype);
+    reg->set_prototype(ctx->global_data()->regexp_prototype());
     return reg;
   }
 
@@ -48,21 +48,21 @@ class JSRegExp : public JSObject {
                        Error* e) {
     JSRegExp* const reg = new JSRegExp(ctx, value, impl, IV_LV5_ERROR_WITH(e, NULL));
     reg->set_cls(JSRegExp::GetClass());
-    reg->set_prototype(context::GetClassSlot(ctx, Class::RegExp).prototype);
+    reg->set_prototype(ctx->global_data()->regexp_prototype());
     return reg;
   }
 
   static JSRegExp* New(Context* ctx, JSString* value, Error* e) {
     JSRegExp* const reg = new JSRegExp(ctx, value, IV_LV5_ERROR_WITH(e, NULL));
     reg->set_cls(JSRegExp::GetClass());
-    reg->set_prototype(context::GetClassSlot(ctx, Class::RegExp).prototype);
+    reg->set_prototype(ctx->global_data()->regexp_prototype());
     return reg;
   }
 
   static JSRegExp* New(Context* ctx, JSString* value, JSString* flags, Error* e) {
     JSRegExp* const reg = new JSRegExp(ctx, value, flags, IV_LV5_ERROR_WITH(e, NULL));
     reg->set_cls(JSRegExp::GetClass());
-    reg->set_prototype(context::GetClassSlot(ctx, Class::RegExp).prototype);
+    reg->set_prototype(ctx->global_data()->regexp_prototype());
     return reg;
   }
 
@@ -70,7 +70,7 @@ class JSRegExp : public JSObject {
     JSString* source = r->source();
     JSRegExp* const reg = new JSRegExp(ctx, source, r->impl());
     reg->set_cls(JSRegExp::GetClass());
-    reg->set_prototype(context::GetClassSlot(ctx, Class::RegExp).prototype);
+    reg->set_prototype(ctx->global_data()->regexp_prototype());
     return reg;
   }
 

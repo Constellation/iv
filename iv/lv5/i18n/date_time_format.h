@@ -23,8 +23,7 @@ class JSDateTimeFormatHolder : public JSObject {
                                      core::i18n::DateTimeFormat* number_format) {
     JSDateTimeFormatHolder* const format = new JSDateTimeFormatHolder(ctx);
     format->set_cls(JSObject::GetClass());
-    format->set_prototype(
-        ctx->global_data()->GetClassSlot(Class::Object).prototype);
+    format->set_prototype(ctx->global_data()->object_prototype());
     format->set_format(number_format);
     return format;
   }

@@ -1004,7 +1004,7 @@ inline Rep LOAD_PROP(Frame* stack, JSVal base, LoadPropertyIC* site) {  // NOLIN
 
   JSObject* obj = NULL;
   if (base.IsString()) {
-    obj = ctx->global_data()->GetClassSlot(Class::String).prototype;
+    obj = ctx->global_data()->string_prototype();
   } else {
     obj = base.object();
   }

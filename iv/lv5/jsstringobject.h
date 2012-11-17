@@ -58,7 +58,7 @@ class JSStringObject : public JSObject {
   static JSStringObject* New(Context* ctx, JSString* str) {
     JSStringObject* const obj = new JSStringObject(ctx, str);
     obj->set_cls(JSStringObject::GetClass());
-    obj->set_prototype(context::GetClassSlot(ctx, Class::String).prototype);
+    obj->set_prototype(ctx->global_data()->string_prototype());
     return obj;
   }
 
