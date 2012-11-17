@@ -145,7 +145,7 @@ def main(source, s2):
         max_len,
         len(currencies),
         ',  // NOLINT\n'.join([ '  { "' + c[0] + '", ' + c[2] + ', ' + str(c[3]) + ', { ' + str(len(c[1])) + 'U, ' + dump_line_currency(c[1]) + ' } }' for c in currencies]) + '  // NOLINT',
-        ',\n'.join([ '    ' + c[0].upper() for c in currencies])
+        ',\n'.join([ '    CURRENCY_' + c[0].upper() for c in currencies])
        )
       ).strip()
 
