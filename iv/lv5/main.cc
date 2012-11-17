@@ -27,7 +27,6 @@ void InitContext(iv::lv5::Context* ctx) {
   ctx->DefineFunction<&iv::lv5::CollectGarbage, 0>("gc");
   ctx->DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
   ctx->DefineFunction<&iv::lv5::railgun::Dis, 1>("dis");
-  ctx->DefineFunction<&iv::lv5::breaker::Run, 0>("run");
   iv::lv5::melt::Console::Export(ctx, &dummy);
 }
 
@@ -37,6 +36,7 @@ int BreakerExecute(const iv::core::StringPiece& data,
   iv::lv5::Error::Standard e;
   iv::lv5::breaker::Context ctx;
   InitContext(&ctx);
+  ctx->DefineFunction<&iv::lv5::breaker::Run, 0>("run");
   std::shared_ptr<iv::core::FileSource>
       src(new iv::core::FileSource(data, filename));
   iv::lv5::breaker::ExecuteInGlobal(&ctx, src, &e);
@@ -52,6 +52,7 @@ int BreakerExecuteFiles(const std::vector<std::string>& filenames) {
   iv::lv5::Error::Standard e;
   iv::lv5::breaker::Context ctx;
   InitContext(&ctx);
+  ctx->DefineFunction<&iv::lv5::breaker::Run, 0>("run");
 
   std::vector<char> res;
   for (std::vector<std::string>::const_iterator it = filenames.begin(),
@@ -79,6 +80,7 @@ int RailgunExecute(const iv::core::StringPiece& data,
   iv::lv5::Error::Standard e;
   iv::lv5::railgun::Context ctx;
   InitContext(&ctx);
+  ctx->DefineFunction<&iv::lv5::railgun::Run, 0>("run");
 
   std::shared_ptr<iv::core::FileSource>
       src(new iv::core::FileSource(data, filename));
@@ -98,6 +100,7 @@ int RailgunExecuteFiles(const std::vector<std::string>& filenames) {
   iv::lv5::Error::Standard e;
   iv::lv5::railgun::Context ctx;
   InitContext(&ctx);
+  ctx->DefineFunction<&iv::lv5::railgun::Run, 0>("run");
 
   std::vector<char> res;
   for (std::vector<std::string>::const_iterator it = filenames.begin(),

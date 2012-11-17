@@ -1,5 +1,6 @@
 #ifndef IV_LV5_BREKAER_COMMAND_H_
 #define IV_LV5_BREKAER_COMMAND_H_
+#if defined(IV_ENABLE_JIT)
 #include <iv/file_source.h>
 #include <iv/utils.h>
 #include <iv/date_utils.h>
@@ -58,4 +59,5 @@ inline JSVal Run(const Arguments& args, Error* e) {
 }
 
 } } }  // namespace iv::lv5::breaker
+#endif  // IV_ENABLE_JIT
 #endif  // IV_LV5_BREKAER_COMMAND_H_
