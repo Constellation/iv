@@ -51,6 +51,32 @@ inline double Modulo(double x, double y) {
   return x;
 }
 
+#else
+
+inline int IsNaN(double val) {
+  return std::isnan(val);
+}
+
+inline int IsFinite(double val) {
+  return std::isfinite(val);
+}
+
+inline bool Signbit(double x) {
+  return std::signbit(x);
+}
+
+inline int IsInf(double x) {
+  return std::isinf(x);
+}
+
+inline double Modulo(double x, double y) {
+  return std::fmod(x, y);
+}
+
+#endif
+
+#if defined(IV_OS_WIN) || defined(IV_OS_BSD) || defined(IV_OS_SOLARIS)
+
 inline double Log2(double x) {
   // log2(n) = log(n) / log(2)
   //
@@ -96,26 +122,6 @@ inline double Atanh(double x) {
 }
 
 #else
-
-inline int IsNaN(double val) {
-  return std::isnan(val);
-}
-
-inline int IsFinite(double val) {
-  return std::isfinite(val);
-}
-
-inline bool Signbit(double x) {
-  return std::signbit(x);
-}
-
-inline int IsInf(double x) {
-  return std::isinf(x);
-}
-
-inline double Modulo(double x, double y) {
-  return std::fmod(x, y);
-}
 
 inline double Log2(double x) {
   return std::log2(x);
