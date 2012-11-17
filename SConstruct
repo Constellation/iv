@@ -156,6 +156,7 @@ def Build():
     CCFLAGS=[
       "-Wall", "-Wextra", '-pipe',
       "-Wno-unused-parameter", "-Wwrite-strings", "-Wreturn-type", "-Wpointer-arith",
+      "-Wno-unused-variable",
       "-Wwrite-strings", "-Wno-long-long", "-Wno-missing-field-initializers"],
     CPPPATH=root_dir,
     CPPDEFINES=[
