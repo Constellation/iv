@@ -975,6 +975,18 @@ inline Rep LOAD_PROP(Frame* stack, JSVal base, LoadPropertyIC* site) {  // NOLIN
   Context* ctx = stack->ctx;
   Slot slot;
   const Symbol name = site->name();
+
+  // String / Array length fast path
+  if (name == symbol::length()) {
+    if (base.IsString()) {
+      site->LoadStringLength(ctx);
+      return Extract(JSVal::UInt32(base.string()->size()));
+    } else if (base.IsObject() && base.object()->IsClass<Class::Array>()) {
+      site->LoadArrayLength(ctx);
+      return Extract(JSVal::UInt32(static_cast<JSArray*>(base.object())->GetLength()));
+    }
+  }
+
   const JSVal res = base.GetSlot(ctx, name, &slot, ERR);
 
   if (slot.IsNotFound()) {
@@ -982,17 +994,6 @@ inline Rep LOAD_PROP(Frame* stack, JSVal base, LoadPropertyIC* site) {  // NOLIN
   }
 
   // property found
-
-  // String / Array length fast path
-  if (name == symbol::length()) {
-    if (base.IsString()) {
-      site->LoadStringLength(ctx);
-      return Extract(res);
-    } else if (base.IsObject() && base.object()->IsClass<Class::Array>()) {
-      site->LoadArrayLength(ctx);
-      return Extract(res);
-    }
-  }
 
   // uncacheable path
   if (!slot.IsLoadCacheable() || !base.IsCell()) {
