@@ -24,28 +24,28 @@ class MonoIC : public IC {
   void CompileLoad(Assembler* as, JSObject* global, railgun::Code* code, Symbol name) {
     const Assembler::LocalLabelScope scope(as);
 
-    MapCompile(as, as->rdx);
+    MapCompile(as, rdx);
 
-    as->mov(as->rax, core::BitCast<uint64_t>(global));
+    as->mov(rax, core::BitCast<uint64_t>(global));
 
     // load map pointer
-    as->cmp(as->rdx, as->qword[as->rax + JSObject::MapOffset()]);
+    as->cmp(rdx, qword[rax + JSObject::MapOffset()]);
     as->jne(".SLOW");
 
     const uint32_t dummy32 = 0x7FFF0000;
     const std::ptrdiff_t data_offset =
         JSObject::SlotsOffset() +
         JSObject::Slots::DataOffset();
-    as->mov(as->rax, as->qword[as->rax + data_offset]);
+    as->mov(rax, qword[rax + data_offset]);
     offset_position_ = as->size() + kMovAddressImmOffset;
-    as->mov(as->rax, as->qword[as->rax + dummy32]);
+    as->mov(rax, qword[rax + dummy32]);
     as->jmp(".EXIT");
 
     as->L(".SLOW");
-    as->mov(as->rdi, as->r14);
-    as->mov(as->rsi, core::BitCast<uint64_t>(name));
-    as->mov(as->rdx, core::BitCast<uint64_t>(this));
-    as->mov(as->rcx, core::BitCast<uint64_t>(as));
+    as->mov(rdi, r14);
+    as->mov(rsi, core::BitCast<uint64_t>(name));
+    as->mov(rdx, core::BitCast<uint64_t>(this));
+    as->mov(rcx, core::BitCast<uint64_t>(as));
     if (code->strict()) {
       as->Call(&stub::LOAD_GLOBAL<true>);
     } else {
@@ -59,29 +59,29 @@ class MonoIC : public IC {
   void CompileStore(Assembler* as, JSObject* global, railgun::Code* code, Symbol name) {
     const Assembler::LocalLabelScope scope(as);
 
-    MapCompile(as, as->rdx);
+    MapCompile(as, rdx);
 
-    as->mov(as->rcx, core::BitCast<uint64_t>(global));
+    as->mov(rcx, core::BitCast<uint64_t>(global));
 
     // load map pointer
-    as->cmp(as->rdx, as->qword[as->rcx + JSObject::MapOffset()]);
+    as->cmp(rdx, qword[rcx + JSObject::MapOffset()]);
     as->jne(".SLOW");
 
     const uint32_t dummy32 = 0x7FFF0000;
     const std::ptrdiff_t data_offset =
         JSObject::SlotsOffset() +
         JSObject::Slots::DataOffset();
-    as->mov(as->rcx, as->qword[as->rcx + data_offset]);
+    as->mov(rcx, qword[rcx + data_offset]);
     offset_position_ = as->size() + kMovAddressImmOffset;
-    as->mov(as->qword[as->rcx + dummy32], as->rax);
+    as->mov(qword[rcx + dummy32], rax);
     as->jmp(".EXIT");
 
     as->L(".SLOW");
-    as->mov(as->rdi, as->r14);
-    as->mov(as->rsi, core::BitCast<uint64_t>(name));
-    as->mov(as->rdx, core::BitCast<uint64_t>(this));
-    as->mov(as->rcx, core::BitCast<uint64_t>(as));
-    as->mov(as->r8, as->rax);
+    as->mov(rdi, r14);
+    as->mov(rsi, core::BitCast<uint64_t>(name));
+    as->mov(rdx, core::BitCast<uint64_t>(this));
+    as->mov(rcx, core::BitCast<uint64_t>(as));
+    as->mov(r8, rax);
     if (code->strict()) {
       as->Call(&stub::STORE_GLOBAL<true>);
     } else {

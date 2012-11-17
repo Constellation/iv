@@ -9,6 +9,9 @@
 #if defined(IV_ENABLE_JIT)
 // xbyak assembler
 #include <iv/third_party/xbyak/xbyak.h>
+namespace iv { namespace lv5 { namespace breaker {
+using namespace Xbyak::util;  // NOLINT
+} } }  // namespace iv::lv5::breaker
 #endif  // defined(IV_ENABLE_JIT)
 
 #include <iv/detail/cstdint.h>
@@ -117,7 +120,7 @@ Rep LOAD_PROP_GENERIC(Frame* stack, JSVal base, LoadPropertyIC* site);
 Rep LOAD_PROP(Frame* stack, JSVal base, LoadPropertyIC* site);
 
 Rep STORE_PROP(Frame* stack, JSVal base, JSVal src, StorePropertyIC* ic);
-Rep STORE_PROP_GENERIC(Frame* stack, JSVal base, JSVal src, StorePropertyIC* ic);
+Rep STORE_PROP_GENERIC(Frame* stack, JSVal base, JSVal src, StorePropertyIC* ic);  // NOLINT
 
 } } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_FWD_H_

@@ -217,9 +217,9 @@ class Compiler {
 
     // general storage space
     // We can access this space by qword[rsp + k64Size * 0] a.k.a. qword[rsp]
-    asm_->push(asm_->r12);
-    asm_->sub(asm_->qword[asm_->r14 + offsetof(Frame, ret)], k64Size * kStackPayload);
-    asm_->mov(asm_->rcx, asm_->qword[asm_->r14 + offsetof(Frame, ret)]);
+    asm_->push(r12);
+    asm_->sub(qword[r14 + offsetof(Frame, ret)], k64Size * kStackPayload);
+    asm_->mov(rcx, qword[r14 + offsetof(Frame, ret)]);
 
     const Instruction* total_first_instr = code_->core_data()->data()->data();
     const Instruction* previous = NULL;
@@ -679,7 +679,7 @@ class Compiler {
 
   // Load virtual register
   void LoadVR(const Xbyak::Reg64& out, register_t offset) {
-    const bool break_result = out.getIdx() == asm_->rax.getIdx();
+    const bool break_result = out.getIdx() == rax.getIdx();
 
     if (IsConstantID(offset)) {
       // This is constant register.
@@ -693,7 +693,7 @@ class Compiler {
 
     if (last_used() == offset) {
       if (!break_result) {
-        asm_->mov(out, asm_->rax);
+        asm_->mov(out, rax);
       }
     } else {
       const TypeEntry entry = type_record_.Get(offset);
@@ -705,7 +705,7 @@ class Compiler {
         }
         return;
       }
-      asm_->mov(out, asm_->ptr[asm_->r13 + offset * kJSValSize]);
+      asm_->mov(out, ptr[r13 + offset * kJSValSize]);
       if (break_result) {
         kill_last_used();
       }
@@ -733,8 +733,8 @@ class Compiler {
   void EmitMV(const Instruction* instr) {
     const register_t dst = Reg(instr[1].i16[0]);
     const register_t src = Reg(instr[1].i16[1]);
-    LoadVR(asm_->rax, src);
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    LoadVR(rax, src);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
 
     // type propagation
@@ -745,19 +745,19 @@ class Compiler {
   void EmitBUILD_ENV(const Instruction* instr) {
     const uint32_t size = instr[1].u32[0];
     const uint32_t mutable_start = instr[1].u32[1];
-    asm_->mov(asm_->rdi, asm_->r12);
-    asm_->mov(asm_->rsi, asm_->r13);
-    asm_->mov(asm_->edx, size);
-    asm_->mov(asm_->ecx, mutable_start);
+    asm_->mov(rdi, r12);
+    asm_->mov(rsi, r13);
+    asm_->mov(edx, size);
+    asm_->mov(ecx, mutable_start);
     asm_->Call(&stub::BUILD_ENV);
   }
 
   // opcode | src
   void EmitWITH_SETUP(const Instruction* instr) {
     const register_t src = Reg(instr[1].i32[0]);
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->r13);
-    LoadVR(asm_->rdx, src);
+    asm_->mov(rdi, r14);
+    asm_->mov(rsi, r13);
+    LoadVR(rdx, src);
     asm_->Call(&stub::WITH_SETUP);
   }
 
@@ -767,19 +767,19 @@ class Compiler {
     const register_t flag = Reg(instr[1].i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rcx, flag);
-      asm_->cmp(asm_->ecx, railgun::VM::kJumpFromSubroutine);
+      LoadVR(rcx, flag);
+      asm_->cmp(ecx, railgun::VM::kJumpFromSubroutine);
       asm_->jne(".RETURN_TO_HANDLING");
 
       // encoded address value
-      LoadVR(asm_->rcx, jump);
-      asm_->ror(asm_->rcx, kEncodeRotateN);
-      asm_->sub(asm_->rcx, 1);
-      asm_->jmp(asm_->rcx);
+      LoadVR(rcx, jump);
+      asm_->ror(rcx, kEncodeRotateN);
+      asm_->sub(rcx, 1);
+      asm_->jmp(rcx);
 
       asm_->L(".RETURN_TO_HANDLING");
-      asm_->mov(asm_->rdi, asm_->r14);
-      LoadVR(asm_->rsi, jump);
+      asm_->mov(rdi, r14);
+      LoadVR(rsi, jump);
       asm_->Call(&stub::THROW);
     }
   }
@@ -793,8 +793,8 @@ class Compiler {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[1].ssw.u32;
     const JSVal val = code_->constants()[offset];
-    asm_->mov(asm_->rax, Extract(val));
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(rax, Extract(val));
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
 
     type_record_.Put(dst, TypeEntry(val));
@@ -815,11 +815,11 @@ class Compiler {
     const register_t lhs = Reg(instr[1].i16[1]);
     const register_t rhs = Reg(instr[1].i16[2]);
     {
-      asm_->mov(asm_->rdi, asm_->r14);
-      LoadVR(asm_->rsi, lhs);
-      LoadVR(asm_->rdx, rhs);
+      asm_->mov(rdi, r14);
+      LoadVR(rsi, lhs);
+      LoadVR(rdx, rhs);
       asm_->Call(&stub::BINARY_DIVIDE);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->mov(qword[r13 + dst * kJSValSize], rax);
       set_last_used_candidate(dst);
     }
 
@@ -859,13 +859,13 @@ class Compiler {
     const register_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      asm_->mov(asm_->rdi, asm_->r14);
+      LoadVRs(rsi, lhs, rdx, rhs);
+      asm_->mov(rdi, r14);
       asm_->Call(&stub::BINARY_INSTANCEOF);
       if (fused != OP::NOP) {
         // fused jump opcode
         const std::string label = MakeLabel(instr);
-        asm_->cmp(asm_->rax, Extract(JSTrue));
+        asm_->cmp(rax, Extract(JSTrue));
         if (fused == OP::IF_TRUE) {
           asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
         } else {
@@ -875,7 +875,7 @@ class Compiler {
       }
 
       const register_t dst = Reg(instr[1].i16[0]);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->mov(qword[r13 + dst * kJSValSize], rax);
       set_last_used_candidate(dst);
       type_record_.Put(dst, TypeEntry::Instanceof(type_record_.Get(lhs), type_record_.Get(rhs)));
     }
@@ -887,13 +887,13 @@ class Compiler {
     const register_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      asm_->mov(asm_->rdi, asm_->r14);
+      LoadVRs(rsi, lhs, rdx, rhs);
+      asm_->mov(rdi, r14);
       asm_->Call(&stub::BINARY_IN);
       if (fused != OP::NOP) {
         // fused jump opcode
         const std::string label = MakeLabel(instr);
-        asm_->cmp(asm_->rax, Extract(JSTrue));
+        asm_->cmp(rax, Extract(JSTrue));
         if (fused == OP::IF_TRUE) {
           asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
         } else {
@@ -903,7 +903,7 @@ class Compiler {
       }
 
       const register_t dst = Reg(instr[1].i16[0]);
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->mov(qword[r13 + dst * kJSValSize], rax);
       set_last_used_candidate(dst);
       type_record_.Put(dst, TypeEntry::In(type_record_.Get(lhs), type_record_.Get(rhs)));
     }
@@ -915,10 +915,10 @@ class Compiler {
     const register_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      Int32Guard(lhs, asm_->rsi, ".BINARY_EQ_SLOW");
-      Int32Guard(rhs, asm_->rdx, ".BINARY_EQ_SLOW");
-      asm_->cmp(asm_->esi, asm_->edx);
+      LoadVRs(rsi, lhs, rdx, rhs);
+      Int32Guard(lhs, rsi, ".BINARY_EQ_SLOW");
+      Int32Guard(rhs, rdx, ".BINARY_EQ_SLOW");
+      asm_->cmp(esi, edx);
 
       if (fused != OP::NOP) {
         // fused jump opcode
@@ -931,9 +931,9 @@ class Compiler {
         asm_->jmp(".BINARY_EQ_EXIT");
 
         asm_->L(".BINARY_EQ_SLOW");
-        asm_->mov(asm_->rdi, asm_->r14);
+        asm_->mov(rdi, r14);
         asm_->Call(&stub::BINARY_EQ);
-        asm_->cmp(asm_->rax, Extract(JSTrue));
+        asm_->cmp(rax, Extract(JSTrue));
         if (fused == OP::IF_TRUE) {
           asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
         } else {
@@ -944,16 +944,16 @@ class Compiler {
       }
 
       const register_t dst = Reg(instr[1].i16[0]);
-      asm_->sete(asm_->cl);
-      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
+      asm_->sete(cl);
+      ConvertBooleanToJSVal(cl, rax);
       asm_->jmp(".BINARY_EQ_EXIT");
 
       asm_->L(".BINARY_EQ_SLOW");
-      asm_->mov(asm_->rdi, asm_->r14);
+      asm_->mov(rdi, r14);
       asm_->Call(&stub::BINARY_EQ);
 
       asm_->L(".BINARY_EQ_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->mov(qword[r13 + dst * kJSValSize], rax);
       set_last_used_candidate(dst);
       type_record_.Put(dst, TypeEntry::Equal(type_record_.Get(lhs), type_record_.Get(rhs)));
     }
@@ -969,10 +969,10 @@ class Compiler {
     const register_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVRs(asm_->rdi, lhs, asm_->rsi, rhs);
-      Int32Guard(lhs, asm_->rdi, ".BINARY_STRICT_EQ_SLOW");
-      Int32Guard(rhs, asm_->rsi, ".BINARY_STRICT_EQ_SLOW");
-      asm_->cmp(asm_->esi, asm_->edi);
+      LoadVRs(rdi, lhs, rsi, rhs);
+      Int32Guard(lhs, rdi, ".BINARY_STRICT_EQ_SLOW");
+      Int32Guard(rhs, rsi, ".BINARY_STRICT_EQ_SLOW");
+      asm_->cmp(esi, edi);
 
       if (fused != OP::NOP) {
         // fused jump opcode
@@ -986,7 +986,7 @@ class Compiler {
 
         asm_->L(".BINARY_STRICT_EQ_SLOW");
         asm_->Call(&stub::BINARY_STRICT_EQ);
-        asm_->cmp(asm_->rax, Extract(JSTrue));
+        asm_->cmp(rax, Extract(JSTrue));
         if (fused == OP::IF_TRUE) {
           asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
         } else {
@@ -997,15 +997,15 @@ class Compiler {
       }
 
       const register_t dst = Reg(instr[1].i16[0]);
-      asm_->sete(asm_->cl);
-      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
+      asm_->sete(cl);
+      ConvertBooleanToJSVal(cl, rax);
       asm_->jmp(".BINARY_STRICT_EQ_EXIT");
 
       asm_->L(".BINARY_STRICT_EQ_SLOW");
       asm_->Call(&stub::BINARY_STRICT_EQ);
 
       asm_->L(".BINARY_STRICT_EQ_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->mov(qword[r13 + dst * kJSValSize], rax);
       set_last_used_candidate(dst);
       type_record_.Put(dst, TypeEntry::StrictEqual(type_record_.Get(lhs), type_record_.Get(rhs)));
     }
@@ -1017,10 +1017,10 @@ class Compiler {
     const register_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVRs(asm_->rsi, lhs, asm_->rdx, rhs);
-      Int32Guard(lhs, asm_->rsi, ".BINARY_NE_SLOW");
-      Int32Guard(rhs, asm_->rdx, ".BINARY_NE_SLOW");
-      asm_->cmp(asm_->esi, asm_->edx);
+      LoadVRs(rsi, lhs, rdx, rhs);
+      Int32Guard(lhs, rsi, ".BINARY_NE_SLOW");
+      Int32Guard(rhs, rdx, ".BINARY_NE_SLOW");
+      asm_->cmp(esi, edx);
 
       if (fused != OP::NOP) {
         // fused jump opcode
@@ -1033,9 +1033,9 @@ class Compiler {
         asm_->jmp(".BINARY_NE_EXIT");
 
         asm_->L(".BINARY_NE_SLOW");
-        asm_->mov(asm_->rdi, asm_->r14);
+        asm_->mov(rdi, r14);
         asm_->Call(&stub::BINARY_NE);
-        asm_->cmp(asm_->rax, Extract(JSTrue));
+        asm_->cmp(rax, Extract(JSTrue));
         if (fused == OP::IF_TRUE) {
           asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
         } else {
@@ -1046,16 +1046,16 @@ class Compiler {
       }
 
       const register_t dst = Reg(instr[1].i16[0]);
-      asm_->setne(asm_->cl);
-      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
+      asm_->setne(cl);
+      ConvertBooleanToJSVal(cl, rax);
       asm_->jmp(".BINARY_NE_EXIT");
 
       asm_->L(".BINARY_NE_SLOW");
-      asm_->mov(asm_->rdi, asm_->r14);
+      asm_->mov(rdi, r14);
       asm_->Call(&stub::BINARY_NE);
 
       asm_->L(".BINARY_NE_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->mov(qword[r13 + dst * kJSValSize], rax);
       set_last_used_candidate(dst);
       type_record_.Put(dst, TypeEntry::NotEqual(type_record_.Get(lhs), type_record_.Get(rhs)));
     }
@@ -1071,10 +1071,10 @@ class Compiler {
     const register_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVRs(asm_->rdi, lhs, asm_->rsi, rhs);
-      Int32Guard(lhs, asm_->rdi, ".BINARY_STRICT_NE_SLOW");
-      Int32Guard(rhs, asm_->rsi, ".BINARY_STRICT_NE_SLOW");
-      asm_->cmp(asm_->esi, asm_->edi);
+      LoadVRs(rdi, lhs, rsi, rhs);
+      Int32Guard(lhs, rdi, ".BINARY_STRICT_NE_SLOW");
+      Int32Guard(rhs, rsi, ".BINARY_STRICT_NE_SLOW");
+      asm_->cmp(esi, edi);
 
       if (fused != OP::NOP) {
         // fused jump opcode
@@ -1088,7 +1088,7 @@ class Compiler {
 
         asm_->L(".BINARY_STRICT_NE_SLOW");
         asm_->Call(&stub::BINARY_STRICT_NE);
-        asm_->cmp(asm_->rax, Extract(JSTrue));
+        asm_->cmp(rax, Extract(JSTrue));
         if (fused == OP::IF_TRUE) {
           asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
         } else {
@@ -1099,15 +1099,15 @@ class Compiler {
       }
 
       const register_t dst = Reg(instr[1].i16[0]);
-      asm_->setne(asm_->cl);
-      ConvertBooleanToJSVal(asm_->cl, asm_->rax);
+      asm_->setne(cl);
+      ConvertBooleanToJSVal(cl, rax);
       asm_->jmp(".BINARY_STRICT_NE_EXIT");
 
       asm_->L(".BINARY_STRICT_NE_SLOW");
       asm_->Call(&stub::BINARY_STRICT_NE);
 
       asm_->L(".BINARY_STRICT_NE_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->mov(qword[r13 + dst * kJSValSize], rax);
       set_last_used_candidate(dst);
       type_record_.Put(dst, TypeEntry::StrictNotEqual(type_record_.Get(lhs), type_record_.Get(rhs)));
     }
@@ -1128,17 +1128,17 @@ class Compiler {
     const register_t src = Reg(instr[1].i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rax, src);
-      asm_->mov(asm_->rsi, asm_->rax);
-      asm_->and(asm_->rsi, asm_->r15);
+      LoadVR(rax, src);
+      asm_->mov(rsi, rax);
+      asm_->and(rsi, r15);
       asm_->jnz(".UNARY_POSITIVE_EXIT");
 
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->mov(asm_->rsi, asm_->rax);
+      asm_->mov(rdi, r14);
+      asm_->mov(rsi, rax);
       asm_->Call(&stub::TO_NUMBER);
 
       asm_->L(".UNARY_POSITIVE_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->mov(qword[r13 + dst * kJSValSize], rax);
       set_last_used_candidate(dst);
       type_record_.Put(dst, TypeEntry::Positive(type_record_.Get(src)));
     }
@@ -1154,30 +1154,30 @@ class Compiler {
       // Because ECMA262 number value is defined as double,
       // -0 should be double -0.0.
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rax, src);
-      Int32Guard(src, asm_->rax, ".UNARY_NEGATIVE_SLOW");
-      asm_->test(asm_->eax, asm_->eax);
+      LoadVR(rax, src);
+      Int32Guard(src, rax, ".UNARY_NEGATIVE_SLOW");
+      asm_->test(eax, eax);
       asm_->jz(".UNARY_NEGATIVE_MINUS_ZERO");
-      asm_->neg(asm_->eax);
+      asm_->neg(eax);
       asm_->jo(".UNARY_NEGATIVE_INT32_MIN");
-      asm_->or(asm_->rax, asm_->r15);
+      asm_->or(rax, r15);
       asm_->jmp(".UNARY_NEGATIVE_EXIT");
 
       asm_->L(".UNARY_NEGATIVE_MINUS_ZERO");
-      asm_->mov(asm_->rax, layout);
+      asm_->mov(rax, layout);
       asm_->jmp(".UNARY_NEGATIVE_EXIT");
 
       asm_->L(".UNARY_NEGATIVE_INT32_MIN");
-      asm_->mov(asm_->rax, layout2);
+      asm_->mov(rax, layout2);
       asm_->jmp(".UNARY_NEGATIVE_EXIT");
 
       asm_->L(".UNARY_NEGATIVE_SLOW");
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->mov(asm_->rsi, asm_->rax);
+      asm_->mov(rdi, r14);
+      asm_->mov(rsi, rax);
       asm_->Call(&stub::UNARY_NEGATIVE);
 
       asm_->L(".UNARY_NEGATIVE_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->mov(qword[r13 + dst * kJSValSize], rax);
       set_last_used_candidate(dst);
       type_record_.Put(dst, TypeEntry::Negative(type_record_.Get(src)));
     }
@@ -1187,9 +1187,9 @@ class Compiler {
   void EmitUNARY_NOT(const Instruction* instr) {
     const register_t dst = Reg(instr[1].i16[0]);
     const register_t src = Reg(instr[1].i16[1]);
-    LoadVR(asm_->rdi, src);
+    LoadVR(rdi, src);
     asm_->Call(&stub::UNARY_NOT);
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry::Not(type_record_.Get(src)));
   }
@@ -1200,19 +1200,19 @@ class Compiler {
     const register_t src = Reg(instr[1].i16[1]);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, src);
-      Int32Guard(src, asm_->rsi, ".UNARY_BIT_NOT_SLOW");
-      asm_->not(asm_->esi);
-      asm_->mov(asm_->eax, asm_->esi);
-      asm_->or(asm_->rax, asm_->r15);
+      LoadVR(rsi, src);
+      Int32Guard(src, rsi, ".UNARY_BIT_NOT_SLOW");
+      asm_->not(esi);
+      asm_->mov(eax, esi);
+      asm_->or(rax, r15);
       asm_->jmp(".UNARY_BIT_NOT_EXIT");
 
       asm_->L(".UNARY_BIT_NOT_SLOW");
-      asm_->mov(asm_->rdi, asm_->r14);
+      asm_->mov(rdi, r14);
       asm_->Call(&stub::UNARY_BIT_NOT);
 
       asm_->L(".UNARY_BIT_NOT_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+      asm_->mov(qword[r13 + dst * kJSValSize], rax);
       set_last_used_candidate(dst);
       type_record_.Put(dst, TypeEntry::BitwiseNot(type_record_.Get(src)));
     }
@@ -1221,8 +1221,8 @@ class Compiler {
   // opcode | src
   void EmitTHROW(const Instruction* instr) {
     const register_t src = Reg(instr[1].i32[0]);
-    LoadVR(asm_->rsi, src);
-    asm_->mov(asm_->rdi, asm_->r14);
+    LoadVR(rsi, src);
+    asm_->mov(rdi, r14);
     asm_->Call(&stub::THROW);
   }
 
@@ -1244,8 +1244,8 @@ class Compiler {
       return;
     }
 
-    LoadVR(asm_->rsi, src);
-    asm_->mov(asm_->rdi, asm_->r14);
+    LoadVR(rsi, src);
+    asm_->mov(rdi, r14);
     asm_->Call(&stub::TO_NUMBER);
   }
 
@@ -1261,10 +1261,10 @@ class Compiler {
       return;
     }
 
-    LoadVR(asm_->rsi, src);
-    asm_->mov(asm_->rdi, asm_->r14);
+    LoadVR(rsi, src);
+    asm_->mov(rdi, r14);
     asm_->Call(&stub::TO_PRIMITIVE_AND_TO_STRING);
-    asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + src * kJSValSize], rax);
     set_last_used_candidate(src);
     type_record_.Put(src, dst_type_entry);
   }
@@ -1275,11 +1275,11 @@ class Compiler {
     const register_t start = Reg(instr[1].ssw.i16[1]);
     const uint32_t count = instr[1].ssw.u32;
     assert(!IsConstantID(start));
-    asm_->lea(asm_->rsi, asm_->ptr[asm_->r13 + start * kJSValSize]);
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->edx, count);
+    asm_->lea(rsi, ptr[r13 + start * kJSValSize]);
+    asm_->mov(rdi, r14);
+    asm_->mov(edx, count);
     asm_->Call(&stub::CONCAT);
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::String()));
   }
@@ -1289,9 +1289,9 @@ class Compiler {
     const Error::Code code = static_cast<Error::Code>(instr[1].u32[0]);
     const uint32_t constant = instr[1].u32[1];
     JSString* str = code_->constants()[constant].string();
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->esi, code);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(str));
+    asm_->mov(rdi, r14);
+    asm_->mov(esi, code);
+    asm_->mov(rdx, core::BitCast<uint64_t>(str));
     asm_->Call(&stub::RAISE);
   }
 
@@ -1308,10 +1308,10 @@ class Compiler {
       return;
     }
 
-    LoadVR(asm_->rsi, src);
-    asm_->mov(asm_->rdi, asm_->r12);
+    LoadVR(rsi, src);
+    asm_->mov(rdi, r12);
     asm_->Call(&stub::TYPEOF);
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, dst_type_entry);
   }
@@ -1321,13 +1321,13 @@ class Compiler {
     const register_t obj = Reg(instr[1].i16[0]);
     const register_t item = Reg(instr[1].i16[1]);
     const uint32_t offset = instr[2].u32[0];
-    LoadVRs(asm_->rdi, obj, asm_->rax, item);
+    LoadVRs(rdi, obj, rax, item);
     const std::ptrdiff_t data_offset =
         IV_CAST_OFFSET(radio::Cell*, JSObject*) +
         JSObject::SlotsOffset() +
         JSObject::Slots::DataOffset();
-    asm_->mov(asm_->rdi, asm_->qword[asm_->rdi + data_offset]);
-    asm_->mov(asm_->qword[asm_->rdi + kJSValSize * offset], asm_->rax);
+    asm_->mov(rdi, qword[rdi + data_offset]);
+    asm_->mov(qword[rdi + kJSValSize * offset], rax);
   }
 
   // opcode | (obj | item) | (offset | merged)
@@ -1337,13 +1337,13 @@ class Compiler {
     const uint32_t offset = instr[2].u32[0];
     const uint32_t merged = instr[2].u32[1];
     if (merged) {
-      LoadVRs(asm_->rdi, obj, asm_->rax, item);
+      LoadVRs(rdi, obj, rax, item);
       const std::ptrdiff_t data_offset =
           IV_CAST_OFFSET(radio::Cell*, JSObject*) +
           JSObject::SlotsOffset() +
           JSObject::Slots::DataOffset();
-      asm_->mov(asm_->rdi, asm_->qword[asm_->rdi + data_offset]);
-      asm_->mov(asm_->rdi, asm_->qword[asm_->rdi + kJSValSize * offset]);
+      asm_->mov(rdi, qword[rdi + data_offset]);
+      asm_->mov(rdi, qword[rdi + kJSValSize * offset]);
       // rdi is Accessor Cell
       const std::ptrdiff_t getter_offset =
           IV_CAST_OFFSET(radio::Cell*, Accessor*) +
@@ -1351,13 +1351,13 @@ class Compiler {
       const std::ptrdiff_t cell_to_jsobject =
           IV_CAST_OFFSET(radio::Cell*, JSObject*);
       if (cell_to_jsobject != 0) {
-        asm_->add(asm_->rax, cell_to_jsobject);
+        asm_->add(rax, cell_to_jsobject);
       }
-      asm_->mov(asm_->qword[asm_->rdi + getter_offset], asm_->rax);
+      asm_->mov(qword[rdi + getter_offset], rax);
     } else {
-      LoadVRs(asm_->rsi, obj, asm_->rdx, item);
-      asm_->mov(asm_->rdi, asm_->r12);
-      asm_->mov(asm_->ecx, offset);
+      LoadVRs(rsi, obj, rdx, item);
+      asm_->mov(rdi, r12);
+      asm_->mov(ecx, offset);
       asm_->Call(&stub::STORE_OBJECT_GET);
     }
   }
@@ -1369,13 +1369,13 @@ class Compiler {
     const uint32_t offset = instr[2].u32[0];
     const uint32_t merged = instr[2].u32[1];
     if (merged) {
-      LoadVRs(asm_->rdi, obj, asm_->rax, item);
+      LoadVRs(rdi, obj, rax, item);
       const std::ptrdiff_t data_offset =
           IV_CAST_OFFSET(radio::Cell*, JSObject*) +
           JSObject::SlotsOffset() +
           JSObject::Slots::DataOffset();
-      asm_->mov(asm_->rdi, asm_->qword[asm_->rdi + data_offset]);
-      asm_->mov(asm_->rdi, asm_->qword[asm_->rdi + kJSValSize * offset]);
+      asm_->mov(rdi, qword[rdi + data_offset]);
+      asm_->mov(rdi, qword[rdi + kJSValSize * offset]);
       // rdi is Accessor Cell
       const std::ptrdiff_t getter_offset =
           IV_CAST_OFFSET(radio::Cell*, Accessor*) +
@@ -1383,13 +1383,13 @@ class Compiler {
       const std::ptrdiff_t cell_to_jsobject =
           IV_CAST_OFFSET(radio::Cell*, JSObject*);
       if (cell_to_jsobject != 0) {
-        asm_->add(asm_->rax, cell_to_jsobject);
+        asm_->add(rax, cell_to_jsobject);
       }
-      asm_->mov(asm_->qword[asm_->rdi + getter_offset], asm_->rax);
+      asm_->mov(qword[rdi + getter_offset], rax);
     } else {
-      LoadVRs(asm_->rsi, obj, asm_->rdx, item);
-      asm_->mov(asm_->rdi, asm_->r12);
-      asm_->mov(asm_->ecx, offset);
+      LoadVRs(rsi, obj, rdx, item);
+      asm_->mov(rdi, r12);
+      asm_->mov(ecx, offset);
       asm_->Call(&stub::STORE_OBJECT_SET);
     }
   }
@@ -1418,47 +1418,47 @@ class Compiler {
 
     const Assembler::LocalLabelScope scope(asm_);
 
-    LoadVR(asm_->rsi, base);
+    LoadVR(rsi, base);
 
     if (symbol::IsArrayIndexSymbol(name)) {
       // generate Array index fast path
       const uint32_t index = symbol::GetIndexFromSymbol(name);
-      DenseArrayGuard(base, asm_->rsi, asm_->rdi, ".ARRAY_FAST_PATH_EXIT");
+      DenseArrayGuard(base, rsi, rdi, ".ARRAY_FAST_PATH_EXIT");
 
       // check index is not out of range
       const std::ptrdiff_t vector_offset =
           IV_CAST_OFFSET(radio::Cell*, JSArray*) + JSArray::VectorOffset();
       const std::ptrdiff_t size_offset =
           vector_offset + JSArray::JSValVector::SizeOffset();
-      asm_->cmp(asm_->qword[asm_->rsi + size_offset], index);
+      asm_->cmp(qword[rsi + size_offset], index);
       asm_->jbe(".ARRAY_FAST_PATH_EXIT");
 
       // load element from index directly
       const std::ptrdiff_t data_offset =
           vector_offset + JSArray::JSValVector::DataOffset();
-      asm_->mov(asm_->rax, asm_->qword[asm_->rsi + data_offset]);
-      asm_->mov(asm_->rax, asm_->qword[asm_->rax + kJSValSize * index]);
+      asm_->mov(rax, qword[rsi + data_offset]);
+      asm_->mov(rax, qword[rax + kJSValSize * index]);
 
       // check element is not JSEmpty
-      NotEmptyGuard(asm_->rax, ".ARRAY_FAST_PATH_EXIT");
+      NotEmptyGuard(rax, ".ARRAY_FAST_PATH_EXIT");
       asm_->jmp(".EXIT");
       asm_->L(".ARRAY_FAST_PATH_EXIT");
 
       // load from value
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->mov(asm_->rdx, Extract(JSVal::UInt32(index)));
+      asm_->mov(rdi, r14);
+      asm_->mov(rdx, Extract(JSVal::UInt32(index)));
       asm_->Call(&stub::LOAD_ELEMENT);
     } else {
-      asm_->mov(asm_->rdi, asm_->r14);
+      asm_->mov(rdi, r14);
       LoadPropertyIC* ic(new LoadPropertyIC(native_code(), name));
       native_code()->BindIC(ic);
-      asm_->mov(asm_->rdx, core::BitCast<uint64_t>(ic));
+      asm_->mov(rdx, core::BitCast<uint64_t>(ic));
       const std::size_t offset = PolyIC::Generate64Mov(asm_);
       ic->BindOriginal(offset);
-      asm_->call(asm_->rax);
+      asm_->call(rax);
     }
     asm_->L(".EXIT");
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
 
     set_last_used_candidate(dst);
     type_record_.Put(dst, dst_entry);
@@ -1472,45 +1472,45 @@ class Compiler {
 
     const Assembler::LocalLabelScope scope(asm_);
 
-    LoadVRs(asm_->rsi, base, asm_->rdx, src);
+    LoadVRs(rsi, base, rdx, src);
 
     if (symbol::IsArrayIndexSymbol(name)) {
       // generate Array index fast path
       const uint32_t index = symbol::GetIndexFromSymbol(name);
-      DenseArrayGuard(base, asm_->rsi, asm_->rdi, ".ARRAY_FAST_PATH_EXIT");
+      DenseArrayGuard(base, rsi, rdi, ".ARRAY_FAST_PATH_EXIT");
 
       // check index is not out of range
       const std::ptrdiff_t vector_offset =
           IV_CAST_OFFSET(radio::Cell*, JSArray*) + JSArray::VectorOffset();
       const std::ptrdiff_t size_offset =
           vector_offset + JSArray::JSValVector::SizeOffset();
-      asm_->cmp(asm_->qword[asm_->rsi + size_offset], index);
+      asm_->cmp(qword[rsi + size_offset], index);
       asm_->jbe(".ARRAY_FAST_PATH_EXIT");
 
       // load element from index directly
       const std::ptrdiff_t data_offset =
           vector_offset + JSArray::JSValVector::DataOffset();
-      asm_->mov(asm_->rax, asm_->qword[asm_->rsi + data_offset]);
-      asm_->mov(asm_->qword[asm_->rax + kJSValSize * index], asm_->rdx);
+      asm_->mov(rax, qword[rsi + data_offset]);
+      asm_->mov(qword[rax + kJSValSize * index], rdx);
       asm_->jmp(".EXIT");
       asm_->L(".ARRAY_FAST_PATH_EXIT");
 
       // store element
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->mov(asm_->rcx, Extract(JSVal::UInt32(index)));
+      asm_->mov(rdi, r14);
+      asm_->mov(rcx, Extract(JSVal::UInt32(index)));
       if (code_->strict()) {
         asm_->Call(&stub::STORE_ELEMENT<true>);
       } else {
         asm_->Call(&stub::STORE_ELEMENT<false>);
       }
     } else {
-      asm_->mov(asm_->rdi, asm_->r14);
+      asm_->mov(rdi, r14);
       StorePropertyIC* ic(new StorePropertyIC(native_code(), name, code_->strict()));
       native_code()->BindIC(ic);
-      asm_->mov(asm_->rcx, core::BitCast<uint64_t>(ic));
+      asm_->mov(rcx, core::BitCast<uint64_t>(ic));
       const std::size_t offset = PolyIC::Generate64Mov(asm_);
       ic->BindOriginal(offset);
-      asm_->call(asm_->rax);
+      asm_->call(rax);
     }
     asm_->L(".EXIT");
   }
@@ -1520,16 +1520,16 @@ class Compiler {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     const register_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    LoadVR(asm_->rsi, base);
-    asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    LoadVR(rsi, base);
+    asm_->mov(rdi, r14);
+    CheckObjectCoercible(base, rsi, rcx);
+    asm_->mov(rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::DELETE_PROP<true>);
     } else {
       asm_->Call(&stub::DELETE_PROP<false>);
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Boolean()));
   }
@@ -1539,16 +1539,16 @@ class Compiler {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     const register_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    LoadVR(asm_->rsi, base);
-    asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    LoadVR(rsi, base);
+    asm_->mov(rdi, r14);
+    CheckObjectCoercible(base, rsi, rcx);
+    asm_->mov(rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_PROP<1, 1, true>);
     } else {
       asm_->Call(&stub::INCREMENT_PROP<1, 1, false>);
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Number()));
   }
@@ -1558,16 +1558,16 @@ class Compiler {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     const register_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    LoadVR(asm_->rsi, base);
-    asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    LoadVR(rsi, base);
+    asm_->mov(rdi, r14);
+    CheckObjectCoercible(base, rsi, rcx);
+    asm_->mov(rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_PROP<-1, 1, true>);
     } else {
       asm_->Call(&stub::INCREMENT_PROP<-1, 1, false>);
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Number()));
   }
@@ -1577,16 +1577,16 @@ class Compiler {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     const register_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    LoadVR(asm_->rsi, base);
-    asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    LoadVR(rsi, base);
+    asm_->mov(rdi, r14);
+    CheckObjectCoercible(base, rsi, rcx);
+    asm_->mov(rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_PROP<1, 0, true>);
     } else {
       asm_->Call(&stub::INCREMENT_PROP<1, 0, false>);
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Number()));
   }
@@ -1596,25 +1596,25 @@ class Compiler {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     const register_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    LoadVR(asm_->rsi, base);
-    asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    LoadVR(rsi, base);
+    asm_->mov(rdi, r14);
+    CheckObjectCoercible(base, rsi, rcx);
+    asm_->mov(rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_PROP<-1, 0, true>);
     } else {
       asm_->Call(&stub::INCREMENT_PROP<-1, 0, false>);
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Number()));
   }
 
   // opcode
   void EmitPOP_ENV(const Instruction* instr) {
-    asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    asm_->mov(asm_->rdi, asm_->ptr[asm_->rdi + JSEnv::OuterOffset()]);
-    asm_->mov(asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)], asm_->rdi);
+    asm_->mov(rdi, ptr[r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(rdi, ptr[rdi + JSEnv::OuterOffset()]);
+    asm_->mov(ptr[r13 + offsetof(railgun::Frame, lexical_env_)], rdi);
     // save previous register because NOP does nothing
     set_last_used_candidate(last_used());
   }
@@ -1625,11 +1625,11 @@ class Compiler {
     const register_t reg = Reg(instr[1].i16[1]);
     const uint32_t index = instr[2].u32[0];
     const uint32_t size = instr[2].u32[1];
-    LoadVR(asm_->rdi, ary);
+    LoadVR(rdi, ary);
     assert(!IsConstantID(reg));
-    asm_->lea(asm_->rsi, asm_->ptr[asm_->r13 + reg * kJSValSize]);
-    asm_->mov(asm_->edx, index);
-    asm_->mov(asm_->ecx, size);
+    asm_->lea(rsi, ptr[r13 + reg * kJSValSize]);
+    asm_->mov(edx, index);
+    asm_->mov(ecx, size);
     asm_->Call(&stub::INIT_VECTOR_ARRAY_ELEMENT);
   }
 
@@ -1639,11 +1639,11 @@ class Compiler {
     const register_t reg = Reg(instr[1].i16[1]);
     const uint32_t index = instr[2].u32[0];
     const uint32_t size = instr[2].u32[1];
-    LoadVR(asm_->rdi, ary);
+    LoadVR(rdi, ary);
     assert(!IsConstantID(reg));
-    asm_->lea(asm_->rsi, asm_->ptr[asm_->r13 + reg * kJSValSize]);
-    asm_->mov(asm_->edx, index);
-    asm_->mov(asm_->ecx, size);
+    asm_->lea(rsi, ptr[r13 + reg * kJSValSize]);
+    asm_->mov(edx, index);
+    asm_->mov(ecx, size);
     asm_->Call(&stub::INIT_SPARSE_ARRAY_ELEMENT);
   }
 
@@ -1651,10 +1651,10 @@ class Compiler {
   void EmitLOAD_ARRAY(const Instruction* instr) {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t size = instr[1].ssw.u32;
-    asm_->mov(asm_->rdi, asm_->r12);
-    asm_->mov(asm_->esi, size);
+    asm_->mov(rdi, r12);
+    asm_->mov(esi, size);
     asm_->Call(&stub::LOAD_ARRAY);
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Array()));
   }
@@ -1663,10 +1663,10 @@ class Compiler {
   void EmitDUP_ARRAY(const Instruction* instr) {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[1].ssw.u32;
-    asm_->mov(asm_->rdi, asm_->r12);
-    asm_->mov(asm_->rsi, Extract(code_->constants()[offset]));
+    asm_->mov(rdi, r12);
+    asm_->mov(rsi, Extract(code_->constants()[offset]));
     asm_->Call(&stub::DUP_ARRAY);
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     type_record_.Put(dst, TypeEntry(Type::Array()));
   }
 
@@ -1674,11 +1674,11 @@ class Compiler {
   void EmitLOAD_FUNCTION(const Instruction* instr) {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     railgun::Code* target = code_->codes()[instr[1].ssw.u32];
-    asm_->mov(asm_->rdi, asm_->r12);
-    asm_->mov(asm_->rsi, core::BitCast<uint64_t>(target));
-    asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(rdi, r12);
+    asm_->mov(rsi, core::BitCast<uint64_t>(target));
+    asm_->mov(rdx, ptr[r13 + offsetof(railgun::Frame, lexical_env_)]);
     asm_->Call(&JSJITFunction::New);
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Function()));
   }
@@ -1688,10 +1688,10 @@ class Compiler {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     JSRegExp* regexp =
         static_cast<JSRegExp*>(code_->constants()[instr[1].ssw.u32].object());
-    asm_->mov(asm_->rdi, asm_->r12);
-    asm_->mov(asm_->rsi, core::BitCast<uint64_t>(regexp));
+    asm_->mov(rdi, r12);
+    asm_->mov(rsi, core::BitCast<uint64_t>(regexp));
     asm_->Call(&stub::LOAD_REGEXP);
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Object()));
   }
@@ -1699,10 +1699,10 @@ class Compiler {
   // opcode | dst | map
   void EmitLOAD_OBJECT(const Instruction* instr) {
     const register_t dst = Reg(instr[1].i32[0]);
-    asm_->mov(asm_->rdi, asm_->r12);
-    asm_->mov(asm_->rsi, core::BitCast<uint64_t>(instr[2].map));
+    asm_->mov(rdi, r12);
+    asm_->mov(rsi, core::BitCast<uint64_t>(instr[2].map));
     asm_->Call(&stub::LOAD_OBJECT);
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Object()));
   }
@@ -1717,16 +1717,16 @@ class Compiler {
 
     const Assembler::LocalLabelScope scope(asm_);
 
-    LoadVRs(asm_->rsi, base, asm_->rdx, element);
+    LoadVRs(rsi, base, rdx, element);
 
     {
       // check element is int32_t and element >= 0
-      Int32Guard(element, asm_->rdx, ".ARRAY_FAST_PATH_EXIT");
-      asm_->cmp(asm_->edx, 0);
+      Int32Guard(element, rdx, ".ARRAY_FAST_PATH_EXIT");
+      asm_->cmp(edx, 0);
       asm_->jl(".ARRAY_FAST_PATH_EXIT");
 
       // generate Array index fast path
-      DenseArrayGuard(base, asm_->rsi, asm_->rdi, ".ARRAY_FAST_PATH_EXIT");
+      DenseArrayGuard(base, rsi, rdi, ".ARRAY_FAST_PATH_EXIT");
 
       // check index is not out of range
       const std::ptrdiff_t vector_offset =
@@ -1734,29 +1734,29 @@ class Compiler {
       const std::ptrdiff_t size_offset =
           vector_offset + JSArray::JSValVector::SizeOffset();
       // TODO(Constellation): change Storage size to uint32_t
-      asm_->mov(asm_->ecx, asm_->edx);
-      asm_->cmp(asm_->rcx, asm_->qword[asm_->rsi + size_offset]);
+      asm_->mov(ecx, edx);
+      asm_->cmp(rcx, qword[rsi + size_offset]);
       asm_->jae(".ARRAY_FAST_PATH_EXIT");
 
       // load element from index directly
       const std::ptrdiff_t data_offset =
           vector_offset + JSArray::JSValVector::DataOffset();
-      asm_->mov(asm_->rax, asm_->qword[asm_->rsi + data_offset]);
-      asm_->lea(asm_->rax, asm_->ptr[asm_->rax + asm_->rcx * kJSValSize]);
-      asm_->mov(asm_->rax, asm_->qword[asm_->rax]);
+      asm_->mov(rax, qword[rsi + data_offset]);
+      asm_->lea(rax, ptr[rax + rcx * kJSValSize]);
+      asm_->mov(rax, qword[rax]);
 
       // check element is not JSEmpty
-      NotEmptyGuard(asm_->rax, ".ARRAY_FAST_PATH_EXIT");
+      NotEmptyGuard(rax, ".ARRAY_FAST_PATH_EXIT");
       asm_->jmp(".EXIT");
       asm_->L(".ARRAY_FAST_PATH_EXIT");
     }
 
-    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
-    asm_->mov(asm_->rdi, asm_->r14);
+    CheckObjectCoercible(base, rsi, rcx);
+    asm_->mov(rdi, r14);
     asm_->Call(&stub::LOAD_ELEMENT);
 
     asm_->L(".EXIT");
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
 
     set_last_used_candidate(dst);
     type_record_.Put(dst, dst_entry);
@@ -1770,17 +1770,17 @@ class Compiler {
 
     const Assembler::LocalLabelScope scope(asm_);
 
-    LoadVRs(asm_->rsi, base, asm_->rcx, element);
-    LoadVR(asm_->rdx, src);
+    LoadVRs(rsi, base, rcx, element);
+    LoadVR(rdx, src);
 
     {
       // check element is int32_t and element >= 0
-      Int32Guard(element, asm_->rcx, ".ARRAY_FAST_PATH_EXIT");
-      asm_->cmp(asm_->ecx, 0);
+      Int32Guard(element, rcx, ".ARRAY_FAST_PATH_EXIT");
+      asm_->cmp(ecx, 0);
       asm_->jl(".ARRAY_FAST_PATH_EXIT");
 
       // generate Array index fast path
-      DenseArrayGuard(base, asm_->rsi, asm_->rdi, ".ARRAY_FAST_PATH_EXIT");
+      DenseArrayGuard(base, rsi, rdi, ".ARRAY_FAST_PATH_EXIT");
 
       // check index is not out of range
       const std::ptrdiff_t vector_offset =
@@ -1788,21 +1788,21 @@ class Compiler {
       const std::ptrdiff_t size_offset =
           vector_offset + JSArray::JSValVector::SizeOffset();
       // TODO(Constellation): change Storage size to uint32_t
-      asm_->mov(asm_->edi, asm_->ecx);
-      asm_->cmp(asm_->rdi, asm_->qword[asm_->rsi + size_offset]);
+      asm_->mov(edi, ecx);
+      asm_->cmp(rdi, qword[rsi + size_offset]);
       asm_->jae(".ARRAY_FAST_PATH_EXIT");
 
       // load element from index directly
       const std::ptrdiff_t data_offset =
           vector_offset + JSArray::JSValVector::DataOffset();
-      asm_->mov(asm_->rax, asm_->qword[asm_->rsi + data_offset]);
-      asm_->mov(asm_->qword[asm_->rax + asm_->rdi * kJSValSize], asm_->rdx);
+      asm_->mov(rax, qword[rsi + data_offset]);
+      asm_->mov(qword[rax + rdi * kJSValSize], rdx);
       asm_->jmp(".EXIT");
       asm_->L(".ARRAY_FAST_PATH_EXIT");
     }
 
-    CheckObjectCoercible(base, asm_->rsi, asm_->rdi);
-    asm_->mov(asm_->rdi, asm_->r14);
+    CheckObjectCoercible(base, rsi, rdi);
+    asm_->mov(rdi, r14);
 
     if (code_->strict()) {
       asm_->Call(&stub::STORE_ELEMENT<true>);
@@ -1817,15 +1817,15 @@ class Compiler {
     const register_t dst = Reg(instr[1].i16[0]);
     const register_t base = Reg(instr[1].i16[1]);
     const register_t element = Reg(instr[1].i16[2]);
-    LoadVRs(asm_->rsi, base, asm_->rdx, element);
-    asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
+    LoadVRs(rsi, base, rdx, element);
+    asm_->mov(rdi, r14);
+    CheckObjectCoercible(base, rsi, rcx);
     if (code_->strict()) {
       asm_->Call(&stub::DELETE_ELEMENT<true>);
     } else {
       asm_->Call(&stub::DELETE_ELEMENT<false>);
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Boolean()));
   }
@@ -1835,15 +1835,15 @@ class Compiler {
     const register_t dst = Reg(instr[1].i16[0]);
     const register_t base = Reg(instr[1].i16[1]);
     const register_t element = Reg(instr[1].i16[2]);
-    LoadVRs(asm_->rsi, base, asm_->rdx, element);
-    asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
+    LoadVRs(rsi, base, rdx, element);
+    asm_->mov(rdi, r14);
+    CheckObjectCoercible(base, rsi, rcx);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_ELEMENT<1, 1, true>);
     } else {
       asm_->Call(&stub::INCREMENT_ELEMENT<1, 1, false>);
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Number()));
   }
@@ -1853,15 +1853,15 @@ class Compiler {
     const register_t dst = Reg(instr[1].i16[0]);
     const register_t base = Reg(instr[1].i16[1]);
     const register_t element = Reg(instr[1].i16[2]);
-    LoadVRs(asm_->rsi, base, asm_->rdx, element);
-    asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
+    LoadVRs(rsi, base, rdx, element);
+    asm_->mov(rdi, r14);
+    CheckObjectCoercible(base, rsi, rcx);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_ELEMENT<-1, 1, true>);
     } else {
       asm_->Call(&stub::INCREMENT_ELEMENT<-1, 1, false>);
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Number()));
   }
@@ -1871,15 +1871,15 @@ class Compiler {
     const register_t dst = Reg(instr[1].i16[0]);
     const register_t base = Reg(instr[1].i16[1]);
     const register_t element = Reg(instr[1].i16[2]);
-    LoadVRs(asm_->rsi, base, asm_->rdx, element);
-    asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
+    LoadVRs(rsi, base, rdx, element);
+    asm_->mov(rdi, r14);
+    CheckObjectCoercible(base, rsi, rcx);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_ELEMENT<1, 0, true>);
     } else {
       asm_->Call(&stub::INCREMENT_ELEMENT<1, 0, false>);
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Number()));
   }
@@ -1889,15 +1889,15 @@ class Compiler {
     const register_t dst = Reg(instr[1].i16[0]);
     const register_t base = Reg(instr[1].i16[1]);
     const register_t element = Reg(instr[1].i16[2]);
-    LoadVRs(asm_->rsi, base, asm_->rdx, element);
-    asm_->mov(asm_->rdi, asm_->r14);
-    CheckObjectCoercible(base, asm_->rsi, asm_->rcx);
+    LoadVRs(rsi, base, rdx, element);
+    asm_->mov(rdi, r14);
+    CheckObjectCoercible(base, rsi, rcx);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_ELEMENT<-1, 0, true>);
     } else {
       asm_->Call(&stub::INCREMENT_ELEMENT<-1, 0, false>);
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Number()));
   }
@@ -1905,7 +1905,7 @@ class Compiler {
   // opcode | dst
   void EmitRESULT(const Instruction* instr) {
     const register_t dst = Reg(instr[1].i32[0]);
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
 
     if (previous_instr() && previous_instr()->GetOP() == OP::CONSTRUCT) {
@@ -1923,9 +1923,9 @@ class Compiler {
     // Constructor checks value is object in call site, not callee site.
     // So r13 is still callee Frame.
     const register_t src = Reg(instr[1].i32[0]);
-    LoadVR(asm_->rax, src);
-    asm_->add(asm_->rsp, k64Size);
-    asm_->add(asm_->qword[asm_->r14 + offsetof(Frame, ret)], k64Size * kStackPayload);
+    LoadVR(rax, src);
+    asm_->add(rsp, k64Size);
+    asm_->add(qword[r14 + offsetof(Frame, ret)], k64Size * kStackPayload);
     asm_->ret();
   }
 
@@ -1939,7 +1939,7 @@ class Compiler {
     // Some variables are defined as non-configurable.
     const JSGlobal::Constant constant = JSGlobal::LookupConstant(name);
     if (constant.first) {
-      asm_->mov(asm_->rax, Extract(constant.second));
+      asm_->mov(rax, Extract(constant.second));
       dst_entry = TypeEntry(constant.second);
     } else {
       MonoIC* ic(new MonoIC());
@@ -1947,7 +1947,7 @@ class Compiler {
       native_code()->BindIC(ic);
     }
 
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, dst_entry);
   }
@@ -1956,7 +1956,7 @@ class Compiler {
   void EmitSTORE_GLOBAL(const Instruction* instr) {
     const register_t src = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    LoadVR(asm_->rax, src);
+    LoadVR(rax, src);
     MonoIC* ic(new MonoIC());
     ic->CompileStore(asm_, ctx_->global_obj(), code_, name);
     native_code()->BindIC(ic);
@@ -1967,9 +1967,9 @@ class Compiler {
     const register_t dst = Reg(instr[1].i32[0]);
     StoredSlot* slot = instr[2].slot;
     TypeEntry dst_entry(Type::Unknown());
-    asm_->mov(asm_->rax, core::BitCast<uint64_t>(slot));
-    asm_->mov(asm_->rax, asm_->ptr[asm_->rax]);
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(rax, core::BitCast<uint64_t>(slot));
+    asm_->mov(rax, ptr[rax]);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, dst_entry);
   }
@@ -1980,21 +1980,21 @@ class Compiler {
     StoredSlot* slot = instr[2].slot;
 
     const Assembler::LocalLabelScope scope(asm_);
-    LoadVR(asm_->rax, src);
-    asm_->mov(asm_->rcx, core::BitCast<uint64_t>(slot));
-    asm_->test(asm_->word[asm_->rcx + kJSValSize], ATTR::W);
+    LoadVR(rax, src);
+    asm_->mov(rcx, core::BitCast<uint64_t>(slot));
+    asm_->test(word[rcx + kJSValSize], ATTR::W);
     asm_->jnz(".STORE");
     if (code_->strict()) {
       static const char* message = "modifying global variable failed";
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->mov(asm_->rsi, Error::Type);
-      asm_->mov(asm_->rdx, core::BitCast<uint64_t>(message));
+      asm_->mov(rdi, r14);
+      asm_->mov(rsi, Error::Type);
+      asm_->mov(rdx, core::BitCast<uint64_t>(message));
       asm_->Call(&stub::THROW_WITH_TYPE_AND_MESSAGE);
     } else {
       asm_->jmp(".EXIT");
     }
     asm_->L(".STORE");
-    asm_->mov(asm_->qword[asm_->rcx], asm_->rax);
+    asm_->mov(qword[rcx], rax);
     asm_->L(".EXIT");
   }
 
@@ -2002,10 +2002,10 @@ class Compiler {
   void EmitDELETE_GLOBAL(const Instruction* instr) {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, core::BitCast<uint64_t>(name));
+    asm_->mov(rdi, r14);
+    asm_->mov(rsi, core::BitCast<uint64_t>(name));
     asm_->Call(&stub::DELETE_GLOBAL);
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Boolean()));
   }
@@ -2014,14 +2014,14 @@ class Compiler {
   void EmitTYPEOF_GLOBAL(const Instruction* instr) {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, core::BitCast<uint64_t>(name));
+    asm_->mov(rdi, r14);
+    asm_->mov(rsi, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::TYPEOF_GLOBAL<true>);
     } else {
       asm_->Call(&stub::TYPEOF_GLOBAL<false>);
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::String()));
   }
@@ -2035,29 +2035,29 @@ class Compiler {
 
     const Assembler::LocalLabelScope scope(asm_);
 
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    LookupHeapEnv(asm_->rsi, nest);
+    asm_->mov(rsi, ptr[r13 + offsetof(railgun::Frame, lexical_env_)]);
+    LookupHeapEnv(rsi, nest);
     const ptrdiff_t target =
         IV_CAST_OFFSET(JSEnv*, JSDeclEnv*) +
         IV_OFFSETOF(JSDeclEnv, static_) +
         JSDeclEnv::StaticVals::DataOffset();
     // pointer to the data
-    asm_->mov(asm_->rax, asm_->qword[asm_->rsi + target]);
-    asm_->mov(asm_->rax, asm_->qword[asm_->rax + kJSValSize * offset]);
+    asm_->mov(rax, qword[rsi + target]);
+    asm_->mov(rax, qword[rax + kJSValSize * offset]);
     if (immutable) {
-      EmptyGuard(asm_->rax, ".NOT_EMPTY");
+      EmptyGuard(rax, ".NOT_EMPTY");
       if (code_->strict()) {
         static const char* message = "uninitialized value access not allowed in strict code";
-        asm_->mov(asm_->rdi, asm_->r14);
-        asm_->mov(asm_->rsi, Error::Reference);
-        asm_->mov(asm_->rdx, core::BitCast<uint64_t>(message));
+        asm_->mov(rdi, r14);
+        asm_->mov(rsi, Error::Reference);
+        asm_->mov(rdx, core::BitCast<uint64_t>(message));
         asm_->Call(&stub::THROW_WITH_TYPE_AND_MESSAGE);
       } else {
-        asm_->mov(asm_->rax, Extract(JSUndefined));
+        asm_->mov(rax, Extract(JSUndefined));
       }
       asm_->L(".NOT_EMPTY");
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Unknown()));
   }
@@ -2074,31 +2074,31 @@ class Compiler {
     if (immutable) {
       if (code_->strict()) {
         static const char* message = "mutating immutable binding not allowed";
-        asm_->mov(asm_->rdi, asm_->r14);
-        asm_->mov(asm_->rsi, Error::Type);
-        asm_->mov(asm_->rdx, core::BitCast<uint64_t>(message));
+        asm_->mov(rdi, r14);
+        asm_->mov(rsi, Error::Type);
+        asm_->mov(rdx, core::BitCast<uint64_t>(message));
         asm_->Call(&stub::THROW_WITH_TYPE_AND_MESSAGE);
       }
       return;
     }
 
-    LoadVR(asm_->rax, src);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    LookupHeapEnv(asm_->rsi, nest);
+    LoadVR(rax, src);
+    asm_->mov(rsi, ptr[r13 + offsetof(railgun::Frame, lexical_env_)]);
+    LookupHeapEnv(rsi, nest);
     const ptrdiff_t target =
         IV_CAST_OFFSET(JSEnv*, JSDeclEnv*) +
         IV_OFFSETOF(JSDeclEnv, static_) +
         JSDeclEnv::StaticVals::DataOffset();
     // pointer to the data
-    asm_->mov(asm_->rdi, asm_->qword[asm_->rsi + target]);
-    asm_->mov(asm_->qword[asm_->rdi + kJSValSize * offset], asm_->rax);
+    asm_->mov(rdi, qword[rsi + target]);
+    asm_->mov(qword[rdi + kJSValSize * offset], rax);
   }
 
   // opcode | (dst | imm | name) | (offset | nest)
   void EmitDELETE_HEAP(const Instruction* instr) {
     static const uint64_t layout = Extract(JSFalse);
     const register_t dst = Reg(instr[1].ssw.i16[0]);
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], layout);
+    asm_->mov(qword[r13 + dst * kJSValSize], layout);
     type_record_.Put(dst, TypeEntry(Type::Boolean()));
   }
 
@@ -2107,18 +2107,18 @@ class Compiler {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
-    asm_->mov(asm_->rdi, asm_->r14);
+    asm_->mov(rdi, r14);
 
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    LookupHeapEnv(asm_->rsi, nest);
+    asm_->mov(rsi, ptr[r13 + offsetof(railgun::Frame, lexical_env_)]);
+    LookupHeapEnv(rsi, nest);
 
-    asm_->mov(asm_->edx, offset);
+    asm_->mov(edx, offset);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_HEAP<1, 1, true>);
     } else {
       asm_->Call(&stub::INCREMENT_HEAP<1, 1, false>);
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Number()));
   }
@@ -2128,18 +2128,18 @@ class Compiler {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
-    asm_->mov(asm_->rdi, asm_->r14);
+    asm_->mov(rdi, r14);
 
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    LookupHeapEnv(asm_->rsi, nest);
+    asm_->mov(rsi, ptr[r13 + offsetof(railgun::Frame, lexical_env_)]);
+    LookupHeapEnv(rsi, nest);
 
-    asm_->mov(asm_->edx, offset);
+    asm_->mov(edx, offset);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_HEAP<-1, 1, true>);
     } else {
       asm_->Call(&stub::INCREMENT_HEAP<-1, 1, false>);
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Number()));
   }
@@ -2149,18 +2149,18 @@ class Compiler {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
-    asm_->mov(asm_->rdi, asm_->r14);
+    asm_->mov(rdi, r14);
 
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    LookupHeapEnv(asm_->rsi, nest);
+    asm_->mov(rsi, ptr[r13 + offsetof(railgun::Frame, lexical_env_)]);
+    LookupHeapEnv(rsi, nest);
 
-    asm_->mov(asm_->edx, offset);
+    asm_->mov(edx, offset);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_HEAP<1, 0, true>);
     } else {
       asm_->Call(&stub::INCREMENT_HEAP<1, 0, false>);
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Number()));
   }
@@ -2170,18 +2170,18 @@ class Compiler {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[2].u32[0];
     const uint32_t nest = instr[2].u32[1];
-    asm_->mov(asm_->rdi, asm_->r14);
+    asm_->mov(rdi, r14);
 
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    LookupHeapEnv(asm_->rsi, nest);
+    asm_->mov(rsi, ptr[r13 + offsetof(railgun::Frame, lexical_env_)]);
+    LookupHeapEnv(rsi, nest);
 
-    asm_->mov(asm_->edx, offset);
+    asm_->mov(edx, offset);
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_HEAP<-1, 0, true>);
     } else {
       asm_->Call(&stub::INCREMENT_HEAP<-1, 0, false>);
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Number()));
   }
@@ -2195,32 +2195,32 @@ class Compiler {
 
     const Assembler::LocalLabelScope scope(asm_);
 
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    LookupHeapEnv(asm_->rsi, nest);
+    asm_->mov(rsi, ptr[r13 + offsetof(railgun::Frame, lexical_env_)]);
+    LookupHeapEnv(rsi, nest);
     const ptrdiff_t target =
         IV_CAST_OFFSET(JSEnv*, JSDeclEnv*) +
         IV_OFFSETOF(JSDeclEnv, static_) +
         JSDeclEnv::StaticVals::DataOffset();
     // pointer to the data
-    asm_->mov(asm_->rax, asm_->qword[asm_->rsi + target]);
-    asm_->mov(asm_->rsi, asm_->qword[asm_->rax + kJSValSize * offset]);
+    asm_->mov(rax, qword[rsi + target]);
+    asm_->mov(rsi, qword[rax + kJSValSize * offset]);
     if (immutable) {
-      EmptyGuard(asm_->rsi, ".NOT_EMPTY");
+      EmptyGuard(rsi, ".NOT_EMPTY");
       if (code_->strict()) {
         static const char* message = "uninitialized value access not allowed in strict code";
-        asm_->mov(asm_->rdi, asm_->r14);
-        asm_->mov(asm_->rsi, Error::Reference);
-        asm_->mov(asm_->rdx, core::BitCast<uint64_t>(message));
+        asm_->mov(rdi, r14);
+        asm_->mov(rsi, Error::Reference);
+        asm_->mov(rdx, core::BitCast<uint64_t>(message));
         asm_->Call(&stub::THROW_WITH_TYPE_AND_MESSAGE);
       } else {
-        asm_->mov(asm_->rsi, Extract(JSUndefined));
+        asm_->mov(rsi, Extract(JSUndefined));
       }
       asm_->L(".NOT_EMPTY");
     }
 
-    asm_->mov(asm_->rdi, asm_->r12);
+    asm_->mov(rdi, r12);
     asm_->Call(&stub::TYPEOF);
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::String()));
   }
@@ -2232,38 +2232,38 @@ class Compiler {
     const uint32_t argc_with_this = instr[1].ssw.u32;
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rdi, asm_->r14);
-      LoadVR(asm_->rsi, callee);
+      asm_->mov(rdi, r14);
+      LoadVR(rsi, callee);
       assert(!IsConstantID(offset));
-      asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + offset * kJSValSize]);
-      asm_->mov(asm_->ecx, argc_with_this);
-      asm_->mov(asm_->r8, asm_->rsp);
-      asm_->mov(asm_->qword[asm_->rsp], asm_->r13);
-      asm_->mov(asm_->r9, core::BitCast<uint64_t>(instr));
+      asm_->lea(rdx, ptr[r13 + offset * kJSValSize]);
+      asm_->mov(ecx, argc_with_this);
+      asm_->mov(r8, rsp);
+      asm_->mov(qword[rsp], r13);
+      asm_->mov(r9, core::BitCast<uint64_t>(instr));
       asm_->Call(&stub::CALL);
-      asm_->mov(asm_->rcx, asm_->qword[asm_->rsp]);
-      asm_->cmp(asm_->rcx, asm_->r13);
+      asm_->mov(rcx, qword[rsp]);
+      asm_->cmp(rcx, r13);
       asm_->je(".CALL_EXIT");
 
       // move to new Frame
-      asm_->mov(asm_->r13, asm_->rcx);
-      asm_->call(asm_->rax);
+      asm_->mov(r13, rcx);
+      asm_->call(rax);
 
       // unwind Frame
-      asm_->mov(asm_->rcx, asm_->r13);  // old frame
-      asm_->mov(asm_->r13, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, prev_)]);  // current frame
+      asm_->mov(rcx, r13);  // old frame
+      asm_->mov(r13, ptr[r13 + offsetof(railgun::Frame, prev_)]);  // current frame
       const register_t frame_end_offset = Reg(code_->registers());
       assert(!IsConstantID(frame_end_offset));
-      asm_->lea(asm_->r10, asm_->ptr[asm_->r13 + frame_end_offset * kJSValSize]);
-      asm_->cmp(asm_->rcx, asm_->r10);
+      asm_->lea(r10, ptr[r13 + frame_end_offset * kJSValSize]);
+      asm_->cmp(rcx, r10);
       asm_->jge(".CALL_UNWIND_OLD");
-      asm_->mov(asm_->rcx, asm_->r10);
+      asm_->mov(rcx, r10);
 
       // rcx is new stack pointer
       asm_->L(".CALL_UNWIND_OLD");
-      asm_->mov(asm_->r10, asm_->ptr[asm_->r12 + IV_OFFSETOF(Context, vm_)]);
-      asm_->mov(asm_->ptr[asm_->r10 + (railgun::VM::StackOffset() + railgun::Stack::StackPointerOffset())], asm_->rcx);
-      asm_->mov(asm_->ptr[asm_->r10 + (railgun::VM::StackOffset() + railgun::Stack::CurrentFrameOffset())], asm_->r13);
+      asm_->mov(r10, ptr[r12 + IV_OFFSETOF(Context, vm_)]);
+      asm_->mov(ptr[r10 + (railgun::VM::StackOffset() + railgun::Stack::StackPointerOffset())], rcx);
+      asm_->mov(ptr[r10 + (railgun::VM::StackOffset() + railgun::Stack::CurrentFrameOffset())], r13);
 
       asm_->L(".CALL_EXIT");
     }
@@ -2276,52 +2276,52 @@ class Compiler {
     const uint32_t argc_with_this = instr[1].ssw.u32;
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rdi, asm_->r14);
-      LoadVR(asm_->rsi, callee);
+      asm_->mov(rdi, r14);
+      LoadVR(rsi, callee);
       assert(!IsConstantID(offset));
-      asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + offset * kJSValSize]);
-      asm_->mov(asm_->ecx, argc_with_this);
-      asm_->mov(asm_->r8, asm_->rsp);
-      asm_->mov(asm_->qword[asm_->rsp], asm_->r13);
-      asm_->mov(asm_->r9, core::BitCast<uint64_t>(instr));
+      asm_->lea(rdx, ptr[r13 + offset * kJSValSize]);
+      asm_->mov(ecx, argc_with_this);
+      asm_->mov(r8, rsp);
+      asm_->mov(qword[rsp], r13);
+      asm_->mov(r9, core::BitCast<uint64_t>(instr));
       asm_->Call(&stub::CONSTRUCT);
-      asm_->mov(asm_->rcx, asm_->qword[asm_->rsp]);
-      asm_->cmp(asm_->rcx, asm_->r13);
+      asm_->mov(rcx, qword[rsp]);
+      asm_->cmp(rcx, r13);
       asm_->je(".CONSTRUCT_EXIT");
 
       // move to new Frame
-      asm_->mov(asm_->r13, asm_->rcx);
-      asm_->call(asm_->rax);
+      asm_->mov(r13, rcx);
+      asm_->call(rax);
 
       // unwind Frame
-      asm_->mov(asm_->rcx, asm_->r13);  // old frame
-      asm_->mov(asm_->rdx, asm_->ptr[asm_->r13 + kJSValSize * Reg(railgun::FrameConstant<>::kThisOffset)]);  // NOLINT
-      asm_->mov(asm_->r13, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, prev_)]);  // current frame
+      asm_->mov(rcx, r13);  // old frame
+      asm_->mov(rdx, ptr[r13 + kJSValSize * Reg(railgun::FrameConstant<>::kThisOffset)]);  // NOLINT
+      asm_->mov(r13, ptr[r13 + offsetof(railgun::Frame, prev_)]);  // current frame
       const register_t frame_end_offset = Reg(code_->registers());
-      asm_->lea(asm_->r10, asm_->ptr[asm_->r13 + frame_end_offset * kJSValSize]);
-      asm_->cmp(asm_->rcx, asm_->r10);
+      asm_->lea(r10, ptr[r13 + frame_end_offset * kJSValSize]);
+      asm_->cmp(rcx, r10);
       asm_->jge(".CALL_UNWIND_OLD");
-      asm_->mov(asm_->rcx, asm_->r10);
+      asm_->mov(rcx, r10);
 
       // rcx is new stack pointer
       asm_->L(".CALL_UNWIND_OLD");
-      asm_->mov(asm_->r10, asm_->ptr[asm_->r12 + IV_OFFSETOF(Context, vm_)]);
-      asm_->mov(asm_->ptr[asm_->r10 + (railgun::VM::StackOffset() + railgun::Stack::StackPointerOffset())], asm_->rcx);
-      asm_->mov(asm_->ptr[asm_->r10 + (railgun::VM::StackOffset() + railgun::Stack::CurrentFrameOffset())], asm_->r13);
+      asm_->mov(r10, ptr[r12 + IV_OFFSETOF(Context, vm_)]);
+      asm_->mov(ptr[r10 + (railgun::VM::StackOffset() + railgun::Stack::StackPointerOffset())], rcx);
+      asm_->mov(ptr[r10 + (railgun::VM::StackOffset() + railgun::Stack::CurrentFrameOffset())], r13);
 
       // after call of JS Function
       // rax is result value
-      asm_->mov(asm_->rsi, detail::jsval64::kValueMask);
-      asm_->test(asm_->rsi, asm_->rax);
+      asm_->mov(rsi, detail::jsval64::kValueMask);
+      asm_->test(rsi, rax);
       asm_->jnz(".RESULT_IS_NOT_OBJECT");
 
       // currently, rax target is guaranteed as cell
-      CompareCellTag(asm_->rax, radio::OBJECT);
+      CompareCellTag(rax, radio::OBJECT);
       asm_->je(".CONSTRUCT_EXIT");
 
       // constructor call and return value is not object
       asm_->L(".RESULT_IS_NOT_OBJECT");
-      asm_->mov(asm_->rax, asm_->rdx);
+      asm_->mov(rax, rdx);
 
       asm_->L(".CONSTRUCT_EXIT");
     }
@@ -2334,38 +2334,38 @@ class Compiler {
     const uint32_t argc_with_this = instr[1].ssw.u32;
     {
       const Assembler::LocalLabelScope scope(asm_);
-      asm_->mov(asm_->rdi, asm_->r14);
-      LoadVR(asm_->rsi, callee);
+      asm_->mov(rdi, r14);
+      LoadVR(rsi, callee);
       assert(!IsConstantID(offset));
-      asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + offset * kJSValSize]);
-      asm_->mov(asm_->ecx, argc_with_this);
-      asm_->mov(asm_->r8, asm_->rsp);
-      asm_->mov(asm_->qword[asm_->rsp], asm_->r13);
-      asm_->mov(asm_->r9, core::BitCast<uint64_t>(instr));
+      asm_->lea(rdx, ptr[r13 + offset * kJSValSize]);
+      asm_->mov(ecx, argc_with_this);
+      asm_->mov(r8, rsp);
+      asm_->mov(qword[rsp], r13);
+      asm_->mov(r9, core::BitCast<uint64_t>(instr));
       asm_->Call(&stub::EVAL);
-      asm_->mov(asm_->rcx, asm_->qword[asm_->rsp]);
-      asm_->cmp(asm_->rcx, asm_->r13);
+      asm_->mov(rcx, qword[rsp]);
+      asm_->cmp(rcx, r13);
       asm_->je(".CALL_EXIT");
 
       // move to new Frame
-      asm_->mov(asm_->r13, asm_->rcx);
-      asm_->call(asm_->rax);
+      asm_->mov(r13, rcx);
+      asm_->call(rax);
 
       // unwind Frame
-      asm_->mov(asm_->rcx, asm_->r13);  // old frame
-      asm_->mov(asm_->r13, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, prev_)]);  // current frame
+      asm_->mov(rcx, r13);  // old frame
+      asm_->mov(r13, ptr[r13 + offsetof(railgun::Frame, prev_)]);  // current frame
       const register_t frame_end_offset = Reg(code_->registers());
       assert(!IsConstantID(frame_end_offset));
-      asm_->lea(asm_->r10, asm_->ptr[asm_->r13 + frame_end_offset * kJSValSize]);
-      asm_->cmp(asm_->rcx, asm_->r10);
+      asm_->lea(r10, ptr[r13 + frame_end_offset * kJSValSize]);
+      asm_->cmp(rcx, r10);
       asm_->jge(".CALL_UNWIND_OLD");
-      asm_->mov(asm_->rcx, asm_->r10);
+      asm_->mov(rcx, r10);
 
       // rcx is new stack pointer
       asm_->L(".CALL_UNWIND_OLD");
-      asm_->mov(asm_->r10, asm_->ptr[asm_->r12 + IV_OFFSETOF(Context, vm_)]);
-      asm_->mov(asm_->ptr[asm_->r10 + (railgun::VM::StackOffset() + railgun::Stack::StackPointerOffset())], asm_->rcx);
-      asm_->mov(asm_->ptr[asm_->r10 + (railgun::VM::StackOffset() + railgun::Stack::CurrentFrameOffset())], asm_->r13);
+      asm_->mov(r10, ptr[r12 + IV_OFFSETOF(Context, vm_)]);
+      asm_->mov(ptr[r10 + (railgun::VM::StackOffset() + railgun::Stack::StackPointerOffset())], rcx);
+      asm_->mov(ptr[r10 + (railgun::VM::StackOffset() + railgun::Stack::CurrentFrameOffset())], r13);
 
       asm_->L(".CALL_EXIT");
     }
@@ -2375,9 +2375,9 @@ class Compiler {
   void EmitINSTANTIATE_DECLARATION_BINDING(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].u32[0]];
     const bool configurable = instr[1].u32[1];
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, variable_env_)]);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    asm_->mov(rdi, r14);
+    asm_->mov(rsi, ptr[r13 + offsetof(railgun::Frame, variable_env_)]);
+    asm_->mov(rdx, core::BitCast<uint64_t>(name));
     if (configurable) {
       asm_->Call(&stub::INSTANTIATE_DECLARATION_BINDING<true>);
     } else {
@@ -2389,9 +2389,9 @@ class Compiler {
   void EmitINSTANTIATE_VARIABLE_BINDING(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].u32[0]];
     const bool configurable = instr[1].u32[1];
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, variable_env_)]);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    asm_->mov(rdi, r14);
+    asm_->mov(rsi, ptr[r13 + offsetof(railgun::Frame, variable_env_)]);
+    asm_->mov(rdx, core::BitCast<uint64_t>(name));
     if (configurable) {
       if (code_->strict()) {
         asm_->Call(&stub::INSTANTIATE_VARIABLE_BINDING<true, true>);
@@ -2411,9 +2411,9 @@ class Compiler {
   void EmitINITIALIZE_HEAP_IMMUTABLE(const Instruction* instr) {
     const register_t src = Reg(instr[1].ssw.i16[0]);
     const uint32_t offset = instr[1].ssw.u32;
-    asm_->mov(asm_->rdi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, variable_env_)]);
-    LoadVR(asm_->rsi, src);
-    asm_->mov(asm_->edx, offset);
+    asm_->mov(rdi, ptr[r13 + offsetof(railgun::Frame, variable_env_)]);
+    LoadVR(rsi, src);
+    asm_->mov(edx, offset);
     asm_->Call(&stub::INITIALIZE_HEAP_IMMUTABLE);
   }
 
@@ -2423,26 +2423,26 @@ class Compiler {
     static const uint64_t overflow = Extract(JSVal(static_cast<double>(INT32_MAX) + 1));
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rax, src);
-      Int32Guard(src, asm_->rax, ".INCREMENT_SLOW");
-      asm_->inc(asm_->eax);
+      LoadVR(rax, src);
+      Int32Guard(src, rax, ".INCREMENT_SLOW");
+      asm_->inc(eax);
       asm_->jo(".INCREMENT_OVERFLOW");
 
-      asm_->or(asm_->rax, asm_->r15);
+      asm_->or(rax, r15);
       asm_->jmp(".INCREMENT_EXIT");
 
       asm_->L(".INCREMENT_OVERFLOW");
       // overflow ==> INT32_MAX + 1
-      asm_->mov(asm_->rax, overflow);
+      asm_->mov(rax, overflow);
       asm_->jmp(".INCREMENT_EXIT");
 
       asm_->L(".INCREMENT_SLOW");
-      asm_->mov(asm_->rdi, asm_->r14);
-      asm_->mov(asm_->rsi, asm_->rax);
+      asm_->mov(rdi, r14);
+      asm_->mov(rsi, rax);
       asm_->Call(&stub::INCREMENT);
 
       asm_->L(".INCREMENT_EXIT");
-      asm_->mov(asm_->qword[asm_->r13 + src * kJSValSize], asm_->rax);
+      asm_->mov(qword[r13 + src * kJSValSize], rax);
       set_last_used_candidate(src);
       type_record_.Put(src, TypeEntry::Increment(type_record_.Get(src)));
     }
@@ -2454,26 +2454,26 @@ class Compiler {
     static const uint64_t overflow = Extract(JSVal(static_cast<double>(INT32_MIN) - 1));
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rax, src);
-      Int32Guard(src, asm_->rax, ".DECREMENT_SLOW");
-      asm_->sub(asm_->eax, 1);
+      LoadVR(rax, src);
+      Int32Guard(src, rax, ".DECREMENT_SLOW");
+      asm_->sub(eax, 1);
       asm_->jo(".DECREMENT_OVERFLOW");
 
-      asm_->or(asm_->rax, asm_->r15);
+      asm_->or(rax, r15);
       asm_->jmp(".DECREMENT_EXIT");
 
       // overflow ==> INT32_MIN - 1
       asm_->L(".DECREMENT_OVERFLOW");
-      asm_->mov(asm_->rax, overflow);
+      asm_->mov(rax, overflow);
       asm_->jmp(".DECREMENT_EXIT");
 
       asm_->L(".DECREMENT_SLOW");
-      asm_->mov(asm_->rsi, asm_->rax);
-      asm_->mov(asm_->rdi, asm_->r14);
+      asm_->mov(rsi, rax);
+      asm_->mov(rdi, r14);
       asm_->Call(&stub::DECREMENT);
 
       asm_->L(".DECREMENT_EXIT");
-      asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
+      asm_->mov(ptr[r13 + src * kJSValSize], rax);
       set_last_used_candidate(src);
       type_record_.Put(src, TypeEntry::Decrement(type_record_.Get(src)));
     }
@@ -2486,29 +2486,29 @@ class Compiler {
     static const uint64_t overflow = Extract(JSVal(static_cast<double>(INT32_MAX) + 1));
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, src);
-      Int32Guard(src, asm_->rsi, ".INCREMENT_SLOW");
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rsi);
-      asm_->inc(asm_->esi);
+      LoadVR(rsi, src);
+      Int32Guard(src, rsi, ".INCREMENT_SLOW");
+      asm_->mov(ptr[r13 + dst * kJSValSize], rsi);
+      asm_->inc(esi);
       asm_->jo(".INCREMENT_OVERFLOW");
 
-      asm_->mov(asm_->eax, asm_->esi);
-      asm_->or(asm_->rax, asm_->r15);
+      asm_->mov(eax, esi);
+      asm_->or(rax, r15);
       asm_->jmp(".INCREMENT_EXIT");
 
       // overflow ==> INT32_MAX + 1
       asm_->L(".INCREMENT_OVERFLOW");
-      asm_->mov(asm_->rax, overflow);
+      asm_->mov(rax, overflow);
       asm_->jmp(".INCREMENT_EXIT");
 
       asm_->L(".INCREMENT_SLOW");
-      asm_->mov(asm_->rdi, asm_->r14);
+      asm_->mov(rdi, r14);
       assert(!IsConstantID(dst));
-      asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + dst * kJSValSize]);
+      asm_->lea(rdx, ptr[r13 + dst * kJSValSize]);
       asm_->Call(&stub::POSTFIX_INCREMENT);
 
       asm_->L(".INCREMENT_EXIT");
-      asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
+      asm_->mov(ptr[r13 + src * kJSValSize], rax);
       set_last_used_candidate(src);
       {
         const TypeEntry from = type_record_.Get(src);
@@ -2525,29 +2525,29 @@ class Compiler {
     static const uint64_t overflow = Extract(JSVal(static_cast<double>(INT32_MIN) - 1));
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rsi, src);
-      Int32Guard(src, asm_->rsi, ".DECREMENT_SLOW");
-      asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rsi);
-      asm_->sub(asm_->esi, 1);
+      LoadVR(rsi, src);
+      Int32Guard(src, rsi, ".DECREMENT_SLOW");
+      asm_->mov(ptr[r13 + dst * kJSValSize], rsi);
+      asm_->sub(esi, 1);
       asm_->jo(".DECREMENT_OVERFLOW");
 
-      asm_->mov(asm_->eax, asm_->esi);
-      asm_->or(asm_->rax, asm_->r15);
+      asm_->mov(eax, esi);
+      asm_->or(rax, r15);
       asm_->jmp(".DECREMENT_EXIT");
 
       // overflow ==> INT32_MIN - 1
       asm_->L(".DECREMENT_OVERFLOW");
-      asm_->mov(asm_->rax, overflow);
+      asm_->mov(rax, overflow);
       asm_->jmp(".DECREMENT_EXIT");
 
       asm_->L(".DECREMENT_SLOW");
-      asm_->mov(asm_->rdi, asm_->r14);
+      asm_->mov(rdi, r14);
       assert(!IsConstantID(dst));
-      asm_->lea(asm_->rdx, asm_->ptr[asm_->r13 + dst * kJSValSize]);
+      asm_->lea(rdx, ptr[r13 + dst * kJSValSize]);
       asm_->Call(&stub::POSTFIX_DECREMENT);
 
       asm_->L(".DECREMENT_EXIT");
-      asm_->mov(asm_->ptr[asm_->r13 + src * kJSValSize], asm_->rax);
+      asm_->mov(ptr[r13 + src * kJSValSize], rax);
       set_last_used_candidate(src);
       {
         const TypeEntry from = type_record_.Get(src);
@@ -2562,13 +2562,13 @@ class Compiler {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     const register_t base = Reg(instr[1].ssw.i16[1]);
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    asm_->mov(rdi, r14);
+    asm_->mov(rsi, ptr[r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(rdx, core::BitCast<uint64_t>(name));
     assert(!IsConstantID(base));
-    asm_->lea(asm_->rcx, asm_->ptr[asm_->r13 + base * kJSValSize]);
+    asm_->lea(rcx, ptr[r13 + base * kJSValSize]);
     asm_->Call(&stub::PREPARE_DYNAMIC_CALL);
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(base, TypeEntry(Type::Unknown()));
     type_record_.Put(dst, TypeEntry(Type::Unknown()));
@@ -2581,20 +2581,20 @@ class Compiler {
     const std::string label = MakeLabel(instr);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rdi, cond);
+      LoadVR(rdi, cond);
 
       // boolean and int32_t zero fast cases
-      asm_->cmp(asm_->rdi, asm_->r15);
+      asm_->cmp(rdi, r15);
       asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
 
-      asm_->cmp(asm_->rdi, detail::jsval64::kFalse);
+      asm_->cmp(rdi, detail::jsval64::kFalse);
       asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
 
-      asm_->cmp(asm_->rdi, detail::jsval64::kTrue);
+      asm_->cmp(rdi, detail::jsval64::kTrue);
       asm_->je(".IF_FALSE_EXIT");
 
       asm_->Call(&stub::TO_BOOLEAN);
-      asm_->test(asm_->eax, asm_->eax);
+      asm_->test(eax, eax);
       asm_->jz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
 
       asm_->L(".IF_FALSE_EXIT");
@@ -2608,20 +2608,20 @@ class Compiler {
     const std::string label = MakeLabel(instr);
     {
       const Assembler::LocalLabelScope scope(asm_);
-      LoadVR(asm_->rdi, cond);
+      LoadVR(rdi, cond);
 
       // boolean and int32_t zero fast cases
-      asm_->cmp(asm_->rdi, asm_->r15);
+      asm_->cmp(rdi, r15);
       asm_->je(".IF_TRUE_EXIT");
 
-      asm_->cmp(asm_->rdi, detail::jsval64::kFalse);
+      asm_->cmp(rdi, detail::jsval64::kFalse);
       asm_->je(".IF_TRUE_EXIT");
 
-      asm_->cmp(asm_->rdi, detail::jsval64::kTrue);
+      asm_->cmp(rdi, detail::jsval64::kTrue);
       asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
 
       asm_->Call(&stub::TO_BOOLEAN);
-      asm_->test(asm_->eax, asm_->eax);
+      asm_->test(eax, eax);
       asm_->jnz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
 
       asm_->L(".IF_TRUE_EXIT");
@@ -2637,11 +2637,11 @@ class Compiler {
 
     // register position and repatch afterward
     Assembler::RepatchSite site;
-    site.Mov(asm_, asm_->rax);
+    site.Mov(asm_, rax);
     // Value is JSVal, but, this indicates pointer to address
-    asm_->mov(asm_->qword[asm_->r13 + addr * kJSValSize], asm_->rax);
-    asm_->mov(asm_->rax, layout);
-    asm_->mov(asm_->qword[asm_->r13 + flag * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + addr * kJSValSize], rax);
+    asm_->mov(rax, layout);
+    asm_->mov(qword[r13 + flag * kJSValSize], rax);
     asm_->jmp(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
 
     asm_->align(2);
@@ -2656,11 +2656,11 @@ class Compiler {
     const register_t iterator = Reg(instr[1].jump.i16[0]);
     const register_t enumerable = Reg(instr[1].jump.i16[1]);
     const std::string label = MakeLabel(instr);
-    LoadVR(asm_->rsi, enumerable);
-    NotNullOrUndefinedGuard(asm_->rsi, asm_->rdi, label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-    asm_->mov(asm_->rdi, asm_->r14);
+    LoadVR(rsi, enumerable);
+    NotNullOrUndefinedGuard(rsi, rdi, label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+    asm_->mov(rdi, r14);
     asm_->Call(&stub::FORIN_SETUP);
-    asm_->mov(asm_->ptr[asm_->r13 + iterator * kJSValSize], asm_->rax);
+    asm_->mov(ptr[r13 + iterator * kJSValSize], rax);
     set_last_used_candidate(iterator);
   }
 
@@ -2669,12 +2669,12 @@ class Compiler {
     const register_t dst = Reg(instr[1].jump.i16[0]);
     const register_t iterator = Reg(instr[1].jump.i16[1]);
     const std::string label = MakeLabel(instr);
-    asm_->mov(asm_->rdi, asm_->r12);
-    LoadVR(asm_->rsi, iterator);
+    asm_->mov(rdi, r12);
+    LoadVR(rsi, iterator);
     asm_->Call(&stub::FORIN_ENUMERATE);
-    asm_->cmp(asm_->rax, 0);
+    asm_->cmp(rax, 0);
     asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(ptr[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::String()));
   }
@@ -2682,8 +2682,8 @@ class Compiler {
   // opcode | iterator
   void EmitFORIN_LEAVE(const Instruction* instr) {
     const register_t iterator = Reg(instr[1].i32[0]);
-    asm_->mov(asm_->rdi, asm_->r12);
-    LoadVR(asm_->rsi, iterator);
+    asm_->mov(rdi, r12);
+    LoadVR(rsi, iterator);
     asm_->Call(&stub::FORIN_LEAVE);
   }
 
@@ -2691,27 +2691,27 @@ class Compiler {
   void EmitTRY_CATCH_SETUP(const Instruction* instr) {
     const register_t error = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
-    asm_->mov(asm_->rdi, asm_->r12);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
-    LoadVR(asm_->rcx, error);
+    asm_->mov(rdi, r12);
+    asm_->mov(rsi, ptr[r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(rdx, core::BitCast<uint64_t>(name));
+    LoadVR(rcx, error);
     asm_->Call(&stub::TRY_CATCH_SETUP);
-    asm_->mov(asm_->qword[asm_->r13 + offsetof(railgun::Frame, lexical_env_)], asm_->rax);
+    asm_->mov(qword[r13 + offsetof(railgun::Frame, lexical_env_)], rax);
   }
 
   // opcode | (dst | index)
   void EmitLOAD_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     const register_t dst = Reg(instr[1].ssw.i16[0]);
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    asm_->mov(rdi, r14);
+    asm_->mov(rsi, ptr[r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::LOAD_NAME<true>);
     } else {
       asm_->Call(&stub::LOAD_NAME<false>);
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Unknown()));
   }
@@ -2720,10 +2720,10 @@ class Compiler {
   void EmitSTORE_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     const register_t src = Reg(instr[1].ssw.i16[0]);
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
-    LoadVR(asm_->rcx, src);
+    asm_->mov(rdi, r14);
+    asm_->mov(rsi, ptr[r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(rdx, core::BitCast<uint64_t>(name));
+    LoadVR(rcx, src);
     if (code_->strict()) {
       asm_->Call(&stub::STORE_NAME<true>);
     } else {
@@ -2735,15 +2735,15 @@ class Compiler {
   void EmitDELETE_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     const register_t dst = Reg(instr[1].ssw.i16[0]);
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    asm_->mov(rdi, r14);
+    asm_->mov(rsi, ptr[r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::DELETE_NAME<true>);
     } else {
       asm_->Call(&stub::DELETE_NAME<false>);
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Boolean()));
   }
@@ -2752,15 +2752,15 @@ class Compiler {
   void EmitINCREMENT_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     const register_t dst = Reg(instr[1].ssw.i16[0]);
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    asm_->mov(rdi, r14);
+    asm_->mov(rsi, ptr[r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_NAME<1, 1, true>);
     } else {
       asm_->Call(&stub::INCREMENT_NAME<1, 1, false>);
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Number()));
   }
@@ -2769,15 +2769,15 @@ class Compiler {
   void EmitDECREMENT_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     const register_t dst = Reg(instr[1].ssw.i16[0]);
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    asm_->mov(rdi, r14);
+    asm_->mov(rsi, ptr[r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_NAME<-1, 1, true>);
     } else {
       asm_->Call(&stub::INCREMENT_NAME<-1, 1, false>);
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Number()));
   }
@@ -2786,15 +2786,15 @@ class Compiler {
   void EmitPOSTFIX_INCREMENT_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     const register_t dst = Reg(instr[1].ssw.i16[0]);
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    asm_->mov(rdi, r14);
+    asm_->mov(rsi, ptr[r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_NAME<1, 0, true>);
     } else {
       asm_->Call(&stub::INCREMENT_NAME<1, 0, false>);
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Number()));
   }
@@ -2803,15 +2803,15 @@ class Compiler {
   void EmitPOSTFIX_DECREMENT_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     const register_t dst = Reg(instr[1].ssw.i16[0]);
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    asm_->mov(rdi, r14);
+    asm_->mov(rsi, ptr[r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::INCREMENT_NAME<-1, 0, true>);
     } else {
       asm_->Call(&stub::INCREMENT_NAME<-1, 0, false>);
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Number()));
   }
@@ -2820,15 +2820,15 @@ class Compiler {
   void EmitTYPEOF_NAME(const Instruction* instr) {
     const Symbol name = code_->names()[instr[1].ssw.u32];
     const register_t dst = Reg(instr[1].ssw.i16[0]);
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->ptr[asm_->r13 + offsetof(railgun::Frame, lexical_env_)]);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(name));
+    asm_->mov(rdi, r14);
+    asm_->mov(rsi, ptr[r13 + offsetof(railgun::Frame, lexical_env_)]);
+    asm_->mov(rdx, core::BitCast<uint64_t>(name));
     if (code_->strict()) {
       asm_->Call(&stub::TYPEOF_NAME<true>);
     } else {
       asm_->Call(&stub::TYPEOF_NAME<false>);
     }
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::String()));
   }
@@ -2841,14 +2841,14 @@ class Compiler {
   // opcode | dst
   void EmitLOAD_ARGUMENTS(const Instruction* instr) {
     const int32_t dst = Reg(instr[1].i32[0]);
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, asm_->r13);
+    asm_->mov(rdi, r14);
+    asm_->mov(rsi, r13);
     if (code_->strict()) {
       asm_->Call(&stub::LOAD_ARGUMENTS<true>);
     } else {
       asm_->Call(&stub::LOAD_ARGUMENTS<false>);
     }
-    asm_->mov(asm_->ptr[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(ptr[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::Arguments()));
   }
@@ -2875,33 +2875,33 @@ class Compiler {
       // no check
       return;
     }
-    asm_->cmp(target, asm_->r15);
+    asm_->cmp(target, r15);
     asm_->jb(label, type);
   }
 
   void LoadCellTag(const Xbyak::Reg64& target, const Xbyak::Reg32& out) {
     // Because of Little Endianess
     IV_STATIC_ASSERT(core::kLittleEndian);
-    asm_->mov(out, asm_->word[target + radio::Cell::TagOffset()]);  // NOLINT
+    asm_->mov(out, word[target + radio::Cell::TagOffset()]);  // NOLINT
   }
 
   void CompareCellTag(const Xbyak::Reg64& target, uint8_t tag) {
-    asm_->cmp(asm_->word[target + radio::Cell::TagOffset()], tag);  // NOLINT
+    asm_->cmp(word[target + radio::Cell::TagOffset()], tag);  // NOLINT
   }
 
   void LoadClassTag(const Xbyak::Reg64& target,
                     const Xbyak::Reg64& tmp,
                     const Xbyak::Reg32& out) {
     const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
-    asm_->mov(tmp, asm_->qword[target + offset]);
-    asm_->mov(out, asm_->word[tmp + IV_OFFSETOF(Class, type)]);
+    asm_->mov(tmp, qword[target + offset]);
+    asm_->mov(out, word[tmp + IV_OFFSETOF(Class, type)]);
   }
 
   void CompareClassType(const Xbyak::Reg64& target,
                         const Xbyak::Reg64& tmp, const Class* ptr) {
     const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
     asm_->mov(tmp, core::BitCast<uintptr_t>(ptr));
-    asm_->cmp(asm_->qword[target + offset], tmp);
+    asm_->cmp(qword[target + offset], tmp);
   }
 
   void EmptyGuard(const Xbyak::Reg64& target,
@@ -2951,9 +2951,9 @@ class Compiler {
     asm_->and(tmp, -9);
     asm_->cmp(tmp, detail::jsval64::kNull);
     asm_->jne(".EXIT");
-    asm_->mov(asm_->rdi, asm_->r14);
-    asm_->mov(asm_->rsi, Error::Type);
-    asm_->mov(asm_->rdx, core::BitCast<uint64_t>(message));
+    asm_->mov(rdi, r14);
+    asm_->mov(rsi, Error::Type);
+    asm_->mov(rdx, core::BitCast<uint64_t>(message));
     asm_->Call(&stub::THROW_WITH_TYPE_AND_MESSAGE);
     asm_->L(".EXIT");
   }
@@ -2988,13 +2988,13 @@ class Compiler {
     // target is guaranteed as Array (pointer to Cell)
     // load dense field and check it is dense
     const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSArray*) + JSArray::DenseOffset();
-    asm_->test(asm_->byte[target + offset], 0xFF);
+    asm_->test(byte[target + offset], 0xFF);
     asm_->jz(label, type);
   }
 
   void EmitConstantDest(const TypeEntry& entry, register_t dst) {
-    asm_->mov(asm_->rax, Extract(entry.constant()));
-    asm_->mov(asm_->qword[asm_->r13 + dst * kJSValSize], asm_->rax);
+    asm_->mov(rax, Extract(entry.constant()));
+    asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
   }
 
@@ -3047,7 +3047,7 @@ class Compiler {
 
   void LookupHeapEnv(const Xbyak::Reg64& target, uint32_t nest) {
     for (uint32_t i = 0; i < nest; ++i) {
-      asm_->mov(target, asm_->ptr[target + JSEnv::OuterOffset()]);
+      asm_->mov(target, ptr[target + JSEnv::OuterOffset()]);
     }
   }
 

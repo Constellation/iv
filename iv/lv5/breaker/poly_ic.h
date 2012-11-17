@@ -123,8 +123,8 @@ class LoadPropertyIC : public PolyIC {
     const std::ptrdiff_t data_offset =
         JSObject::SlotsOffset() +
         JSObject::Slots::DataOffset();
-    as->mov(as->rax, as->qword[reg + data_offset]);
-    as->mov(as->rax, as->qword[as->rax + kJSValSize * offset]);
+    as->mov(rax, qword[reg + data_offset]);
+    as->mov(rax, qword[rax + kJSValSize * offset]);
     as->ret();
   }
 
@@ -140,11 +140,11 @@ class LoadPropertyIC : public PolyIC {
 
     void operator()(LoadPropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
       // own map guard
-      as->mov(as->r10, core::BitCast<uintptr_t>(map_));
-      as->cmp(as->r10, as->qword[as->r8 + JSObject::MapOffset()]);
+      as->mov(r10, core::BitCast<uintptr_t>(map_));
+      as->cmp(r10, qword[r8 + JSObject::MapOffset()]);
       as->jne(fail);
       // load
-      LoadPropertyIC::GenerateFastLoad(as, as->r8, offset_);
+      LoadPropertyIC::GenerateFastLoad(as, r8, offset_);
     }
 
    private:
@@ -165,18 +165,18 @@ class LoadPropertyIC : public PolyIC {
 
     void operator()(LoadPropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
       // own map guard
-      as->mov(as->r10, core::BitCast<uintptr_t>(map_));
-      as->cmp(as->r10, as->qword[as->r8 + JSObject::MapOffset()]);
+      as->mov(r10, core::BitCast<uintptr_t>(map_));
+      as->cmp(r10, qword[r8 + JSObject::MapOffset()]);
       as->jne(fail);
       // prototype map guard
-      as->mov(as->r11, as->qword[as->r8 + JSObject::PrototypeOffset()]);
-      as->mov(as->r10, core::BitCast<uintptr_t>(prototype_));
-      as->test(as->r11, as->r11);
+      as->mov(r11, qword[r8 + JSObject::PrototypeOffset()]);
+      as->mov(r10, core::BitCast<uintptr_t>(prototype_));
+      as->test(r11, r11);
       as->jz(fail);
-      as->cmp(as->r10, as->qword[as->r11 + JSObject::MapOffset()]);
+      as->cmp(r10, qword[r11 + JSObject::MapOffset()]);
       as->jne(fail);
       // load
-      LoadPropertyIC::GenerateFastLoad(as, as->r11, offset_);
+      LoadPropertyIC::GenerateFastLoad(as, r11, offset_);
     }
 
    private:
@@ -203,46 +203,46 @@ class LoadPropertyIC : public PolyIC {
         const Chain::const_iterator last = chain_->end();
         assert(it != last);
         {
-          as->mov(as->r10, core::BitCast<uintptr_t>(*it));
-          as->cmp(as->r10, as->qword[as->r8 + JSObject::MapOffset()]);
+          as->mov(r10, core::BitCast<uintptr_t>(*it));
+          as->cmp(r10, qword[r8 + JSObject::MapOffset()]);
           as->jne(fail);
-          as->mov(as->r11, as->qword[as->r8 + JSObject::PrototypeOffset()]);
+          as->mov(r11, qword[r8 + JSObject::PrototypeOffset()]);
           ++it;
         }
         for (; it != last; ++it) {
-          as->mov(as->r10, core::BitCast<uintptr_t>(*it));
-          as->test(as->r11, as->r11);
+          as->mov(r10, core::BitCast<uintptr_t>(*it));
+          as->test(r11, r11);
           as->jz(fail);
-          as->cmp(as->r10, as->qword[as->r11 + JSObject::MapOffset()]);
+          as->cmp(r10, qword[r11 + JSObject::MapOffset()]);
           as->jne(fail);
-          as->mov(as->r11, as->qword[as->r11 + JSObject::PrototypeOffset()]);
+          as->mov(r11, qword[r11 + JSObject::PrototypeOffset()]);
         }
       } else {
-        as->mov(as->r11, as->r8);
-        as->mov(as->r10, core::BitCast<uintptr_t>(chain_->data()));
-        as->xor(as->r9, as->r9);
+        as->mov(r11, r8);
+        as->mov(r10, core::BitCast<uintptr_t>(chain_->data()));
+        as->xor(r9, r9);
         as->L(".LOOP_HEAD");
         {
-          as->mov(as->r10, as->qword[as->r10 + as->r9 * k64Size]);
-          as->test(as->r11, as->r11);
+          as->mov(r10, qword[r10 + r9 * k64Size]);
+          as->test(r11, r11);
           as->jz(fail);
-          as->cmp(as->r10, as->qword[as->r11 + JSObject::MapOffset()]);
+          as->cmp(r10, qword[r11 + JSObject::MapOffset()]);
           as->jne(fail);
-          as->mov(as->r11, as->qword[as->r11 + JSObject::PrototypeOffset()]);
-          as->inc(as->r9);
-          as->cmp(as->r9, chain_->size());
+          as->mov(r11, qword[r11 + JSObject::PrototypeOffset()]);
+          as->inc(r9);
+          as->cmp(r9, chain_->size());
           as->jl(".LOOP_HEAD");
         }
       }
 
       // last check
-      as->mov(as->r10, core::BitCast<uintptr_t>(map_));
-      as->test(as->r11, as->r11);
+      as->mov(r10, core::BitCast<uintptr_t>(map_));
+      as->test(r11, r11);
       as->jz(fail);
-      as->cmp(as->r10, as->qword[as->r11 + JSObject::MapOffset()]);
+      as->cmp(r10, qword[r11 + JSObject::MapOffset()]);
       as->jne(fail);
       // load
-      LoadPropertyIC::GenerateFastLoad(as, as->r11, offset_);
+      LoadPropertyIC::GenerateFastLoad(as, r11, offset_);
     }
 
    private:
@@ -258,11 +258,11 @@ class LoadPropertyIC : public PolyIC {
     void operator()(LoadPropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
       const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
       // check target class is Array
-      as->mov(as->r10, core::BitCast<uintptr_t>(JSArray::GetClass()));
-      as->cmp(as->r10, as->qword[as->r8 + offset]);
+      as->mov(r10, core::BitCast<uintptr_t>(JSArray::GetClass()));
+      as->cmp(r10, qword[r8 + offset]);
       as->jne(fail);
       // load
-      as->mov(as->rax, as->qword[as->r8 + JSArray::LengthOffset()]);
+      as->mov(rax, qword[r8 + JSArray::LengthOffset()]);
       as->ret();
     }
   };
@@ -306,8 +306,8 @@ class LoadPropertyIC : public PolyIC {
     // load string length
     const std::ptrdiff_t length_offset =
         IV_CAST_OFFSET(radio::Cell*, JSString*) + JSString::SizeOffset();
-    as.mov(as.eax, as.word[as.r8 + length_offset]);
-    as.or(as.rax, as.r15);
+    as.mov(eax, word[r8 + length_offset]);
+    as.or(rax, r15);
     as.ret();
 
     if (empty()) {
@@ -331,13 +331,13 @@ class LoadPropertyIC : public PolyIC {
   template<bool TRAILING_STRING>
   void GenerateGuardPrologue(Xbyak::CodeGenerator* as) {
     // check target is Cell
-    as->mov(as->r10, detail::jsval64::kValueMask);
-    as->test(as->rsi, as->r10);
+    as->mov(r10, detail::jsval64::kValueMask);
+    as->test(rsi, r10);
     as->jnz("POLY_IC_GUARD_GENERIC", Xbyak::CodeGenerator::T_NEAR);
 
     // target is guaranteed as cell
-    as->mov(as->r8, as->rsi);
-    as->cmp(as->word[as->rsi + radio::Cell::TagOffset()], radio::OBJECT);
+    as->mov(r8, rsi);
+    as->cmp(word[rsi + radio::Cell::TagOffset()], radio::OBJECT);
     if (TRAILING_STRING) {
       assert(length_property());
       as->je("POLY_IC_GUARD_OTHER", Xbyak::CodeGenerator::T_NEAR);
@@ -365,15 +365,15 @@ class LoadPropertyIC : public PolyIC {
       } else {
         // use String.prototype object
         JSObject* prototype = ctx->global_data()->string_prototype();
-        as->mov(as->r8, core::BitCast<uintptr_t>(prototype));
+        as->mov(r8, core::BitCast<uintptr_t>(prototype));
         as->jmp("POLY_IC_START_MAIN", Xbyak::CodeGenerator::T_NEAR);
       }
     }
 
     // They are used as last entry
     as->L("POLY_IC_GUARD_GENERIC");
-    as->mov(as->rax, core::BitCast<uint64_t>(&stub::LOAD_PROP_GENERIC));
-    as->jmp(as->rax);
+    as->mov(rax, core::BitCast<uint64_t>(&stub::LOAD_PROP_GENERIC));
+    as->jmp(rax);
   }
 
   // main generation path
@@ -465,8 +465,8 @@ class StorePropertyIC : public PolyIC {
     const std::ptrdiff_t data_offset =
         JSObject::SlotsOffset() +
         JSObject::Slots::DataOffset();
-    as->mov(as->rax, as->qword[reg + data_offset]);
-    as->mov(as->qword[as->rax + kJSValSize * offset], as->rdx);
+    as->mov(rax, qword[reg + data_offset]);
+    as->mov(qword[rax + kJSValSize * offset], rdx);
     as->ret();
   }
 
@@ -482,11 +482,11 @@ class StorePropertyIC : public PolyIC {
 
     void operator()(StorePropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
       // own map guard
-      as->mov(as->r10, core::BitCast<uintptr_t>(map_));
-      as->cmp(as->r10, as->qword[as->rsi + JSObject::MapOffset()]);
+      as->mov(r10, core::BitCast<uintptr_t>(map_));
+      as->cmp(r10, qword[rsi + JSObject::MapOffset()]);
       as->jne(fail);
       // store
-      StorePropertyIC::GenerateFastStore(as, as->rsi, offset_);
+      StorePropertyIC::GenerateFastStore(as, rsi, offset_);
     }
 
    private:
@@ -538,12 +538,12 @@ class StorePropertyIC : public PolyIC {
  private:
   void GenerateGuardPrologue(Xbyak::CodeGenerator* as) {
     // check target is Cell
-    as->mov(as->r10, detail::jsval64::kValueMask);
-    as->test(as->rsi, as->r10);
+    as->mov(r10, detail::jsval64::kValueMask);
+    as->test(rsi, r10);
     as->jnz("POLY_IC_GUARD_GENERIC", Xbyak::CodeGenerator::T_NEAR);
 
     // target is guaranteed as cell
-    as->cmp(as->word[as->rsi + radio::Cell::TagOffset()], radio::OBJECT);
+    as->cmp(word[rsi + radio::Cell::TagOffset()], radio::OBJECT);
     as->jne("POLY_IC_GUARD_GENERIC", Xbyak::CodeGenerator::T_NEAR);  // we should purge this to string check path
   }
 
@@ -551,8 +551,8 @@ class StorePropertyIC : public PolyIC {
     // They are used as last entry
     const uintptr_t call = core::BitCast<uintptr_t>(&stub::STORE_PROP_GENERIC);
     as->L("POLY_IC_GUARD_GENERIC");
-    as->mov(as->rax, call);
-    as->jmp(as->rax);
+    as->mov(rax, call);
+    as->jmp(rax);
   }
 
   template<typename Generator>
