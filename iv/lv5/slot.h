@@ -17,11 +17,15 @@ namespace lv5 {
 
 class Slot : public StoredSlot {
  public:
+  static const uint32_t FLAG_USED = 1;
+  static const uint32_t FLAG_CACHEABLE = 2;
+  static const uint32_t FLAG_INIT = FLAG_CACHEABLE;
+
   Slot()
     : StoredSlot(JSEmpty, Attributes::Safe::NotFound()),
-      cacheable_(true),
       base_(NULL),
-      offset_(UINT32_MAX) {
+      offset_(UINT32_MAX),
+      flags_(FLAG_INIT) {
   }
 
   bool IsNotFound() const {
@@ -43,7 +47,8 @@ class Slot : public StoredSlot {
 
   void set(JSVal value, Attributes::Safe attributes, const JSObject* obj) {
     StoredSlot::set(value, attributes);
-    cacheable_ = false;
+    MakeUsed();
+    MakeUnCacheable();
     base_ = obj;
     offset_ = UINT32_MAX;
   }
@@ -52,14 +57,15 @@ class Slot : public StoredSlot {
            Attributes::Safe attributes,
            const JSObject* obj, uint32_t offset) {
     StoredSlot::set(value, attributes);
-    cacheable_ = cacheable_ && true;
+    MakeUsed();
     base_ = obj;
     offset_ = offset;
   }
 
   void StringSet(JSVal value, Attributes::Safe attributes) {
     StoredSlot::set(value, attributes);
-    cacheable_ = false;
+    MakeUsed();
+    MakeUnCacheable();
     base_ = NULL;
     offset_ = UINT32_MAX;
   }
@@ -71,24 +77,32 @@ class Slot : public StoredSlot {
   uint32_t offset() const { return offset_; }
 
   inline void MakeUnCacheable() {
-    cacheable_ = false;
+    flags_ &= (~FLAG_CACHEABLE);
+  }
+
+  inline void MakeUsed() {
+    flags_ &= (~FLAG_USED);
   }
 
   void Clear() {
     StoredSlot::set(JSEmpty, Attributes::Safe::NotFound());
-    cacheable_ = true;
+    flags_ = FLAG_INIT;
     base_ = NULL;
     offset_ = UINT32_MAX;
   }
 
- private:
-  bool IsCacheable() const {
-    return cacheable_;
+  bool IsUsed() {
+    return flags_ & FLAG_USED;
   }
 
-  bool cacheable_;
+ private:
+  bool IsCacheable() const {
+    return flags_ & FLAG_CACHEABLE;
+  }
+
   const JSObject* base_;
   uint32_t offset_;
+  uint32_t flags_;
 };
 
 
