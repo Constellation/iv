@@ -32,6 +32,7 @@ class Slot : public StoredSlot {
     return offset_ != UINT32_MAX;
   }
 
+  // see enumerable / configurable / writable flags
   bool IsStoreCacheable() const {
     return IsCacheable() && attributes().IsSimpleData();
   }
@@ -71,6 +72,13 @@ class Slot : public StoredSlot {
 
   inline void MakeUnCacheable() {
     cacheable_ = false;
+  }
+
+  void Clear() {
+    StoredSlot::set(JSEmpty, Attributes::Safe::NotFound());
+    cacheable_ = true;
+    base_ = NULL;
+    offset_ = UINT32_MAX;
   }
 
  private:

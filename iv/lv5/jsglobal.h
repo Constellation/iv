@@ -65,20 +65,22 @@ class JSGlobal : public JSObject {
     return res;
   }
 
-  virtual bool DefineOwnProperty(Context* ctx,
-                                 Symbol name, const PropertyDescriptor& desc,
-                                 bool th, Error* e) {
+  virtual bool DefineOwnPropertySlot(Context* ctx,
+                                     Symbol name,
+                                     const PropertyDescriptor& desc,
+                                     Slot* slot,
+                                     bool th, Error* e) {
     const uint32_t entry = LookupVariable(name);
     if (entry == core::kNotFound32) {
-      return JSObject::DefineOwnProperty(ctx, name, desc, th, e);
+      return JSObject::DefineOwnPropertySlot(ctx, name, desc, slot, th, e);
     }
 
-    StoredSlot slot(variables_[entry]);
+    StoredSlot stored(variables_[entry]);
     bool returned = false;
-    if (slot.IsDefineOwnPropertyAccepted(desc, th, &returned, e)) {
+    if (stored.IsDefineOwnPropertyAccepted(desc, th, &returned, e)) {
       // if desc is accessor, IsDefineOwnPropertyAccepted reject it.
-      slot.Merge(ctx, desc);
-      variables_[entry] = slot;
+      stored.Merge(ctx, desc);
+      variables_[entry] = stored;
     }
     return returned;
   }

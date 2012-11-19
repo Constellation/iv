@@ -130,78 +130,93 @@ bool JSObject::DefineOwnProperty(Context* ctx,
                                  const PropertyDescriptor& desc,
                                  bool th,
                                  Error* e) {
-  // section 8.12.9 [[DefineOwnProperty]]
   Slot slot;
-  if (GetOwnPropertySlot(ctx, name, &slot)) {
+  GetPropertySlot(ctx, name, &slot);
+  return DefineOwnPropertySlot(ctx, name, desc, &slot, th, e);
+}
+
+bool JSObject::DefineOwnPropertySlot(Context* ctx,
+                                     Symbol name,
+                                     const PropertyDescriptor& desc,
+                                     Slot* slot,
+                                     bool th,
+                                     Error* e) {
+  // section 8.12.9 [[DefineOwnProperty]]
+  if (!slot->IsNotFound() && slot->base() == this) {
     // found
     bool returned = false;
-    if (slot.IsDefineOwnPropertyAccepted(desc, th, &returned, e)) {
-      if (slot.HasOffset()) {
-        const Attributes::Safe old(slot.attributes());
-        slot.Merge(ctx, desc);
-        if (old != slot.attributes()) {
-          set_map(map()->ChangeAttributesTransition(ctx, name, slot.attributes()));
+    if (slot->IsDefineOwnPropertyAccepted(desc, th, &returned, e)) {
+      if (slot->HasOffset()) {
+        const Attributes::Safe old(slot->attributes());
+        slot->Merge(ctx, desc);
+        if (old != slot->attributes()) {
+          set_map(map()->ChangeAttributesTransition(ctx, name, slot->attributes()));
         }
-        Direct(slot.offset()) = slot.value();
+        Direct(slot->offset()) = slot->value();
       } else {
         // add property transition
         // searching already created maps and if this is available, move to this
         uint32_t offset;
-        slot.Merge(ctx, desc);
-        set_map(map()->AddPropertyTransition(ctx, name, slot.attributes(), &offset));
+        slot->Merge(ctx, desc);
+        set_map(map()->AddPropertyTransition(ctx, name, slot->attributes(), &offset));
         slots_.resize(map()->GetSlotsSize(), JSEmpty);
         // set newly created property
-        Direct(offset) = slot.value();
+        Direct(offset) = slot->value();
       }
     }
     return returned;
-  } else {
-    // not found
-    if (!IsExtensible()) {
-      if (th) {
-        e->Report(Error::Type, "object not extensible");\
-      }
-      return false;
-    } else {
-      // add property transition
-      // set newly created property
-      // searching already created maps and if this is available, move to this
-      uint32_t offset;
-      const StoredSlot stored(ctx, desc);
-      set_map(map()->AddPropertyTransition(ctx, name, stored.attributes(), &offset));
-      slots_.resize(map()->GetSlotsSize(), JSEmpty);
-      Direct(offset) = stored.value();
-      return true;
-    }
   }
+
+  // not found
+  if (!IsExtensible()) {
+    if (th) {
+      e->Report(Error::Type, "object not extensible");\
+    }
+    return false;
+  }
+
+  // add property transition
+  // set newly created property
+  // searching already created maps and if this is available, move to this
+  uint32_t offset;
+  const StoredSlot stored(ctx, desc);
+  set_map(map()->AddPropertyTransition(ctx, name, stored.attributes(), &offset));
+  slots_.resize(map()->GetSlotsSize(), JSEmpty);
+  Direct(offset) = stored.value();
+  return true;
 }
 
 void JSObject::Put(Context* ctx, Symbol name, JSVal val, bool th, Error* e) {
   Slot slot;
-  if (!CanPut(ctx, name, &slot)) {
+  PutSlot(ctx, name, val, &slot, th, e);
+}
+
+void JSObject::PutSlot(Context* ctx, Symbol name, JSVal val, Slot* slot, bool th, Error* e) {
+  if (!CanPut(ctx, name, slot)) {
     if (th) {
       e->Report(Error::Type, "put failed");
     }
     return;
   }
 
-  if (!slot.IsNotFound()) {
+  if (!slot->IsNotFound()) {
     // own property and attributes is data
-    if (slot.base() == this && slot.attributes().IsData()) {
-      DefineOwnProperty(
+    if (slot->base() == this && slot->attributes().IsData()) {
+      DefineOwnPropertySlot(
           ctx,
           name,
           DataDescriptor(val,
                          ATTR::UNDEF_ENUMERABLE |
                          ATTR::UNDEF_CONFIGURABLE |
                          ATTR::UNDEF_WRITABLE),
+          slot,
           th, e);
       return;
     }
 
     // accessor is found
-    if (slot.attributes().IsAccessor()) {
-      const Accessor* ac = slot.accessor();
+    if (slot->attributes().IsAccessor()) {
+      const Accessor* ac = slot->accessor();
       assert(ac->setter());
       ScopedArguments args(ctx, 1, IV_LV5_ERROR_VOID(e));
       args[0] = val;
@@ -211,9 +226,9 @@ void JSObject::Put(Context* ctx, Symbol name, JSVal val, bool th, Error* e) {
   }
   // not found or found but data property.
   // create or modify data property
-  DefineOwnProperty(
+  DefineOwnPropertySlot(
       ctx, name,
-      DataDescriptor(val, ATTR::W | ATTR::E | ATTR::C), th, e);
+      DataDescriptor(val, ATTR::W | ATTR::E | ATTR::C), slot, th, e);
 }
 
 bool JSObject::HasProperty(Context* ctx, Symbol name) const {
@@ -243,7 +258,6 @@ bool JSObject::DeleteDirect(Context* ctx, Symbol name, bool th, Error* e) {
   Direct(entry.offset) = JSEmpty;
   return true;
 }
-
 
 bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* e) {
   Slot slot;

@@ -88,58 +88,62 @@ class JSNormalArguments : public JSObject {
   bool DefineOwnPropertyPatching(
       Context* ctx,
       Symbol name,
-      const PropertyDescriptor& desc, bool th, Error* e) {
-    Slot slot;
-    if (JSObject::GetOwnPropertySlot(ctx, name, &slot)) {
+      const PropertyDescriptor& desc,
+      Slot* slot,
+      bool th, Error* e) {
+    // This is patching...
+    slot->Clear();
+    if (JSObject::GetOwnPropertySlot(ctx, name, slot)) {
       // found
       bool returned = false;
-      if (slot.IsDefineOwnPropertyAccepted(desc, th, &returned, e)) {
-        if (slot.HasOffset()) {
-          const Attributes::Safe old(slot.attributes());
-          slot.Merge(ctx, desc);
-          if (old != slot.attributes()) {
-            set_map(map()->ChangeAttributesTransition(ctx, name, slot.attributes()));
+      if (slot->IsDefineOwnPropertyAccepted(desc, th, &returned, e)) {
+        if (slot->HasOffset()) {
+          const Attributes::Safe old(slot->attributes());
+          slot->Merge(ctx, desc);
+          if (old != slot->attributes()) {
+            set_map(map()->ChangeAttributesTransition(ctx, name, slot->attributes()));
           }
-          Direct(slot.offset()) = slot.value();
+          Direct(slot->offset()) = slot->value();
         } else {
           // add property transition
           // searching already created maps and if this is available, move to this
           uint32_t offset;
-          slot.Merge(ctx, desc);
-          set_map(map()->AddPropertyTransition(ctx, name, slot.attributes(), &offset));
+          slot->Merge(ctx, desc);
+          set_map(map()->AddPropertyTransition(ctx, name, slot->attributes(), &offset));
           slots_.resize(map()->GetSlotsSize(), JSEmpty);
           // set newly created property
-          Direct(offset) = slot.value();
+          Direct(offset) = slot->value();
         }
       }
       return returned;
-    } else {
-      // not found
-      if (!IsExtensible()) {
-        if (th) {
-          e->Report(Error::Type, "object not extensible");\
-        }
-        return false;
-      } else {
-        // add property transition
-        // searching already created maps and if this is available, move to this
-        uint32_t offset;
-        const StoredSlot slot(ctx, desc);
-        set_map(map()->AddPropertyTransition(ctx, name, slot.attributes(), &offset));
-        slots_.resize(map()->GetSlotsSize(), JSEmpty);
-        // set newly created property
-        Direct(offset) = slot.value();
-        return true;
-      }
     }
+
+    // not found
+    if (!IsExtensible()) {
+      if (th) {
+        e->Report(Error::Type, "object not extensible");\
+      }
+      return false;
+    }
+
+    // add property transition
+    // set newly created property
+    // searching already created maps and if this is available, move to this
+    uint32_t offset;
+    const StoredSlot stored(ctx, desc);
+    set_map(map()->AddPropertyTransition(ctx, name, stored.attributes(), &offset));
+    slots_.resize(map()->GetSlotsSize(), JSEmpty);
+    Direct(offset) = stored.value();
+    return true;
   }
 
-  bool DefineOwnProperty(Context* ctx, Symbol name,
-                         const PropertyDescriptor& desc,
-                         bool th, Error* e) {
+  virtual bool DefineOwnPropertySlot(Context* ctx, Symbol name,
+                                     const PropertyDescriptor& desc,
+                                     Slot* slot,
+                                     bool th, Error* e) {
     // monkey patching...
     // not reserve map object, so not use default DefineOwnProperty
-    const bool allowed = DefineOwnPropertyPatching(ctx, name, desc, false, e);
+    const bool allowed = DefineOwnPropertyPatching(ctx, name, desc, slot, false, e);
     if (!allowed) {
       if (th) {
         e->Report(Error::Type, "[[DefineOwnProperty]] failed");

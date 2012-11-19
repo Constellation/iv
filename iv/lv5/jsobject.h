@@ -39,45 +39,50 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
 
   virtual JSVal DefaultValue(Context* ctx, Hint::Object hint, Error* e);
 
-  // if you handle it, override
+  bool CanPut(Context* ctx, Symbol name, Slot* slot) const;
+
+  // if you would like to handle them, override
   //   GetSlot
   //   GetPropertySlot
   //   GetOwnPropertySlot
+  //   PutSlot
+  //   DefineOwnPropertySlot
   // instead of
   //   Get
   //   GetProperty
   //   GetOwnProperty
+  //   Put
+  //   DefineOwnProperty
   JSVal Get(Context* ctx, Symbol name, Error* e);
   PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const;
   PropertyDescriptor GetProperty(Context* ctx, Symbol name) const;
   bool HasOwnProperty(Context* ctx, Symbol name) const;
+  void Put(Context* context, Symbol name, JSVal val, bool th, Error* e);
+  bool DefineOwnProperty(Context* ctx,
+                         Symbol name,
+                         const PropertyDescriptor& desc,
+                         bool th, Error* e);
 
   virtual JSVal GetSlot(Context* ctx, Symbol name, Slot* slot, Error* e);
   virtual bool GetPropertySlot(Context* ctx, Symbol name, Slot* slot) const;
   virtual bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const;
-
-  bool CanPut(Context* ctx, Symbol name, Slot* slot) const;
-
-  virtual void Put(Context* context, Symbol name, JSVal val, bool th, Error* e);
-
+  virtual void PutSlot(Context* context, Symbol name, JSVal val, Slot* slot, bool th, Error* e);
   virtual bool HasProperty(Context* ctx, Symbol name) const;
-
   virtual bool Delete(Context* ctx, Symbol name, bool th, Error* e);
-
-  bool DeleteDirect(Context* ctx, Symbol name, bool th, Error* e);
-
-  virtual bool DefineOwnProperty(Context* ctx,
-                                 Symbol name,
-                                 const PropertyDescriptor& desc,
-                                 bool th, Error* e);
+  virtual bool DefineOwnPropertySlot(Context* ctx,
+                                     Symbol name,
+                                     const PropertyDescriptor& desc,
+                                     Slot* slot,
+                                     bool th, Error* e);
 
   virtual void GetPropertyNames(Context* ctx,
                                 PropertyNamesCollector* collector,
                                 EnumerationMode mode) const;
-
   virtual void GetOwnPropertyNames(Context* ctx,
                                    PropertyNamesCollector* collector,
                                    EnumerationMode mode) const;
+
+  bool DeleteDirect(Context* ctx, Symbol name, bool th, Error* e);
 
   virtual bool IsNativeObject() const {
     return true;

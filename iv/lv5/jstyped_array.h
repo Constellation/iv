@@ -57,19 +57,20 @@ class TypedArrayImpl : public JSObject {
     }
   }
 
-  virtual bool DefineOwnProperty(Context* ctx,
-                                 Symbol name,
-                                 const PropertyDescriptor& desc,
-                                 bool th, Error* e) {
+  virtual bool DefineOwnPropertySlot(Context* ctx,
+                                     Symbol name,
+                                     const PropertyDescriptor& desc,
+                                     Slot* slot,
+                                     bool th, Error* e) {
     if (!symbol::IsArrayIndexSymbol(name)) {
-      return JSObject::DefineOwnProperty(ctx, name, desc, th, e);
+      return JSObject::DefineOwnPropertySlot(ctx, name, desc, slot, th, e);
     }
     JSArrayBuffer* buf = buffer();
     const uint64_t index = symbol::GetIndexFromSymbol(name);
     const uint32_t off = byte_offset();
     const uint64_t total = off + sizeof(T) * (index + 1);
     if (total > buf->length()) {
-      return JSObject::DefineOwnProperty(ctx, name, desc, th, e);
+      return JSObject::DefineOwnPropertySlot(ctx, name, desc, slot, th, e);
     }
     JSVal value;
     if (desc.IsData() && !desc.IsValueAbsent()) {

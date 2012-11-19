@@ -158,20 +158,21 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
     return JSObject::GetOwnPropertySlot(ctx, name, slot);
   }
 
-  virtual bool DefineOwnProperty(Context* ctx,
-                                 Symbol name,
-                                 const PropertyDescriptor& desc,
-                                 bool th,
-                                 Error* e) {
+  virtual bool DefineOwnPropertySlot(Context* ctx,
+                                     Symbol name,
+                                     const PropertyDescriptor& desc,
+                                     Slot* slot,
+                                     bool th,
+                                     Error* e) {
     if (symbol::IsArrayIndexSymbol(name)) {
       // section 15.4.5.1 step 4
-      return DefineArrayIndexProperty(ctx, name, desc, th, e);
+      return DefineArrayIndexProperty(ctx, name, desc, slot, th, e);
     } else if (name == symbol::length()) {
       // section 15.4.5.1 step 3
       return DefineLengthProperty(ctx, desc, th, e);
     } else {
       // section 15.4.5.1 step 5
-      return JSObject::DefineOwnProperty(ctx, name, desc, th, e);
+      return JSObject::DefineOwnPropertySlot(ctx, name, desc, slot, th, e);
     }
   }
 
@@ -320,6 +321,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
   bool DefineArrayIndexProperty(Context* ctx,
                                 Symbol name,
                                 const PropertyDescriptor& desc,
+                                Slot* slot,
                                 bool th, Error* e) {
     // 15.4.5.1 step 4-a
     const uint32_t index = symbol::GetIndexFromSymbol(name);
@@ -331,11 +333,10 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
     }
 
     // dense array optimization code
-    Slot slot;
     const bool is_default_descriptor = desc.IsDefault();
     if ((is_default_descriptor ||
          (index < old_len && jsarray_detail::IsAbsentDescriptor(desc))) &&
-         (dense_ || !JSObject::GetOwnPropertySlot(ctx, name, &slot))) {
+         (dense_ || (slot->IsNotFound() || slot->base() != this))) {
       if (kMaxVectorSize > index) {
         if (vector_.size() > index) {
           if (vector_[index].IsEmpty()) {
@@ -404,8 +405,8 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
     }
     // 15.4.5.1 step 4-c
     const bool succeeded =
-        JSObject::DefineOwnProperty(ctx, name, desc,
-                                    false, IV_LV5_ERROR_WITH(e, false));
+        JSObject::DefineOwnPropertySlot(
+            ctx, name, desc, slot, false, IV_LV5_ERROR_WITH(e, false));
     // 15.4.5.1 step 4-d
     if (!succeeded) {
       REJECT("define own property failed");
@@ -433,136 +434,137 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
   bool DefineLengthProperty(Context* ctx,
                             const PropertyDescriptor& desc,
                             bool th, Error* e) {
-    if (desc.IsData()) {
-      const DataDescriptor* const data = desc.AsDataDescriptor();
-      if (data->IsValueAbsent()) {
-        // GenericDescriptor
-        // changing attribute [[Writable]] or TypeError.
-        // [[Value]] not changed.
-        //
-        // length value is always not empty, so use
-        // GetDefineOwnPropertyResult
-        bool returned = false;
-        if (length_.IsDefineOwnPropertyAccepted(desc, th, &returned, e)) {
-          length_.Merge(ctx, desc);
-        }
-        return returned;
-      }
-      const double new_len_double =
-          data->value().ToNumber(ctx, IV_LV5_ERROR_WITH(e, false));
-      // length must be uint32_t
-      const uint32_t new_len = core::DoubleToUInt32(new_len_double);
-      if (new_len != new_len_double) {
-        e->Report(Error::Range, "invalid array length");
-        return false;
-      }
-      DataDescriptor new_len_desc = *data;
-      new_len_desc.set_value(JSVal::UInt32(new_len));
-      uint32_t old_len = GetLength();
-      if (new_len >= old_len) {
-        bool returned = false;
-        if (length_.IsDefineOwnPropertyAccepted(new_len_desc, th, &returned, e)) {
-          length_.Merge(ctx, new_len_desc);
-        }
-        return returned;
-      }
-      if (!length_.attributes().IsWritable()) {
-        REJECT("\"length\" not writable");
-      }
-      const bool new_writable =
-          new_len_desc.IsWritableAbsent() || new_len_desc.IsWritable();
-      // 15.4.5.1 step 3-i
-      if (!new_writable) {
-        new_len_desc.set_writable(true);
-      }
-      bool succeeded = false;
-      if (length_.IsDefineOwnPropertyAccepted(new_len_desc, th, &succeeded, e)) {
-        length_.Merge(ctx, new_len_desc);
-      }
-      if (!succeeded) {
-        return false;
-      }
-
-      if (new_len < old_len) {
-        if (dense_) {
-          // dense array version
-          CompactionToLength(new_len);
-        } else if (old_len - new_len < (1 << 24)) {
-          while (new_len < old_len) {
-            old_len -= 1;
-            // see Eratta
-            const bool delete_succeeded =
-                JSArray::Delete(ctx, symbol::MakeSymbolFromIndex(old_len),
-                                false, IV_LV5_ERROR_WITH(e, false));
-            if (!delete_succeeded) {
-              new_len_desc.set_value(JSVal::UInt32(old_len + 1));
-              if (!new_writable) {
-                new_len_desc.set_writable(false);
-              }
-              bool wasted = false;
-              if (length_.IsDefineOwnPropertyAccepted(new_len_desc, false, &wasted, e)) {
-                length_.Merge(ctx, new_len_desc);
-              }
-              IV_LV5_ERROR_GUARD_WITH(e, false);
-              REJECT("shrink array failed");
-            }
-          }
-        } else {
-          PropertyNamesCollector collector;
-          JSObject::GetOwnPropertyNames(ctx, &collector, INCLUDE_NOT_ENUMERABLE);
-          std::set<uint32_t> ix;
-          for (PropertyNamesCollector::Names::const_iterator
-               it = collector.names().begin(),
-               last = collector.names().end();
-               it != last; ++it) {
-            if (symbol::IsArrayIndexSymbol(*it)) {
-              ix.insert(symbol::GetIndexFromSymbol(*it));
-            } else {
-              break;
-            }
-          }
-          for (std::set<uint32_t>::const_reverse_iterator it = ix.rbegin(),
-               last = ix.rend(); it != last; ++it) {
-            if (*it < new_len) {
-              break;
-            }
-            const bool delete_succeeded =
-                Delete(ctx, symbol::MakeSymbolFromIndex(*it), false, e);
-            if (!delete_succeeded) {
-              const uint32_t result_len = *it + 1;
-              CompactionToLength(result_len);
-              new_len_desc.set_value(JSVal::UInt32(result_len));
-              if (!new_writable) {
-                new_len_desc.set_writable(false);
-              }
-              bool wasted = false;
-              if (length_.IsDefineOwnPropertyAccepted(new_len_desc, false, &wasted, e)) {
-                length_.Merge(ctx, new_len_desc);
-              }
-              IV_LV5_ERROR_GUARD_WITH(e, false);
-              REJECT("shrink array failed");
-            }
-          }
-          CompactionToLength(new_len);
-        }
-      }
-      if (!new_writable) {
-        const DataDescriptor target = DataDescriptor(
-            ATTR::UNDEF_ENUMERABLE |
-            ATTR::UNDEF_CONFIGURABLE);
-        bool wasted = false;
-        if (length_.IsDefineOwnPropertyAccepted(target, false, &wasted, e)) {
-          length_.Merge(ctx, target);
-        }
-      }
-      return true;
-    } else {
+    if (!desc.IsData()) {
       // length is not configurable
       // so length is not changed
       bool returned = false;
       length_.IsDefineOwnPropertyAccepted(desc, th, &returned, e);
       return returned;
     }
+
+    const DataDescriptor* const data = desc.AsDataDescriptor();
+    if (data->IsValueAbsent()) {
+      // GenericDescriptor
+      // changing attribute [[Writable]] or TypeError.
+      // [[Value]] not changed.
+      //
+      // length value is always not empty, so use
+      // GetDefineOwnPropertyResult
+      bool returned = false;
+      if (length_.IsDefineOwnPropertyAccepted(desc, th, &returned, e)) {
+        length_.Merge(ctx, desc);
+      }
+      return returned;
+    }
+
+    const double new_len_double =
+        data->value().ToNumber(ctx, IV_LV5_ERROR_WITH(e, false));
+    // length must be uint32_t
+    const uint32_t new_len = core::DoubleToUInt32(new_len_double);
+    if (new_len != new_len_double) {
+      e->Report(Error::Range, "invalid array length");
+      return false;
+    }
+    DataDescriptor new_len_desc = *data;
+    new_len_desc.set_value(JSVal::UInt32(new_len));
+    uint32_t old_len = GetLength();
+    if (new_len >= old_len) {
+      bool returned = false;
+      if (length_.IsDefineOwnPropertyAccepted(new_len_desc, th, &returned, e)) {
+        length_.Merge(ctx, new_len_desc);
+      }
+      return returned;
+    }
+    if (!length_.attributes().IsWritable()) {
+      REJECT("\"length\" not writable");
+    }
+    const bool new_writable =
+        new_len_desc.IsWritableAbsent() || new_len_desc.IsWritable();
+    // 15.4.5.1 step 3-i
+    if (!new_writable) {
+      new_len_desc.set_writable(true);
+    }
+    bool succeeded = false;
+    if (length_.IsDefineOwnPropertyAccepted(new_len_desc, th, &succeeded, e)) {
+      length_.Merge(ctx, new_len_desc);
+    }
+    if (!succeeded) {
+      return false;
+    }
+
+    if (new_len < old_len) {
+      if (dense_) {
+        // dense array version
+        CompactionToLength(new_len);
+      } else if (old_len - new_len < (1 << 24)) {
+        while (new_len < old_len) {
+          old_len -= 1;
+          // see Eratta
+          const bool delete_succeeded =
+              JSArray::Delete(ctx, symbol::MakeSymbolFromIndex(old_len),
+                              false, IV_LV5_ERROR_WITH(e, false));
+          if (!delete_succeeded) {
+            new_len_desc.set_value(JSVal::UInt32(old_len + 1));
+            if (!new_writable) {
+              new_len_desc.set_writable(false);
+            }
+            bool wasted = false;
+            if (length_.IsDefineOwnPropertyAccepted(new_len_desc, false, &wasted, e)) {
+              length_.Merge(ctx, new_len_desc);
+            }
+            IV_LV5_ERROR_GUARD_WITH(e, false);
+            REJECT("shrink array failed");
+          }
+        }
+      } else {
+        PropertyNamesCollector collector;
+        JSObject::GetOwnPropertyNames(ctx, &collector, INCLUDE_NOT_ENUMERABLE);
+        std::set<uint32_t> ix;
+        for (PropertyNamesCollector::Names::const_iterator
+             it = collector.names().begin(),
+             last = collector.names().end();
+             it != last; ++it) {
+          if (symbol::IsArrayIndexSymbol(*it)) {
+            ix.insert(symbol::GetIndexFromSymbol(*it));
+          } else {
+            break;
+          }
+        }
+        for (std::set<uint32_t>::const_reverse_iterator it = ix.rbegin(),
+             last = ix.rend(); it != last; ++it) {
+          if (*it < new_len) {
+            break;
+          }
+          const bool delete_succeeded =
+              Delete(ctx, symbol::MakeSymbolFromIndex(*it), false, e);
+          if (!delete_succeeded) {
+            const uint32_t result_len = *it + 1;
+            CompactionToLength(result_len);
+            new_len_desc.set_value(JSVal::UInt32(result_len));
+            if (!new_writable) {
+              new_len_desc.set_writable(false);
+            }
+            bool wasted = false;
+            if (length_.IsDefineOwnPropertyAccepted(new_len_desc, false, &wasted, e)) {
+              length_.Merge(ctx, new_len_desc);
+            }
+            IV_LV5_ERROR_GUARD_WITH(e, false);
+            REJECT("shrink array failed");
+          }
+        }
+        CompactionToLength(new_len);
+      }
+    }
+    if (!new_writable) {
+      const DataDescriptor target = DataDescriptor(
+          ATTR::UNDEF_ENUMERABLE |
+          ATTR::UNDEF_CONFIGURABLE);
+      bool wasted = false;
+      if (length_.IsDefineOwnPropertyAccepted(target, false, &wasted, e)) {
+        length_.Merge(ctx, target);
+      }
+    }
+    return true;
   }
 
 #undef REJECT
