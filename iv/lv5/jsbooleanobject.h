@@ -2,7 +2,6 @@
 #define IV_LV5_JSBOOLEANOBJECT_H_
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/map.h>
-#include <iv/lv5/context_utils.h>
 namespace iv {
 namespace lv5 {
 
@@ -26,7 +25,7 @@ class JSBooleanObject : public JSObject {
 
  private:
   JSBooleanObject(Context* ctx, bool value)
-    : JSObject(context::GetBooleanMap(ctx)),
+    : JSObject(ctx->global_data()->boolean_map()),
       value_(value) {
   }
 

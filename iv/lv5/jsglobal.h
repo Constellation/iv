@@ -5,10 +5,8 @@
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/map.h>
 #include <iv/lv5/jsobject.h>
-#include <iv/lv5/jsfunction.h>
 #include <iv/lv5/class.h>
 #include <iv/lv5/slot.h>
-#include <iv/lv5/arguments.h>
 namespace iv {
 namespace lv5 {
 

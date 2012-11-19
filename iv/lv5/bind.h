@@ -4,7 +4,7 @@
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsobject.h>
-#include <iv/lv5/jsfunction.h>
+#include <iv/lv5/jsfunction_fwd.h>
 #include <iv/lv5/arguments.h>
 #include <iv/lv5/attributes.h>
 #include <iv/lv5/context.h>

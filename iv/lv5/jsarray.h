@@ -15,7 +15,6 @@
 #include <iv/lv5/slot.h>
 #include <iv/lv5/class.h>
 #include <iv/lv5/storage.h>
-#include <iv/lv5/context_utils.h>
 #include <iv/lv5/adapter/select1st.h>
 #include <iv/lv5/railgun/fwd.h>
 #include <iv/lv5/breaker/fwd.h>
@@ -286,7 +285,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
 
  private:
   JSArray(Context* ctx, uint32_t len)
-    : JSObject(context::GetArrayMap(ctx)),
+    : JSObject(ctx->global_data()->array_map()),
       vector_((len <= kMaxVectorSize) ? len : 4, JSEmpty),
       map_(NULL),
       length_(len, Attributes::CreateData(ATTR::WRITABLE)),

@@ -4,7 +4,6 @@
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/bind.h>
 #include <iv/lv5/context_fwd.h>
-#include <iv/lv5/context_utils.h>
 #include <iv/lv5/i18n/utility.h>
 namespace iv {
 namespace lv5 {

@@ -4,7 +4,6 @@
 #include <iv/lv5/jsstring.h>
 #include <iv/lv5/map.h>
 #include <iv/lv5/slot.h>
-#include <iv/lv5/context_utils.h>
 namespace iv {
 namespace lv5 {
 

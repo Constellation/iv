@@ -18,7 +18,6 @@
 #include <iv/lv5/jsstring.h>
 #include <iv/lv5/jsregexp.h>
 #include <iv/lv5/gc_template.h>
-#include <iv/lv5/context_utils.h>
 #include <iv/lv5/utility.h>
 #include <iv/lv5/railgun/fwd.h>
 #include <iv/lv5/railgun/op.h>
@@ -33,7 +32,6 @@
 #include <iv/lv5/railgun/continuation_status.h>
 #include <iv/lv5/railgun/direct_threading.h>
 #include <iv/lv5/railgun/jsfunction.h>
-
 namespace iv {
 namespace lv5 {
 namespace railgun {

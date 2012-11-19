@@ -5,10 +5,8 @@
 #include <iv/lv5/arguments.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/context.h>
-#include <iv/lv5/context_utils.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsweak_map.h>
-
 namespace iv {
 namespace lv5 {
 namespace runtime {
@@ -24,7 +22,7 @@ inline JSVal WeakMapConstructor(const Arguments& args, Error* e) {
       JSVal::StrictEqual(this_binding, ctx->global_data()->weak_map_prototype())) {
     map = JSObject::New(
         ctx,
-        ctx->global_data()->GetWeakMapMap(),
+        ctx->global_data()->weak_map_map(),
         ctx->global_data()->weak_map_prototype());
   } else {
     map = this_binding.ToObject(ctx, IV_LV5_ERROR(e));

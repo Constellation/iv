@@ -32,7 +32,7 @@ class TypedArrayImpl : public JSObject {
     Derived* obj =
         new Derived(ctx, buf,
                     byte_offset, byte_length, length,
-                    ctx->global_data()->GetTypedArrayMap());
+                    ctx->global_data()->typed_array_map());
     obj->set_cls(Derived::GetClass());
     obj->set_prototype(ctx->global_data()->typed_array_prototype(TypedArrayTraits<T>::code));
     return obj;

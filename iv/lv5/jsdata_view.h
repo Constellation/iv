@@ -25,7 +25,7 @@ class JSDataView : public JSObject {
                          JSArrayBuffer* buf,
                          uint32_t offset, uint32_t len) {
     JSDataView* obj =
-        NewPlain(ctx, buf, offset, len, ctx->global_data()->GetDataViewMap());
+        NewPlain(ctx, buf, offset, len, ctx->global_data()->data_view_map());
     obj->set_cls(GetClass());
     obj->set_prototype(ctx->global_data()->data_view_prototype());
     return obj;

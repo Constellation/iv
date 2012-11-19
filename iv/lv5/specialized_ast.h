@@ -29,9 +29,9 @@ class RegExpLiteralBase<iv::lv5::AstFactory>
         Derived()->flags().begin(),
         Derived()->flags().end());
     regexp_ = new iv::lv5::JSRegExpImpl(
-        iv::lv5::context::GetRegExpAllocator(ctx),
+        ctx->regexp_allocator(),
         Derived()->value(), flags);
-    iv::lv5::context::RegisterLiteralRegExp(ctx, regexp_);
+    ctx->global_data()->RegisterLiteralRegExp(regexp_);
   }
   const iv::lv5::JSRegExpImpl* regexp() const {
     return regexp_;

@@ -15,7 +15,7 @@
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/gc_hook.h>
 #include <iv/lv5/jsstring_fwd.h>
-#include <iv/lv5/jsfunction.h>
+#include <iv/lv5/jsfunction_fwd.h>
 #include <iv/lv5/jsglobal.h>
 #include <iv/lv5/attributes.h>
 #include <iv/lv5/binary_blocks.h>
@@ -200,6 +200,7 @@ class GlobalData {
 
   JSString* string_empty_regexp() const { return string_empty_regexp_; }
 
+  // If string is not cached, return NULL
   JSString* GetSingleString(uint16_t ch) {
     if (ch < 0x80) {
       // caching value
@@ -211,35 +212,21 @@ class GlobalData {
     return NULL;
   }
 
-  Map* GetEmptyObjectMap() const { return empty_object_map_; }
-
-  Map* GetFunctionMap() const { return function_map_; }
-
-  Map* GetArrayMap() const { return array_map_; }
-
-  Map* GetStringMap() const { return string_map_; }
-
-  Map* GetBooleanMap() const { return boolean_map_; }
-
-  Map* GetNumberMap() const { return number_map_; }
-
-  Map* GetDateMap() const { return date_map_; }
-
-  Map* GetRegExpMap() const { return regexp_map_; }
-
-  Map* GetErrorMap() const { return error_map_; }
-
-  Map* GetMapMap() const { return map_map_; }
-
-  Map* GetWeakMapMap() const { return weak_map_map_; }
-
-  Map* GetSetMap() const { return set_map_; }
-
-  Map* GetArrayBufferMap() const { return array_buffer_map_; }
-
-  Map* GetDataViewMap() const { return data_view_map_; }
-
-  Map* GetTypedArrayMap() const { return typed_array_map_; }
+  Map* empty_object_map() const { return empty_object_map_; }
+  Map* function_map() const { return function_map_; }
+  Map* array_map() const { return array_map_; }
+  Map* string_map() const { return string_map_; }
+  Map* boolean_map() const { return boolean_map_; }
+  Map* number_map() const { return number_map_; }
+  Map* date_map() const { return date_map_; }
+  Map* regexp_map() const { return regexp_map_; }
+  Map* error_map() const { return error_map_; }
+  Map* map_map() const { return map_map_; }
+  Map* weak_map_map() const { return weak_map_map_; }
+  Map* set_map() const { return set_map_; }
+  Map* array_buffer_map() const { return array_buffer_map_; }
+  Map* data_view_map() const { return data_view_map_; }
+  Map* typed_array_map() const { return typed_array_map_; }
 
   void OnGarbageCollect() {
   }
@@ -258,6 +245,12 @@ class GlobalData {
   JSObject* date_prototype() const { return date_prototype_; }
   JSObject* regexp_prototype() const { return regexp_prototype_; }
   JSObject* error_prototype() const { return error_prototype_; }
+  JSObject* eval_error_prototype() const { return eval_error_prototype_; }
+  JSObject* range_error_prototype() const { return range_error_prototype_; }
+  JSObject* reference_error_prototype() const { return reference_error_prototype_; }
+  JSObject* syntax_error_prototype() const { return syntax_error_prototype_; }
+  JSObject* type_error_prototype() const { return type_error_prototype_; }
+  JSObject* uri_error_prototype() const { return uri_error_prototype_; }
   JSObject* iterator_prototype() const { return iterator_prototype_; }
   JSObject* map_prototype() const { return map_prototype_; }
   JSObject* weak_map_prototype() const { return weak_map_prototype_; }
@@ -277,6 +270,12 @@ class GlobalData {
   void set_date_prototype(JSObject* proto) { date_prototype_ = proto; }
   void set_regexp_prototype(JSObject* proto) { regexp_prototype_ = proto; }
   void set_error_prototype(JSObject* proto) { error_prototype_ = proto; }
+  void set_eval_error_prototype(JSObject* proto) { eval_error_prototype_ = proto; }
+  void set_range_error_prototype(JSObject* proto) { range_error_prototype_ = proto; }
+  void set_reference_error_prototype(JSObject* proto) { reference_error_prototype_ = proto; }
+  void set_syntax_error_prototype(JSObject* proto) { syntax_error_prototype_ = proto; }
+  void set_type_error_prototype(JSObject* proto) { type_error_prototype_ = proto; }
+  void set_uri_error_prototype(JSObject* proto) { uri_error_prototype_ = proto; }
   void set_map_prototype(JSObject* proto) { map_prototype_ = proto; }
   void set_weak_map_prototype(JSObject* proto) { weak_map_prototype_ = proto; }
   void set_set_prototype(JSObject* proto) { set_prototype_ = proto; }
@@ -315,6 +314,12 @@ class GlobalData {
   JSObject* date_prototype_;
   JSObject* regexp_prototype_;
   JSObject* error_prototype_;
+  JSObject* eval_error_prototype_;
+  JSObject* range_error_prototype_;
+  JSObject* reference_error_prototype_;
+  JSObject* syntax_error_prototype_;
+  JSObject* type_error_prototype_;
+  JSObject* uri_error_prototype_;
   JSObject* iterator_prototype_;
   JSObject* map_prototype_;
   JSObject* weak_map_prototype_;

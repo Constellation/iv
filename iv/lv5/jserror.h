@@ -6,7 +6,6 @@
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsval.h>
-#include <iv/lv5/context_utils.h>
 
 namespace iv {
 namespace lv5 {
@@ -34,7 +33,7 @@ class JSError : public JSObject {
   }
 
   JSError(Context* ctx, Error::Code code, JSString* str)
-    : JSObject(context::GetErrorMap(ctx)),
+    : JSObject(ctx->global_data()->error_map()),
       code_(code) {
     if (str) {
       DefineOwnProperty(ctx, symbol::message(),
@@ -59,7 +58,7 @@ class JSEvalError : public JSError {
   static JSError* New(Context* ctx, JSString* str) {
     JSError* const err = new JSError(ctx, Error::Eval, str);
     err->set_cls(JSEvalError::GetClass());
-    err->set_prototype(context::GetClassSlot(ctx, Class::EvalError).prototype);
+    err->set_prototype(ctx->global_data()->eval_error_prototype());
     return err;
   }
 };
@@ -77,7 +76,7 @@ class JSRangeError : public JSError {
   static JSError* New(Context* ctx, JSString* str) {
     JSError* const err = new JSError(ctx, Error::Range, str);
     err->set_cls(JSRangeError::GetClass());
-    err->set_prototype(context::GetClassSlot(ctx, Class::RangeError).prototype);
+    err->set_prototype(ctx->global_data()->range_error_prototype());
     return err;
   }
 };
@@ -95,8 +94,7 @@ class JSReferenceError : public JSError {
   static JSError* New(Context* ctx, JSString* str) {
     JSError* const err = new JSError(ctx, Error::Reference, str);
     err->set_cls(JSReferenceError::GetClass());
-    err->set_prototype(
-        context::GetClassSlot(ctx, Class::ReferenceError).prototype);
+    err->set_prototype(ctx->global_data()->reference_error_prototype());
     return err;
   }
 };
@@ -114,8 +112,7 @@ class JSSyntaxError : public JSError {
   static JSError* New(Context* ctx, JSString* str) {
     JSError* const err = new JSError(ctx, Error::Syntax, str);
     err->set_cls(JSSyntaxError::GetClass());
-    err->set_prototype(
-        context::GetClassSlot(ctx, Class::SyntaxError).prototype);
+    err->set_prototype(ctx->global_data()->syntax_error_prototype());
     return err;
   }
 };
@@ -133,7 +130,7 @@ class JSTypeError : public JSError {
   static JSError* New(Context* ctx, JSString* str) {
     JSError* const err = new JSError(ctx, Error::Type, str);
     err->set_cls(JSTypeError::GetClass());
-    err->set_prototype(context::GetClassSlot(ctx, Class::TypeError).prototype);
+    err->set_prototype(ctx->global_data()->type_error_prototype());
     return err;
   }
 };
@@ -151,7 +148,7 @@ class JSURIError : public JSError {
   static JSError* New(Context* ctx, JSString* str) {
     JSError* const err = new JSError(ctx, Error::URI, str);
     err->set_cls(JSURIError::GetClass());
-    err->set_prototype(context::GetClassSlot(ctx, Class::URIError).prototype);
+    err->set_prototype(ctx->global_data()->uri_error_prototype());
     return err;
   }
 };

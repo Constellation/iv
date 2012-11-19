@@ -12,7 +12,6 @@
 #include <iv/ustring.h>
 #include <iv/stringpiece.h>
 #include <iv/ustringpiece.h>
-#include <iv/lv5/context_utils.h>
 #include <iv/lv5/fiber.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsval_fwd.h>
@@ -445,21 +444,14 @@ class JSString: public radio::HeapObject<radio::STRING> {
     return New(ctx, str.begin(), str.size(), true, e);
   }
 
-  static this_type* NewSingle(Context* ctx, uint16_t ch) {
-    if (this_type* res = context::LookupSingleString(ctx, ch)) {
-      return res;
-    }
-    return new this_type(ch);
-  }
+  static this_type* NewSingle(Context* ctx, uint16_t ch);
 
   template<typename Iter>
   static this_type* New(Context* ctx, Iter it, Iter last, bool is_8bit, Error * e) {
     return New(ctx, it, std::distance(it, last), is_8bit, e);
   }
 
-  static this_type* NewEmptyString(Context* ctx) {
-    return context::EmptyString(ctx);
-  }
+  static this_type* NewEmptyString(Context* ctx);
 
   template<typename FiberType>
   static this_type* NewWithFiber(Context* ctx,

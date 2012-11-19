@@ -52,6 +52,16 @@ inline uint32_t SplitFiberWithOneChar(Context* ctx,
 
 }  // namespace detail
 
+inline JSString* JSString::NewSingle(Context* ctx, uint16_t ch) {
+  if (this_type* res = ctx->global_data()->GetSingleString(ch)) {
+    return res;
+  }
+  return new this_type(ch);
+}
+
+inline JSString* JSString::NewEmptyString(Context* ctx) {
+  return ctx->global_data()->string_empty();
+}
 
 inline JSString::JSString(JSVal* src, uint32_t count,
                           size_type s, size_type fibers, bool is_8bit)

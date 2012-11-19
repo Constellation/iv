@@ -6,7 +6,6 @@
 #include <iv/noncopyable.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsval_fwd.h>
-#include <iv/lv5/context_utils.h>
 
 namespace iv {
 namespace lv5 {
@@ -163,26 +162,13 @@ class Arguments : private core::Noncopyable<> {
   bool constructor_call_;
 };
 
+// Implementation is defined in context.h
 class ScopedArguments : public Arguments {
  public:
   // layout is
   // [arg2][arg1][this]
-  ScopedArguments(Context* ctx, std::size_t n, Error* e)
-    : Arguments(ctx, n, e) {
-    if (pointer ptr = context::StackGain(ctx_, size() + 1)) {
-      std::fill<JSVal*, JSVal>(ptr, ptr + size() + 1, JSUndefined);
-      stack_ = ptr + size();  // [this] position
-    } else {
-      // stack overflow
-      e->Report(Error::Range, "maximum call stack size exceeded");
-    }
-  }
-
-  ~ScopedArguments() {
-    if (stack_) {
-      context::StackRestore(ctx_, stack_ - size());
-    }
-  }
+  ScopedArguments(Context* ctx, std::size_t n, Error* e);
+  ~ScopedArguments();
 };
 
 } }  // namespace iv::lv5

@@ -11,9 +11,7 @@
 #include <iv/lv5/arguments.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/jsstring.h>
-#include <iv/lv5/context_utils.h>
 #include <iv/lv5/error.h>
-
 namespace iv {
 namespace lv5 {
 namespace runtime {

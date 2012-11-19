@@ -12,7 +12,6 @@
 #include <iv/lv5/map.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/jsregexp_impl.h>
-#include <iv/lv5/context_utils.h>
 #include <iv/lv5/bind.h>
 #include <iv/lv5/jsvector.h>
 namespace iv {
@@ -129,7 +128,7 @@ class JSRegExp : public JSObject {
 
  private:
   JSRegExp(Context* ctx, JSString* pattern, JSString* flags, Error* e)
-    : JSObject(context::GetRegExpMap(ctx)),
+    : JSObject(ctx->global_data()->regexp_map()),
       impl_() {
     int f = 0;
     if (flags->Is8Bit()) {
@@ -145,7 +144,7 @@ class JSRegExp : public JSObject {
   }
 
   JSRegExp(Context* ctx, JSString* pattern, Error* e)
-    : JSObject(context::GetRegExpMap(ctx)),
+    : JSObject(ctx->global_data()->regexp_map()),
       impl_(CompileImpl(ctx->regexp_allocator(), pattern)) {
     JSString* escaped = Escape(ctx, pattern, IV_LV5_ERROR_VOID(e));
     InitializeProperty(ctx, escaped);
@@ -155,7 +154,7 @@ class JSRegExp : public JSObject {
            const core::UStringPiece& pattern,
            const JSRegExpImpl* reg,
            Error* e)
-    : JSObject(context::GetRegExpMap(ctx)),
+    : JSObject(ctx->global_data()->regexp_map()),
       impl_(reg) {
     JSString* escaped = Escape(ctx, pattern, IV_LV5_ERROR_VOID(e));
     InitializeProperty(ctx, escaped);
@@ -164,13 +163,13 @@ class JSRegExp : public JSObject {
   JSRegExp(Context* ctx,
            JSString* source,
            const JSRegExpImpl* reg)
-    : JSObject(context::GetRegExpMap(ctx)),
+    : JSObject(ctx->global_data()->regexp_map()),
       impl_(reg) {
     InitializeProperty(ctx, source);
   }
 
   explicit JSRegExp(Context* ctx)
-    : JSObject(context::GetRegExpMap(ctx)),
+    : JSObject(ctx->global_data()->regexp_map()),
       impl_(new JSRegExpImpl(ctx->regexp_allocator())) {
     InitializeProperty(ctx, ctx->global_data()->string_empty_regexp());
   }

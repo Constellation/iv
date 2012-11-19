@@ -13,6 +13,7 @@
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/bind.h>
 #include <iv/lv5/specialized_ast.h>
+#include <iv/lv5/context.h>
 #include <iv/lv5/radio/core_fwd.h>
 namespace iv {
 namespace lv5 {
@@ -258,7 +259,7 @@ class JSStrictArguments : public JSObject {
                  *it, ATTR::W | ATTR::E | ATTR::C);
     }
 
-    JSFunction* const throw_type_error = context::throw_type_error(ctx);
+    JSFunction* const throw_type_error = ctx->throw_type_error();
     binder
         .def_accessor(symbol::caller(),
                       throw_type_error,

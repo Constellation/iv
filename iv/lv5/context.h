@@ -11,11 +11,10 @@
 #include <iv/lv5/jsval_fwd.h>
 #include <iv/lv5/jsenv.h>
 #include <iv/lv5/jsobject.h>
-#include <iv/lv5/jsfunction.h>
+#include <iv/lv5/jsfunction_fwd.h>
 #include <iv/lv5/class.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/global_data.h>
-#include <iv/lv5/context_utils.h>
 #include <iv/lv5/stack.h>
 
 namespace iv {
@@ -50,10 +49,6 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
   JSObjectEnv* global_env() const {
     return global_env_;
   }
-
-  inline JSVal* StackGain(std::size_t size) { return stack_->Gain(size); }
-
-  inline void StackRestore(JSVal* ptr) { stack_->Restore(ptr); }
 
   void Initialize();
 
@@ -105,6 +100,8 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
   void MarkChildren(radio::Core* core) { }
 
   void RegisterStack(Stack* stack) { stack_ = stack; }
+
+  Stack* stack() const { return stack_; }
 
   core::i18n::I18N* i18n() { return &i18n_; }
 
@@ -178,6 +175,24 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
   JSObject* number_format_prototype_;
   JSObject* date_format_constructor_;
 };
+
+// ScopedArguments implementations
+inline ScopedArguments::ScopedArguments(Context* ctx, std::size_t n, Error* e)
+  : Arguments(ctx, n, e) {
+  if (pointer ptr = ctx->stack()->Gain(size() + 1)) {
+    std::fill<JSVal*, JSVal>(ptr, ptr + size() + 1, JSUndefined);
+    stack_ = ptr + size();  // [this] position
+  } else {
+    // stack overflow
+    e->Report(Error::Range, "maximum call stack size exceeded");
+  }
+}
+
+inline ScopedArguments::~ScopedArguments() {
+  if (stack_) {
+    ctx()->stack()->Restore(stack_ - size());
+  }
+}
 
 } }  // namespace iv::lv5
 #endif  // IV_LV5_CONTEXT_H_

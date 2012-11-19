@@ -9,7 +9,6 @@
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/symbol.h>
 #include <iv/lv5/property_fwd.h>
-#include <iv/lv5/context_utils.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsval_fwd.h>
 #include <iv/lv5/storage.h>

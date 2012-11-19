@@ -2,7 +2,6 @@
 #define IV_LV5_JSNUMBEROBJECT_H_
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/map.h>
-#include <iv/lv5/context_utils.h>
 namespace iv {
 namespace lv5 {
 
@@ -27,7 +26,7 @@ class JSNumberObject : public JSObject {
 
  private:
   JSNumberObject(Context* ctx, double value)
-    : JSObject(context::GetNumberMap(ctx)),
+    : JSObject(ctx->global_data()->number_map()),
       value_(value) {
   }
 

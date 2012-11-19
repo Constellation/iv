@@ -11,7 +11,7 @@
 #include <iv/lv5/accessor.h>
 #include <iv/lv5/jsval_fwd.h>
 #include <iv/lv5/jsobject.h>
-#include <iv/lv5/jsfunction.h>
+#include <iv/lv5/jsfunction_fwd.h>
 namespace iv {
 namespace lv5 {
 

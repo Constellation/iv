@@ -5,10 +5,8 @@
 #include <iv/lv5/arguments.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/context.h>
-#include <iv/lv5/context_utils.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsset.h>
-
 namespace iv {
 namespace lv5 {
 namespace runtime {
@@ -24,7 +22,7 @@ inline JSVal SetConstructor(const Arguments& args, Error* e) {
       JSVal::StrictEqual(this_binding, ctx->global_data()->set_prototype())) {
     set = JSObject::New(
         ctx,
-        ctx->global_data()->GetSetMap(),
+        ctx->global_data()->set_map(),
         ctx->global_data()->set_prototype());
   } else {
     set = this_binding.ToObject(ctx, IV_LV5_ERROR(e));

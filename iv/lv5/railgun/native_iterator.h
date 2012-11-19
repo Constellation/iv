@@ -2,7 +2,6 @@
 #define IV_LV5_RAILGUN_NAME_ITERATOR_H_
 #include <gc/gc_cpp.h>
 #include <iv/lv5/jsobject.h>
-#include <iv/lv5/context_utils.h>
 #include <iv/lv5/radio/cell.h>
 #include <iv/lv5/radio/core_fwd.h>
 namespace iv {

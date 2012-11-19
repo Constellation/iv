@@ -1,8 +1,6 @@
 #ifndef IV_LV5_JSDATE_H_
 #define IV_LV5_JSDATE_H_
 #include <iv/lv5/jsobject.h>
-#include <iv/lv5/context_utils.h>
-
 namespace iv {
 namespace lv5 {
 
@@ -35,7 +33,7 @@ class JSDate : public JSObject {
 
  private:
   JSDate(Context* ctx, double val)
-    : JSObject(context::GetDateMap(ctx)),
+    : JSObject(ctx->global_data()->date_map()),
       value_(val) {
   }
 

@@ -1,7 +1,6 @@
 #include <cassert>
 #include <algorithm>
 #include <iv/lv5/jsobject.h>
-#include <iv/lv5/context_utils.h>
 #include <iv/lv5/property.h>
 #include <iv/lv5/jsfunction.h>
 #include <iv/lv5/jsval.h>
@@ -350,7 +349,7 @@ Map* JSObject::FlattenMap() const {
 }
 
 JSObject* JSObject::NewPlain(Context* ctx) {
-  return new JSObject(context::GetEmptyObjectMap(ctx));
+  return new JSObject(ctx->global_data()->empty_object_map());
 }
 
 JSObject* JSObject::NewPlain(Context* ctx, Map* map) {

@@ -19,7 +19,6 @@
 #include <iv/lv5/jsi18n.h>
 #include <iv/lv5/arguments.h>
 #include <iv/lv5/context.h>
-#include <iv/lv5/context_utils.h>
 #include <iv/lv5/property.h>
 #include <iv/lv5/class.h>
 #include <iv/lv5/runtime.h>
@@ -31,85 +30,6 @@
 #include <iv/lv5/jsdata_view.h>
 namespace iv {
 namespace lv5 {
-namespace context {
-
-const ClassSlot& GetClassSlot(const Context* ctx, Class::JSClassType type) {
-  return ctx->global_data()->GetClassSlot(type);
-}
-
-GlobalData* Global(Context* ctx) {
-  return ctx->global_data();
-}
-
-Map* GetEmptyObjectMap(Context* ctx) {
-  return ctx->global_data()->GetEmptyObjectMap();
-}
-
-Map* GetFunctionMap(Context* ctx) {
-  return ctx->global_data()->GetFunctionMap();
-}
-
-Map* GetArrayMap(Context* ctx) {
-  return ctx->global_data()->GetArrayMap();
-}
-
-Map* GetStringMap(Context* ctx) {
-  return ctx->global_data()->GetStringMap();
-}
-
-Map* GetBooleanMap(Context* ctx) {
-  return ctx->global_data()->GetBooleanMap();
-}
-
-Map* GetNumberMap(Context* ctx) {
-  return ctx->global_data()->GetNumberMap();
-}
-
-Map* GetDateMap(Context* ctx) {
-  return ctx->global_data()->GetDateMap();
-}
-
-Map* GetRegExpMap(Context* ctx) {
-  return ctx->global_data()->GetRegExpMap();
-}
-
-Map* GetErrorMap(Context* ctx) {
-  return ctx->global_data()->GetErrorMap();
-}
-
-JSString* EmptyString(Context* ctx) {
-  return ctx->global_data()->string_empty();
-}
-
-JSString* LookupSingleString(Context* ctx, uint16_t ch) {
-  return ctx->global_data()->GetSingleString(ch);
-}
-
-JSFunction* throw_type_error(Context* ctx) {
-  return ctx->throw_type_error();
-}
-
-JSVal* StackGain(Context* ctx, std::size_t size) {
-  return ctx->StackGain(size);
-}
-
-void StackRestore(Context* ctx, JSVal* ptr) {
-  ctx->StackRestore(ptr);
-}
-
-void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg) {
-  ctx->global_data()->RegisterLiteralRegExp(reg);
-}
-
-core::Space* GetRegExpAllocator(Context* ctx) {
-  return ctx->regexp_allocator();
-}
-
-core::i18n::I18N* I18N(Context* ctx) {
-  return ctx->i18n();
-}
-
-}  // namespace context
 
 Context::Context(JSAPI fc, JSAPI ge)
   : global_data_(this),
@@ -875,7 +795,7 @@ void Context::InitRegExp(const ClassSlot& func_cls,
                          JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.10 RegExp
   Error::Dummy dummy;
-  JSObject* const proto = JSRegExp::NewPlain(this, Map::NewUniqueMap(this, global_data()->GetRegExpMap()));
+  JSObject* const proto = JSRegExp::NewPlain(this, Map::NewUniqueMap(this, global_data()->regexp_map()));
   // section 15.10.4 The RegExp Constructor
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::RegExpConstructor, 2>::NewPlain(
@@ -986,6 +906,7 @@ void Context::InitError(const ClassSlot& func_cls,
              sub_constructor, ATTR::W | ATTR::C)
         .def("name", sub_cls.name_string, ATTR::W | ATTR::C)
         .def("message", JSString::NewEmptyString(this), ATTR::W | ATTR::C);
+    global_data()->set_eval_error_prototype(sub_proto);
   }
   {
     // section 15.11.6.2 RangeError
@@ -1018,6 +939,7 @@ void Context::InitError(const ClassSlot& func_cls,
              sub_constructor, ATTR::W | ATTR::C)
         .def("name", sub_cls.name_string, ATTR::W | ATTR::C)
         .def("message", JSString::NewEmptyString(this), ATTR::W | ATTR::C);
+    global_data()->set_range_error_prototype(sub_proto);
   }
   {
     // section 15.11.6.3 ReferenceError
@@ -1051,6 +973,7 @@ void Context::InitError(const ClassSlot& func_cls,
              sub_constructor, ATTR::W | ATTR::C)
         .def("name", sub_cls.name_string, ATTR::W | ATTR::C)
         .def("message", JSString::NewEmptyString(this), ATTR::W | ATTR::C);
+    global_data()->set_reference_error_prototype(sub_proto);
   }
   {
     // section 15.11.6.4 SyntaxError
@@ -1083,6 +1006,7 @@ void Context::InitError(const ClassSlot& func_cls,
              sub_constructor, ATTR::W | ATTR::C)
         .def("name", sub_cls.name_string, ATTR::W | ATTR::C)
         .def("message", JSString::NewEmptyString(this), ATTR::W | ATTR::C);
+    global_data()->set_syntax_error_prototype(sub_proto);
   }
   {
     // section 15.11.6.5 TypeError
@@ -1115,6 +1039,7 @@ void Context::InitError(const ClassSlot& func_cls,
              sub_constructor, ATTR::W | ATTR::C)
         .def("name", sub_cls.name_string, ATTR::W | ATTR::C)
         .def("message", JSString::NewEmptyString(this), ATTR::W | ATTR::C);
+    global_data()->set_type_error_prototype(sub_proto);
   }
   {
     // section 15.11.6.6 URIError
@@ -1147,6 +1072,7 @@ void Context::InitError(const ClassSlot& func_cls,
              sub_constructor, ATTR::W | ATTR::C)
         .def("name", sub_cls.name_string, ATTR::W | ATTR::C)
         .def("message", JSString::NewEmptyString(this), ATTR::W | ATTR::C);
+    global_data()->set_uri_error_prototype(sub_proto);
   }
 }
 
@@ -1383,7 +1309,7 @@ void Context::InitBinaryBlocks(const ClassSlot& func_cls,
   {
     JSObject* const proto =
         JSArrayBuffer::NewPlain(
-            this, 0, Map::NewUniqueMap(this, global_data_.GetArrayBufferMap()), &dummy);
+            this, 0, Map::NewUniqueMap(this, global_data()->array_buffer_map()), &dummy);
     JSFunction* const constructor =
         JSInlinedFunction<&runtime::ArrayBufferConstructor, 1>::NewPlain(
             this,
@@ -1425,7 +1351,7 @@ void Context::InitBinaryBlocks(const ClassSlot& func_cls,
   // DataView
   {
     JSObject* const proto =
-        JSObject::New(this, Map::NewUniqueMap(this, global_data_.GetDataViewMap()));
+        JSObject::New(this, Map::NewUniqueMap(this, global_data()->data_view_map()));
     JSFunction* const constructor =
         JSInlinedFunction<&runtime::DataViewConstructor, 1>::NewPlain(
             this,
@@ -1472,7 +1398,7 @@ template<typename TypedArray, Class::JSClassType CLS>
 inline void Context::InitTypedArray(const ClassSlot& func_cls, bind::Object* global_binder) {
   Error::Dummy dummy;
   JSObject* const proto =
-      JSObject::New(this, Map::NewUniqueMap(this, global_data_.GetTypedArrayMap()));
+      JSObject::New(this, Map::NewUniqueMap(this, global_data()->typed_array_map()));
   const Class* cls = TypedArray::GetClass();
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::TypedArrayConstructor<typename TypedArray::Element, TypedArray>, 1>::NewPlain(

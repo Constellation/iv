@@ -6,7 +6,6 @@
 #include <iv/location.h>
 #include <iv/ustringpiece.h>
 #include <iv/lv5/symbol.h>
-#include <iv/lv5/context_utils.h>
 #include <iv/lv5/specialized_ast.h>
 
 namespace iv {

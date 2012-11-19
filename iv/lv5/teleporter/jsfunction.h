@@ -1,7 +1,6 @@
 #ifndef IV_LV5_TELEPORTER_JSFUNCTION_H_
 #define IV_LV5_TELEPORTER_JSFUNCTION_H_
 #include <iv/ustringpiece.h>
-#include <iv/lv5/context_utils.h>
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/class.h>

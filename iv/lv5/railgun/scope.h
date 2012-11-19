@@ -5,7 +5,6 @@
 #include <iv/detail/unordered_map.h>
 #include <iv/lv5/specialized_ast.h>
 #include <iv/lv5/symbol.h>
-#include <iv/lv5/context_utils.h>
 #include <iv/lv5/railgun/fwd.h>
 #include <iv/lv5/railgun/code.h>
 #include <iv/lv5/railgun/frame.h>
