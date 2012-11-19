@@ -68,6 +68,7 @@ void Context::Initialize() {
           this,
           Intern("Function"));
 
+  // Function.prototype is used soon, so register it very early phase
   struct ClassSlot func_cls = {
     JSFunction::GetClass(),
     Intern("Function"),
@@ -75,7 +76,8 @@ void Context::Initialize() {
     func_constructor,
     func_proto
   };
-  global_data_.RegisterClass<Class::Function>(func_cls);
+  global_data()->RegisterClass<Class::Function>(func_cls);
+  global_data()->set_function_prototype(func_proto);
 
   struct ClassSlot obj_cls = {
     JSObject::GetClass(),
@@ -140,7 +142,6 @@ void Context::Initialize() {
       .def<&runtime::FunctionCall, 1>("call")
       // section 15.3.4.5 Function.prototype.bind(thisArg[, arg1[, arg2, ...]])
       .def<&runtime::FunctionBind, 1>("bind");
-  global_data()->set_function_prototype(func_proto);
 
   bind::Object(this, obj_proto)
       .cls(obj_cls.cls)
