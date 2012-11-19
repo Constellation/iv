@@ -327,34 +327,27 @@ class Operation {
   void StorePropPrimitive(JSVal base, Symbol s,
                           JSVal stored, bool strict, Error* e) {
     assert(base.IsPrimitive());
+    Slot slot;
     JSObject* const o = base.ToObject(ctx_, CHECK);
-    if (!o->CanPut(ctx_, s)) {
+    if (!o->CanPut(ctx_, s, &slot)) {
       if (strict) {
         e->Report(Error::Type, "cannot put value to object");
       }
       return;
     }
-    const PropertyDescriptor own_desc = o->GetOwnProperty(ctx_, s);
-    if (!own_desc.IsEmpty() && own_desc.IsData()) {
-      if (strict) {
-        e->Report(Error::Type,
-                  "value to symbol defined and not data descriptor");
-      }
-      return;
-    }
-    const PropertyDescriptor desc = o->GetProperty(ctx_, s);
-    if (!desc.IsEmpty() && desc.IsAccessor()) {
-      ScopedArguments a(ctx_, 1, CHECK);
-      a[0] = stored;
-      const AccessorDescriptor* const ac = desc.AsAccessorDescriptor();
-      assert(ac->set());
-      static_cast<JSFunction*>(ac->set())->Call(&a, base, e);
-      return;
-    } else {
+
+    if (slot.IsNotFound() || slot.attributes().IsData()) {
       if (strict) {
         e->Report(Error::Type, "value to symbol in transient object");
       }
+      return;
     }
+
+    const Accessor* ac = slot.accessor();
+    assert(ac->setter());
+    ScopedArguments args(ctx_, 1, IV_LV5_ERROR_VOID(e));
+    args[0] = stored;
+    static_cast<JSFunction*>(ac->setter())->Call(&args, base, e);
   }
 #undef CHECK
 

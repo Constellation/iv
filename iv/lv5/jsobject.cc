@@ -113,34 +113,16 @@ PropertyDescriptor JSObject::GetOwnProperty(Context* ctx, Symbol name) const {
   return JSEmpty;
 }
 
-bool JSObject::CanPut(Context* ctx, Symbol name) const {
-  {
-    Slot slot;
-    if (GetOwnPropertySlot(ctx, name, &slot)) {
-      if (slot.attributes().IsAccessor()) {
-        return slot.accessor()->setter();
-      } else {
-        assert(slot.attributes().IsData());
-        return slot.attributes().IsWritable();
-      }
-    }
-  }
-  if (!prototype()) {
-    return IsExtensible();
-  }
-  {
-    Slot inherited;
-    if (prototype()->GetPropertySlot(ctx, name, &inherited)) {
-      if (inherited.attributes().IsAccessor()) {
-        return inherited.accessor()->setter();
-      } else {
-        assert(inherited.attributes().IsData());
-        return inherited.attributes().IsWritable();
-      }
+bool JSObject::CanPut(Context* ctx, Symbol name, Slot* slot) const {
+  if (GetPropertySlot(ctx, name, slot)) {
+    if (slot->attributes().IsAccessor()) {
+      return slot->accessor()->setter();
     } else {
-      return IsExtensible();
+      assert(slot->attributes().IsData());
+      return slot->attributes().IsWritable();
     }
   }
+  return IsExtensible();
 }
 
 bool JSObject::DefineOwnProperty(Context* ctx,
@@ -195,15 +177,15 @@ bool JSObject::DefineOwnProperty(Context* ctx,
 }
 
 void JSObject::Put(Context* ctx, Symbol name, JSVal val, bool th, Error* e) {
-  if (!CanPut(ctx, name)) {
+  Slot slot;
+  if (!CanPut(ctx, name, &slot)) {
     if (th) {
       e->Report(Error::Type, "put failed");
     }
     return;
   }
 
-  Slot slot;
-  if (GetPropertySlot(ctx, name, &slot)) {
+  if (!slot.IsNotFound()) {
     // own property and attributes is data
     if (slot.base() == this && slot.attributes().IsData()) {
       DefineOwnProperty(

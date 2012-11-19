@@ -1512,10 +1512,11 @@ void Interpreter::PutValue(JSVal val, JSVal w, Error* e) {
                             w, false, IV_LV5_ERROR_VOID(e));
   } else if (ref->IsPropertyReference()) {
     if (ref->HasPrimitiveBase()) {
+      Slot slot;
       const Symbol sym = ref->GetReferencedName();
       const bool th = ref->IsStrictReference();
       JSObject* const o = base.ToObject(ctx_, IV_LV5_ERROR_VOID(e));
-      if (!o->CanPut(ctx_, sym)) {
+      if (!o->CanPut(ctx_, sym, &slot)) {
         if (th) {
           e->Report(Error::Type, "cannot put value to object");
         }
@@ -1524,8 +1525,7 @@ void Interpreter::PutValue(JSVal val, JSVal w, Error* e) {
       const PropertyDescriptor own_desc = o->GetOwnProperty(ctx_, sym);
       if (!own_desc.IsEmpty() && own_desc.IsData()) {
         if (th) {
-          e->Report(Error::Type,
-                    "value to symbol defined and not data descriptor");
+          e->Report(Error::Type, "value to symbol in transient object");
         }
         return;
       }
