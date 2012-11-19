@@ -488,6 +488,7 @@ inline JSVal StringFromCodePoint(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("String.fromCodePoint", args, e);
   Context* const ctx = args.ctx();
   JSStringBuilder builder;
+  std::back_insert_iterator<JSStringBuilder> out(builder);
   for (Arguments::const_iterator it = args.begin(),
        last = args.end(); it != last; ++it) {
     const double nextCP = it->ToNumber(ctx, IV_LV5_ERROR(e));
@@ -498,7 +499,7 @@ inline JSVal StringFromCodePoint(const Arguments& args, Error* e) {
       return JSEmpty;
     }
     const uint32_t cp = static_cast<uint32_t>(nextCP);
-    core::unicode::CodePointToUTF16(cp, std::back_inserter(builder));
+    out = core::unicode::CodePointToUTF16(cp, out);
   }
   return builder.Build(ctx, false, e);
 }
