@@ -334,13 +334,42 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
 
     // dense array optimization code
     const bool is_default_descriptor = desc.IsDefault();
-    if ((is_default_descriptor ||
-         (index < old_len && jsarray_detail::IsAbsentDescriptor(desc))) &&
-         (dense_ || (slot->IsNotFound() || slot->base() != this))) {
-      if (kMaxVectorSize > index) {
-        if (vector_.size() > index) {
-          if (vector_[index].IsEmpty()) {
+    if (is_default_descriptor ||
+        (index < old_len && jsarray_detail::IsAbsentDescriptor(desc))) {
+      bool use_dense_path = dense_;
+      if (!use_dense_path) {
+        if (!slot->IsUsed()) {
+          GetOwnPropertySlot(ctx, name, slot);
+        }
+        use_dense_path = slot->IsNotFound() || slot->base() != this;
+      }
+      if (use_dense_path) {
+        if (kMaxVectorSize > index) {
+          if (vector_.size() > index) {
+            if (vector_[index].IsEmpty()) {
+              if (is_default_descriptor) {
+                if (desc.AsDataDescriptor()->IsValueAbsent()) {
+                  vector_[index] = JSUndefined;
+                } else {
+                  vector_[index] = desc.AsDataDescriptor()->value();
+                }
+                return FixUpLength(old_len, index);
+              }
+              // through like
+              //
+              // var ary = new Array(10);
+              // Object.defineProperty(ary, '0', { });
+              //
+            } else {
+              if (desc.IsData() &&
+                  !desc.AsDataDescriptor()->IsValueAbsent()) {
+                vector_[index] = desc.AsDataDescriptor()->value();
+              }
+              return FixUpLength(old_len, index);
+            }
+          } else {
             if (is_default_descriptor) {
+              vector_.resize(index + 1, JSEmpty);
               if (desc.AsDataDescriptor()->IsValueAbsent()) {
                 vector_[index] = JSUndefined;
               } else {
@@ -348,49 +377,10 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
               }
               return FixUpLength(old_len, index);
             }
-            // through like
-            //
-            // var ary = new Array(10);
-            // Object.defineProperty(ary, '0', { });
-            //
-          } else {
-            if (desc.IsData() &&
-                !desc.AsDataDescriptor()->IsValueAbsent()) {
-              vector_[index] = desc.AsDataDescriptor()->value();
-            }
-            return FixUpLength(old_len, index);
           }
         } else {
-          if (is_default_descriptor) {
-            vector_.resize(index + 1, JSEmpty);
-            if (desc.AsDataDescriptor()->IsValueAbsent()) {
-              vector_[index] = JSUndefined;
-            } else {
-              vector_[index] = desc.AsDataDescriptor()->value();
-            }
-            return FixUpLength(old_len, index);
-          }
-        }
-      } else {
-        if (!map_) {
-          map_ = new(GC)SparseArray;
-          if (is_default_descriptor) {
-            if (desc.AsDataDescriptor()->IsValueAbsent()) {
-              (*map_)[index] = JSUndefined;
-            } else {
-              (*map_)[index] = desc.AsDataDescriptor()->value();
-            }
-            return FixUpLength(old_len, index);
-          }
-        } else {
-          SparseArray::iterator it = map_->find(index);
-          if (it != map_->end()) {
-            if (desc.IsData() &&
-                !desc.AsDataDescriptor()->IsValueAbsent()) {
-              (*map_)[index] = desc.AsDataDescriptor()->value();
-            }
-            return FixUpLength(old_len, index);
-          } else {
+          if (!map_) {
+            map_ = new(GC)SparseArray;
             if (is_default_descriptor) {
               if (desc.AsDataDescriptor()->IsValueAbsent()) {
                 (*map_)[index] = JSUndefined;
@@ -398,6 +388,24 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
                 (*map_)[index] = desc.AsDataDescriptor()->value();
               }
               return FixUpLength(old_len, index);
+            }
+          } else {
+            SparseArray::iterator it = map_->find(index);
+            if (it != map_->end()) {
+              if (desc.IsData() &&
+                  !desc.AsDataDescriptor()->IsValueAbsent()) {
+                (*map_)[index] = desc.AsDataDescriptor()->value();
+              }
+              return FixUpLength(old_len, index);
+            } else {
+              if (is_default_descriptor) {
+                if (desc.AsDataDescriptor()->IsValueAbsent()) {
+                  (*map_)[index] = JSUndefined;
+                } else {
+                  (*map_)[index] = desc.AsDataDescriptor()->value();
+                }
+                return FixUpLength(old_len, index);
+              }
             }
           }
         }

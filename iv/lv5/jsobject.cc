@@ -131,17 +131,20 @@ bool JSObject::DefineOwnProperty(Context* ctx,
                                  bool th,
                                  Error* e) {
   Slot slot;
-  GetPropertySlot(ctx, name, &slot);
   return DefineOwnPropertySlot(ctx, name, desc, &slot, th, e);
 }
 
+// section 8.12.9 [[DefineOwnProperty]]
 bool JSObject::DefineOwnPropertySlot(Context* ctx,
                                      Symbol name,
                                      const PropertyDescriptor& desc,
                                      Slot* slot,
                                      bool th,
                                      Error* e) {
-  // section 8.12.9 [[DefineOwnProperty]]
+  if (!slot->IsUsed()) {
+    GetOwnPropertySlot(ctx, name, slot);
+  }
+
   if (!slot->IsNotFound() && slot->base() == this) {
     // found
     bool returned = false;
