@@ -19,7 +19,24 @@ class Slot : public StoredSlot {
  public:
   static const uint32_t FLAG_USED = 1;
   static const uint32_t FLAG_CACHEABLE = 2;
+  static const uint32_t FLAG_PUT_CACHEABLE = 4;
   static const uint32_t FLAG_INIT = FLAG_CACHEABLE;
+
+  class PutUnCacheable : private core::Noncopyable<PutUnCacheable> {
+   public:
+    explicit PutUnCacheable(Slot* slot) : slot_(slot) { }
+    ~PutUnCacheable() { slot_->MakePutUnCacheable(); }
+   private:
+    Slot* slot_;
+  };
+
+  enum PutResultType {
+    PUT_NONE = 0,
+    PUT_REPLACE = 1,
+    PUT_NEW = 2
+  };
+  static const uint32_t PUT_MASK = 3;
+  static const uint32_t PUT_SHIFT = 3;
 
   Slot()
     : StoredSlot(JSEmpty, Attributes::Safe::NotFound()),
@@ -80,6 +97,14 @@ class Slot : public StoredSlot {
     flags_ &= (~FLAG_CACHEABLE);
   }
 
+  inline void MakePutUnCacheable() {
+    flags_ &= (~FLAG_PUT_CACHEABLE);
+  }
+
+  bool IsPutCacheable() const {
+    return flags_ & FLAG_PUT_CACHEABLE;
+  }
+
   inline void MakeUsed() {
     flags_ &= (~FLAG_USED);
   }
@@ -95,9 +120,25 @@ class Slot : public StoredSlot {
     return flags_ & FLAG_USED;
   }
 
+  // Put result
+  void MarkPutResult(PutResultType type, uint32_t offset) {
+    // store result
+    set_put_result_type(type);
+    offset_ = offset;
+    flags_ |= FLAG_PUT_CACHEABLE;
+  }
+
+  PutResultType put_result_type() const {
+    return static_cast<PutResultType>((flags_ >> PUT_SHIFT) & PUT_MASK);
+  }
  private:
   bool IsCacheable() const {
     return flags_ & FLAG_CACHEABLE;
+  }
+
+  void set_put_result_type(PutResultType type) {
+    flags_ &= (~(PUT_MASK << PUT_SHIFT));
+    flags_ |= (type << PUT_SHIFT);
   }
 
   const JSObject* base_;

@@ -18,13 +18,14 @@ class PolyICUnit: public core::IntrusiveListBase {
     LOAD_STRING_LENGTH,
     LOAD_ARRAY_LENGTH,
     STORE_REPLACE_PROPERTY,
-    STORE_NEW_PROPERTY
+    STORE_REPLACE_PROPERTY_WITH_MAP_TRANSITION,
+    STORE_NEW_PROPERTY,
+    STORE_NEW_PROPERTY_WITH_REALLOCATION
   };
 
   explicit PolyICUnit(Type type)
     : own_(NULL),
       proto_(NULL),
-      transit_(NULL),
       type_(type),
       tail_(0) {
   }
@@ -35,8 +36,6 @@ class PolyICUnit: public core::IntrusiveListBase {
   void set_proto(Map* map) { proto_ = map; }
   Chain* chain() const { return chain_; }
   void set_chain(Chain* chain) { chain_ = chain; }
-  Map* transit() const { return transit_; }
-  void set_transit(Map* transit) { transit_ = transit; }
   uint8_t* tail() const { return tail_; }
   void set_tail(uint8_t* tail) { tail_ = tail; }
 
@@ -49,7 +48,6 @@ class PolyICUnit: public core::IntrusiveListBase {
     Chain* chain_;
     Map* proto_;
   };
-  Map* transit_;
   Type type_;
   uint8_t* tail_;
 };
@@ -84,9 +82,6 @@ class PolyIC : public IC, public core::IntrusiveList<PolyICUnit> {
       entry = GC_MARK_AND_PUSH(
           it->proto(),
           entry, mark_sp_limit, reinterpret_cast<void**>(this));
-      entry = GC_MARK_AND_PUSH(
-          it->transit(),
-          entry, mark_sp_limit, reinterpret_cast<void**>(this));
     }
     return entry;
   }
@@ -95,7 +90,6 @@ class PolyIC : public IC, public core::IntrusiveList<PolyICUnit> {
     for (iterator it = begin(), last = end(); it != last; ++it) {
       core->MarkCell(it->own());
       core->MarkCell(it->proto());
-      core->MarkCell(it->transit());
     }
   }
 };
@@ -494,25 +488,97 @@ class StorePropertyIC : public PolyIC {
     uint32_t offset_;
   };
 
+  class StoreReplacePropertyWithMapTransitionCompiler {
+   public:
+    static const Unit::Type kType = Unit::STORE_REPLACE_PROPERTY_WITH_MAP_TRANSITION;
+    static const int kSize = 128;
+
+    StoreReplacePropertyWithMapTransitionCompiler(Map* map, Map* transit, uint32_t offset)
+      : map_(map),
+        transit_(transit),
+        offset_(offset) {
+    }
+
+    void operator()(StorePropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
+      // own map guard
+      as->mov(r10, core::BitCast<uintptr_t>(map_));
+      as->cmp(r10, qword[rsi + JSObject::MapOffset()]);
+      as->jne(fail);
+      // transition
+      as->mov(r10, core::BitCast<uintptr_t>(transit_));
+      as->mov(qword[rsi + JSObject::MapOffset()], r10);
+      // store
+      StorePropertyIC::GenerateFastStore(as, rsi, offset_);
+    }
+
+   private:
+    Map* map_;
+    Map* transit_;
+    uint32_t offset_;
+  };
+
   class StoreNewPropertyCompiler {
    public:
     static const Unit::Type kType = Unit::STORE_NEW_PROPERTY;
     static const int kSize = 256;
 
-    StoreNewPropertyCompiler(Chain* chain, Map* prev, Map* next, uint32_t offset)
+    StoreNewPropertyCompiler(Chain* chain, Map* transit, uint32_t offset)
       : chain_(chain),
-        prev_(prev),
-        next_(next),
+        transit_(transit),
         offset_(offset) {
     }
 
     void operator()(StorePropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
+      if (chain_->size() < 5) {
+        // unroling
+        Chain::const_iterator it = chain_->begin();
+        const Chain::const_iterator last = chain_->end();
+        assert(it != last);
+        {
+          as->mov(r10, core::BitCast<uintptr_t>(*it));
+          as->cmp(r10, qword[rsi + JSObject::MapOffset()]);
+          as->jne(fail);
+          as->mov(r11, qword[rsi + JSObject::PrototypeOffset()]);
+          ++it;
+        }
+        for (; it != last; ++it) {
+          as->mov(r10, core::BitCast<uintptr_t>(*it));
+          as->test(r11, r11);
+          as->jz(fail);
+          as->cmp(r10, qword[r11 + JSObject::MapOffset()]);
+          as->jne(fail);
+          as->mov(r11, qword[r11 + JSObject::PrototypeOffset()]);
+        }
+      } else {
+        as->mov(r11, rsi);
+        as->mov(r10, core::BitCast<uintptr_t>(chain_->data()));
+        as->xor(r9, r9);
+        as->L(".LOOP_HEAD");
+        {
+          as->mov(r10, qword[r10 + r9 * k64Size]);
+          as->test(r11, r11);
+          as->jz(fail);
+          as->cmp(r10, qword[r11 + JSObject::MapOffset()]);
+          as->jne(fail);
+          as->mov(r11, qword[r11 + JSObject::PrototypeOffset()]);
+          as->inc(r9);
+          as->cmp(r9, chain_->size());
+          as->jl(".LOOP_HEAD");
+        }
+      }
+
+      as->test(r11, r11);  // last should be NULL
+      as->jnz(fail);
+      // transition
+      as->mov(r10, core::BitCast<uintptr_t>(transit_));
+      as->mov(qword[rsi + JSObject::MapOffset()], r10);
+      // store
+      StorePropertyIC::GenerateFastStore(as, rsi, offset_);
     }
 
    private:
     Chain* chain_;
-    Map* prev_;
-    Map* next_;
+    Map* transit_;
     uint32_t offset_;
   };
 
@@ -522,12 +588,17 @@ class StorePropertyIC : public PolyIC {
     }
   }
 
-  void StoreNewProperty(Chain* chain, Map* prev, Map* next, uint32_t offset) {
-    // TODO(Constellation) not implemented yet
-    return;
-    if (Unit* ic = Generate(StoreNewPropertyCompiler(chain, prev, next, offset))) {
-      ic->set_own(prev);
-      ic->set_proto(next);
+  void StoreReplacePropertyWithMapTransition(Map* map, Map* transit, uint32_t offset) {
+    if (Unit* ic = Generate(StoreReplacePropertyWithMapTransitionCompiler(map, transit, offset))) {
+      ic->set_own(map);
+      ic->set_proto(transit);
+    }
+  }
+
+  void StoreNewProperty(Chain* chain, Map* transit, uint32_t offset) {
+    if (Unit* ic = Generate(StoreNewPropertyCompiler(chain, transit, offset))) {
+      ic->set_own(transit);
+      ic->set_chain(chain);
     }
   }
 

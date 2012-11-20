@@ -150,6 +150,12 @@ inline int CompareIterators(LIter lit, LIter llast, RIter rit, RIter rlast) {
 
 inline std::size_t NextCapacity(std::size_t capacity) {
   if (capacity < 256) {
+    if (capacity == 0) {
+      return 0;
+    }
+    if (capacity < 4) {
+      return 4;
+    }
     return math::CLP2(capacity);
   }
   return IV_ALIGNED_SIZE(capacity, 256);

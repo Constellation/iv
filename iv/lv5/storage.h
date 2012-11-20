@@ -9,16 +9,114 @@
 #include <gc/gc.h>
 #include <iv/noncopyable.h>
 #include <iv/utils.h>
-#include <iv/lv5/breaker/fwd.h>
 namespace iv {
 namespace lv5 {
 
 template<typename T>
+class FixedStorage {
+ public:
+  typedef std::size_t size_type;
+  typedef T value_type;
+  typedef T* iterator;
+  typedef const T* const_iterator;
+  typedef T& reference;
+  typedef const T& const_reference;
+  typedef std::ptrdiff_t difference_type;
+  typedef T* pointer;
+  typedef const T* const_pointer;
+  typedef std::reverse_iterator<iterator> reverse_iterator;
+  typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+  typedef FixedStorage<T> this_type;
+
+  FixedStorage(size_type n, value_type v = value_type())
+    : data_(NULL),
+      capacity_(0) {
+    resize(n, v);
+  }
+
+  FixedStorage()
+    : data_(NULL),
+      capacity_(0) {
+  }
+
+  FixedStorage(const this_type& v)
+    : data_(NULL),
+      capacity_(v.capacity()) {
+    assign(v.begin(), v.end());
+  }
+
+  this_type& operator=(const this_type& v) {
+    assign(v.begin(), v.end());
+    return *this;
+  }
+
+  pointer data() { return data_; }
+  const_pointer data() const { return data_; }
+  iterator begin() { return data(); }
+  const_iterator begin() const { return data(); }
+  const_iterator cbegin() const { return data(); }
+  iterator end() { return data() + capacity(); }
+  const_iterator end() const { return data() + capacity(); }
+  const_iterator cend() const { return data() + capacity(); }
+  reverse_iterator rbegin() { return reverse_iterator(end()); }
+  const_reverse_iterator rbegin() const {
+    return const_reverse_iterator(end());
+  }
+  const_reverse_iterator crbegin() const {
+    return const_reverse_iterator(end());
+  }
+  reverse_iterator rend() { return reverse_iterator(begin()); }
+  const_reverse_iterator rend() const {
+    return const_reverse_iterator(begin());
+  }
+  const_reverse_iterator crend() const {
+    return const_reverse_iterator(begin());
+  }
+  reference operator[](size_type n) {
+    assert(capacity() > n);
+    return *(data() + n);
+  }
+  const_reference operator[](size_type n) const {
+    assert(capacity() > n);
+    return *(data() + n);
+  }
+  size_type size() const { return capacity(); }
+  size_type capacity() const { return capacity_; }
+  void resize(size_type n, value_type c = value_type()) {
+    const size_type previous = capacity();
+    reserve(n);
+    if (previous < capacity()) {
+      std::fill(begin() + previous, end(), c);
+    }
+  }
+
+  void reserve(size_type n) {
+    if (n > capacity()) {
+      const std::size_t next = core::NextCapacity(n);
+      pointer ptr = new(GC)value_type[next];
+      std::copy(begin(), end(), ptr);
+      capacity_ = next;
+      data_ = ptr;
+    }
+  }
+  size_type max_size() const { return std::numeric_limits<size_type>::max(); }
+
+  static std::size_t DataOffset() {
+    return IV_OFFSETOF(this_type, data_);
+  }
+
+  static std::size_t CapacityOffset() {
+    return IV_OFFSETOF(this_type, capacity_);
+  }
+
+ private:
+  T* data_;
+  size_type capacity_;
+};
+
+template<typename T>
 class Storage {
  public:
-  friend class breaker::Compiler;
-  friend class breaker::MonoIC;
-
   typedef std::size_t size_type;
   typedef T value_type;
   typedef T* iterator;

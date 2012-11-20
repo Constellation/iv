@@ -30,7 +30,7 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
   friend class breaker::Compiler;
   friend class breaker::MonoIC;
 
-  typedef Storage<JSVal> Slots;
+  typedef FixedStorage<JSVal> Slots;
 
   static const uint32_t kFlagExtensible = 0x1;
   static const uint32_t kFlagCallable = 0x2;

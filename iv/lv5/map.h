@@ -198,6 +198,10 @@ class Map : public radio::HeapObject<radio::POINTER> {
     return map;
   }
 
+  std::size_t StorageCapacity() const {
+    return core::NextCapacity(GetSlotsSize());
+  }
+
   Entry Get(Context* ctx, Symbol name) {
     if (!HasTable()) {
       if (!previous_) {
@@ -330,11 +334,10 @@ class Map : public radio::HeapObject<radio::POINTER> {
     }
   }
 
- private:
   bool IsUnique() const {
     return !transitions_.IsEnabled();
   }
-
+ private:
   bool HasTable() const {
     return table_;
   }

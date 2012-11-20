@@ -104,6 +104,7 @@ class JSNormalArguments : public JSObject {
             set_map(map()->ChangeAttributesTransition(ctx, name, slot->attributes()));
           }
           Direct(slot->offset()) = slot->value();
+          slot->MarkPutResult(Slot::PUT_REPLACE, slot->offset());
         } else {
           // add property transition
           // searching already created maps and if this is available, move to this
@@ -113,6 +114,7 @@ class JSNormalArguments : public JSObject {
           slots_.resize(map()->GetSlotsSize(), JSEmpty);
           // set newly created property
           Direct(offset) = slot->value();
+          slot->MarkPutResult(Slot::PUT_NEW, offset);
         }
       }
       return returned;
@@ -134,6 +136,7 @@ class JSNormalArguments : public JSObject {
     set_map(map()->AddPropertyTransition(ctx, name, stored.attributes(), &offset));
     slots_.resize(map()->GetSlotsSize(), JSEmpty);
     Direct(offset) = stored.value();
+    slot->MarkPutResult(Slot::PUT_NEW, offset);
     return true;
   }
 
@@ -154,9 +157,11 @@ class JSNormalArguments : public JSObject {
       const uint32_t index = symbol::GetIndexFromSymbol(name);
       if (mapping_.size() > index) {
         const Symbol mapped = mapping_[index];
+        bool dummy = false;
         if (mapped != symbol::kDummySymbol) {
           if (desc.IsAccessor()) {
             mapping_[index] = symbol::kDummySymbol;
+            dummy = true;
           } else {
             if (desc.IsData()) {
               const DataDescriptor* const data = desc.AsDataDescriptor();
@@ -166,8 +171,14 @@ class JSNormalArguments : public JSObject {
               }
               if (!data->IsWritableAbsent() && !data->IsWritable()) {
                 mapping_[index] = symbol::kDummySymbol;
+                dummy = true;
               }
             }
+          }
+
+          if (!dummy) {
+            // make store cache off
+            slot->MakePutUnCacheable();
           }
         }
       }

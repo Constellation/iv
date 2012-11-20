@@ -1035,21 +1035,47 @@ inline Rep STORE_PROP(Frame* stack, JSVal base, JSVal src, StorePropertyIC* ic) 
   }
 
   JSObject* obj = base.object();
+  Map* previous = obj->map();
   Slot slot;
-  if (!obj->GetOwnPropertySlot(ctx, name, &slot)) {
-    // new property
-    obj->Put(ctx, name, src, ic->strict(), ERR);
+  obj->PutSlot(ctx, name, src, &slot, ic->strict(), ERR);
+  const Slot::PutResultType put_result_type = slot.put_result_type();
+  const bool unique = previous->IsUnique() || obj->map()->IsUnique();
+
+  // uncacheable pattern
+  if (!slot.IsPutCacheable()) {
     return 0;
   }
 
-  if (!slot.IsStoreCacheable()) {
-    obj->Put(ctx, name, src, ic->strict(), ERR);
+  assert(put_result_type != Slot::PUT_NONE);
+
+  // cache it, replace
+  if (put_result_type == Slot::PUT_REPLACE) {
+    if (previous == obj->map()) {
+      // we can cache even if map is unique
+      ic->StoreReplaceProperty(obj->map(), slot.offset());
+    } else if (!unique) {
+      ic->StoreReplacePropertyWithMapTransition(previous, obj->map(), slot.offset());
+    }
     return 0;
   }
 
-  // cache, replace property
-  ic->StoreReplaceProperty(obj->map(), slot.offset());
-  obj->Direct(slot.offset()) = src;
+  // uncacheable
+  if (unique) {
+    return 0;
+  }
+
+  // cache it, new
+  assert(previous != obj->map());
+
+  if (previous->StorageCapacity() == obj->map()->StorageCapacity()) {
+    // reallocation is not necessary
+    Chain* chain = Chain::New(obj, NULL);  // list up all maps
+    (*chain)[0] = previous;  // first is previous
+    ic->StoreNewProperty(chain, obj->map(), slot.offset());
+    return 0;
+  }
+
+  // ic->StoreNewPropertyWithReallocation(previous, obj->map(), slot.offset());
   return 0;
 }
 

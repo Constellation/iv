@@ -323,6 +323,7 @@ class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
                                 const PropertyDescriptor& desc,
                                 Slot* slot,
                                 bool th, Error* e) {
+    const Slot::PutUnCacheable uncacheable(slot);
     // 15.4.5.1 step 4-a
     const uint32_t index = symbol::GetIndexFromSymbol(name);
     const uint32_t old_len = GetLength();
