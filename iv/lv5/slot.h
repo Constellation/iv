@@ -105,21 +105,5 @@ class Slot : public StoredSlot {
   uint32_t flags_;
 };
 
-
-// TODO(Constellation) move this to jsfunction.h
-inline JSVal JSFunction::GetSlot(Context* ctx, Symbol name, Slot* slot, Error* e) {
-  const JSVal val = JSObject::GetSlot(ctx, name, slot, IV_LV5_ERROR(e));
-  if (name == symbol::caller()) {
-    slot->MakeUnCacheable();
-    if (val.IsCallable() &&
-        static_cast<JSFunction*>(val.object())->IsStrict()) {
-      e->Report(Error::Type,
-                "\"caller\" property is not accessible in strict code");
-      return JSFalse;
-    }
-  }
-  return val;
-}
-
 } }  // namespace iv::lv5
 #endif  // IV_LV5_SLOT_H_

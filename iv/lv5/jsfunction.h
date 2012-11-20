@@ -10,12 +10,10 @@ inline JSFunction::JSFunction(Context* ctx)
   set_callable(true);
 }
 
-
 inline void JSFunction::Initialize(Context* ctx) {
   set_cls(JSFunction::GetClass());
   set_prototype(ctx->global_data()->function_prototype());
 }
-
 
 inline JSBoundFunction::JSBoundFunction(
     Context* ctx, JSFunction* target, JSVal this_binding, const Arguments& args)
@@ -58,6 +56,20 @@ inline JSBoundFunction::JSBoundFunction(
                                        throw_type_error,
                                        ATTR::NONE),
                     false, &e);
+}
+
+inline JSVal JSFunction::GetSlot(Context* ctx, Symbol name, Slot* slot, Error* e) {
+  const JSVal val = JSObject::GetSlot(ctx, name, slot, IV_LV5_ERROR(e));
+  if (name == symbol::caller()) {
+    slot->MakeUnCacheable();
+    if (val.IsCallable() &&
+        static_cast<JSFunction*>(val.object())->IsStrict()) {
+      e->Report(Error::Type,
+                "\"caller\" property is not accessible in strict code");
+      return JSFalse;
+    }
+  }
+  return val;
 }
 
 } }  // namespace iv::lv5
