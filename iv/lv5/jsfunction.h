@@ -58,6 +58,16 @@ inline JSBoundFunction::JSBoundFunction(
                     false, &e);
 }
 
+inline bool JSFunction::DefineOwnPropertySlot(Context* ctx,
+                                              Symbol name,
+                                              const PropertyDescriptor& desc,
+                                              Slot* slot,
+                                              bool th,
+                                              Error* e) {
+  return JSObject::DefineOwnPropertySlot(ctx, name, desc, slot, th, e);
+}
+
+
 inline JSVal JSFunction::GetSlot(Context* ctx, Symbol name, Slot* slot, Error* e) {
   const JSVal val = JSObject::GetSlot(ctx, name, slot, IV_LV5_ERROR(e));
   if (name == symbol::caller()) {

@@ -65,6 +65,13 @@ class JSFunction : public JSObject {
 
   virtual bool IsStrict() const = 0;
 
+
+  virtual bool DefineOwnPropertySlot(Context* ctx,
+                                     Symbol name,
+                                     const PropertyDescriptor& desc,
+                                     Slot* slot,
+                                     bool th, Error* e);
+
   void Initialize(Context* ctx);
  protected:
   explicit JSFunction(Context* ctx);
