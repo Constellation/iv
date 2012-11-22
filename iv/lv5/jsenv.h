@@ -14,7 +14,6 @@
 #include <iv/lv5/storage.h>
 #include <iv/lv5/radio/cell.h>
 #include <iv/lv5/radio/core_fwd.h>
-#include <iv/lv5/breaker/fwd.h>
 
 namespace iv {
 namespace lv5 {
@@ -25,7 +24,6 @@ class JSStaticEnv;
 
 class JSEnv : public radio::HeapObject<radio::ENVIRONMENT> {
  public:
-  friend class breaker::Compiler;
   virtual bool HasBinding(Context* ctx, Symbol name) const = 0;
   virtual bool DeleteBinding(Context* ctx, Symbol name) = 0;
   virtual void CreateMutableBinding(Context* ctx, Symbol name,
@@ -129,7 +127,6 @@ class JSDeclEnv : public JSEnv {
   };
 
  public:
-  friend class breaker::Compiler;
   typedef Storage<JSVal> StaticVals;
   typedef Storage<DynamicVal> DynamicVals;
   typedef GCHashMap<Symbol, uint32_t>::type Offsets;
@@ -287,6 +284,8 @@ class JSDeclEnv : public JSEnv {
       core->MarkValue(it->value());
     }
   }
+
+  static std::size_t StaticOffset() { return IV_OFFSETOF(JSDeclEnv, static_); }
 
  private:
   JSDeclEnv(JSEnv* outer)

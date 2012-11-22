@@ -16,7 +16,6 @@
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsval_fwd.h>
 #include <iv/lv5/radio/cell.h>
-#include <iv/lv5/breaker/fwd.h>
 namespace iv {
 namespace lv5 {
 
@@ -41,8 +40,6 @@ class Error;
 class JSString: public radio::HeapObject<radio::STRING> {
  public:
   friend class GlobalData;
-  friend class breaker::TemplatesGenerator;
-  friend class breaker::Compiler;
   typedef JSString this_type;
 
   // FiberSlots has FiberSlot by reverse order

@@ -13,7 +13,6 @@
 #include <iv/lv5/storage.h>
 #include <iv/lv5/radio/cell.h>
 #include <iv/lv5/radio/core_fwd.h>
-#include <iv/lv5/breaker/fwd.h>
 namespace iv {
 namespace lv5 {
 
@@ -26,10 +25,6 @@ class Error;
 class JSObject : public radio::HeapObject<radio::OBJECT> {
  public:
   IV_LV5_DEFINE_JSCLASS(Object)
-
-  friend class breaker::Compiler;
-  friend class breaker::MonoIC;
-
   typedef FixedStorage<JSVal> Slots;
 
   static const uint32_t kFlagExtensible = 0x1;

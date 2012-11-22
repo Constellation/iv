@@ -17,7 +17,6 @@
 #include <iv/lv5/storage.h>
 #include <iv/lv5/adapter/select1st.h>
 #include <iv/lv5/railgun/fwd.h>
-#include <iv/lv5/breaker/fwd.h>
 #include <iv/lv5/radio/core_fwd.h>
 namespace iv {
 namespace lv5 {
@@ -59,10 +58,9 @@ class JSVector;
 class JSArray : public JSObject, public jsarray_detail::JSArrayConstants<> {
  public:
   IV_LV5_DEFINE_JSCLASS(Array)
-
   friend class railgun::VM;
-  friend class breaker::Compiler;
   friend class JSVector;
+
   typedef GCHashMap<uint32_t, JSVal>::type SparseArray;
   typedef Storage<JSVal> JSValVector;
 

@@ -2039,7 +2039,7 @@ class Compiler {
     LookupHeapEnv(rsi, nest);
     const ptrdiff_t target =
         IV_CAST_OFFSET(JSEnv*, JSDeclEnv*) +
-        IV_OFFSETOF(JSDeclEnv, static_) +
+        JSDeclEnv::StaticOffset() +
         JSDeclEnv::StaticVals::DataOffset();
     // pointer to the data
     asm_->mov(rax, qword[rsi + target]);
@@ -2087,7 +2087,7 @@ class Compiler {
     LookupHeapEnv(rsi, nest);
     const ptrdiff_t target =
         IV_CAST_OFFSET(JSEnv*, JSDeclEnv*) +
-        IV_OFFSETOF(JSDeclEnv, static_) +
+        JSDeclEnv::StaticOffset() +
         JSDeclEnv::StaticVals::DataOffset();
     // pointer to the data
     asm_->mov(rdi, qword[rsi + target]);
@@ -2199,7 +2199,7 @@ class Compiler {
     LookupHeapEnv(rsi, nest);
     const ptrdiff_t target =
         IV_CAST_OFFSET(JSEnv*, JSDeclEnv*) +
-        IV_OFFSETOF(JSDeclEnv, static_) +
+        JSDeclEnv::StaticOffset() +
         JSDeclEnv::StaticVals::DataOffset();
     // pointer to the data
     asm_->mov(rax, qword[rsi + target]);

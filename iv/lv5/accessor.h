@@ -4,13 +4,11 @@
 #include <iv/lv5/radio/core.h>
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/context_fwd.h>
-#include <iv/lv5/breaker/fwd.h>
 namespace iv {
 namespace lv5 {
 
 class Accessor : public radio::HeapObject<radio::ACCESSOR> {
  public:
-  friend class breaker::Compiler;
   Accessor(JSObject* getter, JSObject* setter)
     : getter_(getter),
       setter_(setter) {
