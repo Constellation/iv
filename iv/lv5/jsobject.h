@@ -205,6 +205,9 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
   static std::size_t SlotsOffset() { return IV_OFFSETOF(JSObject, slots_); }
   static std::size_t ClassOffset() { return IV_OFFSETOF(JSObject, cls_); }
 
+  static void MapTransitionWithReallocation(
+      JSObject* base, JSVal src, Map* transit, uint32_t offset);
+
  protected:
   explicit JSObject(Map* map);
 

@@ -602,6 +602,13 @@ class StorePropertyIC : public PolyIC {
     }
   }
 
+  void StoreNewPropertyWithReallocation(Chain* chain, Map* transit, uint32_t offset) {
+    if (Unit* ic = Generate(StoreNewPropertyCompiler(chain, transit, offset))) {
+      ic->set_own(transit);
+      ic->set_chain(chain);
+    }
+  }
+
   NativeCode* native_code() const { return native_code_; }
   bool strict() const { return strict_; }
   Symbol name() const { return name_; }

@@ -358,6 +358,13 @@ JSObject* JSObject::NewPlain(Context* ctx, Map* map) {
   return new JSObject(map);
 }
 
+void JSObject::MapTransitionWithReallocation(
+    JSObject* base, JSVal src, Map* transit, uint32_t offset) {
+  base->set_map(transit);
+  base->slots_.resize(transit->GetSlotsSize(), JSEmpty);
+  base->Direct(offset) = src;
+}
+
 void JSObject::MarkChildren(radio::Core* core) {
   core->MarkCell(prototype_);
   core->MarkCell(map_);
