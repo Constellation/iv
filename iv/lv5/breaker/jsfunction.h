@@ -22,11 +22,8 @@ class JSJITFunction : public railgun::JSVMFunction {
 
   virtual JSVal Construct(Arguments* args, Error* e) {
     Context* const ctx = static_cast<Context*>(args->ctx());
-    JSObject* const obj = JSObject::New(ctx, code()->ConstructMap(ctx));
-    const JSVal proto = Get(ctx, symbol::prototype(), IV_LV5_ERROR(e));
-    if (proto.IsObject()) {
-      obj->set_prototype(proto.object());
-    }
+    Map* map = construct_map(ctx, IV_LV5_ERROR(e));
+    JSObject* const obj = JSObject::New(ctx, map);
     assert(args->IsConstructorCalled());
     const JSVal val = JSJITFunction::Call(args, obj, IV_LV5_ERROR(e));
     if (!val.IsObject()) {

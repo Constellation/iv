@@ -10,9 +10,13 @@ inline JSFunction::JSFunction(Context* ctx)
   set_callable(true);
 }
 
+inline JSFunction::JSFunction(Context* ctx, Map* map)
+  : JSObject(map) {
+  set_callable(true);
+}
+
 inline void JSFunction::Initialize(Context* ctx) {
   set_cls(JSFunction::GetClass());
-  set_prototype(ctx->global_data()->function_prototype());
 }
 
 inline JSBoundFunction::JSBoundFunction(
@@ -27,7 +31,6 @@ inline JSBoundFunction::JSBoundFunction(
   }
   const uint32_t bound_args_size = arguments_.size();
   set_cls(JSFunction::GetClass());
-  set_prototype(ctx->global_data()->function_prototype());
   // step 15
   if (target_->IsClass<Class::Function>()) {
     // target [[Class]] is "Function"
@@ -58,12 +61,33 @@ inline JSBoundFunction::JSBoundFunction(
                     false, &e);
 }
 
+inline Map* JSFunction::construct_map(Context* ctx, Error* e) {
+  if (construct_map_) {
+    return construct_map_;
+  }
+  Slot slot;
+  const JSVal res = GetSlot(ctx, symbol::prototype(), &slot, IV_LV5_ERROR_WITH(e, NULL));
+
+  Map* map = Map::New(ctx, res.IsObject() ? res.object() : ctx->global_data()->object_prototype());
+  // no side effect and own prototype
+  if (slot.IsLoadCacheable() && slot.base() == this && slot.attributes().IsData()) {
+    construct_map_ = map;
+  }
+
+  return map;
+}
+
 inline bool JSFunction::DefineOwnPropertySlot(Context* ctx,
                                               Symbol name,
                                               const PropertyDescriptor& desc,
                                               Slot* slot,
                                               bool th,
                                               Error* e) {
+  if (name == symbol::prototype()) {
+    // prototype override
+    construct_map_ = NULL;
+    slot->MakePutUnCacheable();
+  }
   return JSObject::DefineOwnPropertySlot(ctx, name, desc, slot, th, e);
 }
 

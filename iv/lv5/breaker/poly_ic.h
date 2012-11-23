@@ -127,6 +127,8 @@ class LoadPropertyIC : public PolyIC {
     static const Unit::Type kType = Unit::LOAD_OWN_PROPERTY;
     static const int kSize = 128;
 
+    std::size_t size() const { return kSize; }
+
     LoadOwnPropertyCompiler(Map* map, uint32_t offset)
       : map_(map),
         offset_(offset) {
@@ -134,9 +136,7 @@ class LoadPropertyIC : public PolyIC {
 
     void operator()(LoadPropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
       // own map guard
-      as->mov(r10, core::BitCast<uintptr_t>(map_));
-      as->cmp(r10, qword[r8 + JSObject::MapOffset()]);
-      as->jne(fail);
+      IC::TestMap(as, map_, r8, r10, fail);
       // load
       LoadPropertyIC::GenerateFastLoad(as, r8, offset_);
     }
@@ -151,6 +151,8 @@ class LoadPropertyIC : public PolyIC {
     static const Unit::Type kType = Unit::LOAD_PROTOTYPE_PROPERTY;
     static const int kSize = 128;
 
+    std::size_t size() const { return kSize; }
+
     LoadPrototypePropertyCompiler(Map* map, Map* prototype, uint32_t offset)
       : map_(map),
         prototype_(prototype),
@@ -159,16 +161,10 @@ class LoadPropertyIC : public PolyIC {
 
     void operator()(LoadPropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
       // own map guard
-      as->mov(r10, core::BitCast<uintptr_t>(map_));
-      as->cmp(r10, qword[r8 + JSObject::MapOffset()]);
-      as->jne(fail);
+      IC::TestMap(as, map_, r8, r10, fail);
       // prototype map guard
-      as->mov(r11, qword[r8 + JSObject::PrototypeOffset()]);
-      as->mov(r10, core::BitCast<uintptr_t>(prototype_));
-      as->test(r11, r11);
-      as->jz(fail);
-      as->cmp(r10, qword[r11 + JSObject::MapOffset()]);
-      as->jne(fail);
+      as->mov(r11, core::BitCast<uintptr_t>(map_->prototype()));
+      IC::TestMap(as, prototype_, r11, r10, fail);
       // load
       LoadPropertyIC::GenerateFastLoad(as, r11, offset_);
     }
@@ -182,7 +178,9 @@ class LoadPropertyIC : public PolyIC {
   class LoadChainPropertyCompiler {
    public:
     static const Unit::Type kType = Unit::LOAD_CHAIN_PROPERTY;
-    static const int kSize = 256;
+    static const int kSize = 64;
+
+    std::size_t size() const { return kSize * (chain_->size() + 1); }
 
     LoadChainPropertyCompiler(Chain* chain, Map* last, uint32_t offset)
       : map_(last),
@@ -191,50 +189,17 @@ class LoadPropertyIC : public PolyIC {
     }
 
     void operator()(LoadPropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
-      if (chain_->size() < 5) {
-        // unroling
-        Chain::const_iterator it = chain_->begin();
-        const Chain::const_iterator last = chain_->end();
-        assert(it != last);
-        {
-          as->mov(r10, core::BitCast<uintptr_t>(*it));
-          as->cmp(r10, qword[r8 + JSObject::MapOffset()]);
-          as->jne(fail);
-          as->mov(r11, qword[r8 + JSObject::PrototypeOffset()]);
-          ++it;
-        }
-        for (; it != last; ++it) {
-          as->mov(r10, core::BitCast<uintptr_t>(*it));
-          as->test(r11, r11);
-          as->jz(fail);
-          as->cmp(r10, qword[r11 + JSObject::MapOffset()]);
-          as->jne(fail);
-          as->mov(r11, qword[r11 + JSObject::PrototypeOffset()]);
-        }
-      } else {
-        as->mov(r11, r8);
-        as->mov(r10, core::BitCast<uintptr_t>(chain_->data()));
-        as->xor(r9, r9);
-        as->L(".LOOP_HEAD");
-        {
-          as->mov(r10, qword[r10 + r9 * k64Size]);
-          as->test(r11, r11);
-          as->jz(fail);
-          as->cmp(r10, qword[r11 + JSObject::MapOffset()]);
-          as->jne(fail);
-          as->mov(r11, qword[r11 + JSObject::PrototypeOffset()]);
-          as->inc(r9);
-          as->cmp(r9, chain_->size());
-          as->jl(".LOOP_HEAD");
-        }
+      JSObject* prototype = NULL;
+      as->mov(r11, r8);
+      for (Chain::const_iterator it = chain_->begin(),
+           last = chain_->end(); it != last; ++it) {
+        Map* map = *it;
+        IC::TestMap(as, map, r11, r10, fail, Xbyak::CodeGenerator::T_NEAR);
+        prototype = map->prototype();
+        as->mov(r11, core::BitCast<uintptr_t>(prototype));
       }
-
       // last check
-      as->mov(r10, core::BitCast<uintptr_t>(map_));
-      as->test(r11, r11);
-      as->jz(fail);
-      as->cmp(r10, qword[r11 + JSObject::MapOffset()]);
-      as->jne(fail);
+      IC::TestMap(as, map_, r11, r10, fail, Xbyak::CodeGenerator::T_NEAR);
       // load
       LoadPropertyIC::GenerateFastLoad(as, r11, offset_);
     }
@@ -249,6 +214,8 @@ class LoadPropertyIC : public PolyIC {
    public:
     static const Unit::Type kType = Unit::LOAD_ARRAY_LENGTH;
     static const int kSize = 128;
+
+    std::size_t size() const { return kSize; }
     void operator()(LoadPropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
       const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
       // check target class is Array
@@ -379,7 +346,7 @@ class LoadPropertyIC : public PolyIC {
 
     Unit* ic = new Unit(Generator::kType);
 
-    NativeCode::Pages::Buffer buffer = native_code()->pages()->Gain(Generator::kSize);
+    NativeCode::Pages::Buffer buffer = native_code()->pages()->Gain(gen.size());
     Xbyak::CodeGenerator as(buffer.size, buffer.ptr);
     const bool generate_guard = empty();
 
@@ -402,7 +369,7 @@ class LoadPropertyIC : public PolyIC {
     }
     push_back(*ic);
     object_chain_ = ic;
-    assert(as.getSize() <= Generator::kSize);
+    assert(as.getSize() <= gen.size());
     return ic;
   }
 
@@ -469,6 +436,8 @@ class StorePropertyIC : public PolyIC {
     static const Unit::Type kType = Unit::STORE_REPLACE_PROPERTY;
     static const int kSize = 128;
 
+    std::size_t size() const { return kSize; }
+
     StoreReplacePropertyCompiler(Map* map, uint32_t offset)
       : map_(map),
         offset_(offset) {
@@ -493,6 +462,8 @@ class StorePropertyIC : public PolyIC {
     static const Unit::Type kType = Unit::STORE_REPLACE_PROPERTY_WITH_MAP_TRANSITION;
     static const int kSize = 128;
 
+    std::size_t size() const { return kSize; }
+
     StoreReplacePropertyWithMapTransitionCompiler(Map* map, Map* transit, uint32_t offset)
       : map_(map),
         transit_(transit),
@@ -501,9 +472,7 @@ class StorePropertyIC : public PolyIC {
 
     void operator()(StorePropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
       // own map guard
-      as->mov(r10, core::BitCast<uintptr_t>(map_));
-      as->cmp(r10, qword[rsi + JSObject::MapOffset()]);
-      as->jne(fail);
+      IC::TestMap(as, map_, rsi, r10, fail);
       // transition
       as->mov(r10, core::BitCast<uintptr_t>(transit_));
       as->mov(qword[rsi + JSObject::MapOffset()], r10);
@@ -520,7 +489,9 @@ class StorePropertyIC : public PolyIC {
   class StoreNewPropertyCompiler {
    public:
     static const Unit::Type kType = Unit::STORE_NEW_PROPERTY;
-    static const int kSize = 256;
+    static const int kSize = 64;
+
+    std::size_t size() const { return kSize * (chain_->size() + 1); }
 
     StoreNewPropertyCompiler(Chain* chain, Map* transit, uint32_t offset)
       : chain_(chain),
@@ -529,46 +500,16 @@ class StorePropertyIC : public PolyIC {
     }
 
     void operator()(StorePropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
-      if (chain_->size() < 5) {
-        // unroling
-        Chain::const_iterator it = chain_->begin();
-        const Chain::const_iterator last = chain_->end();
-        assert(it != last);
-        {
-          as->mov(r10, core::BitCast<uintptr_t>(*it));
-          as->cmp(r10, qword[rsi + JSObject::MapOffset()]);
-          as->jne(fail);
-          as->mov(r11, qword[rsi + JSObject::PrototypeOffset()]);
-          ++it;
-        }
-        for (; it != last; ++it) {
-          as->mov(r10, core::BitCast<uintptr_t>(*it));
-          as->test(r11, r11);
-          as->jz(fail);
-          as->cmp(r10, qword[r11 + JSObject::MapOffset()]);
-          as->jne(fail);
-          as->mov(r11, qword[r11 + JSObject::PrototypeOffset()]);
-        }
-      } else {
-        as->mov(r11, rsi);
-        as->mov(r10, core::BitCast<uintptr_t>(chain_->data()));
-        as->xor(r9, r9);
-        as->L(".LOOP_HEAD");
-        {
-          as->mov(r10, qword[r10 + r9 * k64Size]);
-          as->test(r11, r11);
-          as->jz(fail);
-          as->cmp(r10, qword[r11 + JSObject::MapOffset()]);
-          as->jne(fail);
-          as->mov(r11, qword[r11 + JSObject::PrototypeOffset()]);
-          as->inc(r9);
-          as->cmp(r9, chain_->size());
-          as->jl(".LOOP_HEAD");
-        }
+      JSObject* prototype = NULL;
+      as->mov(r11, rsi);
+      for (Chain::const_iterator it = chain_->begin(),
+           last = chain_->end(); it != last; ++it) {
+        Map* map = *it;
+        IC::TestMap(as, map, r11, r10, fail, Xbyak::CodeGenerator::T_NEAR);
+        prototype = map->prototype();
+        as->mov(r11, core::BitCast<uintptr_t>(prototype));
       }
-
-      as->test(r11, r11);  // last should be NULL
-      as->jnz(fail);
+      assert(prototype == NULL);  // last is NULL
       // transition
       as->mov(r10, core::BitCast<uintptr_t>(transit_));
       as->mov(qword[rsi + JSObject::MapOffset()], r10);
@@ -641,7 +582,7 @@ class StorePropertyIC : public PolyIC {
 
     Unit* ic = new Unit(Generator::kType);
 
-    NativeCode::Pages::Buffer buffer = native_code()->pages()->Gain(Generator::kSize);
+    NativeCode::Pages::Buffer buffer = native_code()->pages()->Gain(gen.size());
     Xbyak::CodeGenerator as(buffer.size, buffer.ptr);
     const bool generate_guard = empty();
 
@@ -662,7 +603,7 @@ class StorePropertyIC : public PolyIC {
       GenerateGuardEpilogue(&as);
     }
     push_back(*ic);
-    assert(as.getSize() <= Generator::kSize);
+    assert(as.getSize() <= gen.size());
     return ic;
   }
 

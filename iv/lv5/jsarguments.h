@@ -42,7 +42,6 @@ class JSNormalArguments : public JSObject {
     JSNormalArguments* const obj = new JSNormalArguments(ctx, env);
     const uint32_t len = static_cast<uint32_t>(std::distance(it, last));
     obj->set_cls(JSArguments::GetClass());
-    obj->set_prototype(ctx->global_data()->object_prototype());
     bind::Object binder(ctx, obj);
     binder
         .def(symbol::length(),
@@ -211,7 +210,7 @@ class JSNormalArguments : public JSObject {
 
  private:
   JSNormalArguments(Context* ctx, JSDeclEnv* env)
-    : JSObject(Map::NewUniqueMap(ctx)),
+    : JSObject(Map::NewUniqueMap(ctx, ctx->global_data()->object_prototype())),
       env_(env),
       mapping_() { }
 
@@ -263,7 +262,6 @@ class JSStrictArguments : public JSObject {
     JSStrictArguments* const obj = new JSStrictArguments(ctx);
     const uint32_t len = static_cast<uint32_t>(std::distance(it, last));
     obj->set_cls(JSArguments::GetClass());
-    obj->set_prototype(ctx->global_data()->object_prototype());
     bind::Object binder(ctx, obj);
     binder
         .def(symbol::length(),
@@ -301,7 +299,7 @@ class JSStrictArguments : public JSObject {
 
  private:
   explicit JSStrictArguments(Context* ctx)
-    : JSObject(Map::NewUniqueMap(ctx)) {
+    : JSObject(Map::NewUniqueMap(ctx, ctx->global_data()->object_prototype())) {
   }
 };
 

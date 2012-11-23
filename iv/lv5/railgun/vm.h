@@ -536,8 +536,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
           obj = base.object();
         }
         JSObject* proto = obj->prototype();
-        if (instr[2].map == obj->map() &&
-            proto && instr[3].map == proto->map()) {
+        if (instr[2].map == obj->map() && proto->map() == instr[3].map) {
           // cache hit
           REG(instr[1].ssw.i16[0]) = proto->Direct(instr[4].u32[0]);
         } else {
@@ -2015,12 +2014,9 @@ JSVal VM::Execute(Frame* start, Error* e) {
           frame = new_frame;
           instr = frame->data();
           strict = code->strict();
-          JSObject* const obj = JSObject::New(ctx(), code->ConstructMap(ctx()));
+          Map* map = func->construct_map(ctx(), ERR);
+          JSObject* const obj = JSObject::New(ctx(), map);
           frame->set_this_binding(obj);
-          const JSVal proto = func->Get(ctx(), symbol::prototype(), ERR);
-          if (proto.IsObject()) {
-            obj->set_prototype(proto.object());
-          }
           frame->InitThisBinding(ctx());
           DISPATCH_WITH_NO_INCREMENT();
         }

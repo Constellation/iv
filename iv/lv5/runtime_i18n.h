@@ -96,8 +96,7 @@ inline JSVal NumberFormatConstructor(const Arguments& args, Error* e) {
   const JSVal options = args.At(1);
   if (args.IsConstructorCalled() || t.IsUndefined() || JSVal::SameValue(t, ctx->intl())) {
     // FIXME(Constellation) this isn't abstracted.
-    obj = JSObject::New(ctx);
-    obj->set_prototype(ctx->number_format_prototype());
+    obj = JSObject::New(ctx, Map::NewUniqueMap(ctx, ctx->number_format_prototype()));
   } else {
     obj = t.ToObject(ctx, IV_LV5_ERROR(e));
   }

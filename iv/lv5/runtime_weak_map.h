@@ -22,8 +22,7 @@ inline JSVal WeakMapConstructor(const Arguments& args, Error* e) {
       JSVal::StrictEqual(this_binding, ctx->global_data()->weak_map_prototype())) {
     map = JSObject::New(
         ctx,
-        ctx->global_data()->weak_map_map(),
-        ctx->global_data()->weak_map_prototype());
+        ctx->global_data()->weak_map_map());
   } else {
     map = this_binding.ToObject(ctx, IV_LV5_ERROR(e));
   }

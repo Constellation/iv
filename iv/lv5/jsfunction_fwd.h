@@ -73,8 +73,13 @@ class JSFunction : public JSObject {
                                      bool th, Error* e);
 
   void Initialize(Context* ctx);
+
+  Map* construct_map(Context* ctx, Error* e);
  protected:
   explicit JSFunction(Context* ctx);
+  JSFunction(Context* ctx, Map* map);
+
+  Map* construct_map_;
 };
 
 class JSNativeFunction : public JSFunction {
@@ -219,19 +224,33 @@ class JSInlinedFunction : public JSFunction {
 
   virtual JSAPI NativeFunction() const { return func; }
 
-  static this_type* New(Context* ctx, const Symbol& name) {
+  static this_type* New(Context* ctx, Symbol name) {
     this_type* const obj = new this_type(ctx, name);
     obj->Initialize(ctx);
     return obj;
   }
 
-  static this_type* NewPlain(Context* ctx, const Symbol& name) {
+  static this_type* NewPlain(Context* ctx, Symbol name) {
     return new this_type(ctx, name);
   }
 
+  static this_type* NewPlain(Context* ctx, Symbol name, Map* map) {
+    return new this_type(ctx, name, map);
+  }
+
  private:
-  JSInlinedFunction(Context* ctx, const Symbol& name)
+  JSInlinedFunction(Context* ctx, Symbol name)
     : JSFunction(ctx) {
+    DefineOwnProperty(
+        ctx, symbol::length(),
+        DataDescriptor(JSVal::UInt32(n), ATTR::NONE), false, NULL);
+    DefineOwnProperty(
+        ctx, symbol::name(),
+        DataDescriptor(JSString::New(ctx, name), ATTR::NONE), false, NULL);
+  }
+
+  JSInlinedFunction(Context* ctx, Symbol name, Map* map)
+    : JSFunction(ctx, map) {
     DefineOwnProperty(
         ctx, symbol::length(),
         DataDescriptor(JSVal::UInt32(n), ATTR::NONE), false, NULL);

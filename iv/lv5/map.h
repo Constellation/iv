@@ -177,8 +177,8 @@ class Map : public radio::HeapObject<radio::POINTER> {
 
   static const std::size_t kMaxTransition = 32;
 
-  static Map* NewUniqueMap(Context* ctx) {
-    return new Map(UniqueTag());
+  static Map* NewUniqueMap(Context* ctx, JSObject* prototype) {
+    return new Map(prototype, UniqueTag());
   }
 
   static Map* NewUniqueMap(Context* ctx, Map* previous) {
@@ -186,8 +186,8 @@ class Map : public radio::HeapObject<radio::POINTER> {
     return new Map(previous, UniqueTag());
   }
 
-  static Map* New(Context* ctx) {
-    return new Map();
+  static Map* New(Context* ctx, JSObject* prototype) {
+    return new Map(prototype);
   }
 
   // If unique map is provided, copy this.
@@ -337,6 +337,43 @@ class Map : public radio::HeapObject<radio::POINTER> {
   bool IsUnique() const {
     return !transitions_.IsEnabled();
   }
+
+  JSObject* prototype() const { return prototype_; }
+
+  Map* ChangePrototypeWithNoTransition(JSObject* prototype) {
+    prototype_ = prototype;
+    return this;
+  }
+
+  Map* ChangePrototypeTransition(Context* ctx, JSObject* prototype) {
+    if (IsUnique()) {
+      // extend this map with no transition
+      Map* map = NULL;
+      if (transitions_.IsEnabledUniqueTransition()) {
+        map = NewUniqueMap(ctx, this);
+      } else {
+        map = this;
+      }
+      map->prototype_ = prototype;
+      return map;
+    }
+
+    if (transit_count_ > kMaxTransition) {
+      // stop transition
+      Map* map = NewUniqueMap(ctx, this);
+      // go to above unique path
+      return map->ChangePrototypeTransition(ctx, prototype);
+    }
+
+    Map* map = New(ctx, this);
+
+    map->transit_count_ = transit_count_ + 1;
+    map->prototype_ = prototype;
+    return map;
+
+  }
+
+  static std::size_t PrototypeOffset() { return IV_OFFSETOF(Map, prototype_); }
  private:
   bool HasTable() const {
     return table_;
@@ -348,8 +385,9 @@ class Map : public radio::HeapObject<radio::POINTER> {
   }
 
   // empty not unique map
-  Map()
-    : previous_(NULL),
+  Map(JSObject* prototype)
+    : prototype_(prototype),
+      previous_(NULL),
       table_(NULL),
       transitions_(true),
       deleted_(),
@@ -359,7 +397,8 @@ class Map : public radio::HeapObject<radio::POINTER> {
   }
 
   explicit Map(Map* previous)
-    : previous_(previous),
+    : prototype_(previous->prototype()),
+      previous_(previous),
       table_(NULL),
       transitions_(true),
       deleted_(previous->deleted_),
@@ -369,8 +408,9 @@ class Map : public radio::HeapObject<radio::POINTER> {
   }
 
   // empty unique table
-  explicit Map(UniqueTag dummy)
-    : previous_(NULL),
+  explicit Map(JSObject* prototype, UniqueTag dummy)
+    : prototype_(prototype),
+      previous_(NULL),
       table_(NULL),
       transitions_(false),
       deleted_(),
@@ -380,7 +420,8 @@ class Map : public radio::HeapObject<radio::POINTER> {
   }
 
   Map(Map* previous, UniqueTag dummy)
-    : previous_(previous),
+    : prototype_(previous->prototype()),
+      previous_(previous),
       table_((previous->IsUnique()) ? previous->table_ : NULL),
       transitions_(false),
       deleted_(previous->deleted_),
@@ -389,10 +430,11 @@ class Map : public radio::HeapObject<radio::POINTER> {
       transit_count_(0) {
   }
 
-  explicit Map(TargetTable* table)
-    : previous_(NULL),
+  explicit Map(TargetTable* table, JSObject* prototype, bool unique)
+    : prototype_(prototype),
+      previous_(NULL),
       table_(table),
-      transitions_(true),
+      transitions_(!unique),
       deleted_(),
       added_(std::make_pair(symbol::kDummySymbol, Entry::NotFound())),
       calculated_size_(GetSlotsSize()),
@@ -402,7 +444,8 @@ class Map : public radio::HeapObject<radio::POINTER> {
   // ObjectLiteral Map
   template<typename Iter>
   Map(Iter it, Iter last)
-    : previous_(NULL),
+    : prototype_(NULL),
+      previous_(NULL),
       table_(new(GC)TargetTable(it, last)),
       transitions_(true),
       deleted_(),
@@ -480,6 +523,7 @@ class Map : public radio::HeapObject<radio::POINTER> {
     it->second.attributes = attributes;
   }
 
+  JSObject* prototype_;
   Map* previous_;
   TargetTable* table_;
   Transitions transitions_;
@@ -491,10 +535,12 @@ class Map : public radio::HeapObject<radio::POINTER> {
 
 class MapBuilder {
  public:
-  explicit MapBuilder(Context* ctx)
-    : table_(new(GC)Map::TargetTable()) { }
+  explicit MapBuilder(Context* ctx, JSObject* prototype)
+    : ctx_(ctx),
+      table_(new(GC)Map::TargetTable()),
+      prototype_(prototype) { }
 
-  Map* Build() { return new Map(table_); }
+  Map* Build(bool unique = false) { return new Map(table_, prototype_, unique); }
 
   void Add(Symbol symbol, std::size_t index, Attributes::Safe attributes) {
     assert(Find(symbol).IsNotFound());
@@ -524,6 +570,7 @@ class MapBuilder {
  private:
   Context* ctx_;
   Map::TargetTable* table_;
+  JSObject* prototype_;
 };
 
 } }  // namespace iv::lv5

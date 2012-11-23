@@ -181,13 +181,6 @@ class Code : public radio::HeapObject<radio::POINTER> {
     return core_->data();
   }
 
-  Map* ConstructMap(Context* ctx) {
-    if (!construct_map_) {
-      construct_map_ = Map::New(ctx);
-    }
-    return construct_map_;
-  }
-
   void MarkChildren(radio::Core* core) {
     core->MarkCell(script_);
     core_->MarkChildren(core);

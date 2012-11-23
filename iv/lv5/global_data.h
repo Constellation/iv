@@ -30,6 +30,8 @@ class GlobalData {
  public:
   friend class Context;
   typedef core::UniformRandomGenerator<core::Xor128> RandomGenerator;
+  typedef std::array<JSObject*, TypedCode::kNumOfCodes> TypedArrayPrototypes;
+  typedef std::array<Map*, TypedCode::kNumOfCodes> TypedArrayMaps;
 
   explicit GlobalData(Context* ctx)
     : random_generator_(0, 1, static_cast<int>(std::time(NULL))),
@@ -49,21 +51,27 @@ class GlobalData {
       string_string_(),
       string_boolean_(),
       string_empty_regexp_(),
-      empty_object_map_(Map::New(ctx)),
-      function_map_(Map::New(ctx)),
-      array_map_(Map::New(ctx)),
-      string_map_(Map::New(ctx)),
-      boolean_map_(Map::New(ctx)),
-      number_map_(Map::New(ctx)),
-      date_map_(Map::New(ctx)),
+      empty_object_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
+      function_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
+      array_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
+      string_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
+      boolean_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
+      number_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
+      date_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
       regexp_map_(NULL),
-      error_map_(Map::New(ctx)),
-      map_map_(Map::New(ctx)),
-      weak_map_map_(Map::New(ctx)),
-      set_map_(Map::New(ctx)),
+      error_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
+      eval_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
+      range_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
+      reference_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
+      syntax_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
+      type_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
+      uri_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
+      map_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
+      weak_map_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
+      set_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
       array_buffer_map_(NULL),
       data_view_map_(NULL),
-      typed_array_map_(NULL),
+      typed_array_maps_(),
       gc_hook_(this) {
     {
       Error::Dummy e;
@@ -81,42 +89,43 @@ class GlobalData {
       // RegExp Map
       // see also jsregexp.h, JSRegExp::FIELD
       {
-        MapBuilder builder(ctx);
+        MapBuilder builder(ctx, NULL);
         builder.Add(symbol::source(), ATTR::CreateData(ATTR::N));
         builder.Add(symbol::global(), ATTR::CreateData(ATTR::N));
         builder.Add(symbol::ignoreCase(), ATTR::CreateData(ATTR::N));
         builder.Add(symbol::multiline(), ATTR::CreateData(ATTR::N));
         builder.Add(symbol::lastIndex(), ATTR::CreateData(ATTR::W));
-        regexp_map_ = builder.Build();
+        regexp_map_ = builder.Build(false);
       }
 
       // ArrayBuffer Map
       //   see also jsarray_buffer.h, JSArrayBuffer::FIELD
       {
-        MapBuilder builder(ctx);
+        MapBuilder builder(ctx, NULL);
         builder.Add(symbol::byteLength(), ATTR::CreateData(ATTR::N));
-        array_buffer_map_ = builder.Build();
+        array_buffer_map_ = builder.Build(false);
       }
 
       // DataView Map
       //   see also jsdata_view.h, JSDataView::FIELD
       {
-        MapBuilder builder(ctx);
+        MapBuilder builder(ctx, NULL);
         builder.Add(symbol::byteLength(), ATTR::CreateData(ATTR::N));
         builder.Add(symbol::buffer(), ATTR::CreateData(ATTR::N));
         builder.Add(symbol::byteOffset(), ATTR::CreateData(ATTR::N));
-        data_view_map_ = builder.Build();
+        data_view_map_ = builder.Build(false);
       }
 
       // TypedArray Map
       //   see also jstyped_array.h, TypedArrayImpl::FIELD
-      {
-        MapBuilder builder(ctx);
+      for (TypedArrayMaps::iterator it = typed_array_maps_.begin(),
+           last = typed_array_maps_.end(); it != last; ++it) {
+        MapBuilder builder(ctx, NULL);
         builder.Add(symbol::length(), ATTR::CreateData(ATTR::N));
         builder.Add(symbol::byteLength(), ATTR::CreateData(ATTR::N));
         builder.Add(symbol::buffer(), ATTR::CreateData(ATTR::N));
         builder.Add(symbol::byteOffset(), ATTR::CreateData(ATTR::N));
-        typed_array_map_ = builder.Build();
+        *it = builder.Build(false);
       }
     }
   }
@@ -221,12 +230,18 @@ class GlobalData {
   Map* date_map() const { return date_map_; }
   Map* regexp_map() const { return regexp_map_; }
   Map* error_map() const { return error_map_; }
+  Map* eval_error_map() const { return eval_error_map_; }
+  Map* range_error_map() const { return range_error_map_; }
+  Map* reference_error_map() const { return reference_error_map_; }
+  Map* syntax_error_map() const { return syntax_error_map_; }
+  Map* type_error_map() const { return type_error_map_; }
+  Map* uri_error_map() const { return uri_error_map_; }
   Map* map_map() const { return map_map_; }
   Map* weak_map_map() const { return weak_map_map_; }
   Map* set_map() const { return set_map_; }
   Map* array_buffer_map() const { return array_buffer_map_; }
   Map* data_view_map() const { return data_view_map_; }
-  Map* typed_array_map() const { return typed_array_map_; }
+  Map* typed_array_map(TypedCode::Code code) const { return typed_array_maps_[code]; }
 
   void OnGarbageCollect() {
   }
@@ -326,7 +341,7 @@ class GlobalData {
   JSObject* set_prototype_;
   JSObject* array_buffer_prototype_;
   JSObject* data_view_prototype_;
-  std::array<JSObject*, TypedCode::kNumOfCodes> typed_array_prototypes_;
+  TypedArrayPrototypes typed_array_prototypes_;
 
   // builtin maps
   Map* empty_object_map_;
@@ -338,12 +353,18 @@ class GlobalData {
   Map* date_map_;
   Map* regexp_map_;
   Map* error_map_;
+  Map* eval_error_map_;
+  Map* range_error_map_;
+  Map* reference_error_map_;
+  Map* syntax_error_map_;
+  Map* type_error_map_;
+  Map* uri_error_map_;
   Map* map_map_;
   Map* weak_map_map_;
   Map* set_map_;
   Map* array_buffer_map_;
   Map* data_view_map_;
-  Map* typed_array_map_;
+  TypedArrayMaps typed_array_maps_;
 
   GCHook<GlobalData> gc_hook_;
 };

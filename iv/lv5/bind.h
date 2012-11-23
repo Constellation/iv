@@ -32,11 +32,6 @@ class Object : public Scope {
     return *this;
   }
 
-  Object& prototype(JSObject* proto) {
-    obj_->set_prototype(proto);
-    return *this;
-  }
-
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
   Object& def(const core::StringPiece& string) {
     return def<func, n>(ctx_->Intern(string));

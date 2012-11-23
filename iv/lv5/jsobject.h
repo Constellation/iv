@@ -142,13 +142,7 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
     }
   }
 
-  JSObject* prototype() const {
-    return prototype_;
-  }
-
-  void set_prototype(JSObject* obj) {
-    prototype_ = obj;
-  }
+  JSObject* prototype() const;
 
   const Class* cls() const {
     return cls_;
@@ -171,10 +165,6 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
 
   static JSObject* New(Context* ctx, Map* map);
 
-  static JSObject* New(Context* ctx, Map* map, JSObject* prototype);
-
-  static JSObject* NewPlain(Context* ctx);
-
   static JSObject* NewPlain(Context* ctx, Map* map);
 
   inline const JSVal& Direct(std::size_t n) const {
@@ -195,8 +185,9 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
 
   Map* FlattenMap() const;
 
+  void ChangePrototype(Context* ctx, JSObject* proto);
+
   static std::size_t MapOffset() { return IV_OFFSETOF(JSObject, map_); }
-  static std::size_t PrototypeOffset() { return IV_OFFSETOF(JSObject, prototype_); }
   static std::size_t SlotsOffset() { return IV_OFFSETOF(JSObject, slots_); }
   static std::size_t ClassOffset() { return IV_OFFSETOF(JSObject, cls_); }
 
@@ -206,11 +197,10 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
  protected:
   explicit JSObject(Map* map);
 
-  JSObject(Map* map, JSObject* proto, Class* cls, bool extensible);
+  JSObject(Map* map, Class* cls, bool extensible);
 
   const Class* cls_;
   Map* map_;
-  JSObject* prototype_;
   Slots slots_;
   uint32_t flags_;
 };

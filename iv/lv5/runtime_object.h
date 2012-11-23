@@ -158,13 +158,11 @@ inline JSVal ObjectCreate(const Arguments& args, Error* e) {
   if (!args.empty()) {
     const JSVal first = args.front();
     if (first.IsObject() || first.IsNull()) {
-      JSObject* const res = JSObject::New(args.ctx());
+      JSObject* prototype = NULL;
       if (first.IsObject()) {
-        JSObject* const obj = first.object();
-        res->set_prototype(obj);
-      } else {
-        res->set_prototype(NULL);
+        prototype = first.object();
       }
+      JSObject* const res = JSObject::New(args.ctx(), Map::NewUniqueMap(args.ctx(), prototype));
       const JSVal second = args.At(1);
       if (!second.IsUndefined()) {
         JSObject* const props = second.ToObject(args.ctx(), IV_LV5_ERROR(e));

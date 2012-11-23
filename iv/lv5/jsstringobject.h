@@ -11,12 +11,6 @@ class JSStringObject : public JSObject {
  public:
   IV_LV5_DEFINE_JSCLASS(String)
 
-  JSStringObject(Context* ctx, JSString* value)
-    : JSObject(Map::NewUniqueMap(ctx)),
-      value_(value),
-      length_(static_cast<uint32_t>(value->size())) {
-  }
-
   virtual bool GetOwnPropertySlot(Context* ctx,
                                   Symbol name, Slot* slot) const {
     if (name == symbol::length()) {
@@ -24,6 +18,7 @@ class JSStringObject : public JSObject {
       return true;
     }
     if (symbol::IsArrayIndexSymbol(name)) {
+      slot->MakeUnCacheable();
       const uint32_t index = symbol::GetIndexFromSymbol(name);
       if (JSObject::GetOwnPropertySlot(ctx, name, slot)) {
         return true;
@@ -55,14 +50,13 @@ class JSStringObject : public JSObject {
   }
 
   static JSStringObject* New(Context* ctx, JSString* str) {
-    JSStringObject* const obj = new JSStringObject(ctx, str);
+    JSStringObject* const obj = new JSStringObject(ctx, ctx->global_data()->string_map(), str);
     obj->set_cls(JSStringObject::GetClass());
-    obj->set_prototype(ctx->global_data()->string_prototype());
     return obj;
   }
 
-  static JSStringObject* NewPlain(Context* ctx) {
-    return new JSStringObject(ctx, JSString::NewEmptyString(ctx));
+  static JSStringObject* NewPlain(Context* ctx, Map* map) {
+    return new JSStringObject(ctx, map, JSString::NewEmptyString(ctx));
   }
 
   virtual void MarkChildren(radio::Core* core) {
@@ -70,6 +64,12 @@ class JSStringObject : public JSObject {
   }
 
  private:
+  JSStringObject(Context* ctx, Map* map, JSString* value)
+    : JSObject(map),
+      value_(value),
+      length_(static_cast<uint32_t>(value->size())) {
+  }
+
   JSString* value_;
   uint32_t length_;
 };

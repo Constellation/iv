@@ -36,11 +36,8 @@ class JSCodeFunction : public JSFunction {
 
   JSVal Construct(Arguments* args, Error* e) {
     iv::lv5::Context* ctx = args->ctx();
-    JSObject* const obj = JSObject::New(ctx);
-    const JSVal proto = Get(ctx, symbol::prototype(), IV_LV5_ERROR(e));
-    if (proto.IsObject()) {
-      obj->set_prototype(proto.object());
-    }
+    Map* map = construct_map(ctx, IV_LV5_ERROR(e));
+    JSObject* const obj = JSObject::New(ctx, map);
     const JSVal result = Call(args, obj, IV_LV5_ERROR(e));
     if (result.IsObject()) {
       return result;
@@ -121,7 +118,6 @@ class JSCodeFunction : public JSFunction {
         false, &e);
     // section 13.2 Creating Function Objects
     set_cls(JSFunction::GetClass());
-    set_prototype(ctx->global_data()->function_prototype());
 
     JSObject* const proto = JSObject::New(ctx);
     proto->DefineOwnProperty(

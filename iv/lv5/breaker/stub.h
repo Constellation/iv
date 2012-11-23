@@ -568,12 +568,9 @@ inline Rep CONSTRUCT(Frame* stack,
       stack->error->Report(Error::Range, "maximum call stack size exceeded");
       IV_LV5_BREAKER_RAISE();
     }
-    JSObject* const obj = JSObject::New(ctx, code->ConstructMap(ctx));
+    Map* map = func->construct_map(ctx, ERR);
+    JSObject* const obj = JSObject::New(ctx, map);
     new_frame->set_this_binding(obj);
-    const JSVal proto = func->Get(ctx, symbol::prototype(), ERR);
-    if (proto.IsObject()) {
-      obj->set_prototype(proto.object());
-    }
     new_frame->InitThisBinding(ctx);
     *out_frame = new_frame;
     return reinterpret_cast<Rep>(code->executable());

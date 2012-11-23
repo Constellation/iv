@@ -117,7 +117,7 @@ class JSGlobal : public JSObject {
 
  private:
   explicit JSGlobal(Context* ctx)
-    : JSObject(Map::NewUniqueMap(ctx)),
+    : JSObject(Map::NewUniqueMap(ctx, static_cast<JSObject*>(NULL))),
       symbol_map_(),
       variables_() {
     assert(map()->GetSlotsSize() == 0);

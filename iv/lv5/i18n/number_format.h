@@ -15,7 +15,7 @@ class JSNumberFormatHolder : public JSObject {
   typedef GCHandle<core::i18n::NumberFormat> FormatHandle;
 
   explicit JSNumberFormatHolder(Context* ctx, JSString* currency)
-    : JSObject(Map::NewUniqueMap(ctx)),
+    : JSObject(Map::NewUniqueMap(ctx, ctx->global_data()->object_prototype())),
       format_(new FormatHandle()),
       currency_(currency),
       bound_(NULL) { }
@@ -25,7 +25,6 @@ class JSNumberFormatHolder : public JSObject {
                                    core::i18n::NumberFormat* number_format) {
     JSNumberFormatHolder* const format = new JSNumberFormatHolder(ctx, currency);
     format->set_cls(JSObject::GetClass());
-    format->set_prototype(ctx->global_data()->object_prototype());
     format->set_format(number_format);
     return format;
   }

@@ -22,8 +22,7 @@ inline JSVal SetConstructor(const Arguments& args, Error* e) {
       JSVal::StrictEqual(this_binding, ctx->global_data()->set_prototype())) {
     set = JSObject::New(
         ctx,
-        ctx->global_data()->set_map(),
-        ctx->global_data()->set_prototype());
+        ctx->global_data()->set_map());
   } else {
     set = this_binding.ToObject(ctx, IV_LV5_ERROR(e));
   }

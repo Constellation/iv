@@ -26,14 +26,13 @@ class JSError : public JSObject {
   IV_LV5_DEFINE_JSCLASS(Error)
 
   static JSError* New(Context* ctx, Error::Code code, JSString* str) {
-    JSError* const err = new JSError(ctx, code, str);
+    JSError* const err = new JSError(ctx, code, str, ctx->global_data()->error_map());
     err->set_cls(JSError::GetClass());
-    err->set_prototype(ctx->global_data()->error_prototype());
     return err;
   }
 
-  JSError(Context* ctx, Error::Code code, JSString* str)
-    : JSObject(ctx->global_data()->error_map()),
+  JSError(Context* ctx, Error::Code code, JSString* str, Map* map)
+    : JSObject(map),
       code_(code) {
     if (str) {
       DefineOwnProperty(ctx, symbol::message(),
@@ -56,9 +55,8 @@ class JSEvalError : public JSError {
   }
 
   static JSError* New(Context* ctx, JSString* str) {
-    JSError* const err = new JSError(ctx, Error::Eval, str);
+    JSError* const err = new JSError(ctx, Error::Eval, str, ctx->global_data()->eval_error_map());
     err->set_cls(JSEvalError::GetClass());
-    err->set_prototype(ctx->global_data()->eval_error_prototype());
     return err;
   }
 };
@@ -74,9 +72,8 @@ class JSRangeError : public JSError {
   }
 
   static JSError* New(Context* ctx, JSString* str) {
-    JSError* const err = new JSError(ctx, Error::Range, str);
+    JSError* const err = new JSError(ctx, Error::Eval, str, ctx->global_data()->range_error_map());
     err->set_cls(JSRangeError::GetClass());
-    err->set_prototype(ctx->global_data()->range_error_prototype());
     return err;
   }
 };
@@ -92,9 +89,8 @@ class JSReferenceError : public JSError {
   }
 
   static JSError* New(Context* ctx, JSString* str) {
-    JSError* const err = new JSError(ctx, Error::Reference, str);
+    JSError* const err = new JSError(ctx, Error::Eval, str, ctx->global_data()->reference_error_map());
     err->set_cls(JSReferenceError::GetClass());
-    err->set_prototype(ctx->global_data()->reference_error_prototype());
     return err;
   }
 };
@@ -110,9 +106,8 @@ class JSSyntaxError : public JSError {
   }
 
   static JSError* New(Context* ctx, JSString* str) {
-    JSError* const err = new JSError(ctx, Error::Syntax, str);
+    JSError* const err = new JSError(ctx, Error::Eval, str, ctx->global_data()->syntax_error_map());
     err->set_cls(JSSyntaxError::GetClass());
-    err->set_prototype(ctx->global_data()->syntax_error_prototype());
     return err;
   }
 };
@@ -128,9 +123,8 @@ class JSTypeError : public JSError {
   }
 
   static JSError* New(Context* ctx, JSString* str) {
-    JSError* const err = new JSError(ctx, Error::Type, str);
+    JSError* const err = new JSError(ctx, Error::Eval, str, ctx->global_data()->type_error_map());
     err->set_cls(JSTypeError::GetClass());
-    err->set_prototype(ctx->global_data()->type_error_prototype());
     return err;
   }
 };
@@ -146,9 +140,8 @@ class JSURIError : public JSError {
   }
 
   static JSError* New(Context* ctx, JSString* str) {
-    JSError* const err = new JSError(ctx, Error::URI, str);
+    JSError* const err = new JSError(ctx, Error::Eval, str, ctx->global_data()->uri_error_map());
     err->set_cls(JSURIError::GetClass());
-    err->set_prototype(ctx->global_data()->uri_error_prototype());
     return err;
   }
 };

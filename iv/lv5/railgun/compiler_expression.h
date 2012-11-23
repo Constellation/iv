@@ -1022,7 +1022,7 @@ inline void Compiler::Visit(const ObjectLiteral* lit) {
   const std::size_t arg_index = CurrentSize() + 2;
   RegisterID obj = Temporary(dst_);
   Emit<OP::LOAD_OBJECT>(obj, 0u);
-  MapBuilder builder(ctx_);
+  MapBuilder builder(ctx_, ctx_->global_data()->object_prototype());
   const Properties& properties = lit->properties();
   for (Properties::const_iterator it = properties.begin(),
        last = properties.end(); it != last; ++it) {

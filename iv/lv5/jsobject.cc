@@ -19,19 +19,14 @@ namespace lv5 {
 JSObject::JSObject(Map* map)
   : cls_(NULL),
     map_(map),
-    prototype_(NULL),
     slots_(map->GetSlotsSize()),
     flags_() {
   set_extensible(true);
 }
 
-JSObject::JSObject(Map* map,
-                   JSObject* proto,
-                   Class* cls,
-                   bool extensible)
+JSObject::JSObject(Map* map, Class* cls, bool extensible)
   : cls_(cls),
     map_(map),
-    prototype_(proto),
     slots_(map->GetSlotsSize()),
     flags_() {
   set_extensible(extensible);
@@ -326,21 +321,19 @@ bool JSObject::GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
   return false;
 }
 
+void JSObject::ChangePrototype(Context* ctx, JSObject* proto) {
+  set_map(map()->ChangePrototypeTransition(ctx, proto));
+}
+
 JSObject* JSObject::New(Context* ctx) {
-  JSObject* const obj = NewPlain(ctx);
+  JSObject* const obj = NewPlain(ctx, ctx->global_data()->empty_object_map());
   obj->set_cls(JSObject::GetClass());
-  obj->set_prototype(ctx->global_data()->object_prototype());
   return obj;
 }
 
 JSObject* JSObject::New(Context* ctx, Map* map) {
-  return New(ctx, map, ctx->global_data()->object_prototype());
-}
-
-JSObject* JSObject::New(Context* ctx, Map* map, JSObject* prototype) {
   JSObject* const obj = NewPlain(ctx, map);
   obj->set_cls(JSObject::GetClass());
-  obj->set_prototype(prototype);
   return obj;
 }
 
@@ -348,10 +341,6 @@ Map* JSObject::FlattenMap() const {
   // make map transitable
   map_->Flatten();
   return map_;
-}
-
-JSObject* JSObject::NewPlain(Context* ctx) {
-  return new JSObject(ctx->global_data()->empty_object_map());
 }
 
 JSObject* JSObject::NewPlain(Context* ctx, Map* map) {
@@ -366,9 +355,10 @@ void JSObject::MapTransitionWithReallocation(
 }
 
 void JSObject::MarkChildren(radio::Core* core) {
-  core->MarkCell(prototype_);
   core->MarkCell(map_);
   std::for_each(slots_.begin(), slots_.end(), radio::Core::Marker(core));
 }
+
+JSObject* JSObject::prototype() const { return map()->prototype(); }
 
 } }  // namespace iv::lv5

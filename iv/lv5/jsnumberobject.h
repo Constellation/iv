@@ -16,7 +16,6 @@ class JSNumberObject : public JSObject {
   static JSNumberObject* New(Context* ctx, double value) {
     JSNumberObject* const obj = new JSNumberObject(ctx, value);
     obj->set_cls(JSNumberObject::GetClass());
-    obj->set_prototype(ctx->global_data()->number_prototype());
     return obj;
   }
 

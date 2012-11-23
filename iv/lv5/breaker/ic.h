@@ -32,14 +32,14 @@ class IC {
   static std::size_t Generate64Mov(Xbyak::CodeGenerator* as) {
     const uint64_t dummy64 = UINT64_C(0x0FFF000000000000);
     const std::size_t result = as->getSize() + k64MovImmOffset;
-    as->mov(as->rax, dummy64);
+    as->mov(rax, dummy64);
     return result;
   }
 
   // Generate Tail position
   static std::size_t GenerateTail(Xbyak::CodeGenerator* as) {
     const std::size_t result = Generate64Mov(as);
-    as->jmp(as->rax);
+    as->jmp(rax);
     return result;
   }
 
@@ -47,6 +47,17 @@ class IC {
     for (size_t i = 0; i < size; i++) {
       data[i] = static_cast<uint8_t>(disp >> (i * 8));
     }
+  }
+
+  static void TestMap(
+      Xbyak::CodeGenerator* as, Map* map,
+      const Xbyak::Reg64& obj,
+      const Xbyak::Reg64& tmp,
+      const char* fail,
+      Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
+    as->mov(tmp, core::BitCast<uintptr_t>(map));
+    as->cmp(tmp, qword[obj + JSObject::MapOffset()]);
+    as->jne(fail, type);
   }
  private:
   Type type_;

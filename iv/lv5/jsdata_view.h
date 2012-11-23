@@ -27,7 +27,6 @@ class JSDataView : public JSObject {
     JSDataView* obj =
         NewPlain(ctx, buf, offset, len, ctx->global_data()->data_view_map());
     obj->set_cls(GetClass());
-    obj->set_prototype(ctx->global_data()->data_view_prototype());
     return obj;
   }
 

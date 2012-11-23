@@ -15,7 +15,6 @@ class JSBooleanObject : public JSObject {
   static JSBooleanObject* New(Context* ctx, bool value) {
     JSBooleanObject* const obj = new JSBooleanObject(ctx, value);
     obj->set_cls(JSBooleanObject::GetClass());
-    obj->set_prototype(ctx->global_data()->boolean_prototype());
     return obj;
   }
 

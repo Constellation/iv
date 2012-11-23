@@ -26,11 +26,8 @@ class JSVMFunction : public JSFunction {
 
   virtual JSVal Construct(Arguments* args, Error* e) {
     Context* const ctx = static_cast<Context*>(args->ctx());
-    JSObject* const obj = JSObject::New(ctx, code_->ConstructMap(ctx));
-    const JSVal proto = Get(ctx, symbol::prototype(), IV_LV5_ERROR(e));
-    if (proto.IsObject()) {
-      obj->set_prototype(proto.object());
-    }
+    Map* map = construct_map(ctx, IV_LV5_ERROR(e));
+    JSObject* const obj = JSObject::New(ctx, map);
     assert(args->IsConstructorCalled());
     return JSVMFunction::Call(args, obj, e);
   }
@@ -76,7 +73,6 @@ class JSVMFunction : public JSFunction {
         false, &e);
     // section 13.2 Creating Function Objects
     set_cls(JSFunction::GetClass());
-    set_prototype(ctx->global_data()->function_prototype());
 
     JSObject* const proto = JSObject::New(ctx);
     proto->DefineOwnProperty(

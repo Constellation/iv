@@ -234,7 +234,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx,
   // create Object that have options as [[Prototype]]
   {
     JSObject* tmp = JSObject::New(ctx);
-    tmp->set_prototype(options);
+    tmp->ChangePrototype(ctx, options);
     options = tmp;
   }
 
