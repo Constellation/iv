@@ -1064,15 +1064,16 @@ inline Rep STORE_PROP(Frame* stack, JSVal base, JSVal src, StorePropertyIC* ic) 
   // cache it, new
   assert(previous != obj->map());
 
+  Chain* chain = Chain::New(obj, NULL);  // list up all maps
+  (*chain)[0] = previous;  // first is previous
+
   if (previous->StorageCapacity() == obj->map()->StorageCapacity()) {
     // reallocation is not necessary
-    Chain* chain = Chain::New(obj, NULL);  // list up all maps
-    (*chain)[0] = previous;  // first is previous
     ic->StoreNewProperty(chain, obj->map(), slot.offset());
     return 0;
   }
 
-  // ic->StoreNewPropertyWithReallocation(previous, obj->map(), slot.offset());
+  ic->StoreNewPropertyWithReallocation(chain, obj->map(), slot.offset());
   return 0;
 }
 

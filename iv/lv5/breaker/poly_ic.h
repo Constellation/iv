@@ -523,6 +523,45 @@ class StorePropertyIC : public PolyIC {
     uint32_t offset_;
   };
 
+  class StoreNewPropertyWithReallocationCompiler {
+   public:
+    static const Unit::Type kType = Unit::STORE_NEW_PROPERTY;
+    static const int kSize = 64;
+
+    std::size_t size() const { return kSize * (chain_->size() + 1); }
+
+    StoreNewPropertyWithReallocationCompiler(Chain* chain, Map* transit, uint32_t offset)
+      : chain_(chain),
+        transit_(transit),
+        offset_(offset) {
+    }
+
+    void operator()(StorePropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
+      JSObject* prototype = NULL;
+      as->mov(r11, rsi);
+      for (Chain::const_iterator it = chain_->begin(),
+           last = chain_->end(); it != last; ++it) {
+        Map* map = *it;
+        IC::TestMap(as, map, r11, r10, fail, Xbyak::CodeGenerator::T_NEAR);
+        prototype = map->prototype();
+        as->mov(r11, core::BitCast<uintptr_t>(prototype));
+      }
+      assert(prototype == NULL);  // last is NULL
+      // call
+      as->mov(rdi, rsi);
+      as->mov(rsi, rdx);
+      as->mov(rdx, core::BitCast<uintptr_t>(transit_));
+      as->mov(ecx, offset_);
+      as->mov(rax, core::BitCast<uintptr_t>(&JSObject::MapTransitionWithReallocation));
+      as->jmp(rax);
+    }
+
+   private:
+    Chain* chain_;
+    Map* transit_;
+    uint32_t offset_;
+  };
+
   void StoreReplaceProperty(Map* map, uint32_t offset) {
     if (Unit* ic = Generate(StoreReplacePropertyCompiler(map, offset))) {
       ic->set_own(map);
@@ -544,7 +583,7 @@ class StorePropertyIC : public PolyIC {
   }
 
   void StoreNewPropertyWithReallocation(Chain* chain, Map* transit, uint32_t offset) {
-    if (Unit* ic = Generate(StoreNewPropertyCompiler(chain, transit, offset))) {
+    if (Unit* ic = Generate(StoreNewPropertyWithReallocationCompiler(chain, transit, offset))) {
       ic->set_own(transit);
       ic->set_chain(chain);
     }

@@ -466,7 +466,11 @@ inline void JSLayout::set_value(double val) {
   const int32_t i = static_cast<int32_t>(val);
   if (val != i || (!i && core::math::Signbit(val))) {
     // this value is not represented by int32_t
+#if defined(IV_CPU_X64)
+    value_.number_.as_ = val;
+#else
     value_.number_.as_ = (val == val) ? val : core::kNaN;
+#endif  // defined(IV_CPU_X64)
   } else {
     set_value_int32(i);
   }
