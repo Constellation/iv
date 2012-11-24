@@ -954,25 +954,25 @@ inline Rep STORE_PROP_GENERIC(Frame* stack, JSVal base, JSVal src, StoreProperty
   return 0;
 }
 
-inline Rep LOAD_PROP_GENERIC(Frame* stack, JSVal base, LoadPropertyIC* site) {  // NOLINT
+inline Rep LOAD_PROP_GENERIC(Frame* stack, JSVal base, LoadPropertyIC* ic) {  // NOLINT
   Slot slot;
-  const JSVal res = base.GetSlot(stack->ctx, site->name(), &slot, ERR);
+  const JSVal res = base.GetSlot(stack->ctx, ic->name(), &slot, ERR);
   return Extract(res);
 }
 
-inline Rep LOAD_PROP(Frame* stack, JSVal base, LoadPropertyIC* site) {  // NOLINT
-  assert(!symbol::IsArrayIndexSymbol(site->name()));
+inline Rep LOAD_PROP(Frame* stack, JSVal base, LoadPropertyIC* ic) {  // NOLINT
+  assert(!symbol::IsArrayIndexSymbol(ic->name()));
   Context* ctx = stack->ctx;
   Slot slot;
-  const Symbol name = site->name();
+  const Symbol name = ic->name();
 
   // String / Array length fast path
   if (name == symbol::length()) {
     if (base.IsString()) {
-      site->LoadStringLength(ctx);
+      ic->LoadStringLength(ctx);
       return Extract(JSVal::UInt32(base.string()->size()));
     } else if (base.IsObject() && base.object()->IsClass<Class::Array>()) {
-      site->LoadArrayLength(ctx);
+      ic->LoadArrayLength(ctx);
       return Extract(JSVal::UInt32(static_cast<JSArray*>(base.object())->GetLength()));
     }
   }
@@ -988,7 +988,6 @@ inline Rep LOAD_PROP(Frame* stack, JSVal base, LoadPropertyIC* site) {  // NOLIN
   // uncacheable path
   if (!slot.IsLoadCacheable() || !base.IsCell()) {
     // bailout to generic
-    // TODO(Constellation) insert generic IC
     return Extract(res);
   }
 
@@ -1003,19 +1002,19 @@ inline Rep LOAD_PROP(Frame* stack, JSVal base, LoadPropertyIC* site) {  // NOLIN
   // own property / proto property / chain lookup property
   if (slot.base() == obj) {
     // own property
-    site->LoadOwnProperty(ctx, obj->map(), slot.offset());
+    ic->LoadOwnProperty(ctx, obj->map(), slot.offset());
     return Extract(res);
   }
 
   if (slot.base() == obj->prototype()) {
     // proto property
     obj->FlattenMap();
-    site->LoadPrototypeProperty(ctx, obj->map(), slot.base()->map(), slot.offset());
+    ic->LoadPrototypeProperty(ctx, obj->map(), slot.base()->map(), slot.offset());
     return Extract(res);
   }
 
   // chain property
-  site->LoadChainProperty(ctx, Chain::New(obj, slot.base()), slot.base()->map(), slot.offset());
+  ic->LoadChainProperty(ctx, Chain::New(obj, slot.base()), slot.base()->map(), slot.offset());
   return Extract(res);
 }
 
