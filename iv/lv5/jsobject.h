@@ -25,7 +25,18 @@ class Error;
 class JSObject : public radio::HeapObject<radio::OBJECT> {
  public:
   IV_LV5_DEFINE_JSCLASS(Object)
+
+  // structure for normal property (hash map is defined in Map)
   typedef FixedStorage<JSVal> Slots;
+
+  // structures for indexed elements
+  typedef GCHashMap<uint32_t, StoredSlot>::type SparseArrayMap;
+  typedef Storage<JSVal> DenseArrayVector;
+  struct IndexedElements {
+    uint32_t length;
+    DenseArrayVector vector;
+    SparseArrayMap* map;
+  };
 
   static const uint32_t kFlagExtensible = 0x1;
   static const uint32_t kFlagCallable = 0x2;
