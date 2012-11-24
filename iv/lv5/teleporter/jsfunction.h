@@ -61,14 +61,6 @@ class JSCodeFunction : public JSFunction {
     return new JSCodeFunction(ctx, func, script, env);
   }
 
-  bool IsNativeFunction() const {
-    return false;
-  }
-
-  bool IsBoundFunction() const {
-    return false;
-  }
-
   core::UStringPiece GetSource() const {
     const std::size_t start_pos = function_->block_begin_position();
     const std::size_t end_pos = function_->block_end_position();
@@ -81,10 +73,6 @@ class JSCodeFunction : public JSFunction {
     } else {
       return core::UStringPiece();
     }
-  }
-
-  bool IsStrict() const {
-    return function_->strict();
   }
 
   void MarkChildren(radio::Core* core) {
@@ -105,7 +93,7 @@ class JSCodeFunction : public JSFunction {
                  const FunctionLiteral* func,
                  JSScript* script,
                  JSEnv* env)
-    : JSFunction(ctx),
+    : JSFunction(ctx, FUNCTION_USER, func->strict()),
       function_(func),
       script_(script),
       env_(env) {

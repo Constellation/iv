@@ -37,17 +37,11 @@ class JSVMFunction : public JSFunction {
     return new JSVMFunction(ctx, code, env);
   }
 
-  virtual bool IsNativeFunction() const { return false; }
-
-  virtual bool IsBoundFunction() const { return false; }
-
   virtual core::UStringPiece GetSource() const {
     const std::size_t start_pos = code_->block_begin_position();
     const std::size_t end_pos = code_->block_end_position();
     return code_->script()->SubString(start_pos, end_pos - start_pos);
   }
-
-  virtual bool IsStrict() const { return code_->strict(); }
 
   virtual void MarkChildren(radio::Core* core) {
     core->MarkCell(code_);
@@ -61,7 +55,7 @@ class JSVMFunction : public JSFunction {
  protected:
   JSVMFunction(Context* ctx,
                railgun::Code* code, JSEnv* env)
-    : JSFunction(ctx),
+    : JSFunction(ctx, FUNCTION_USER, code->strict()),
       code_(code),
       env_(env) {
     Error::Dummy e;

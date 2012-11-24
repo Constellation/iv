@@ -69,24 +69,15 @@ class JSDateTimeFormatBoundFunction : public JSFunction {
     return JSEmpty;
   }
 
-  virtual bool IsNativeFunction() const { return true; }
-
-  virtual bool IsBoundFunction() const { return false; }
-
-  virtual bool IsStrict() const { return false; }
-
   virtual JSAPI NativeFunction() const { return NULL; }
 
   static JSDateTimeFormatBoundFunction* New(Context* ctx, JSDateTimeFormatHolder* format) {
-    JSDateTimeFormatBoundFunction* const obj =
-        new JSDateTimeFormatBoundFunction(ctx, format);
-    obj->Initialize(ctx);
-    return obj;
+    return new JSDateTimeFormatBoundFunction(ctx, format);
   }
 
  private:
   explicit JSDateTimeFormatBoundFunction(Context* ctx, JSDateTimeFormatHolder* format)
-    : JSFunction(ctx),
+    : JSFunction(ctx, FUNCTION_NATIVE, false),
       format_(format) {
     Error::Dummy dummy;
     DefineOwnProperty(

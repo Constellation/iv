@@ -200,12 +200,6 @@ class JSCollatorBoundFunction : public JSFunction {
     return JSEmpty;
   }
 
-  virtual bool IsNativeFunction() const { return true; }
-
-  virtual bool IsBoundFunction() const { return false; }
-
-  virtual bool IsStrict() const { return false; }
-
   virtual JSAPI NativeFunction() const { return NULL; }
 
   static JSCollatorBoundFunction* New(Context* ctx, JSCollator* collator) {
@@ -217,7 +211,7 @@ class JSCollatorBoundFunction : public JSFunction {
 
  private:
   explicit JSCollatorBoundFunction(Context* ctx, JSCollator* collator)
-    : JSFunction(ctx),
+    : JSFunction(ctx, FUNCTION_NATIVE, false),
       collator_(collator) {
     Error::Dummy dummy;
     DefineOwnProperty(

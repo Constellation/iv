@@ -18,6 +18,12 @@ class JSFunction : public JSObject {
  public:
   IV_LV5_DEFINE_JSCLASS(Function)
 
+  enum Type {
+    FUNCTION_NATIVE,
+    FUNCTION_BOUND,
+    FUNCTION_USER
+  };
+
   virtual JSVal Call(Arguments* args, JSVal this_binding, Error* e) = 0;
 
   virtual JSVal Construct(Arguments* args, Error* e) = 0;
@@ -44,12 +50,7 @@ class JSFunction : public JSObject {
     return false;
   }
 
-  // implementation is in slot.h
   virtual JSVal GetSlot(Context* ctx, Symbol name, Slot* slot, Error* e);
-
-  virtual bool IsNativeFunction() const = 0;
-
-  virtual bool IsBoundFunction() const = 0;
 
   virtual JSAPI NativeFunction() const { return NULL; }
 
@@ -63,8 +64,8 @@ class JSFunction : public JSObject {
     return core::UString();
   }
 
-  virtual bool IsStrict() const = 0;
-
+  bool strict() const { return strict_; }
+  Type function_type() const { return type_; }
 
   virtual bool DefineOwnPropertySlot(Context* ctx,
                                      Symbol name,
@@ -72,13 +73,13 @@ class JSFunction : public JSObject {
                                      Slot* slot,
                                      bool th, Error* e);
 
-  void Initialize(Context* ctx);
-
   Map* construct_map(Context* ctx, Error* e);
  protected:
-  explicit JSFunction(Context* ctx);
-  JSFunction(Context* ctx, Map* map);
+  explicit JSFunction(Context* ctx, Type type, bool strict);
+  JSFunction(Context* ctx, Map* map, Type type, bool strict);
 
+  Type type_;
+  bool strict_;
   Map* construct_map_;
 };
 
@@ -94,12 +95,6 @@ class JSNativeFunction : public JSFunction {
     return func_(*args, e);
   }
 
-  virtual bool IsNativeFunction() const { return true; }
-
-  virtual bool IsBoundFunction() const { return false; }
-
-  virtual bool IsStrict() const { return false; }
-
   virtual JSAPI NativeFunction() const { return func_; }
 
   template<typename Func>
@@ -107,7 +102,6 @@ class JSNativeFunction : public JSFunction {
                                const Func& func, std::size_t n,
                                Symbol name) {
     JSNativeFunction* const obj = new JSNativeFunction(ctx, func, n, name);
-    obj->Initialize(ctx);
     return obj;
   }
 
@@ -120,10 +114,10 @@ class JSNativeFunction : public JSFunction {
 
  private:
   explicit JSNativeFunction(Context* ctx)
-    : JSFunction(ctx), func_() { }
+    : JSFunction(ctx, FUNCTION_NATIVE, false), func_() { }
 
   JSNativeFunction(Context* ctx, JSAPI func, uint32_t n, Symbol name)
-    : JSFunction(ctx),
+    : JSFunction(ctx, FUNCTION_NATIVE, false),
       func_(func) {
     DefineOwnProperty(
         ctx, symbol::length(),
@@ -138,12 +132,6 @@ class JSNativeFunction : public JSFunction {
 
 class JSBoundFunction : public JSFunction {
  public:
-  virtual bool IsStrict() const { return false; }
-
-  virtual bool IsNativeFunction() const { return true; }
-
-  virtual bool IsBoundFunction() const { return true; }
-
   JSFunction* target() const { return target_; }
 
   JSVal this_binding() const { return this_binding_; }
@@ -216,18 +204,10 @@ class JSInlinedFunction : public JSFunction {
     return func(*args, e);
   }
 
-  virtual bool IsNativeFunction() const { return true; }
-
-  virtual bool IsBoundFunction() const { return false; }
-
-  virtual bool IsStrict() const { return false; }
-
   virtual JSAPI NativeFunction() const { return func; }
 
   static this_type* New(Context* ctx, Symbol name) {
-    this_type* const obj = new this_type(ctx, name);
-    obj->Initialize(ctx);
-    return obj;
+    return new this_type(ctx, name);
   }
 
   static this_type* NewPlain(Context* ctx, Symbol name) {
@@ -240,7 +220,7 @@ class JSInlinedFunction : public JSFunction {
 
  private:
   JSInlinedFunction(Context* ctx, Symbol name)
-    : JSFunction(ctx) {
+    : JSFunction(ctx, FUNCTION_NATIVE, false) {
     DefineOwnProperty(
         ctx, symbol::length(),
         DataDescriptor(JSVal::UInt32(n), ATTR::NONE), false, NULL);
@@ -250,7 +230,7 @@ class JSInlinedFunction : public JSFunction {
   }
 
   JSInlinedFunction(Context* ctx, Symbol name, Map* map)
-    : JSFunction(ctx, map) {
+    : JSFunction(ctx, map, FUNCTION_NATIVE, false) {
     DefineOwnProperty(
         ctx, symbol::length(),
         DataDescriptor(JSVal::UInt32(n), ATTR::NONE), false, NULL);

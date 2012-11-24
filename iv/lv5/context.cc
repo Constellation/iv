@@ -166,7 +166,6 @@ void Context::Initialize() {
   global_binder.def(obj_cls.name, obj_constructor, ATTR::W | ATTR::C);
 
   // lazy update
-  throw_type_error_->Initialize(this);
   throw_type_error_->ChangePrototype(this, global_data()->function_prototype());
 
   // section 15.1 Global
@@ -223,7 +222,6 @@ void Context::InitGlobal(const ClassSlot& func_cls,
     obj_proto
   };
   global_data_.RegisterClass<Class::global>(cls);
-  eval_function->Initialize(this);  // lazy update
 
   global_binder->content()->ChangePrototype(this, cls.prototype);
   global_binder->cls(cls.cls)

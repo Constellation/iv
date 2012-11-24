@@ -451,7 +451,7 @@ inline Rep CALL(Frame* stack,
   }
   JSFunction* func =
       static_cast<JSFunction*>(callee.object());
-  if (!func->IsNativeFunction()) {
+  if (func->function_type() == JSFunction::FUNCTION_USER) {
     // inline call
     JSJITFunction* vm_func = static_cast<JSJITFunction*>(func);
     railgun::Code* code = vm_func->code();
@@ -498,7 +498,7 @@ inline Rep EVAL(Frame* stack,
   }
   JSFunction* func =
       static_cast<JSFunction*>(callee.object());
-  if (!func->IsNativeFunction()) {
+  if (func->function_type() == JSFunction::FUNCTION_USER) {
     // inline call
     JSJITFunction* vm_func = static_cast<JSJITFunction*>(func);
     railgun::Code* code = vm_func->code();
@@ -552,7 +552,7 @@ inline Rep CONSTRUCT(Frame* stack,
   }
   JSFunction* func =
       static_cast<JSFunction*>(callee.object());
-  if (!func->IsNativeFunction()) {
+  if (func->function_type() == JSFunction::FUNCTION_USER) {
     // inline call
     JSJITFunction* vm_func = static_cast<JSJITFunction*>(func);
     railgun::Code* code = vm_func->code();

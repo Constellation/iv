@@ -5,23 +5,25 @@
 namespace iv {
 namespace lv5 {
 
-inline JSFunction::JSFunction(Context* ctx)
-  : JSObject(ctx->global_data()->function_map()) {
+inline JSFunction::JSFunction(Context* ctx, Type type, bool strict)
+  : JSObject(ctx->global_data()->function_map()),
+    type_(type),
+    strict_(strict) {
   set_callable(true);
+  set_cls(JSFunction::GetClass());
 }
 
-inline JSFunction::JSFunction(Context* ctx, Map* map)
-  : JSObject(map) {
+inline JSFunction::JSFunction(Context* ctx, Map* map, Type type, bool strict)
+  : JSObject(map),
+    type_(type),
+    strict_(strict) {
   set_callable(true);
-}
-
-inline void JSFunction::Initialize(Context* ctx) {
   set_cls(JSFunction::GetClass());
 }
 
 inline JSBoundFunction::JSBoundFunction(
     Context* ctx, JSFunction* target, JSVal this_binding, const Arguments& args)
-  : JSFunction(ctx),
+  : JSFunction(ctx, FUNCTION_BOUND, false),
     target_(target),
     this_binding_(this_binding),
     arguments_(args.empty() ? 0 : args.size() - 1) {
@@ -97,7 +99,7 @@ inline JSVal JSFunction::GetSlot(Context* ctx, Symbol name, Slot* slot, Error* e
   if (name == symbol::caller()) {
     slot->MakeUnCacheable();
     if (val.IsCallable() &&
-        static_cast<JSFunction*>(val.object())->IsStrict()) {
+        static_cast<JSFunction*>(val.object())->strict()) {
       e->Report(Error::Type,
                 "\"caller\" property is not accessible in strict code");
       return JSFalse;

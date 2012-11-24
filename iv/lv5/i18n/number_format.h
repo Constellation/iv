@@ -172,24 +172,15 @@ class JSNumberFormatBoundFunction : public JSFunction {
     return JSEmpty;
   }
 
-  virtual bool IsNativeFunction() const { return true; }
-
-  virtual bool IsBoundFunction() const { return false; }
-
-  virtual bool IsStrict() const { return false; }
-
   virtual JSAPI NativeFunction() const { return NULL; }
 
   static JSNumberFormatBoundFunction* New(Context* ctx, JSNumberFormatHolder* format) {
-    JSNumberFormatBoundFunction* const obj =
-        new JSNumberFormatBoundFunction(ctx, format);
-    obj->Initialize(ctx);
-    return obj;
+    return new JSNumberFormatBoundFunction(ctx, format);
   }
 
  private:
   explicit JSNumberFormatBoundFunction(Context* ctx, JSNumberFormatHolder* format)
-    : JSFunction(ctx),
+    : JSFunction(ctx, FUNCTION_NATIVE, false),
       format_(format) {
     Error::Dummy dummy;
     DefineOwnProperty(

@@ -1953,7 +1953,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
         }
         JSFunction* func =
             static_cast<JSFunction*>(callee.object());
-        if (!func->IsNativeFunction()) {
+        if (func->function_type() == JSFunction::FUNCTION_USER) {
           // inline call
           JSVMFunction* vm_func = static_cast<JSVMFunction*>(func);
           Code* code = vm_func->code();
@@ -1995,7 +1995,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
         }
         JSFunction* func =
             static_cast<JSFunction*>(callee.object());
-        if (!func->IsNativeFunction()) {
+        if (func->function_type() == JSFunction::FUNCTION_USER) {
           // inline call
           JSVMFunction* vm_func = static_cast<JSVMFunction*>(func);
           Code* code = vm_func->code();
@@ -2038,7 +2038,7 @@ JSVal VM::Execute(Frame* start, Error* e) {
         }
         JSFunction* func =
             static_cast<JSFunction*>(callee.object());
-        if (!func->IsNativeFunction()) {
+        if (func->function_type() == JSFunction::FUNCTION_USER) {
           // inline call
           JSVMFunction* vm_func = static_cast<JSVMFunction*>(func);
           Code* code = vm_func->code();

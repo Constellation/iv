@@ -67,7 +67,7 @@ void Interpreter::Invoke(JSCodeFunction* code,
                          const Arguments& args, Error* e) {
   // step 1
   JSVal this_value = args.this_binding();
-  if (!code->IsStrict()) {
+  if (!code->strict()) {
     if (this_value.IsNullOrUndefined()) {
       this_value = ctx_->global_obj();
     } else if (!this_value.IsObject()) {
@@ -81,7 +81,7 @@ void Interpreter::Invoke(JSCodeFunction* code,
   // step 1
   JSDeclEnv* const env = JSDeclEnv::New(ctx_, code->scope());
   const ContextSwitcher switcher(ctx_, env, env, this_value,
-                                 code->IsStrict());
+                                 code->strict());
 
   // step 2
   const bool configurable_bindings = false;
