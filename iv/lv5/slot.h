@@ -79,6 +79,10 @@ class Slot : public StoredSlot {
     offset_ = offset;
   }
 
+  void set(const StoredSlot& slot, const JSObject* obj) {
+    set(slot.value(), slot.attributes(), obj);
+  }
+
   void StringSet(JSVal value, Attributes::Safe attributes) {
     StoredSlot::set(value, attributes);
     MakeUsed();

@@ -8,7 +8,7 @@ namespace lv5 {
 // only class holder
 class JSMath : public JSObject {
  public:
-  IV_LV5_DEFINE_JSCLASS(Math)
+  IV_LV5_DEFINE_JSCLASS(JSMath, Math)
 };
 
 } }  // namespace iv::lv5

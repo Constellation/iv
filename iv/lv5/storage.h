@@ -41,13 +41,10 @@ class FixedStorage {
 
   FixedStorage(const this_type& v)
     : data_(NULL),
-      capacity_(v.capacity()) {
-    assign(v.begin(), v.end());
-  }
-
-  this_type& operator=(const this_type& v) {
-    assign(v.begin(), v.end());
-    return *this;
+      capacity_(0) {
+    const std::size_t size = std::distance(v.begin(), v.end());
+    reserve(size);
+    std::copy(v.begin(), v.end(), begin());
   }
 
   pointer data() { return data_; }

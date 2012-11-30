@@ -206,6 +206,7 @@ void Context::Initialize() {
       obj_proto
     };
     global_data_.RegisterClass<Class::Arguments>(cls);
+    global_data()->InitArgumentsMap();
   }
 }
 
@@ -1176,24 +1177,26 @@ void Context::InitIntl(const ClassSlot& func_cls,
 
   {
     // NumberFormat
-    number_format_prototype_ =
+    JSObject* const proto =
         JSObject::New(this, Map::NewUniqueMap(this, obj_proto));
-    number_format_constructor_ =
+    global_data()->number_format_map()->ChangePrototypeWithNoTransition(proto);
+    JSFunction* const constructor =
         JSInlinedFunction<&runtime::NumberFormatConstructor, 0>::New(this, symbol::NumberFormat());
 
-    intl_binder.def(symbol::NumberFormat(), number_format_constructor(), ATTR::W | ATTR::C);
+    intl_binder.def(symbol::NumberFormat(), constructor, ATTR::W | ATTR::C);
 
-    bind::Object(this, number_format_constructor())
-        .def(symbol::prototype(), number_format_prototype(), ATTR::NONE)
+    bind::Object(this, constructor)
+        .def(symbol::prototype(), proto, ATTR::NONE)
         .def<&runtime::NumberFormatSupportedLocalesOf, 1>("supportedLocalesOf");
 
-    bind::Object(this, number_format_prototype())
-        .def(symbol::constructor(), number_format_constructor(), ATTR::W | ATTR::C)
+    bind::Object(this, proto)
+        .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
         .def_getter<&runtime::NumberFormatFormatGetter, 0>("format")
         .def<&runtime::NumberFormatResolvedOptions, 0>("resolvedOptions");
     Error::Dummy dummy;
     i18n::InitializeNumberFormat(
-        this, number_format_prototype(), JSUndefined, JSUndefined, &dummy);
+        this, proto, JSUndefined, JSUndefined, &dummy);
+    global_data()->set_number_format_prototype(proto);
   }
 
 #ifdef IV_ENABLE_I18N

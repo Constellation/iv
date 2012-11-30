@@ -7,7 +7,7 @@ namespace lv5 {
 
 class JSJSON : public JSObject {
  public:
-  IV_LV5_DEFINE_JSCLASS(JSON)
+  IV_LV5_DEFINE_JSCLASS(JSJSON, JSON)
 };
 
 } }  // namespace iv::lv5

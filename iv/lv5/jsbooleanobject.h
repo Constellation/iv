@@ -7,7 +7,7 @@ namespace lv5 {
 
 class JSBooleanObject : public JSObject {
  public:
-  IV_LV5_DEFINE_JSCLASS(Boolean)
+  IV_LV5_DEFINE_JSCLASS(JSBooleanObject, Boolean)
 
   bool value() const {
     return value_;

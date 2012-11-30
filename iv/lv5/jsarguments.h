@@ -22,12 +22,20 @@ class Context;
 class AstFactory;
 
 // only class placeholder
-class JSArguments {
+class JSArguments : public JSObject {
  public:
-  IV_LV5_DEFINE_JSCLASS(Arguments)
+  IV_LV5_DEFINE_JSCLASS(JSArguments, Arguments)
+
+  explicit JSArguments(Map* map) : JSObject(map) { set_cls(GetClass()); }
+
+  enum {
+    FIELD_LENGTH = 0,
+    FIELD_CALLEE = 1,
+    FIELD_CALLER = 2  // only in strict arguments
+  };
 };
 
-class JSNormalArguments : public JSObject {
+class JSNormalArguments : public JSArguments {
  public:
   typedef GCVector<Symbol>::type Indice;
 
@@ -41,13 +49,10 @@ class JSNormalArguments : public JSObject {
                                 Error* e) {
     JSNormalArguments* const obj = new JSNormalArguments(ctx, env);
     const uint32_t len = static_cast<uint32_t>(std::distance(it, last));
-    obj->set_cls(JSArguments::GetClass());
+    obj->Direct(FIELD_LENGTH) = JSVal::UInt32(len);
+    obj->Direct(FIELD_CALLEE) = func;
     bind::Object binder(ctx, obj);
-    binder
-        .def(symbol::length(),
-             JSVal::UInt32(len), ATTR::W | ATTR::C);
     obj->SetArguments(ctx, &binder, names, it, last, len);
-    binder.def(symbol::callee(), func, ATTR::W | ATTR::C);
     return obj;
   }
 
@@ -63,79 +68,22 @@ class JSNormalArguments : public JSObject {
     return v;
   }
 
-  bool GetOwnPropertySlot(Context* ctx,
-                          Symbol name, Slot* slot) const {
-    if (!JSObject::GetOwnPropertySlot(ctx, name, slot)) {
-      return false;
-    }
+  virtual bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
     if (symbol::IsArrayIndexSymbol(name)) {
-      const uint32_t index = symbol::GetIndexFromSymbol(name);
-      if (mapping_.size() > index) {
-        const Symbol mapped = mapping_[index];
-        if (mapped != symbol::kDummySymbol) {
-          Error::Dummy dummy;
-          const JSVal val = env_->GetBindingValue(ctx, mapped, false, &dummy);
-          slot->set(val, slot->attributes(), this);
-          return true;
-        }
-      }
-    }
-    return true;
-  }
-
-  // TODO(Constellation): clean up
-  bool DefineOwnPropertyPatching(
-      Context* ctx,
-      Symbol name,
-      const PropertyDescriptor& desc,
-      Slot* slot,
-      bool th, Error* e) {
-    // This is patching...
-    slot->Clear();
-    if (JSObject::GetOwnPropertySlot(ctx, name, slot)) {
-      // found
-      bool returned = false;
-      if (slot->IsDefineOwnPropertyAccepted(desc, th, &returned, e)) {
-        if (slot->HasOffset()) {
-          const Attributes::Safe old(slot->attributes());
-          slot->Merge(ctx, desc);
-          if (old != slot->attributes()) {
-            set_map(map()->ChangeAttributesTransition(ctx, name, slot->attributes()));
-          }
-          Direct(slot->offset()) = slot->value();
-          slot->MarkPutResult(Slot::PUT_REPLACE, slot->offset());
-        } else {
-          // add property transition
-          // searching already created maps and if this is available, move to this
-          uint32_t offset;
-          slot->Merge(ctx, desc);
-          set_map(map()->AddPropertyTransition(ctx, name, slot->attributes(), &offset));
-          slots_.resize(map()->GetSlotsSize(), JSEmpty);
-          // set newly created property
-          Direct(offset) = slot->value();
-          slot->MarkPutResult(Slot::PUT_NEW, offset);
-        }
-      }
-      return returned;
+      return JSObject::GetOwnPropertySlot(ctx, name, slot);
     }
 
-    // not found
-    if (!IsExtensible()) {
-      if (th) {
-        e->Report(Error::Type, "object not extensible");\
+    const uint32_t index = symbol::GetIndexFromSymbol(name);
+    const bool result = JSObject::GetOwnIndexedPropertySlotInternal(ctx, index, slot);
+    if (mapping_.size() > index) {
+      const Symbol mapped = mapping_[index];
+      if (mapped != symbol::kDummySymbol) {
+        Error::Dummy dummy;
+        const JSVal val = env_->GetBindingValue(ctx, mapped, false, &dummy);
+        slot->set(val, slot->attributes(), this);
+        return true;
       }
-      return false;
     }
-
-    // add property transition
-    // set newly created property
-    // searching already created maps and if this is available, move to this
-    uint32_t offset;
-    const StoredSlot stored(ctx, desc);
-    set_map(map()->AddPropertyTransition(ctx, name, stored.attributes(), &offset));
-    slots_.resize(map()->GetSlotsSize(), JSEmpty);
-    Direct(offset) = stored.value();
-    slot->MarkPutResult(Slot::PUT_NEW, offset);
     return true;
   }
 
@@ -143,17 +91,19 @@ class JSNormalArguments : public JSObject {
                                      const PropertyDescriptor& desc,
                                      Slot* slot,
                                      bool th, Error* e) {
-    // monkey patching...
-    // not reserve map object, so not use default DefineOwnProperty
-    const bool allowed = DefineOwnPropertyPatching(ctx, name, desc, slot, false, e);
-    if (!allowed) {
+    if (!symbol::IsArrayIndexSymbol(name)) {
+      return JSObject::DefineOwnPropertySlot(ctx, name, desc, slot, th, e);
+    }
+
+    const uint32_t index = symbol::GetIndexFromSymbol(name);
+    if (!DefineOwnIndexedPropertyInternal(ctx, index, desc, false, e)) {
       if (th) {
         e->Report(Error::Type, "[[DefineOwnProperty]] failed");
       }
       return false;
     }
+
     if (symbol::IsArrayIndexSymbol(name)) {
-      const uint32_t index = symbol::GetIndexFromSymbol(name);
       if (mapping_.size() > index) {
         const Symbol mapped = mapping_[index];
         bool dummy = false;
@@ -185,19 +135,18 @@ class JSNormalArguments : public JSObject {
     return true;
   }
 
-  bool Delete(Context* ctx, Symbol name, bool th, Error* e) {
+  virtual bool Delete(Context* ctx, Symbol name, bool th, Error* e) {
+    if (!symbol::IsArrayIndexSymbol(name)) {
+      return JSObject::Delete(ctx, name, th, e);
+    }
+    const uint32_t index = symbol::GetIndexFromSymbol(name);
     const bool result =
-        JSObject::Delete(ctx, name, th, IV_LV5_ERROR_WITH(e, result));
-    if (result) {
-      if (symbol::IsArrayIndexSymbol(name)) {
-        const uint32_t index = symbol::GetIndexFromSymbol(name);
-        if (mapping_.size() > index) {
-          const Symbol mapped = mapping_[index];
-          if (mapped != symbol::kDummySymbol) {
-            mapping_[index] = symbol::kDummySymbol;
-            return true;
-          }
-        }
+        JSObject::DeleteIndexedInternal(ctx, index, th, IV_LV5_ERROR_WITH(e, false));
+    if (mapping_.size() > index) {
+      const Symbol mapped = mapping_[index];
+      if (mapped != symbol::kDummySymbol) {
+        mapping_[index] = symbol::kDummySymbol;
+        return true;
       }
     }
     return result;
@@ -210,7 +159,7 @@ class JSNormalArguments : public JSObject {
 
  private:
   JSNormalArguments(Context* ctx, JSDeclEnv* env)
-    : JSObject(Map::NewUniqueMap(ctx, ctx->global_data()->object_prototype())),
+    : JSArguments(ctx->global_data()->normal_arguments_map()),
       env_(env),
       mapping_() { }
 
@@ -251,7 +200,7 @@ class JSNormalArguments : public JSObject {
 };
 
 // not search environment
-class JSStrictArguments : public JSObject {
+class JSStrictArguments : public JSArguments {
  public:
   template<typename ArgsReverseIter>
   static JSStrictArguments* New(Context* ctx,
@@ -261,27 +210,16 @@ class JSStrictArguments : public JSObject {
                                 Error* e) {
     JSStrictArguments* const obj = new JSStrictArguments(ctx);
     const uint32_t len = static_cast<uint32_t>(std::distance(it, last));
-    obj->set_cls(JSArguments::GetClass());
-    bind::Object binder(ctx, obj);
-    binder
-        .def(symbol::length(),
-             JSVal::UInt32(len), ATTR::W | ATTR::C);
+    JSFunction* throw_type_error = ctx->throw_type_error();
+    obj->Direct(FIELD_LENGTH) = JSVal::UInt32(len);
+    obj->Direct(FIELD_CALLER) = JSVal::Cell(Accessor::New(ctx, throw_type_error, throw_type_error));
+    obj->Direct(FIELD_CALLEE) = JSVal::Cell(Accessor::New(ctx, throw_type_error, throw_type_error));
     uint32_t index = len - 1;
+    bind::Object binder(ctx, obj);
     for (; it != last; ++it, --index) {
       binder.def(symbol::MakeSymbolFromIndex(index),
                  *it, ATTR::W | ATTR::E | ATTR::C);
     }
-
-    JSFunction* const throw_type_error = ctx->throw_type_error();
-    binder
-        .def_accessor(symbol::caller(),
-                      throw_type_error,
-                      throw_type_error,
-                      ATTR::NONE)
-        .def_accessor(symbol::callee(),
-                      throw_type_error,
-                      throw_type_error,
-                      ATTR::NONE);
     return obj;
   }
 
@@ -299,8 +237,7 @@ class JSStrictArguments : public JSObject {
 
  private:
   explicit JSStrictArguments(Context* ctx)
-    : JSObject(Map::NewUniqueMap(ctx, ctx->global_data()->object_prototype())) {
-  }
+    : JSArguments(ctx->global_data()->strict_arguments_map()) { }
 };
 
 } }  // namespace iv::lv5

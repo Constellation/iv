@@ -210,6 +210,7 @@ class LoadPropertyIC : public PolyIC {
     uint32_t offset_;
   };
 
+#if 0
   class LoadArrayLengthCompiler {
    public:
     static const Unit::Type kType = Unit::LOAD_ARRAY_LENGTH;
@@ -227,6 +228,7 @@ class LoadPropertyIC : public PolyIC {
       as->ret();
     }
   };
+#endif
 
   void LoadOwnProperty(Context* ctx, Map* map, uint32_t offset) {
     if (Unit* ic = Generate(ctx, LoadOwnPropertyCompiler(map, offset))) {
@@ -250,7 +252,9 @@ class LoadPropertyIC : public PolyIC {
   }
 
   void LoadArrayLength(Context* ctx) {
+#if 0
     Generate(ctx, LoadArrayLengthCompiler());
+#endif
   }
 
   void LoadStringLength(Context* ctx) {

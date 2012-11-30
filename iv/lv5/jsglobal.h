@@ -12,7 +12,7 @@ namespace lv5 {
 
 class JSGlobal : public JSObject {
  public:
-  IV_LV5_DEFINE_JSCLASS(global)
+  IV_LV5_DEFINE_JSCLASS(JSGlobal, global)
 
   typedef GCHashMap<Symbol, uint32_t>::type SymbolMap;
   typedef core::SegmentedVector<StoredSlot, 8, gc_allocator<StoredSlot> > Vector;

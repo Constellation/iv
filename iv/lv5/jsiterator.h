@@ -7,7 +7,7 @@ namespace lv5 {
 
 class JSIterator : public JSObject {
  public:
-  IV_LV5_DEFINE_JSCLASS(Iterator)
+  IV_LV5_DEFINE_JSCLASS(JSIterator, Iterator)
 
   static JSIterator* New(Context* ctx) {
     JSIterator* const obj = new JSIterator(ctx, value);

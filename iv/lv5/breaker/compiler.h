@@ -1423,6 +1423,7 @@ class Compiler {
     if (symbol::IsArrayIndexSymbol(name)) {
       // generate Array index fast path
       const uint32_t index = symbol::GetIndexFromSymbol(name);
+#if 0
       DenseArrayGuard(base, rsi, rdi, ".ARRAY_FAST_PATH_EXIT");
 
       // check index is not out of range
@@ -1443,6 +1444,7 @@ class Compiler {
       NotEmptyGuard(rax, ".ARRAY_FAST_PATH_EXIT");
       asm_->jmp(".EXIT");
       asm_->L(".ARRAY_FAST_PATH_EXIT");
+#endif
 
       // load from value
       asm_->mov(rdi, r14);
@@ -1477,6 +1479,7 @@ class Compiler {
     if (symbol::IsArrayIndexSymbol(name)) {
       // generate Array index fast path
       const uint32_t index = symbol::GetIndexFromSymbol(name);
+#if 0
       DenseArrayGuard(base, rsi, rdi, ".ARRAY_FAST_PATH_EXIT");
 
       // check index is not out of range
@@ -1494,6 +1497,7 @@ class Compiler {
       asm_->mov(qword[rax + kJSValSize * index], rdx);
       asm_->jmp(".EXIT");
       asm_->L(".ARRAY_FAST_PATH_EXIT");
+#endif
 
       // store element
       asm_->mov(rdi, r14);
@@ -1720,6 +1724,7 @@ class Compiler {
     LoadVRs(rsi, base, rdx, element);
 
     {
+#if 0
       // check element is int32_t and element >= 0
       Int32Guard(element, rdx, ".ARRAY_FAST_PATH_EXIT");
       asm_->cmp(edx, 0);
@@ -1749,6 +1754,7 @@ class Compiler {
       NotEmptyGuard(rax, ".ARRAY_FAST_PATH_EXIT");
       asm_->jmp(".EXIT");
       asm_->L(".ARRAY_FAST_PATH_EXIT");
+#endif
     }
 
     CheckObjectCoercible(base, rsi, rcx);
@@ -1774,6 +1780,7 @@ class Compiler {
     LoadVR(rdx, src);
 
     {
+#if 0
       // check element is int32_t and element >= 0
       Int32Guard(element, rcx, ".ARRAY_FAST_PATH_EXIT");
       asm_->cmp(ecx, 0);
@@ -1799,6 +1806,7 @@ class Compiler {
       asm_->mov(qword[rax + rdi * kJSValSize], rdx);
       asm_->jmp(".EXIT");
       asm_->L(".ARRAY_FAST_PATH_EXIT");
+#endif
     }
 
     CheckObjectCoercible(base, rsi, rdi);
@@ -2958,6 +2966,7 @@ class Compiler {
     asm_->L(".EXIT");
   }
 
+#if 0
   void DenseArrayGuard(register_t base,
                        const Xbyak::Reg64& target,
                        const Xbyak::Reg64& tmp,
@@ -2991,6 +3000,7 @@ class Compiler {
     asm_->test(byte[target + offset], 0xFF);
     asm_->jz(label, type);
   }
+#endif
 
   void EmitConstantDest(const TypeEntry& entry, register_t dst) {
     asm_->mov(rax, Extract(entry.constant()));

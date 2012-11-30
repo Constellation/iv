@@ -9,26 +9,23 @@ namespace lv5 {
 
 class JSStringObject : public JSObject {
  public:
-  IV_LV5_DEFINE_JSCLASS(String)
+  IV_LV5_DEFINE_JSCLASS(JSStringObject, String)
 
   virtual bool GetOwnPropertySlot(Context* ctx,
                                   Symbol name, Slot* slot) const {
     if (name == symbol::length()) {
-      slot->set(JSVal::UInt32(length_), Attributes::String::Length(), this);
+      slot->set(
+          JSVal::Int32(static_cast<int32_t>(value_->size())),
+          Attributes::String::Length(), this);
       return true;
     }
     if (symbol::IsArrayIndexSymbol(name)) {
-      slot->MakeUnCacheable();
       const uint32_t index = symbol::GetIndexFromSymbol(name);
-      if (JSObject::GetOwnPropertySlot(ctx, name, slot)) {
+      const std::size_t len = value_->size();
+      if (index < len) {
+        slot->set(JSString::NewSingle(ctx, value_->At(index)), Attributes::String::Indexed(), this);
         return true;
       }
-      const std::size_t len = value_->size();
-      if (len <= index) {
-        return false;
-      }
-      slot->set(JSString::NewSingle(ctx, value_->At(index)), Attributes::String::Indexed(), this);
-      return true;
     }
     return JSObject::GetOwnPropertySlot(ctx, name, slot);
   }
@@ -66,12 +63,10 @@ class JSStringObject : public JSObject {
  private:
   JSStringObject(Context* ctx, Map* map, JSString* value)
     : JSObject(map),
-      value_(value),
-      length_(static_cast<uint32_t>(value->size())) {
+      value_(value) {
   }
 
   JSString* value_;
-  uint32_t length_;
 };
 
 } }  // namespace iv::lv5

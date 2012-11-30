@@ -19,7 +19,7 @@ namespace lv5 {
 
 class JSRegExp : public JSObject {
  public:
-  IV_LV5_DEFINE_JSCLASS(RegExp)
+  IV_LV5_DEFINE_JSCLASS(JSRegExp, RegExp)
 
   // see also global_data.h
   enum FIELD {

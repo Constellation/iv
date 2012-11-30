@@ -16,7 +16,7 @@ typedef JSVal(*JSAPI)(const Arguments&, Error*);
 
 class JSFunction : public JSObject {
  public:
-  IV_LV5_DEFINE_JSCLASS(Function)
+  IV_LV5_DEFINE_JSCLASS(JSFunction, Function)
 
   enum Type {
     FUNCTION_NATIVE,

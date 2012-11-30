@@ -8,7 +8,7 @@ namespace lv5 {
 
 class JSDataView : public JSObject {
  public:
-  IV_LV5_DEFINE_JSCLASS(DataView)
+  IV_LV5_DEFINE_JSCLASS(JSDataView, DataView)
   enum FIELD {
     FIELD_BYTE_LENGTH = 0,
     FIELD_BUFFER = 1,

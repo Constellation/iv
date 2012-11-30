@@ -89,9 +89,9 @@ class PropertyDescriptor : protected Attributes::External {
   PropertyDescriptor(DataDescriptorTag tag,
                      JSVal val, Attributes::Raw attrs)
     : Attributes::External(attrs |
-                            ATTR::DATA |
-                            ATTR::UNDEF_GETTER |
-                            ATTR::UNDEF_SETTER),
+                           ATTR::DATA |
+                           ATTR::UNDEF_GETTER |
+                           ATTR::UNDEF_SETTER),
       value_() {
     value_.data_ = val;
   }
@@ -100,9 +100,9 @@ class PropertyDescriptor : protected Attributes::External {
                      JSObject* getter, JSObject* setter,
                      Attributes::Raw attrs)
     : Attributes::External(attrs |
-                            ATTR::ACCESSOR |
-                            ATTR::UNDEF_VALUE |
-                            ATTR::UNDEF_WRITABLE),
+                           ATTR::ACCESSOR |
+                           ATTR::UNDEF_VALUE |
+                           ATTR::UNDEF_WRITABLE),
       value_() {
     value_.accessor_.getter_ = getter;
     value_.accessor_.setter_ = setter;
@@ -111,10 +111,10 @@ class PropertyDescriptor : protected Attributes::External {
   PropertyDescriptor(AccessorDescriptorGetterTag tag,
                      JSObject* getter, Attributes::Raw attrs)
     : Attributes::External(attrs |
-                            ATTR::ACCESSOR |
-                            ATTR::UNDEF_VALUE |
-                            ATTR::UNDEF_SETTER |
-                            ATTR::UNDEF_WRITABLE),
+                           ATTR::ACCESSOR |
+                           ATTR::UNDEF_VALUE |
+                           ATTR::UNDEF_SETTER |
+                           ATTR::UNDEF_WRITABLE),
       value_() {
     value_.accessor_.getter_ = getter;
     value_.accessor_.setter_ = NULL;
@@ -123,10 +123,10 @@ class PropertyDescriptor : protected Attributes::External {
   PropertyDescriptor(AccessorDescriptorSetterTag tag,
                      JSObject* setter, Attributes::Raw attrs)
     : Attributes::External(attrs |
-                            ATTR::ACCESSOR |
-                            ATTR::UNDEF_VALUE |
-                            ATTR::UNDEF_GETTER |
-                            ATTR::UNDEF_WRITABLE),
+                           ATTR::ACCESSOR |
+                           ATTR::UNDEF_VALUE |
+                           ATTR::UNDEF_GETTER |
+                           ATTR::UNDEF_WRITABLE),
       value_() {
     value_.accessor_.getter_ = NULL;
     value_.accessor_.setter_ = setter;
@@ -134,10 +134,10 @@ class PropertyDescriptor : protected Attributes::External {
 
   PropertyDescriptor(GenericDescriptorTag tag, Attributes::Raw attrs)
     : Attributes::External(attrs |
-                            ATTR::UNDEF_VALUE |
-                            ATTR::UNDEF_GETTER |
-                            ATTR::UNDEF_SETTER |
-                            ATTR::UNDEF_WRITABLE),
+                           ATTR::UNDEF_VALUE |
+                           ATTR::UNDEF_GETTER |
+                           ATTR::UNDEF_SETTER |
+                           ATTR::UNDEF_WRITABLE),
       value_() {
   }
 
@@ -165,6 +165,10 @@ class StoredSlot {
     : value_(value),
       attributes_(attributes) {
   }
+
+  StoredSlot()
+    : value_(JSUndefined),
+      attributes_(ATTR::Object::Data()) { }
 
   explicit StoredSlot(Context* ctx, const PropertyDescriptor& desc);
 

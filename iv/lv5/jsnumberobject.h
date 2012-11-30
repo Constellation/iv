@@ -7,7 +7,7 @@ namespace lv5 {
 
 class JSNumberObject : public JSObject {
  public:
-  IV_LV5_DEFINE_JSCLASS(Number)
+  IV_LV5_DEFINE_JSCLASS(JSNumberObject, Number)
 
   double value() const {
     return value_;

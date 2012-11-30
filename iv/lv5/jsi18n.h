@@ -78,7 +78,7 @@ inline JSArray* SupportedLocales(Context* ctx,
   ScopedArguments arguments(ctx, 1, IV_LV5_ERROR_WITH(e, NULL));
   arguments[0] = result;
   runtime::ObjectFreeze(arguments, IV_LV5_ERROR_WITH(e, NULL));
-  result->set_extensible(true);
+  result->ChangeExtensible(ctx, true);
   return result;
 }
 

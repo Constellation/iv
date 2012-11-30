@@ -1,6 +1,5 @@
 #ifndef IV_LV5_JSOBJECT_H_
 #define IV_LV5_JSOBJECT_H_
-#include <vector>
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/jsval_fwd.h>
 #include <iv/lv5/error_check.h>
@@ -11,6 +10,7 @@
 #include <iv/lv5/class.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/storage.h>
+#include <iv/lv5/indexed_elements.h>
 #include <iv/lv5/radio/cell.h>
 #include <iv/lv5/radio/core_fwd.h>
 namespace iv {
@@ -24,19 +24,14 @@ class Error;
 
 class JSObject : public radio::HeapObject<radio::OBJECT> {
  public:
-  IV_LV5_DEFINE_JSCLASS(Object)
+  IV_LV5_DEFINE_JSCLASS(JSObject, Object)
 
   // structure for normal property (hash map is defined in Map)
   typedef FixedStorage<JSVal> Slots;
 
   // structures for indexed elements
-  typedef GCHashMap<uint32_t, StoredSlot>::type SparseArrayMap;
-  typedef Storage<JSVal> DenseArrayVector;
-  struct IndexedElements {
-    uint32_t length;
-    DenseArrayVector vector;
-    SparseArrayMap* map;
-  };
+  typedef IndexedElements::SparseArrayMap SparseArrayMap;
+  typedef IndexedElements::DenseArrayVector DenseArrayVector;
 
   static const uint32_t kFlagExtensible = 0x1;
   static const uint32_t kFlagCallable = 0x2;
@@ -80,7 +75,6 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
                                      const PropertyDescriptor& desc,
                                      Slot* slot,
                                      bool th, Error* e);
-
   virtual void GetPropertyNames(Context* ctx,
                                 PropertyNamesCollector* collector,
                                 EnumerationMode mode) const;
@@ -88,11 +82,13 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
                                    PropertyNamesCollector* collector,
                                    EnumerationMode mode) const;
 
-  bool DeleteDirect(Context* ctx, Symbol name, bool th, Error* e);
+  bool GetOwnIndexedPropertySlotInternal(Context* ctx, uint32_t index, Slot* slot) const;
+  bool DefineOwnIndexedPropertyInternal(Context* ctx, uint32_t index,
+                                        const PropertyDescriptor& desc,
+                                        bool th, Error* e);
+  bool DeleteIndexedInternal(Context* ctx, uint32_t inex, bool th, Error* e);
 
-  virtual bool IsNativeObject() const {
-    return true;
-  }
+  virtual bool IsNativeObject() const { return true; }
 
   virtual bool Freeze(Context* ctx, Error* e) {
     PropertyNamesCollector collector;
@@ -111,7 +107,7 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
       }
       DefineOwnProperty(ctx, sym, desc, true, IV_LV5_ERROR_WITH(e, false));
     }
-    set_extensible(false);
+    ChangeExtensible(ctx, false);
     return true;
   }
 
@@ -129,7 +125,7 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
       }
       DefineOwnProperty(ctx, sym, desc, true, IV_LV5_ERROR_WITH(e, false));
     }
-    set_extensible(false);
+    ChangeExtensible(ctx, false);
     return true;
   }
 
@@ -145,13 +141,7 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
 
   bool IsExtensible() const { return flags_ & kFlagExtensible; }
 
-  void set_extensible(bool val) {
-    if (val) {
-      flags_ |= kFlagExtensible;
-    } else {
-      flags_ &= ~kFlagExtensible;
-    }
-  }
+  void ChangeExtensible(Context* ctx, bool val);
 
   JSObject* prototype() const;
 
@@ -201,18 +191,19 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
   static std::size_t MapOffset() { return IV_OFFSETOF(JSObject, map_); }
   static std::size_t SlotsOffset() { return IV_OFFSETOF(JSObject, slots_); }
   static std::size_t ClassOffset() { return IV_OFFSETOF(JSObject, cls_); }
+  static std::size_t ElementsOffset() { return IV_OFFSETOF(JSObject, elements_); }
 
   static void MapTransitionWithReallocation(
       JSObject* base, JSVal src, Map* transit, uint32_t offset);
-
  protected:
   explicit JSObject(Map* map);
-
-  JSObject(Map* map, Class* cls, bool extensible);
+  explicit JSObject(const JSObject& obj);
+  JSObject(Map* map, Class* cls);
 
   const Class* cls_;
   Map* map_;
   Slots slots_;
+  IndexedElements elements_;
   uint32_t flags_;
 };
 

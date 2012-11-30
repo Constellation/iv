@@ -55,7 +55,7 @@ inline void SetToBuffer<Uint8Clamped>(uint8_t* bytes, bool is_little_endian, Uin
 
 class JSArrayBuffer : public JSObject {
  public:
-  IV_LV5_DEFINE_JSCLASS(ArrayBuffer)
+  IV_LV5_DEFINE_JSCLASS(JSArrayBuffer, ArrayBuffer)
   enum FIELD {
     FIELD_BYTE_LENGTH = 0
   };

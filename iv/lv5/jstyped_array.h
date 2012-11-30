@@ -51,9 +51,8 @@ class TypedArrayImpl : public JSObject {
           buf->GetValue<T>(off, index, core::kLittleEndian);
       slot->set(result, Attributes::CreateData(ATTR::W | ATTR::E), this);
       return true;
-    } else {
-      return JSObject::GetOwnPropertySlot(ctx, name, slot);
     }
+    return JSObject::GetOwnPropertySlot(ctx, name, slot);
   }
 
   virtual bool DefineOwnPropertySlot(Context* ctx,
@@ -71,6 +70,8 @@ class TypedArrayImpl : public JSObject {
     if (total > buf->length()) {
       return JSObject::DefineOwnPropertySlot(ctx, name, desc, slot, th, e);
     }
+
+    // FIXME(Constellation) writable check is not found...
     JSVal value;
     if (desc.IsData() && !desc.IsValueAbsent()) {
       value = desc.AsDataDescriptor()->value();
@@ -105,7 +106,7 @@ class TypedArrayImpl : public JSObject {
 #define IV_LV5_DEFINE_TYPED_ARRAY(TYPE, NAME)\
     class JS##NAME : public TypedArrayImpl<TYPE, JS##NAME> {\
      public:\
-      IV_LV5_DEFINE_JSCLASS(NAME)\
+      IV_LV5_DEFINE_JSCLASS(JS##NAME, NAME)\
       typedef TypedArrayImpl<TYPE, JS##NAME> impl_type;\
       static const Class::JSClassType ClassCode = Class::NAME;\
       JS##NAME(Context* ctx,\

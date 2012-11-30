@@ -104,7 +104,7 @@ class ICUStringIteration
 
 class JSCollator : public JSObject {
  public:
-  IV_LV5_DEFINE_JSCLASS(Collator)
+  IV_LV5_DEFINE_JSCLASS(JSCollator, Collator)
 
   enum CollatorField {
     USAGE = 0,
@@ -229,7 +229,7 @@ class JSCollatorBoundFunction : public JSFunction {
 
 class JSDateTimeFormat : public JSObject {
  public:
-  IV_LV5_DEFINE_JSCLASS(DateTimeFormat)
+  IV_LV5_DEFINE_JSCLASS(JSDateTimeFormat, DateTimeFormat)
 
   enum DateTimeFormatField {
     CALENDAR = 0,

@@ -217,7 +217,7 @@ inline const FunctionLiteral* IsOneFunctionExpression(
 
 inline uint32_t GetLength(Context* ctx, JSObject* obj, Error* e) {
   if (obj->IsClass<Class::Array>()) {
-    return static_cast<JSArray*>(obj)->GetLength();
+    return static_cast<JSArray*>(obj)->length();
   }
   const JSVal length = obj->Get(ctx, symbol::length(), IV_LV5_ERROR_WITH(e, 0));
   return length.ToUInt32(ctx, e);

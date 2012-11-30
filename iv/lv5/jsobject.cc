@@ -20,16 +20,24 @@ JSObject::JSObject(Map* map)
   : cls_(NULL),
     map_(map),
     slots_(map->GetSlotsSize()),
-    flags_() {
-  set_extensible(true);
+    elements_(),
+    flags_(kFlagExtensible) {
 }
 
-JSObject::JSObject(Map* map, Class* cls, bool extensible)
+JSObject::JSObject(const JSObject& obj)
+  : cls_(obj.cls_),
+    map_(obj.map_),
+    slots_(obj.slots_),
+    elements_(obj.elements_),
+    flags_(obj.flags_) {
+}
+
+JSObject::JSObject(Map* map, Class* cls)
   : cls_(cls),
     map_(map),
     slots_(map->GetSlotsSize()),
-    flags_() {
-  set_extensible(extensible);
+    elements_(),
+    flags_(kFlagExtensible) {
 }
 
 #define TRY(context, sym, arg, e)\
@@ -129,13 +137,34 @@ bool JSObject::DefineOwnProperty(Context* ctx,
   return DefineOwnPropertySlot(ctx, name, desc, &slot, th, e);
 }
 
+static bool IsAbsentDescriptor(const PropertyDescriptor& desc) {
+  if (!desc.IsEnumerable() && !desc.IsEnumerableAbsent()) {
+    // explicitly not enumerable
+    return false;
+  }
+  if (!desc.IsConfigurable() && !desc.IsConfigurableAbsent()) {
+    // explicitly not configurable
+    return false;
+  }
+  if (desc.IsAccessor()) {
+    return false;
+  }
+  if (desc.IsData()) {
+    const DataDescriptor* const data = desc.AsDataDescriptor();
+    return data->IsWritable() || data->IsWritableAbsent();
+  }
+  return true;
+}
+
 // section 8.12.9 [[DefineOwnProperty]]
 bool JSObject::DefineOwnPropertySlot(Context* ctx,
                                      Symbol name,
                                      const PropertyDescriptor& desc,
-                                     Slot* slot,
-                                     bool th,
-                                     Error* e) {
+                                     Slot* slot, bool th, Error* e) {
+  if (symbol::IsArrayIndexSymbol(name)) {
+    return DefineOwnIndexedPropertyInternal(ctx, symbol::GetIndexFromSymbol(name), desc, th, e);
+  }
+
   if (!slot->IsUsed()) {
     GetOwnPropertySlot(ctx, name, slot);
   }
@@ -237,30 +266,11 @@ bool JSObject::HasProperty(Context* ctx, Symbol name) const {
   return GetPropertySlot(ctx, name, &slot);
 }
 
-// Delete direct doesn't lookup by GetOwnPropertySlot.
-// Simple, lookup from map and delete it
-bool JSObject::DeleteDirect(Context* ctx, Symbol name, bool th, Error* e) {
-  const Map::Entry entry = map()->Get(ctx, name);
-  if (entry.IsNotFound()) {
-    return true;  // not found
-  }
-  if (!entry.attributes.IsConfigurable()) {
-    if (th) {
-      e->Report(Error::Type, "delete failed");
-    }
-    return false;
-  }
-
-  // delete property transition
-  // if previous map is avaiable shape, move to this.
-  // and if that is not avaiable, create new map and move to it.
-  // newly created slots size is always smaller than before
-  set_map(map()->DeletePropertyTransition(ctx, name));
-  Direct(entry.offset) = JSEmpty;
-  return true;
-}
-
 bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* e) {
+  if (symbol::IsArrayIndexSymbol(name)) {
+    return DeleteIndexedInternal(ctx, symbol::GetIndexFromSymbol(name), th, e);
+  }
+
   Slot slot;
   if (!GetOwnPropertySlot(ctx, name, &slot)) {
     return true;
@@ -309,10 +319,26 @@ void JSObject::GetPropertyNames(Context* ctx,
 void JSObject::GetOwnPropertyNames(Context* ctx,
                                    PropertyNamesCollector* collector,
                                    EnumerationMode mode) const {
+  uint32_t index = 0;
+  for (DenseArrayVector::const_iterator it = elements_.vector.begin(),
+       last = elements_.vector.end(); it != last; ++it, ++index) {
+    if (!it->IsEmpty()) {
+      collector->Add(index);
+    }
+  }
+  if (elements_.map) {
+    for (SparseArrayMap::const_iterator it = elements_.map->begin(),
+         last = elements_.map->end(); it != last; ++it) {
+      collector->Add(it->first);
+    }
+  }
   map()->GetOwnPropertyNames(collector, mode);
 }
 
 bool JSObject::GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
+  if (symbol::IsArrayIndexSymbol(name)) {
+    return GetOwnIndexedPropertySlotInternal(ctx, symbol::GetIndexFromSymbol(name), slot);
+  }
   const Map::Entry entry = map()->Get(ctx, name);
   if (!entry.IsNotFound()) {
     slot->set(Direct(entry.offset), entry.attributes, this, entry.offset);
@@ -323,6 +349,136 @@ bool JSObject::GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
 
 void JSObject::ChangePrototype(Context* ctx, JSObject* proto) {
   set_map(map()->ChangePrototypeTransition(ctx, proto));
+}
+
+bool JSObject::DeleteIndexedInternal(Context* ctx, uint32_t index, bool th, Error* e) {
+  if (elements_.length() <= index) {
+    return true;
+  }
+
+  if (index < elements_.vector.size()) {
+    elements_.vector[index] = JSEmpty;
+    return true;
+  }
+
+  if (index < IndexedElements::kMaxVectorSize) {
+    return true;
+  }
+
+  if (!elements_.map) {
+    return true;
+  }
+
+  SparseArrayMap* sparse = elements_.map;
+  SparseArrayMap::iterator it = sparse->find(index);
+  if (it != sparse->end()) {
+    return true;
+  }
+
+  if (!it->second.attributes().IsConfigurable()) {
+    if (th) {
+      e->Report(Error::Type, "delete failed");
+    }
+    return false;
+  }
+
+  sparse->erase(it);
+  if (sparse->empty()) {
+    elements_.MakeDense();
+  }
+  return true;
+}
+
+bool JSObject::GetOwnIndexedPropertySlotInternal(Context* ctx, uint32_t index, Slot* slot) const {
+  if (index < elements_.vector.size()) {
+    const JSVal value = elements_.vector[index];
+    if (value.IsEmpty()) {
+      return false;
+    }
+    slot->set(value, ATTR::Object::Data(), this);
+    return true;
+  }
+  if (elements_.map && index < elements_.length()) {
+    const SparseArrayMap::const_iterator it = elements_.map->find(index);
+    if (it != elements_.map->end()) {
+      slot->set(it->second, this);
+      return true;
+    }
+  }
+  return false;
+}
+
+bool JSObject::DefineOwnIndexedPropertyInternal(Context* ctx, uint32_t index,
+                                                const PropertyDescriptor& desc, bool th, Error* e) {
+  if (index >= elements_.length() && !elements_.writable()) {
+    if (th) {
+      e->Report(Error::Type,
+                "adding an element to the array "
+                "which length is not writable is rejected");
+    }
+    return false;
+  }
+
+  if (elements_.dense()) {
+    assert(IsExtensible());
+    const bool absent = IsAbsentDescriptor(desc);
+    if (desc.IsDefault() || absent) {
+      // fast path
+      JSVal value = JSUndefined;
+      if (!desc.AsDataDescriptor()->IsValueAbsent()) {
+        value = desc.AsDataDescriptor()->value();
+      }
+
+      if (index < elements_.vector.size()) {
+        elements_.vector[index] = value;
+        return true;
+      }
+
+      if (absent) {
+        // purge vector
+        elements_.MakeSparse();
+      } else {
+        if (index < IndexedElements::kMaxVectorSize) {
+          elements_.vector.resize(index + 1, JSEmpty);
+          elements_.vector[index] = value;
+          if (index >= elements_.length()) {
+            elements_.set_length(index + 1);
+          }
+          return true;
+        }
+      }
+    } else {
+      if (index < IndexedElements::kMaxVectorSize) {
+        // purge vector
+        elements_.MakeSparse();
+      }
+    }
+  }
+
+  SparseArrayMap* sparse = elements_.EnsureMap();
+  SparseArrayMap::iterator it = sparse->find(index);
+  if (it != sparse->end()) {
+    StoredSlot merge(it->second);
+    bool returned = false;
+    if (merge.IsDefineOwnPropertyAccepted(desc, th, &returned, e)) {
+      merge.Merge(ctx, desc);
+      (*sparse)[index] = merge;
+    }
+    return returned;
+  }
+
+  // new element
+  if (!IsExtensible()) {
+    if (th) {
+      e->Report(Error::Type, "object not extensible");\
+    }
+    return false;
+  }
+  if (index >= elements_.length()) {
+    elements_.set_length(index + 1);
+  }
+  sparse->insert(std::make_pair(index, StoredSlot(ctx, desc)));
+  return true;
 }
 
 JSObject* JSObject::New(Context* ctx) {
@@ -357,7 +513,25 @@ void JSObject::MapTransitionWithReallocation(
 void JSObject::MarkChildren(radio::Core* core) {
   core->MarkCell(map_);
   std::for_each(slots_.begin(), slots_.end(), radio::Core::Marker(core));
+  std::for_each(elements_.vector.begin(), elements_.vector.end(), radio::Core::Marker(core));
+  if (elements_.map) {
+    for (SparseArrayMap::const_iterator it = elements_.map->begin(),
+         last = elements_.map->end(); it != last; ++it) {
+      core->MarkValue(it->second.value());
+    }
+  }
 }
+
+void JSObject::ChangeExtensible(Context* ctx, bool val) {
+  if (val) {
+    flags_ |= kFlagExtensible;
+  } else {
+    flags_ &= ~kFlagExtensible;
+  }
+  set_map(map()->ChangeExtensibleTransition(ctx));
+  elements_.MakeSparse();
+}
+
 
 JSObject* JSObject::prototype() const { return map()->prototype(); }
 

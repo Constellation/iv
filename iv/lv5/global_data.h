@@ -11,6 +11,7 @@
 #include <iv/random_generator.h>
 #include <iv/symbol_table.h>
 #include <iv/lv5/map.h>
+#include <iv/lv5/map_builder.h>
 #include <iv/lv5/class.h>
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/gc_hook.h>
@@ -34,7 +35,8 @@ class GlobalData {
   typedef std::array<Map*, TypedCode::kNumOfCodes> TypedArrayMaps;
 
   explicit GlobalData(Context* ctx)
-    : random_generator_(0, 1, static_cast<int>(std::time(NULL))),
+    : ctx_(ctx),
+      random_generator_(0, 1, static_cast<int>(std::time(NULL))),
       regs_(),
       symbol_table_(),
       classes_(),
@@ -72,6 +74,10 @@ class GlobalData {
       array_buffer_map_(NULL),
       data_view_map_(NULL),
       typed_array_maps_(),
+      normal_arguments_map_(NULL),
+      strict_arguments_map_(NULL),
+      number_format_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
+      date_time_format_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
       gc_hook_(this) {
     {
       Error::Dummy e;
@@ -167,13 +173,11 @@ class GlobalData {
     }
   }
 
-  double Random() {
-    return random_generator_.get();
-  }
+  Context* ctx() const { return ctx_; }
 
-  JSGlobal* global_obj() const {
-    return global_obj_;
-  }
+  double Random() { return random_generator_.get(); }
+
+  JSGlobal* global_obj() const { return global_obj_; }
 
   void RegisterLiteralRegExp(JSRegExpImpl* reg) {
     regs_.push_back(reg); }
@@ -188,25 +192,15 @@ class GlobalData {
   }
 
   JSString* string_empty() const { return string_empty_; }
-
   JSString* string_null() const { return string_null_; }
-
   JSString* string_true() const { return string_true_; }
-
   JSString* string_false() const { return string_false_; }
-
   JSString* string_undefined() const { return string_undefined_; }
-
   JSString* string_function() const { return string_function_; }
-
   JSString* string_object() const { return string_object_; }
-
   JSString* string_number() const { return string_number_; }
-
   JSString* string_string() const { return string_string_; }
-
   JSString* string_boolean() const { return string_boolean_; }
-
   JSString* string_empty_regexp() const { return string_empty_regexp_; }
 
   // If string is not cached, return NULL
@@ -242,6 +236,29 @@ class GlobalData {
   Map* array_buffer_map() const { return array_buffer_map_; }
   Map* data_view_map() const { return data_view_map_; }
   Map* typed_array_map(TypedCode::Code code) const { return typed_array_maps_[code]; }
+  Map* normal_arguments_map() const { return normal_arguments_map_; }
+  Map* strict_arguments_map() const { return strict_arguments_map_; }
+  Map* number_format_map() const { return number_format_map_; }
+  Map* date_time_format_map() const { return date_time_format_map_; }
+
+  void InitArgumentsMap() {
+    JSObject* proto = object_prototype();
+    // normal arguments map
+    {
+      MapBuilder builder(ctx(), proto);
+      builder.Add(symbol::length(), ATTR::CreateData(ATTR::W | ATTR::C));
+      builder.Add(symbol::callee(), ATTR::CreateData(ATTR::N));
+      normal_arguments_map_ = builder.Build(false);
+    }
+    // strict arguments map
+    {
+      MapBuilder builder(ctx(), proto);
+      builder.Add(symbol::length(), ATTR::CreateData(ATTR::W | ATTR::C));
+      builder.Add(symbol::callee(), ATTR::CreateAccessor(ATTR::N));
+      builder.Add(symbol::caller(), ATTR::CreateAccessor(ATTR::N));
+      strict_arguments_map_ = builder.Build(false);
+    }
+  }
 
   void OnGarbageCollect() {
   }
@@ -273,6 +290,8 @@ class GlobalData {
   JSObject* array_buffer_prototype() const { return array_buffer_prototype_; }
   JSObject* data_view_prototype() const { return data_view_prototype_; }
   JSObject* typed_array_prototype(TypedCode::Code code) const { return typed_array_prototypes_[code]; }
+  JSObject* number_format_prototype() const { return number_format_prototype_; }
+  JSObject* date_time_format_prototype() const { return date_time_format_prototype_; }
 
  private:
   // prototypes setter
@@ -297,7 +316,11 @@ class GlobalData {
   void set_array_buffer_prototype(JSObject* proto) { array_buffer_prototype_ = proto; }
   void set_data_view_prototype(JSObject* proto) { data_view_prototype_ = proto; }
   void set_typed_array_prototype(TypedCode::Code code, JSObject* proto) { typed_array_prototypes_[code] = proto; }
+  void set_number_format_prototype(JSObject* proto) { number_format_prototype_ = proto; }
+  void set_date_time_format_prototype(JSObject* proto) { date_time_format_prototype_ = proto; }
 
+
+  Context* ctx_;
 
   RandomGenerator random_generator_;
   trace::Vector<JSRegExpImpl*>::type regs_;
@@ -342,6 +365,8 @@ class GlobalData {
   JSObject* array_buffer_prototype_;
   JSObject* data_view_prototype_;
   TypedArrayPrototypes typed_array_prototypes_;
+  JSObject* number_format_prototype_;
+  JSObject* date_time_format_prototype_;
 
   // builtin maps
   Map* empty_object_map_;
@@ -365,6 +390,10 @@ class GlobalData {
   Map* array_buffer_map_;
   Map* data_view_map_;
   TypedArrayMaps typed_array_maps_;
+  Map* normal_arguments_map_;
+  Map* strict_arguments_map_;
+  Map* number_format_map_;
+  Map* date_time_format_map_;
 
   GCHook<GlobalData> gc_hook_;
 };

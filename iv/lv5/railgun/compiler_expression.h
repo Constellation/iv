@@ -2,6 +2,7 @@
 #define IV_LV5_RAILGUN_COMPILER_EXPRESSION_H_
 #include <iv/lv5/jsglobal.h>
 #include <iv/lv5/railgun/compiler.h>
+#include <iv/lv5/map_builder.h>
 namespace iv {
 namespace lv5 {
 namespace railgun {
@@ -950,7 +951,7 @@ class Compiler::ArraySite {
  private:
   void EmitElement(uint32_t idx, uint32_t size) const {
     assert(!elements_.empty());
-    if ((idx + size) > JSArray::kMaxVectorSize) {
+    if ((idx + size) > IndexedElements::kMaxVectorSize) {
       compiler_->Emit<OP::INIT_SPARSE_ARRAY_ELEMENT>(
           Instruction::Reg2(ary_, elements_.front()),
           Instruction::UInt32(idx, size));

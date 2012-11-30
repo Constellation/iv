@@ -98,7 +98,9 @@ inline JSVal ArrayIsArray(const Arguments& args, Error* e) {
 // section 15.4.3.3 Array.of(...items)
 inline JSVal ArrayOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.of", args, e);
-  return JSArray::New(args.ctx(), args.begin(), args.end());
+  JSVector* vec = JSVector::New(args.ctx(), args.size());
+  vec->assign(args.begin(), args.end());
+  return vec->ToJSArray();
 }
 
 // section 15.4.3.4 Array.from(arrayLike)
@@ -108,7 +110,7 @@ inline JSVal ArrayFrom(const Arguments& args, Error* e) {
   Context* ctx = args.ctx();
   JSObject* target = arg1.ToObject(ctx, IV_LV5_ERROR(e));
   const uint32_t len = internal::GetLength(ctx, target, IV_LV5_ERROR(e));
-  if (len > JSArray::kMaxVectorSize) {
+  if (len > IndexedElements::kMaxVectorSize) {
     JSArray* ary = JSArray::New(ctx, len);
     for (uint32_t k = 0; k < len; ++k) {
       const Symbol sym = symbol::MakeSymbolFromIndex(k);
@@ -528,7 +530,7 @@ inline JSVal ArraySlice(const Arguments& args, Error* e) {
   }
 
   const uint32_t result_length = final > k ? final - k : 0;
-  if (result_length > JSArray::kMaxVectorSize) {
+  if (result_length > IndexedElements::kMaxVectorSize) {
     JSArray* const ary = JSArray::New(ctx, result_length);
     for (uint32_t n = 0; k < final; ++k, ++n) {
       if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {
@@ -881,7 +883,7 @@ inline JSVal ArraySplice(const Arguments& args, Error* e) {
   }
 
   JSArray* ary = NULL;
-  if (actual_delete_count > JSArray::kMaxVectorSize) {
+  if (actual_delete_count > IndexedElements::kMaxVectorSize) {
     ary = JSArray::New(ctx, actual_delete_count);
     for (uint32_t k = 0; k < actual_delete_count; ++k) {
       const uint32_t from = actual_start + k;
@@ -1255,7 +1257,7 @@ inline JSVal ArrayMap(const Arguments& args, Error* e) {
       static_cast<JSFunction*>(args.front().object());
 
   const JSVal this_binding = args.At(1);
-  if (len > JSArray::kMaxVectorSize) {
+  if (len > IndexedElements::kMaxVectorSize) {
     JSArray* const ary = JSArray::New(ctx, len);
     for (uint32_t k = 0; k < len; ++k) {
       if (obj->HasProperty(ctx, symbol::MakeSymbolFromIndex(k))) {

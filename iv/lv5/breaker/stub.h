@@ -973,7 +973,7 @@ inline Rep LOAD_PROP(Frame* stack, JSVal base, LoadPropertyIC* ic) {  // NOLINT
       return Extract(JSVal::UInt32(base.string()->size()));
     } else if (base.IsObject() && base.object()->IsClass<Class::Array>()) {
       ic->LoadArrayLength(ctx);
-      return Extract(JSVal::UInt32(static_cast<JSArray*>(base.object())->GetLength()));
+      return Extract(JSVal::UInt32(static_cast<JSArray*>(base.object())->length()));
     }
   }
 

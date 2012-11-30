@@ -6,7 +6,7 @@ namespace lv5 {
 
 class JSDate : public JSObject {
  public:
-  IV_LV5_DEFINE_JSCLASS(Date)
+  IV_LV5_DEFINE_JSCLASS(JSDate, Date)
 
   virtual JSVal DefaultValue(Context* ctx, Hint::Object hint, Error* e) {
     return JSObject::DefaultValue(

@@ -164,8 +164,7 @@ inline JSVal NumberToLocaleString(const Arguments& args, Error* e) {
   }
   const JSVal locales = args.At(0);
   const JSVal options = args.At(1);
-  // FIXME(Constellation) this isn't abstracted.
-  JSObject* format = JSObject::New(ctx, Map::NewUniqueMap(ctx, ctx->number_format_prototype()));
+  JSObject* format = JSObject::New(ctx, ctx->global_data()->number_format_map());
   i18n::InitializeNumberFormat(ctx, format, locales, options, IV_LV5_ERROR(e));
   const PropertyDescriptor desc =
       format->GetOwnProperty(ctx, ctx->i18n()->symbols().initializedNumberFormat());

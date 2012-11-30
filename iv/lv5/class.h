@@ -4,6 +4,7 @@
 #include <iv/lv5/symbol.h>
 #include <iv/lv5/enumeration_mode.h>
 #include <iv/lv5/property_fwd.h>
+#include <iv/lv5/method_table.h>
 namespace iv {
 namespace lv5 {
 
@@ -55,29 +56,6 @@ class PropertyNamesCollector;
   V(Uint8ClampedArray, 35)\
   V(NOT_CACHED, 36)
 
-struct MethodTable {
-  typedef JSVal (*GetSlotType)(Context* ctx, JSObject* obj, Symbol name, Slot* slot, Error* e);  // NOLINT
-  typedef bool (*GetPropertySlotType)(Context* ctx, const JSObject* obj, Symbol name, Slot* slot);  // NOLINT
-  typedef bool (*GetOwnPropertySlotType)(Context* ctx, const JSObject* obj, Symbol name, Slot* slot);  // NOLINT
-  typedef void (*PutType)(Context* context, JSObject* obj, Symbol name, JSVal val, bool th, Error* e);  // NOLINT
-  typedef bool (*HasPropertyType)(Context* ctx, const JSObject* obj, Symbol name);  // NOLINT
-  typedef bool (*DeleteType)(Context* ctx, const JSObject* obj, Symbol name, bool th, Error* e);  // NOLINT
-  typedef bool (*DefineOwnPropertyType)(Context* ctx, JSObject* obj, Symbol name, const PropertyDescriptor& desc, bool th, Error* e);  // NOLINT
-  typedef void (*GetPropertyNamesType)(Context* ctx, const JSObject* obj, PropertyNamesCollector* collector, EnumerationMode mode);  // NOLINT
-  typedef void (*GetOwnPropertyNamesType)(Context* ctx, const JSObject* obj, PropertyNamesCollector* collector, EnumerationMode mode);  // NOLINT
-
-  // actual members
-  GetSlotType GetSlot;
-  GetPropertySlotType GetPropertySlot;
-  GetOwnPropertySlotType GetOwnPropertySlot;
-  PutType Put;
-  HasPropertyType HasProperty;
-  DeleteType Delete;
-  DefineOwnPropertyType DefineOwnProperty;
-  GetPropertyNamesType GetPropertyNames;
-  GetOwnPropertyNamesType GetOwnPropertyNames;
-};
-
 struct Class {
   enum JSClassType {
 #define V(name, num) name = num,
@@ -87,6 +65,7 @@ struct Class {
   };
   const char* name;
   uint32_t type;
+  MethodTable* method;
 };
 
 struct ClassSlot {
@@ -97,11 +76,12 @@ struct ClassSlot {
   JSObject* prototype;
 };
 
-#define IV_LV5_DEFINE_JSCLASS(name)\
+#define IV_LV5_DEFINE_JSCLASS(CLASS, name)\
   static const Class* GetClass() {\
     static const Class cls = {\
       #name,\
-      Class::name\
+      Class::name,\
+      /*IV_LV5_METHOD_TABLE(CLASS)*/\
     };\
     return &cls;\
   }

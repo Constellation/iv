@@ -6,7 +6,7 @@ namespace lv5 {
 
 class JSName : public JSObject {
  public:
-  IV_LV5_DEFINE_JSCLASS(Name)
+  IV_LV5_DEFINE_JSCLASS(JSName, Name)
 };
 
 } }  // namespace iv::lv5

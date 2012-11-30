@@ -23,7 +23,7 @@ class JSURIError;
 
 class JSError : public JSObject {
  public:
-  IV_LV5_DEFINE_JSCLASS(Error)
+  IV_LV5_DEFINE_JSCLASS(JSError, Error)
 
   static JSError* New(Context* ctx, Error::Code code, JSString* str) {
     JSError* const err = new JSError(ctx, code, str, ctx->global_data()->error_map());

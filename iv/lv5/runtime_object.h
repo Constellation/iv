@@ -249,7 +249,7 @@ inline JSVal ObjectPreventExtensions(const Arguments& args, Error* e) {
     const JSVal first = args.front();
     if (first.IsObject()) {
       JSObject* const obj = first.object();
-      obj->set_extensible(false);
+      obj->ChangeExtensible(args.ctx(), false);
       return obj;
     }
   }
