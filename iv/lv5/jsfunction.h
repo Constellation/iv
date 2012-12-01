@@ -68,7 +68,7 @@ inline Map* JSFunction::construct_map(Context* ctx, Error* e) {
     return construct_map_;
   }
   Slot slot;
-  const JSVal res = GetSlot(ctx, symbol::prototype(), &slot, IV_LV5_ERROR_WITH(e, NULL));
+  const JSVal res = GetNonIndexedSlot(ctx, symbol::prototype(), &slot, IV_LV5_ERROR_WITH(e, NULL));
 
   Map* map = Map::New(ctx, res.IsObject() ? res.object() : ctx->global_data()->object_prototype());
   // no side effect and own prototype
@@ -79,27 +79,28 @@ inline Map* JSFunction::construct_map(Context* ctx, Error* e) {
   return map;
 }
 
-inline bool JSFunction::DefineOwnPropertySlot(Context* ctx,
-                                              Symbol name,
-                                              const PropertyDescriptor& desc,
-                                              Slot* slot,
-                                              bool th,
-                                              Error* e) {
+inline bool JSFunction::DefineOwnNonIndexedPropertySlotMethod(JSObject* obj,
+                                                              Context* ctx,
+                                                              Symbol name,
+                                                              const PropertyDescriptor& desc,
+                                                              Slot* slot,
+                                                              bool th,
+                                                              Error* e) {
+  JSFunction* function = static_cast<JSFunction*>(obj);
   if (name == symbol::prototype()) {
     // prototype override
-    construct_map_ = NULL;
+    function->construct_map_ = NULL;
     slot->MakePutUnCacheable();
   }
-  return JSObject::DefineOwnPropertySlot(ctx, name, desc, slot, th, e);
+  return JSObject::DefineOwnNonIndexedPropertySlotMethod(obj, ctx, name, desc, slot, th, e);
 }
 
 
-inline JSVal JSFunction::GetSlot(Context* ctx, Symbol name, Slot* slot, Error* e) {
-  const JSVal val = JSObject::GetSlot(ctx, name, slot, IV_LV5_ERROR(e));
+inline JSVal JSFunction::GetNonIndexedSlotMethod(JSObject* obj, Context* ctx, Symbol name, Slot* slot, Error* e) {
+  const JSVal val = JSObject::GetNonIndexedSlotMethod(obj, ctx, name, slot, IV_LV5_ERROR(e));
   if (name == symbol::caller()) {
     slot->MakeUnCacheable();
-    if (val.IsCallable() &&
-        static_cast<JSFunction*>(val.object())->strict()) {
+    if (val.IsCallable() && static_cast<JSFunction*>(val.object())->strict()) {
       e->Report(Error::Type,
                 "\"caller\" property is not accessible in strict code");
       return JSFalse;

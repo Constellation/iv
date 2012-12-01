@@ -51,60 +51,65 @@ class JSGlobal : public JSObject {
 
   const Vector& variables() const { return variables_; }
 
-  virtual bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
-    const uint32_t entry = LookupVariable(name);
+  IV_LV5_INTERNAL_METHOD bool GetOwnNonIndexedPropertySlotMethod(const JSObject* obj, Context* ctx, Symbol name, Slot* slot) {
+    const JSGlobal* global = static_cast<const JSGlobal*>(obj);
+    const uint32_t entry = global->LookupVariable(name);
     if (entry != core::kNotFound32) {
-      const StoredSlot& stored(variables_[entry]);
-      slot->set(stored.value(), stored.attributes(), this);
+      const StoredSlot& stored(global->variables_[entry]);
+      slot->set(stored.value(), stored.attributes(), obj);
       return true;
     }
-    const bool res = JSObject::GetOwnPropertySlot(ctx, name, slot);
+    const bool res = JSObject::GetOwnNonIndexedPropertySlotMethod(obj, ctx, name, slot);
     if (!res) {
       slot->MakeUnCacheable();
     }
     return res;
   }
 
-  virtual bool DefineOwnPropertySlot(Context* ctx,
-                                     Symbol name,
-                                     const PropertyDescriptor& desc,
-                                     Slot* slot,
-                                     bool th, Error* e) {
-    const uint32_t entry = LookupVariable(name);
-    if (entry == core::kNotFound32) {
-      return JSObject::DefineOwnPropertySlot(ctx, name, desc, slot, th, e);
+  IV_LV5_INTERNAL_METHOD bool DefineOwnNonIndexedPropertySlotMethod(JSObject* obj,
+                                                                    Context* ctx,
+                                                                    Symbol name,
+                                                                    const PropertyDescriptor& desc,
+                                                                    Slot* slot,
+                                                                    bool th, Error* e) {
+    JSGlobal* global = static_cast<JSGlobal*>(obj);
+    const uint32_t entry = global->LookupVariable(name);
+    if (entry != core::kNotFound32) {
+      StoredSlot stored(global->variables_[entry]);
+      bool returned = false;
+      if (stored.IsDefineOwnPropertyAccepted(desc, th, &returned, e)) {
+        // if desc is accessor, IsDefineOwnPropertyAccepted reject it.
+        stored.Merge(ctx, desc);
+        global->variables_[entry] = stored;
+      }
+      return returned;
     }
-
-    StoredSlot stored(variables_[entry]);
-    bool returned = false;
-    if (stored.IsDefineOwnPropertyAccepted(desc, th, &returned, e)) {
-      // if desc is accessor, IsDefineOwnPropertyAccepted reject it.
-      stored.Merge(ctx, desc);
-      variables_[entry] = stored;
-    }
-    return returned;
+    return JSObject::DefineOwnNonIndexedPropertySlotMethod(obj, ctx, name, desc, slot, th, e);
   }
 
-  virtual bool Delete(Context* ctx, Symbol name, bool th, Error* e) {
-    const uint32_t entry = LookupVariable(name);
-    if (entry == core::kNotFound32) {
-      return JSObject::Delete(ctx, name, th, e);
+  IV_LV5_INTERNAL_METHOD bool DeleteNonIndexedMethod(JSObject* obj, Context* ctx, Symbol name, bool th, Error* e) {
+    JSGlobal* global = static_cast<JSGlobal*>(obj);
+    const uint32_t entry = global->LookupVariable(name);
+    if (entry != core::kNotFound32) {
+      // because all variables are configurable:false
+      return false;
     }
-    // because all variables are configurable:false
-    return false;
+    return JSObject::DeleteNonIndexedMethod(obj, ctx, name, th, e);
   }
 
-  virtual void GetOwnPropertyNames(Context* ctx,
-                                   PropertyNamesCollector* collector,
-                                   EnumerationMode mode) const {
-    for (SymbolMap::const_iterator it = symbol_map_.begin(),
-         last = symbol_map_.end(); it != last; ++it) {
+  IV_LV5_INTERNAL_METHOD void GetOwnPropertyNamesMethod(const JSObject* obj,
+                                                        Context* ctx,
+                                                        PropertyNamesCollector* collector,
+                                                        EnumerationMode mode) {
+    const JSGlobal* global = static_cast<const JSGlobal*>(obj);
+    for (SymbolMap::const_iterator it = global->symbol_map_.begin(),
+         last = global->symbol_map_.end(); it != last; ++it) {
       if (mode == INCLUDE_NOT_ENUMERABLE ||
-          variables_[it->second].attributes().IsEnumerable()) {
+          global->variables_[it->second].attributes().IsEnumerable()) {
         collector->Add(it->first, it->second);
       }
     }
-    return JSObject::GetOwnPropertyNames(ctx, collector->LevelUp(), mode);
+    return JSObject::GetOwnPropertyNamesMethod(obj, ctx, collector->LevelUp(), mode);
   }
 
   virtual void MarkChildren(radio::Core* core) {
@@ -120,6 +125,7 @@ class JSGlobal : public JSObject {
     : JSObject(Map::NewUniqueMap(ctx, static_cast<JSObject*>(NULL))),
       symbol_map_(),
       variables_() {
+    set_cls(GetClass());
     assert(map()->GetSlotsSize() == 0);
   }
 

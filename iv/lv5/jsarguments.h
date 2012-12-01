@@ -24,9 +24,7 @@ class AstFactory;
 // only class placeholder
 class JSArguments : public JSObject {
  public:
-  IV_LV5_DEFINE_JSCLASS(JSArguments, Arguments)
-
-  explicit JSArguments(Map* map) : JSObject(map) { set_cls(GetClass()); }
+  explicit JSArguments(Map* map) : JSObject(map) { }
 
   enum {
     FIELD_LENGTH = 0,
@@ -37,6 +35,7 @@ class JSArguments : public JSObject {
 
 class JSNormalArguments : public JSArguments {
  public:
+  IV_LV5_DEFINE_JSCLASS(JSNormalArguments, Arguments)
   typedef GCVector<Symbol>::type Indice;
 
   template<typename Idents, typename ArgsReverseIter>
@@ -56,78 +55,60 @@ class JSNormalArguments : public JSArguments {
     return obj;
   }
 
-  virtual JSVal GetSlot(Context* ctx, Symbol name, Slot* slot, Error* e) {
-    const JSVal v = JSObject::GetSlot(ctx, name, slot, IV_LV5_ERROR(e));
-    if (name == symbol::caller() &&
-        v.IsCallable() &&
-        static_cast<JSFunction*>(v.object())->strict()) {
-      e->Report(Error::Type,
-                "access to strict function \"caller\" not allowed");
+  IV_LV5_INTERNAL_METHOD JSVal GetNonIndexedSlotMethod(JSObject* obj, Context* ctx, Symbol name, Slot* slot, Error* e) {
+    const JSVal v = JSObject::GetNonIndexedSlotMethod(obj, ctx, name, slot, IV_LV5_ERROR(e));
+    if (name == symbol::caller() && v.IsCallable() && static_cast<JSFunction*>(v.object())->strict()) {
+      e->Report(Error::Type, "access to strict function \"caller\" not allowed");
       return JSUndefined;
     }
     return v;
   }
 
-  virtual bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
-    if (symbol::IsArrayIndexSymbol(name)) {
-      return JSObject::GetOwnPropertySlot(ctx, name, slot);
-    }
-
-    const uint32_t index = symbol::GetIndexFromSymbol(name);
-    const bool result = JSObject::GetOwnIndexedPropertySlotInternal(ctx, index, slot);
-    if (mapping_.size() > index) {
-      const Symbol mapped = mapping_[index];
+  IV_LV5_INTERNAL_METHOD bool GetOwnIndexedPropertySlotMethod(const JSObject* obj, Context* ctx, uint32_t index, Slot* slot) {
+    const JSNormalArguments* arg = static_cast<const JSNormalArguments*>(obj);
+    JSObject::GetOwnIndexedPropertySlotMethod(obj, ctx, index, slot);
+    if (arg->mapping_.size() > index) {
+      const Symbol mapped = arg->mapping_[index];
       if (mapped != symbol::kDummySymbol) {
         Error::Dummy dummy;
-        const JSVal val = env_->GetBindingValue(ctx, mapped, false, &dummy);
-        slot->set(val, slot->attributes(), this);
-        return true;
+        const JSVal val = arg->env_->GetBindingValue(ctx, mapped, false, &dummy);
+        slot->set(val, slot->attributes(), obj);
       }
     }
     return true;
   }
 
-  virtual bool DefineOwnPropertySlot(Context* ctx, Symbol name,
-                                     const PropertyDescriptor& desc,
-                                     Slot* slot,
-                                     bool th, Error* e) {
-    if (!symbol::IsArrayIndexSymbol(name)) {
-      return JSObject::DefineOwnPropertySlot(ctx, name, desc, slot, th, e);
-    }
-
-    const uint32_t index = symbol::GetIndexFromSymbol(name);
-    if (!DefineOwnIndexedPropertyInternal(ctx, index, desc, false, e)) {
+  IV_LV5_INTERNAL_METHOD bool DefineOwnIndexedPropertySlotMethod(JSObject* obj,
+                                                                 Context* ctx, uint32_t index,
+                                                                 const PropertyDescriptor& desc,
+                                                                 Slot* slot,
+                                                                 bool th, Error* e) {
+    JSNormalArguments* arg = static_cast<JSNormalArguments*>(obj);
+    if (!arg->DefineOwnIndexedPropertyInternal(ctx, index, desc, false, e)) {
       if (th) {
         e->Report(Error::Type, "[[DefineOwnProperty]] failed");
       }
       return false;
     }
 
-    if (symbol::IsArrayIndexSymbol(name)) {
-      if (mapping_.size() > index) {
-        const Symbol mapped = mapping_[index];
-        bool dummy = false;
-        if (mapped != symbol::kDummySymbol) {
-          if (desc.IsAccessor()) {
-            mapping_[index] = symbol::kDummySymbol;
-            dummy = true;
-          } else {
-            if (desc.IsData()) {
-              const DataDescriptor* const data = desc.AsDataDescriptor();
-              if (!data->IsValueAbsent()) {
-                env_->SetMutableBinding(ctx, mapped, data->value(),
-                                        th, IV_LV5_ERROR_WITH(e, false));
-              }
-              if (!data->IsWritableAbsent() && !data->IsWritable()) {
-                mapping_[index] = symbol::kDummySymbol;
-                dummy = true;
-              }
+    if (arg->mapping_.size() > index) {
+      const Symbol mapped = arg->mapping_[index];
+      bool dummy = false;
+      if (mapped != symbol::kDummySymbol) {
+        if (desc.IsAccessor()) {
+          arg->mapping_[index] = symbol::kDummySymbol;
+          dummy = true;
+        } else {
+          if (desc.IsData()) {
+            const DataDescriptor* const data = desc.AsDataDescriptor();
+            if (!data->IsValueAbsent()) {
+              arg->env_->SetMutableBinding(ctx, mapped, data->value(),
+                                           th, IV_LV5_ERROR_WITH(e, false));
             }
-          }
-
-          if (!dummy) {
-            // make store cache off
-            slot->MakePutUnCacheable();
+            if (!data->IsWritableAbsent() && !data->IsWritable()) {
+              arg->mapping_[index] = symbol::kDummySymbol;
+              dummy = true;
+            }
           }
         }
       }
@@ -135,17 +116,13 @@ class JSNormalArguments : public JSArguments {
     return true;
   }
 
-  virtual bool Delete(Context* ctx, Symbol name, bool th, Error* e) {
-    if (!symbol::IsArrayIndexSymbol(name)) {
-      return JSObject::Delete(ctx, name, th, e);
-    }
-    const uint32_t index = symbol::GetIndexFromSymbol(name);
-    const bool result =
-        JSObject::DeleteIndexedInternal(ctx, index, th, IV_LV5_ERROR_WITH(e, false));
-    if (mapping_.size() > index) {
-      const Symbol mapped = mapping_[index];
+  IV_LV5_INTERNAL_METHOD bool DeleteIndexedMethod(JSObject* obj, Context* ctx, uint32_t index, bool th, Error* e) {
+    JSNormalArguments* arg = static_cast<JSNormalArguments*>(obj);
+    const bool result = JSObject::DeleteIndexedMethod(obj, ctx, index, th, IV_LV5_ERROR_WITH(e, false));
+    if (arg->mapping_.size() > index) {
+      const Symbol mapped = arg->mapping_[index];
       if (mapped != symbol::kDummySymbol) {
-        mapping_[index] = symbol::kDummySymbol;
+        arg->mapping_[index] = symbol::kDummySymbol;
         return true;
       }
     }
@@ -161,7 +138,9 @@ class JSNormalArguments : public JSArguments {
   JSNormalArguments(Context* ctx, JSDeclEnv* env)
     : JSArguments(ctx->global_data()->normal_arguments_map()),
       env_(env),
-      mapping_() { }
+      mapping_() {
+    set_cls(GetClass());
+  }
 
   template<typename Idents, typename ArgsReverseIter>
   void SetArguments(Context* ctx,
@@ -202,6 +181,8 @@ class JSNormalArguments : public JSArguments {
 // not search environment
 class JSStrictArguments : public JSArguments {
  public:
+  IV_LV5_DEFINE_JSCLASS(JSStrictArguments, Arguments)
+
   template<typename ArgsReverseIter>
   static JSStrictArguments* New(Context* ctx,
                                 JSFunction* func,
@@ -223,13 +204,10 @@ class JSStrictArguments : public JSArguments {
     return obj;
   }
 
-  virtual JSVal GetSlot(Context* ctx, Symbol name, Slot* slot, Error* e) {
-    const JSVal v = JSObject::GetSlot(ctx, name, slot, IV_LV5_ERROR(e));
-    if (name == symbol::caller() &&
-        v.IsCallable() &&
-        static_cast<JSFunction*>(v.object())->strict()) {
-      e->Report(Error::Type,
-                "access to strict function \"caller\" not allowed");
+  IV_LV5_INTERNAL_METHOD JSVal GetNonIndexedSlotMethod(JSObject* obj, Context* ctx, Symbol name, Slot* slot, Error* e) {
+    const JSVal v = JSObject::GetNonIndexedSlotMethod(obj, ctx, name, slot, IV_LV5_ERROR(e));
+    if (name == symbol::caller() && v.IsCallable() && static_cast<JSFunction*>(v.object())->strict()) {
+      e->Report(Error::Type, "access to strict function \"caller\" not allowed");
       return JSUndefined;
     }
     return v;
@@ -237,7 +215,9 @@ class JSStrictArguments : public JSArguments {
 
  private:
   explicit JSStrictArguments(Context* ctx)
-    : JSArguments(ctx->global_data()->strict_arguments_map()) { }
+    : JSArguments(ctx->global_data()->strict_arguments_map()) {
+    set_cls(GetClass());
+  }
 };
 
 } }  // namespace iv::lv5

@@ -65,7 +65,7 @@ struct Class {
   };
   const char* name;
   uint32_t type;
-  MethodTable* method;
+  MethodTable method;
 };
 
 struct ClassSlot {
@@ -76,15 +76,18 @@ struct ClassSlot {
   JSObject* prototype;
 };
 
-#define IV_LV5_DEFINE_JSCLASS(CLASS, name)\
+#define IV_LV5_DEFINE_JSCLASS_WITH_SYMBOL(CLASS, name, sym)\
   static const Class* GetClass() {\
     static const Class cls = {\
       #name,\
-      Class::name,\
-      /*IV_LV5_METHOD_TABLE(CLASS)*/\
+      Class::sym,\
+      IV_LV5_METHOD_TABLE(CLASS)\
     };\
     return &cls;\
   }
+
+#define IV_LV5_DEFINE_JSCLASS(CLASS, name)\
+    IV_LV5_DEFINE_JSCLASS_WITH_SYMBOL(CLASS, name, name)
 
 } }  // namespace iv::lv5
 #endif  // IV_LV5_CLASS_H_

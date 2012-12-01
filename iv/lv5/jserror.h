@@ -32,7 +32,7 @@ class JSError : public JSObject {
   }
 
   JSError(Context* ctx, Error::Code code, JSString* str, Map* map)
-    : JSObject(map),
+    : JSObject(map, GetClass()),
       code_(code) {
     if (str) {
       DefineOwnProperty(ctx, symbol::message(),
@@ -46,14 +46,7 @@ class JSError : public JSObject {
 
 class JSEvalError : public JSError {
  public:
-  static const Class* GetClass() {
-    static const Class cls = {
-      "Error",
-      Class::EvalError
-    };
-    return &cls;
-  }
-
+  IV_LV5_DEFINE_JSCLASS_WITH_SYMBOL(JSEvalError, Error, EvalError)
   static JSError* New(Context* ctx, JSString* str) {
     JSError* const err = new JSError(ctx, Error::Eval, str, ctx->global_data()->eval_error_map());
     err->set_cls(JSEvalError::GetClass());
@@ -63,14 +56,7 @@ class JSEvalError : public JSError {
 
 class JSRangeError : public JSError {
  public:
-  static const Class* GetClass() {
-    static const Class cls = {
-      "Error",
-      Class::RangeError
-    };
-    return &cls;
-  }
-
+  IV_LV5_DEFINE_JSCLASS_WITH_SYMBOL(JSRangeError, Error, RangeError)
   static JSError* New(Context* ctx, JSString* str) {
     JSError* const err = new JSError(ctx, Error::Eval, str, ctx->global_data()->range_error_map());
     err->set_cls(JSRangeError::GetClass());
@@ -80,14 +66,7 @@ class JSRangeError : public JSError {
 
 class JSReferenceError : public JSError {
  public:
-  static const Class* GetClass() {
-    static const Class cls = {
-      "Error",
-      Class::ReferenceError
-    };
-    return &cls;
-  }
-
+  IV_LV5_DEFINE_JSCLASS_WITH_SYMBOL(JSReferenceError, Error, ReferenceError)
   static JSError* New(Context* ctx, JSString* str) {
     JSError* const err = new JSError(ctx, Error::Eval, str, ctx->global_data()->reference_error_map());
     err->set_cls(JSReferenceError::GetClass());
@@ -97,14 +76,7 @@ class JSReferenceError : public JSError {
 
 class JSSyntaxError : public JSError {
  public:
-  static const Class* GetClass() {
-    static const Class cls = {
-      "Error",
-      Class::SyntaxError
-    };
-    return &cls;
-  }
-
+  IV_LV5_DEFINE_JSCLASS_WITH_SYMBOL(JSSyntaxError, Error, SyntaxError)
   static JSError* New(Context* ctx, JSString* str) {
     JSError* const err = new JSError(ctx, Error::Eval, str, ctx->global_data()->syntax_error_map());
     err->set_cls(JSSyntaxError::GetClass());
@@ -114,14 +86,7 @@ class JSSyntaxError : public JSError {
 
 class JSTypeError : public JSError {
  public:
-  static const Class* GetClass() {
-    static const Class cls = {
-      "Error",
-      Class::TypeError
-    };
-    return &cls;
-  }
-
+  IV_LV5_DEFINE_JSCLASS_WITH_SYMBOL(JSTypeError, Error, TypeError)
   static JSError* New(Context* ctx, JSString* str) {
     JSError* const err = new JSError(ctx, Error::Eval, str, ctx->global_data()->type_error_map());
     err->set_cls(JSTypeError::GetClass());
@@ -131,14 +96,7 @@ class JSTypeError : public JSError {
 
 class JSURIError : public JSError {
  public:
-  static const Class* GetClass() {
-    static const Class cls = {
-      "Error",
-      Class::URIError
-    };
-    return &cls;
-  }
-
+  IV_LV5_DEFINE_JSCLASS_WITH_SYMBOL(JSURIError, Error, URIError)
   static JSError* New(Context* ctx, JSString* str) {
     JSError* const err = new JSError(ctx, Error::Eval, str, ctx->global_data()->uri_error_map());
     err->set_cls(JSURIError::GetClass());

@@ -37,38 +37,32 @@ class TypedArrayImpl : public JSObject {
     return obj;
   }
 
-  virtual bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
-    if (symbol::IsArrayIndexSymbol(name)) {
-      slot->MakeUnCacheable();
-      JSArrayBuffer* buf = buffer();
-      const uint64_t index = symbol::GetIndexFromSymbol(name);
-      const uint32_t off = byte_offset();
-      const uint64_t total = off + sizeof(T) * (index + 1);
-      if (total > buf->length()) {
-        return JSObject::GetOwnPropertySlot(ctx, name, slot);
-      }
-      const T result =
-          buf->GetValue<T>(off, index, core::kLittleEndian);
-      slot->set(result, Attributes::CreateData(ATTR::W | ATTR::E), this);
-      return true;
-    }
-    return JSObject::GetOwnPropertySlot(ctx, name, slot);
-  }
-
-  virtual bool DefineOwnPropertySlot(Context* ctx,
-                                     Symbol name,
-                                     const PropertyDescriptor& desc,
-                                     Slot* slot,
-                                     bool th, Error* e) {
-    if (!symbol::IsArrayIndexSymbol(name)) {
-      return JSObject::DefineOwnPropertySlot(ctx, name, desc, slot, th, e);
-    }
-    JSArrayBuffer* buf = buffer();
-    const uint64_t index = symbol::GetIndexFromSymbol(name);
-    const uint32_t off = byte_offset();
+  IV_LV5_INTERNAL_METHOD bool GetOwnIndexedPropertySlotMethod(const JSObject* obj, Context* ctx, uint32_t index, Slot* slot) {
+    const TypedArrayImpl* impl = static_cast<const TypedArrayImpl*>(obj);
+    JSArrayBuffer* buf = impl->buffer();
+    const uint32_t off = impl->byte_offset();
     const uint64_t total = off + sizeof(T) * (index + 1);
     if (total > buf->length()) {
-      return JSObject::DefineOwnPropertySlot(ctx, name, desc, slot, th, e);
+      return JSObject::GetOwnIndexedPropertySlotMethod(obj, ctx, index, slot);
+    }
+    const T result =
+        buf->GetValue<T>(off, index, core::kLittleEndian);
+    slot->set(result, Attributes::CreateData(ATTR::W | ATTR::E), obj);
+    return true;
+  }
+
+  IV_LV5_INTERNAL_METHOD bool DefineOwnIndexedPropertySlotMethod(JSObject* obj,
+                                                                 Context* ctx,
+                                                                 uint32_t index,
+                                                                 const PropertyDescriptor& desc,
+                                                                 Slot* slot,
+                                                                 bool th, Error* e) {
+    const TypedArrayImpl* impl = static_cast<const TypedArrayImpl*>(obj);
+    JSArrayBuffer* buf = impl->buffer();
+    const uint32_t off = impl->byte_offset();
+    const uint64_t total = off + sizeof(T) * (index + 1);
+    if (total > buf->length()) {
+      return JSObject::DefineOwnIndexedPropertySlotMethod(obj, ctx, index, desc, slot, th, e);
     }
 
     // FIXME(Constellation) writable check is not found...
@@ -81,13 +75,15 @@ class TypedArrayImpl : public JSObject {
     return true;
   }
 
-  virtual void GetOwnPropertyNames(Context* ctx,
-                                   PropertyNamesCollector* collector,
-                                   EnumerationMode mode) const {
-    for (uint32_t i = 0, iz = length(); i < iz; ++i) {
+  IV_LV5_INTERNAL_METHOD void GetOwnPropertyNamesMethod(const JSObject* obj,
+                                                        Context* ctx,
+                                                        PropertyNamesCollector* collector,
+                                                        EnumerationMode mode) {
+    const TypedArrayImpl* impl = static_cast<const TypedArrayImpl*>(obj);
+    for (uint32_t i = 0, iz = impl->length(); i < iz; ++i) {
       collector->Add(i);
     }
-    JSObject::GetOwnPropertyNames(ctx, collector, mode);
+    JSObject::GetOwnPropertyNamesMethod(obj, ctx, collector, mode);
   }
 
  public:

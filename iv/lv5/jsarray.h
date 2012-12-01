@@ -42,48 +42,51 @@ class JSArray : public JSObject {
     return new JSArray(ctx, *array);
   }
 
-  virtual bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const {
+  IV_LV5_INTERNAL_METHOD bool GetOwnNonIndexedPropertySlotMethod(const JSObject* obj, Context* ctx, Symbol name, Slot* slot) {
     if (name == symbol::length()) {
+      const JSArray* array = static_cast<const JSArray*>(obj);
       slot->set(
-          JSVal::UInt32(elements_.length()),
-          (elements_.writable()) ? ATTR::CreateData(ATTR::W) : ATTR::CreateData(ATTR::N),
-          this);
+          JSVal::UInt32(array->elements_.length()),
+          (array->elements_.writable()) ? ATTR::CreateData(ATTR::W) : ATTR::CreateData(ATTR::N),
+          array);
       return true;
     }
-    return JSObject::GetOwnPropertySlot(ctx, name, slot);
+    return JSObject::GetOwnNonIndexedPropertySlotMethod(obj, ctx, name, slot);
   }
 
-  virtual bool DefineOwnPropertySlot(Context* ctx,
-                                     Symbol name,
-                                     const PropertyDescriptor& desc,
-                                     Slot* slot,
-                                     bool th,
-                                     Error* e) {
+  IV_LV5_INTERNAL_METHOD bool DefineOwnNonIndexedPropertySlotMethod(JSObject* obj,
+                                                                    Context* ctx,
+                                                                    Symbol name,
+                                                                    const PropertyDescriptor& desc,
+                                                                    Slot* slot,
+                                                                    bool th,
+                                                                    Error* e) {
     if (name == symbol::length()) {
       // section 15.4.5.1 step 3
-      return DefineLengthProperty(ctx, desc, th, e);
+      return static_cast<JSArray*>(obj)->DefineLengthProperty(ctx, desc, th, e);
     }
     // section 15.4.5.1 step 5
-    return JSObject::DefineOwnPropertySlot(ctx, name, desc, slot, th, e);
+    return JSObject::DefineOwnNonIndexedPropertySlotMethod(obj, ctx, name, desc, slot, th, e);
   }
 
-  virtual bool Delete(Context* ctx, Symbol name, bool th, Error* e) {
+  IV_LV5_INTERNAL_METHOD bool DeleteNonIndexedMethod(JSObject* obj, Context* ctx, Symbol name, bool th, Error* e) {
     if (symbol::length() == name) {
       if (th) {
         e->Report(Error::Type, "delete failed");
       }
       return false;
     }
-    return JSObject::Delete(ctx, name, th, e);
+    return JSObject::DeleteNonIndexedMethod(obj, ctx, name, th, e);
   }
 
-  virtual void GetOwnPropertyNames(Context* ctx,
-                                   PropertyNamesCollector* collector,
-                                   EnumerationMode mode) const {
+  IV_LV5_INTERNAL_METHOD void GetOwnPropertyNamesMethod(const JSObject* obj,
+                                                        Context* ctx,
+                                                        PropertyNamesCollector* collector,
+                                                        EnumerationMode mode) {
     if (mode == INCLUDE_NOT_ENUMERABLE) {
       collector->Add(symbol::length(), 0);
     }
-    JSObject::GetOwnPropertyNames(ctx, collector, mode);
+    JSObject::GetOwnPropertyNamesMethod(obj, ctx, collector, mode);
   }
 
   static JSArray* ReservedNew(Context* ctx, uint32_t length) {

@@ -3,38 +3,59 @@
 namespace iv {
 namespace lv5 {
 
+#define IV_LV5_INTERNAL_METHOD static
+
 struct MethodTable {
-  typedef JSVal(*GetSlotType)(JSObject* obj, Context* ctx, Symbol name, Slot* slot, Error* e);
-  typedef JSVal(*GetPropertySlotType)(JSObject* obj, Context* ctx, Symbol name, Slot* slot, Error* e);
-  typedef bool(*GetOwnPropertySlotType)(const JSObject* obj, Context* ctx, Symbol name, Slot* slot);
-  typedef bool(*GetOwnIndexedPropertySlotType)(const JSObject* obj, Context* ctx, Symbol name, Slot* slot);
-  typedef void(*PutSlotType)(JSObject* obj, Context* context, Symbol name, JSVal val, Slot* slot, bool th, Error* e);
-  typedef bool(*DeleteType)(JSObject* obj, Context* ctx, Symbol name, bool th, Error* e);
-  typedef bool(*DefineOwnPropertySlotType)(JSObject* obj, Context* ctx, Symbol name, const PropertyDescriptor& desc, Slot* slot, bool th, Error* e);
+  typedef JSVal(*GetNonIndexedSlotType)(JSObject* obj, Context* ctx, Symbol name, Slot* slot, Error* e);
+  typedef JSVal(*GetIndexedSlotType)(JSObject* obj, Context* ctx, uint32_t index, Slot* slot, Error* e);
+  typedef bool(*GetNonIndexedPropertySlotType)(const JSObject* obj, Context* ctx, Symbol name, Slot* slot);
+  typedef bool(*GetIndexedPropertySlotType)(const JSObject* obj, Context* ctx, uint32_t index, Slot* slot);
+  typedef bool(*GetOwnNonIndexedPropertySlotType)(const JSObject* obj, Context* ctx, Symbol name, Slot* slot);
+  typedef bool(*GetOwnIndexedPropertySlotType)(const JSObject* obj, Context* ctx, uint32_t index, Slot* slot);
+  typedef void(*PutNonIndexedSlotType)(JSObject* obj, Context* context, Symbol name, JSVal val, Slot* slot, bool th, Error* e);
+  typedef void(*PutIndexedSlotType)(JSObject* obj, Context* context, uint32_t index, JSVal val, Slot* slot, bool th, Error* e);
+  typedef bool(*DeleteNonIndexedType)(JSObject* obj, Context* ctx, Symbol name, bool th, Error* e);
+  typedef bool(*DeleteIndexedType)(JSObject* obj, Context* ctx, uint32_t name, bool th, Error* e);
+  typedef bool(*DefineOwnNonIndexedPropertySlotType)(JSObject* obj, Context* ctx, Symbol name, const PropertyDescriptor& desc, Slot* slot, bool th, Error* e);
+  typedef bool(*DefineOwnIndexedPropertySlotType)(JSObject* obj, Context* ctx, uint32_t index, const PropertyDescriptor& desc, Slot* slot, bool th, Error* e);
   typedef void(*GetPropertyNamesType)(const JSObject* obj, Context* ctx, PropertyNamesCollector* collector, EnumerationMode mode);
   typedef void(*GetOwnPropertyNamesType)(const JSObject* obj, Context* ctx, PropertyNamesCollector* collector, EnumerationMode mode);
+  typedef JSVal(*DefaultValueType)(JSObject* obj, Context* ctx, Hint::Object hint, Error* e);
 
-  GetSlotType GetSlot;
-  GetPropertySlotType GetPropertySlot;
-  GetOwnPropertySlotType GetOwnPropertySlot;
-  PutSlotType PutSlot;
-  DeleteType Delete;
-  DefineOwnPropertySlotType DefineOwnPropertySlot;
+  GetNonIndexedSlotType GetNonIndexedSlot;
+  GetIndexedSlotType GetIndexedSlot;
+  GetNonIndexedPropertySlotType GetNonIndexedPropertySlot;
+  GetIndexedPropertySlotType GetIndexedPropertySlot;
+  GetOwnNonIndexedPropertySlotType GetOwnNonIndexedPropertySlot;
+  GetOwnIndexedPropertySlotType GetOwnIndexedPropertySlot;
+  PutNonIndexedSlotType PutNonIndexedSlot;
+  PutIndexedSlotType PutIndexedSlot;
+  DeleteNonIndexedType DeleteNonIndexed;
+  DeleteIndexedType DeleteIndexed;
+  DefineOwnNonIndexedPropertySlotType DefineOwnNonIndexedPropertySlot;
+  DefineOwnIndexedPropertySlotType DefineOwnIndexedPropertySlot;
   GetPropertyNamesType GetPropertyNames;
   GetOwnPropertyNamesType GetOwnPropertyNames;
+  DefaultValueType DefaultValue;
 };
 
 #define IV_LV5_METHOD_TABLE(Class)\
   {\
-    &Class::GetSlot,\
-    &Class::GetPropertySlot,\
-    &Class::GetOwnPropertySlot,\
-    &Class::GetOwnIndexedPropertySlot,\
-    &Class::PutSlot,\
-    &Class::Delete,\
-    &Class::DefineOwnPropertySlot,\
-    &Class::GetPropertyNames,\
-    &Class::GetOwnPropertyNames\
+    &Class::GetNonIndexedSlotMethod,\
+    &Class::GetIndexedSlotMethod,\
+    &Class::GetNonIndexedPropertySlotMethod,\
+    &Class::GetIndexedPropertySlotMethod,\
+    &Class::GetOwnNonIndexedPropertySlotMethod,\
+    &Class::GetOwnIndexedPropertySlotMethod,\
+    &Class::PutNonIndexedSlotMethod,\
+    &Class::PutIndexedSlotMethod,\
+    &Class::DeleteNonIndexedMethod,\
+    &Class::DeleteIndexedMethod,\
+    &Class::DefineOwnNonIndexedPropertySlotMethod,\
+    &Class::DefineOwnIndexedPropertySlotMethod,\
+    &Class::GetPropertyNamesMethod,\
+    &Class::GetOwnPropertyNamesMethod,\
+    &Class::DefaultValueMethod\
   }
 
 } }  // namespace iv::lv5

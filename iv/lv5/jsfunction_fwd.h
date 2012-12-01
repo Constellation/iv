@@ -50,7 +50,6 @@ class JSFunction : public JSObject {
     return false;
   }
 
-  virtual JSVal GetSlot(Context* ctx, Symbol name, Slot* slot, Error* e);
 
   virtual JSAPI NativeFunction() const { return NULL; }
 
@@ -67,11 +66,13 @@ class JSFunction : public JSObject {
   bool strict() const { return strict_; }
   Type function_type() const { return type_; }
 
-  virtual bool DefineOwnPropertySlot(Context* ctx,
-                                     Symbol name,
-                                     const PropertyDescriptor& desc,
-                                     Slot* slot,
-                                     bool th, Error* e);
+  IV_LV5_INTERNAL_METHOD bool DefineOwnNonIndexedPropertySlotMethod(JSObject* obj,
+                                                                    Context* ctx,
+                                                                    Symbol name,
+                                                                    const PropertyDescriptor& desc,
+                                                                    Slot* slot,
+                                                                    bool th, Error* e);
+  IV_LV5_INTERNAL_METHOD JSVal GetNonIndexedSlotMethod(JSObject* obj, Context* ctx, Symbol name, Slot* slot, Error* e);
 
   Map* construct_map(Context* ctx, Error* e);
  protected:

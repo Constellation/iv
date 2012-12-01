@@ -11,35 +11,43 @@ class JSStringObject : public JSObject {
  public:
   IV_LV5_DEFINE_JSCLASS(JSStringObject, String)
 
-  virtual bool GetOwnPropertySlot(Context* ctx,
-                                  Symbol name, Slot* slot) const {
+  IV_LV5_INTERNAL_METHOD bool GetOwnNonIndexedPropertySlotMethod(const JSObject* obj,
+                                                                 Context* ctx,
+                                                                 Symbol name, Slot* slot) {
+    JSString* value = static_cast<const JSStringObject*>(obj)->value();
     if (name == symbol::length()) {
       slot->set(
-          JSVal::Int32(static_cast<int32_t>(value_->size())),
-          Attributes::String::Length(), this);
+          JSVal::Int32(static_cast<int32_t>(value->size())),
+          Attributes::String::Length(), obj);
       return true;
     }
-    if (symbol::IsArrayIndexSymbol(name)) {
-      const uint32_t index = symbol::GetIndexFromSymbol(name);
-      const std::size_t len = value_->size();
-      if (index < len) {
-        slot->set(JSString::NewSingle(ctx, value_->At(index)), Attributes::String::Indexed(), this);
-        return true;
-      }
-    }
-    return JSObject::GetOwnPropertySlot(ctx, name, slot);
+    return JSObject::GetOwnNonIndexedPropertySlotMethod(obj, ctx, name, slot);
   }
 
-  virtual void GetOwnPropertyNames(Context* ctx,
-                                   PropertyNamesCollector* collector,
-                                   EnumerationMode mode) const {
+  IV_LV5_INTERNAL_METHOD bool GetOwnIndexedPropertySlotMethod(const JSObject* obj,
+                                                              Context* ctx,
+                                                              uint32_t index, Slot* slot) {
+    JSString* value = static_cast<const JSStringObject*>(obj)->value();
+    const std::size_t len = value->size();
+    if (index < len) {
+      slot->set(JSString::NewSingle(ctx, value->At(index)), Attributes::String::Indexed(), obj);
+      return true;
+    }
+    return JSObject::GetOwnIndexedPropertySlotMethod(obj, ctx, index, slot);
+  }
+
+  IV_LV5_INTERNAL_METHOD void GetOwnPropertyNamesMethod(const JSObject* obj,
+                                                        Context* ctx,
+                                                        PropertyNamesCollector* collector,
+                                                        EnumerationMode mode) {
     if (mode == INCLUDE_NOT_ENUMERABLE) {
       collector->Add(symbol::length(), 0);
     }
-    for (uint32_t i = 0, len = value_->size(); i < len; ++i) {
+    JSString* value = static_cast<const JSStringObject*>(obj)->value();
+    for (uint32_t i = 0, len = value->size(); i < len; ++i) {
       collector->Add(i);
     }
-    JSObject::GetOwnPropertyNames(ctx, collector, mode);
+    JSObject::GetOwnPropertyNamesMethod(obj, ctx, collector, mode);
   }
 
   JSString* value() const {

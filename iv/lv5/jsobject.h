@@ -38,51 +38,63 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
 
   virtual ~JSObject() { }
 
-  virtual JSVal DefaultValue(Context* ctx, Hint::Object hint, Error* e);
-
   bool CanPut(Context* ctx, Symbol name, Slot* slot) const;
 
-  // if you would like to handle them, override
-  //   GetSlot
-  //   GetPropertySlot
-  //   GetOwnPropertySlot
-  //   PutSlot
-  //   DefineOwnPropertySlot
-  // instead of
-  //   Get
-  //   GetProperty
-  //   GetOwnProperty
-  //   Put
-  //   DefineOwnProperty
+  // generic interfaces in ECMA262 and more
   JSVal Get(Context* ctx, Symbol name, Error* e);
-  PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const;
   PropertyDescriptor GetProperty(Context* ctx, Symbol name) const;
+  PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const;
+  void Put(Context* ctx, Symbol name, JSVal val, bool th, Error* e);
+  bool DefineOwnProperty(Context* ctx, Symbol name, const PropertyDescriptor& desc, bool th, Error* e);
+  bool HasProperty(Context* ctx, Symbol name) const;
   bool HasOwnProperty(Context* ctx, Symbol name) const;
-  void Put(Context* context, Symbol name, JSVal val, bool th, Error* e);
-  bool DefineOwnProperty(Context* ctx,
-                         Symbol name,
-                         const PropertyDescriptor& desc,
-                         bool th, Error* e);
 
-  virtual JSVal GetSlot(Context* ctx, Symbol name, Slot* slot, Error* e);
-  virtual bool GetPropertySlot(Context* ctx, Symbol name, Slot* slot) const;
-  virtual bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const;
-  virtual void PutSlot(Context* context, Symbol name, JSVal val, Slot* slot, bool th, Error* e);
-  virtual bool HasProperty(Context* ctx, Symbol name) const;
-  virtual bool Delete(Context* ctx, Symbol name, bool th, Error* e);
-  virtual bool DefineOwnPropertySlot(Context* ctx,
-                                     Symbol name,
-                                     const PropertyDescriptor& desc,
-                                     Slot* slot,
-                                     bool th, Error* e);
-  virtual void GetPropertyNames(Context* ctx,
-                                PropertyNamesCollector* collector,
-                                EnumerationMode mode) const;
-  virtual void GetOwnPropertyNames(Context* ctx,
-                                   PropertyNamesCollector* collector,
-                                   EnumerationMode mode) const;
+  // simple wrappers
+  JSVal GetSlot(Context* ctx, Symbol name, Slot* slot, Error* e);
+  JSVal GetNonIndexedSlot(Context* ctx, Symbol name, Slot* slot, Error* e);
+  JSVal GetIndexedSlot(Context* ctx, uint32_t index, Slot* slot, Error* e);
 
-  bool GetOwnIndexedPropertySlotInternal(Context* ctx, uint32_t index, Slot* slot) const;
+  bool GetPropertySlot(Context* ctx, Symbol name, Slot* slot) const;
+  bool GetNonIndexedPropertySlot(Context* ctx, Symbol name, Slot* slot) const;
+  bool GetIndexedPropertySlot(Context* ctx, uint32_t index, Slot* slot) const;
+
+  bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const;
+  bool GetOwnNonIndexedPropertySlot(Context* ctx, Symbol name, Slot* slot) const;
+  bool GetOwnIndexedPropertySlot(Context* ctx, uint32_t index, Slot* slot) const;
+
+  void PutSlot(Context* ctx, Symbol name, JSVal val, Slot* slot, bool th, Error* e);
+  void PutNonIndexedSlot(Context* ctx, Symbol name, JSVal val, Slot* slot, bool th, Error* e);
+  void PutIndexedSlot(Context* ctx, uint32_t index, JSVal val, Slot* slot, bool th, Error* e);
+
+  bool Delete(Context* ctx, Symbol name, bool th, Error* e);
+  bool DeleteNonIndexed(Context* ctx, Symbol name, bool th, Error* e);
+  bool DeleteIndexed(Context* ctx, uint32_t index, bool th, Error* e);
+
+  bool DefineOwnPropertySlot(Context* ctx, Symbol name, const PropertyDescriptor& desc, Slot* slot, bool th, Error* e);
+  bool DefineOwnNonIndexedPropertySlot(Context* ctx, Symbol name, const PropertyDescriptor& desc, Slot* slot, bool th, Error* e);
+  bool DefineOwnIndexedPropertySlot(Context* ctx, uint32_t index, const PropertyDescriptor& desc, Slot* slot, bool th, Error* e);
+
+  void GetPropertyNames(Context* ctx, PropertyNamesCollector* collector, EnumerationMode mode) const;
+  void GetOwnPropertyNames(Context* ctx, PropertyNamesCollector* collector, EnumerationMode mode) const;
+  JSVal DefaultValue(Context* ctx, Hint::Object hint, Error* e);
+
+  // override them
+  IV_LV5_INTERNAL_METHOD JSVal GetNonIndexedSlotMethod(JSObject* obj, Context* ctx, Symbol name, Slot* slot, Error* e);
+  IV_LV5_INTERNAL_METHOD JSVal GetIndexedSlotMethod(JSObject* obj, Context* ctx, uint32_t index, Slot* slot, Error* e);
+  IV_LV5_INTERNAL_METHOD bool GetNonIndexedPropertySlotMethod(const JSObject* obj, Context* ctx, Symbol name, Slot* slot);
+  IV_LV5_INTERNAL_METHOD bool GetIndexedPropertySlotMethod(const JSObject* obj, Context* ctx, uint32_t index, Slot* slot);
+  IV_LV5_INTERNAL_METHOD bool GetOwnNonIndexedPropertySlotMethod(const JSObject* obj, Context* ctx, Symbol name, Slot* slot);
+  IV_LV5_INTERNAL_METHOD bool GetOwnIndexedPropertySlotMethod(const JSObject* obj, Context* ctx, uint32_t index, Slot* slot);
+  IV_LV5_INTERNAL_METHOD void PutNonIndexedSlotMethod(JSObject* obj, Context* ctx, Symbol name, JSVal val, Slot* slot, bool th, Error* e);
+  IV_LV5_INTERNAL_METHOD void PutIndexedSlotMethod(JSObject* obj, Context* ctx, uint32_t index, JSVal val, Slot* slot, bool th, Error* e);
+  IV_LV5_INTERNAL_METHOD bool DeleteNonIndexedMethod(JSObject* obj, Context* ctx, Symbol name, bool th, Error* e);
+  IV_LV5_INTERNAL_METHOD bool DeleteIndexedMethod(JSObject* obj, Context* ctx, uint32_t index, bool th, Error* e);
+  IV_LV5_INTERNAL_METHOD bool DefineOwnNonIndexedPropertySlotMethod(JSObject* obj, Context* ctx, Symbol name, const PropertyDescriptor& desc, Slot* slot, bool th, Error* e);
+  IV_LV5_INTERNAL_METHOD bool DefineOwnIndexedPropertySlotMethod(JSObject* obj, Context* ctx, uint32_t index, const PropertyDescriptor& desc, Slot* slot, bool th, Error* e);
+  IV_LV5_INTERNAL_METHOD void GetPropertyNamesMethod(const JSObject* obj, Context* ctx, PropertyNamesCollector* collector, EnumerationMode mode);
+  IV_LV5_INTERNAL_METHOD void GetOwnPropertyNamesMethod(const JSObject* obj, Context* ctx, PropertyNamesCollector* collector, EnumerationMode mode);
+  IV_LV5_INTERNAL_METHOD JSVal DefaultValueMethod(JSObject* obj, Context* ctx, Hint::Object hint, Error* e);
+
   bool DefineOwnIndexedPropertyInternal(Context* ctx, uint32_t index,
                                         const PropertyDescriptor& desc,
                                         bool th, Error* e);
@@ -90,7 +102,7 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
 
   virtual bool IsNativeObject() const { return true; }
 
-  virtual bool Freeze(Context* ctx, Error* e) {
+  bool Freeze(Context* ctx, Error* e) {
     PropertyNamesCollector collector;
     GetOwnPropertyNames(ctx, &collector, INCLUDE_NOT_ENUMERABLE);
     for (PropertyNamesCollector::Names::const_iterator
@@ -111,7 +123,7 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
     return true;
   }
 
-  virtual bool Seal(Context* ctx, Error* e) {
+  bool Seal(Context* ctx, Error* e) {
     PropertyNamesCollector collector;
     GetOwnPropertyNames(ctx, &collector, INCLUDE_NOT_ENUMERABLE);
     for (PropertyNamesCollector::Names::const_iterator
@@ -181,8 +193,9 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
   void MarkChildren(radio::Core* core);
 
   Map* map() const { return map_; }
-
   void set_map(Map* map) { map_ = map; }
+
+  const MethodTable* method() const { return &cls_->method; }
 
   Map* FlattenMap() const;
 
@@ -198,7 +211,7 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
  protected:
   explicit JSObject(Map* map);
   explicit JSObject(const JSObject& obj);
-  JSObject(Map* map, Class* cls);
+  JSObject(Map* map, const Class* cls);
 
   const Class* cls_;
   Map* map_;
@@ -208,4 +221,5 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
 };
 
 } }  // namespace iv::lv5
+#include "jsobject_interface.h"
 #endif  // IV_LV5_JSOBJECT_H_

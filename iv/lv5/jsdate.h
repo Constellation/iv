@@ -8,19 +8,15 @@ class JSDate : public JSObject {
  public:
   IV_LV5_DEFINE_JSCLASS(JSDate, Date)
 
-  virtual JSVal DefaultValue(Context* ctx, Hint::Object hint, Error* e) {
-    return JSObject::DefaultValue(
-        ctx,
-        (hint == Hint::NONE) ? Hint::STRING : hint, e);
+  IV_LV5_INTERNAL_METHOD JSVal DefaultValueMethod(JSObject* obj, Context* ctx, Hint::Object hint, Error* e) {
+    return JSObject::DefaultValueMethod(obj, ctx, (hint == Hint::NONE) ? Hint::STRING : hint, e);
   }
-
 
   static JSDate* New(Context* ctx, double val) {
     JSDate* const date = new JSDate(ctx, val);
     date->set_cls(JSDate::GetClass());
     return date;
   }
-
 
   static JSDate* NewPlain(Context* ctx, Map* map, double val) {
     return new JSDate(ctx, map, val);
