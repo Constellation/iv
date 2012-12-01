@@ -439,7 +439,9 @@ void JSObject::GetOwnPropertyNamesMethod(const JSObject* obj,
   if (obj->elements_.map) {
     for (SparseArrayMap::const_iterator it = obj->elements_.map->begin(),
          last = obj->elements_.map->end(); it != last; ++it) {
-      collector->Add(it->first);
+      if (mode == INCLUDE_NOT_ENUMERABLE || it->second.attributes().IsEnumerable()) {
+        collector->Add(it->first);
+      }
     }
   }
   obj->map()->GetOwnPropertyNames(collector, mode);
