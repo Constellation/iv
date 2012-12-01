@@ -246,8 +246,11 @@ bool JSObject::DefineOwnIndexedPropertySlotMethod(JSObject* obj,
                                                   const PropertyDescriptor& desc,
                                                   Slot* slot, bool th, Error* e) {
   if (obj->method()->GetOwnIndexedPropertySlot != JSObject::GetOwnIndexedPropertySlotMethod) {
+    // We should reject following case
+    //   var str = new String('str');
+    //   Object.defineProperty(str, '0', { value: 0 });
     if (!slot->IsUsed()) {
-      obj->GetOwnIndexedPropertySlot(ctx, index, slot);
+      obj->method()->GetOwnIndexedPropertySlot(obj, ctx, index, slot);
     }
 
     bool returned = false;
@@ -385,17 +388,25 @@ bool JSObject::DeleteNonIndexedMethod(JSObject* obj, Context* ctx, Symbol name, 
 }
 
 bool JSObject::DeleteIndexedMethod(JSObject* obj, Context* ctx, uint32_t index, bool th, Error* e) {
+  // fast path
   if (obj->method()->GetOwnIndexedPropertySlot == JSObject::GetOwnIndexedPropertySlotMethod) {
     return obj->DeleteIndexedInternal(ctx, index, th, e);
   }
+
+  // We should raise error to following case
+  //   var str = new String('test');
+  //   (function () {
+  //     'use strict';
+  //     delete str[0];
+  //   }());
   Slot slot;
-  if (!obj->GetOwnIndexedPropertySlot(ctx, index, &slot)) {
+  if (!obj->method()->GetOwnIndexedPropertySlot(obj, ctx, index, &slot)) {
     return true;
   }
 
   if (!slot.attributes().IsConfigurable()) {
     if (th) {
-      e->Report(Error::Type, "delete failed");
+      e->Report(Error::Type, "try to delete not configurable property");
     }
     return false;
   }
