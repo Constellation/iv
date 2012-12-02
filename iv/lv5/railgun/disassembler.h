@@ -257,6 +257,7 @@ class DisAssembler : private core::Noncopyable<> {
       case OP::STORE_OBJECT_SET:
       case OP::STORE_OBJECT_GET:
       case OP::STORE_OBJECT_DATA:
+      case OP::STORE_OBJECT_INDEXED:
       case OP::INIT_VECTOR_ARRAY_ELEMENT:
       case OP::INIT_SPARSE_ARRAY_ELEMENT: {
         const int r0 = instr[1].i16[0], r1 = instr[1].i16[1];

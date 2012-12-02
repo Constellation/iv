@@ -86,18 +86,18 @@ bool JSObject::HasOwnProperty(Context* ctx, Symbol name) const {
   return GetOwnPropertySlot(ctx, name, &slot);
 }
 
-void JSObject::Put(Context* ctx, Symbol name, JSVal val, bool th, Error* e) {
+void JSObject::Put(Context* ctx, Symbol name, JSVal val, bool throwable, Error* e) {
   Slot slot;
-  PutSlot(ctx, name, val, &slot, th, e);
+  PutSlot(ctx, name, val, &slot, throwable, e);
 }
 
 bool JSObject::DefineOwnProperty(Context* ctx,
                                  Symbol name,
                                  const PropertyDescriptor& desc,
-                                 bool th,
+                                 bool throwable,
                                  Error* e) {
   Slot slot;
-  return DefineOwnPropertySlot(ctx, name, desc, &slot, th, e);
+  return DefineOwnPropertySlot(ctx, name, desc, &slot, throwable, e);
 }
 
 bool JSObject::HasProperty(Context* ctx, Symbol name) const {
@@ -188,7 +188,7 @@ bool JSObject::DefineOwnNonIndexedPropertySlotMethod(JSObject* obj,
                                                      Context* ctx,
                                                      Symbol name,
                                                      const PropertyDescriptor& desc,
-                                                     Slot* slot, bool th, Error* e) {
+                                                     Slot* slot, bool throwable, Error* e) {
   if (!slot->IsUsed()) {
     obj->GetOwnPropertySlot(ctx, name, slot);
   }
@@ -196,7 +196,7 @@ bool JSObject::DefineOwnNonIndexedPropertySlotMethod(JSObject* obj,
   if (!slot->IsNotFound() && slot->base() == obj) {
     // found
     bool returned = false;
-    if (slot->IsDefineOwnPropertyAccepted(desc, th, &returned, e)) {
+    if (slot->IsDefineOwnPropertyAccepted(desc, throwable, &returned, e)) {
       if (slot->HasOffset()) {
         const Attributes::Safe old(slot->attributes());
         slot->Merge(ctx, desc);
@@ -222,7 +222,7 @@ bool JSObject::DefineOwnNonIndexedPropertySlotMethod(JSObject* obj,
 
   // not found
   if (!obj->IsExtensible()) {
-    if (th) {
+    if (throwable) {
       e->Report(Error::Type, "object not extensible");\
     }
     return false;
@@ -244,7 +244,7 @@ bool JSObject::DefineOwnIndexedPropertySlotMethod(JSObject* obj,
                                                   Context* ctx,
                                                   uint32_t index,
                                                   const PropertyDescriptor& desc,
-                                                  Slot* slot, bool th, Error* e) {
+                                                  Slot* slot, bool throwable, Error* e) {
   if (obj->method()->GetOwnIndexedPropertySlot != JSObject::GetOwnIndexedPropertySlotMethod) {
     // We should reject following case
     //   var str = new String('str');
@@ -255,26 +255,26 @@ bool JSObject::DefineOwnIndexedPropertySlotMethod(JSObject* obj,
 
     bool returned = false;
     if (!slot->IsNotFound() && slot->base() == obj) {
-      if (!slot->IsDefineOwnPropertyAccepted(desc, th, &returned, e)) {
+      if (!slot->IsDefineOwnPropertyAccepted(desc, throwable, &returned, e)) {
         return returned;
       }
       // through
     } else {
       // not found
       if (!obj->IsExtensible()) {
-        if (th) {
+        if (throwable) {
           e->Report(Error::Type, "object not extensible");\
         }
         return false;
       }
     }
   }
-  return obj->DefineOwnIndexedPropertyInternal(ctx, index, desc, th, e);
+  return obj->DefineOwnIndexedPropertyInternal(ctx, index, desc, throwable, e);
 }
 
-void JSObject::PutNonIndexedSlotMethod(JSObject* obj, Context* ctx, Symbol name, JSVal val, Slot* slot, bool th, Error* e) {
+void JSObject::PutNonIndexedSlotMethod(JSObject* obj, Context* ctx, Symbol name, JSVal val, Slot* slot, bool throwable, Error* e) {
   if (!obj->CanPut(ctx, name, slot)) {
-    if (th) {
+    if (throwable) {
       e->Report(Error::Type, "put failed");
     }
     return;
@@ -291,7 +291,7 @@ void JSObject::PutNonIndexedSlotMethod(JSObject* obj, Context* ctx, Symbol name,
                          ATTR::UNDEF_CONFIGURABLE |
                          ATTR::UNDEF_WRITABLE),
           slot,
-          th, e);
+          throwable, e);
       return;
     }
 
@@ -309,12 +309,12 @@ void JSObject::PutNonIndexedSlotMethod(JSObject* obj, Context* ctx, Symbol name,
   // create or modify data property
   obj->DefineOwnNonIndexedPropertySlot(
       ctx, name,
-      DataDescriptor(val, ATTR::W | ATTR::E | ATTR::C), slot, th, e);
+      DataDescriptor(val, ATTR::W | ATTR::E | ATTR::C), slot, throwable, e);
 }
 
-void JSObject::PutIndexedSlotMethod(JSObject* obj, Context* ctx, uint32_t index, JSVal val, Slot* slot, bool th, Error* e) {
+void JSObject::PutIndexedSlotMethod(JSObject* obj, Context* ctx, uint32_t index, JSVal val, Slot* slot, bool throwable, Error* e) {
   if (!obj->CanPut(ctx, symbol::MakeSymbolFromIndex(index), slot)) {
-    if (th) {
+    if (throwable) {
       e->Report(Error::Type, "put failed");
     }
     return;
@@ -331,7 +331,7 @@ void JSObject::PutIndexedSlotMethod(JSObject* obj, Context* ctx, uint32_t index,
                          ATTR::UNDEF_CONFIGURABLE |
                          ATTR::UNDEF_WRITABLE),
           slot,
-          th, e);
+          throwable, e);
       return;
     }
 
@@ -349,17 +349,17 @@ void JSObject::PutIndexedSlotMethod(JSObject* obj, Context* ctx, uint32_t index,
   // create or modify data property
   obj->DefineOwnIndexedPropertySlot(
       ctx, index,
-      DataDescriptor(val, ATTR::W | ATTR::E | ATTR::C), slot, th, e);
+      DataDescriptor(val, ATTR::W | ATTR::E | ATTR::C), slot, throwable, e);
 }
 
-bool JSObject::DeleteNonIndexedMethod(JSObject* obj, Context* ctx, Symbol name, bool th, Error* e) {
+bool JSObject::DeleteNonIndexedMethod(JSObject* obj, Context* ctx, Symbol name, bool throwable, Error* e) {
   Slot slot;
   if (!obj->GetOwnPropertySlot(ctx, name, &slot)) {
     return true;
   }
 
   if (!slot.attributes().IsConfigurable()) {
-    if (th) {
+    if (throwable) {
       e->Report(Error::Type, "delete failed");
     }
     return false;
@@ -387,10 +387,10 @@ bool JSObject::DeleteNonIndexedMethod(JSObject* obj, Context* ctx, Symbol name, 
   return true;
 }
 
-bool JSObject::DeleteIndexedMethod(JSObject* obj, Context* ctx, uint32_t index, bool th, Error* e) {
+bool JSObject::DeleteIndexedMethod(JSObject* obj, Context* ctx, uint32_t index, bool throwable, Error* e) {
   // fast path
   if (obj->method()->GetOwnIndexedPropertySlot == JSObject::GetOwnIndexedPropertySlotMethod) {
-    return obj->DeleteIndexedInternal(ctx, index, th, e);
+    return obj->DeleteIndexedInternal(ctx, index, throwable, e);
   }
 
   // We should raise error to following case
@@ -405,12 +405,12 @@ bool JSObject::DeleteIndexedMethod(JSObject* obj, Context* ctx, uint32_t index, 
   }
 
   if (!slot.attributes().IsConfigurable()) {
-    if (th) {
+    if (throwable) {
       e->Report(Error::Type, "try to delete not configurable property");
     }
     return false;
   }
-  return obj->DeleteIndexedInternal(ctx, index, th, e);
+  return obj->DeleteIndexedInternal(ctx, index, throwable, e);
 }
 
 void JSObject::GetPropertyNamesMethod(const JSObject* obj,
@@ -479,18 +479,20 @@ void JSObject::ChangePrototype(Context* ctx, JSObject* proto) {
   set_map(map()->ChangePrototypeTransition(ctx, proto));
 }
 
-bool JSObject::DeleteIndexedInternal(Context* ctx, uint32_t index, bool th, Error* e) {
+bool JSObject::DeleteIndexedInternal(Context* ctx, uint32_t index, bool throwable, Error* e) {
   if (elements_.length() <= index) {
     return true;
   }
 
-  if (index < elements_.vector.size()) {
-    elements_.vector[index] = JSEmpty;
-    return true;
-  }
+  if (elements_.dense()) {
+    if (index < elements_.vector.size()) {
+      elements_.vector[index] = JSEmpty;
+      return true;
+    }
 
-  if (index < IndexedElements::kMaxVectorSize) {
-    return true;
+    if (index < IndexedElements::kMaxVectorSize) {
+      return true;
+    }
   }
 
   if (!elements_.map) {
@@ -499,12 +501,12 @@ bool JSObject::DeleteIndexedInternal(Context* ctx, uint32_t index, bool th, Erro
 
   SparseArrayMap* sparse = elements_.map;
   SparseArrayMap::iterator it = sparse->find(index);
-  if (it != sparse->end()) {
+  if (it == sparse->end()) {
     return true;
   }
 
   if (!it->second.attributes().IsConfigurable()) {
-    if (th) {
+    if (throwable) {
       e->Report(Error::Type, "delete failed");
     }
     return false;
@@ -518,9 +520,9 @@ bool JSObject::DeleteIndexedInternal(Context* ctx, uint32_t index, bool th, Erro
 }
 
 bool JSObject::DefineOwnIndexedPropertyInternal(Context* ctx, uint32_t index,
-                                                const PropertyDescriptor& desc, bool th, Error* e) {
+                                                const PropertyDescriptor& desc, bool throwable, Error* e) {
   if (index >= elements_.length() && !elements_.writable()) {
-    if (th) {
+    if (throwable) {
       e->Report(Error::Type,
                 "adding an element to the array "
                 "which length is not writable is rejected");
@@ -530,32 +532,36 @@ bool JSObject::DefineOwnIndexedPropertyInternal(Context* ctx, uint32_t index,
 
   if (elements_.dense()) {
     assert(IsExtensible());
-    const bool absent = IsAbsentDescriptor(desc);
-    if (desc.IsDefault() || absent) {
+    const bool def = desc.IsDefault();
+    if (def || IsAbsentDescriptor(desc)) {
       // fast path
-      JSVal value = JSUndefined;
-      if (!desc.AsDataDescriptor()->IsValueAbsent()) {
-        value = desc.AsDataDescriptor()->value();
-      }
-
       if (index < elements_.vector.size()) {
-        elements_.vector[index] = value;
+        if (desc.AsDataDescriptor()->IsValueAbsent()) {
+          return true;
+        }
+        elements_.vector[index] = desc.AsDataDescriptor()->value();
         return true;
       }
 
-      if (absent) {
+      if (!def) {
         // purge vector
         elements_.MakeSparse();
       } else {
         if (index < IndexedElements::kMaxVectorSize) {
+          // new element
           elements_.vector.resize(index + 1, JSEmpty);
-          elements_.vector[index] = value;
+          if (!desc.AsDataDescriptor()->IsValueAbsent()) {
+            elements_.vector[index] = desc.AsDataDescriptor()->value();
+          } else {
+            elements_.vector[index] = JSUndefined;
+          }
           if (index >= elements_.length()) {
             elements_.set_length(index + 1);
           }
           return true;
         }
       }
+      // purged vector case or index > kMaxVectorSize case
     } else {
       if (index < IndexedElements::kMaxVectorSize) {
         // purge vector
@@ -569,7 +575,7 @@ bool JSObject::DefineOwnIndexedPropertyInternal(Context* ctx, uint32_t index,
   if (it != sparse->end()) {
     StoredSlot merge(it->second);
     bool returned = false;
-    if (merge.IsDefineOwnPropertyAccepted(desc, th, &returned, e)) {
+    if (merge.IsDefineOwnPropertyAccepted(desc, throwable, &returned, e)) {
       merge.Merge(ctx, desc);
       (*sparse)[index] = merge;
     }
@@ -578,7 +584,7 @@ bool JSObject::DefineOwnIndexedPropertyInternal(Context* ctx, uint32_t index,
 
   // new element
   if (!IsExtensible()) {
-    if (th) {
+    if (throwable) {
       e->Report(Error::Type, "object not extensible");\
     }
     return false;

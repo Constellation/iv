@@ -70,69 +70,69 @@ inline bool JSObject::GetOwnIndexedPropertySlot(Context* ctx, uint32_t index, Sl
 }
 
 // PutSlot
-inline void JSObject::PutSlot(Context* ctx, Symbol name, JSVal val, Slot* slot, bool th, Error* e) {
+inline void JSObject::PutSlot(Context* ctx, Symbol name, JSVal val, Slot* slot, bool throwable, Error* e) {
   if (symbol::IsArrayIndexSymbol(name)) {
-    return JSObject::PutIndexedSlot(ctx, symbol::GetIndexFromSymbol(name), val, slot, th, e);
+    return JSObject::PutIndexedSlot(ctx, symbol::GetIndexFromSymbol(name), val, slot, throwable, e);
   }
-  return JSObject::PutNonIndexedSlot(ctx, name, val, slot, th, e);
+  return JSObject::PutNonIndexedSlot(ctx, name, val, slot, throwable, e);
 }
 
-inline void JSObject::PutNonIndexedSlot(Context* ctx, Symbol name, JSVal val, Slot* slot, bool th, Error* e) {
+inline void JSObject::PutNonIndexedSlot(Context* ctx, Symbol name, JSVal val, Slot* slot, bool throwable, Error* e) {
   if (method()->PutNonIndexedSlot == JSObject::PutNonIndexedSlotMethod) {
-    return JSObject::PutNonIndexedSlotMethod(this, ctx, name, val, slot, th, e);
+    return JSObject::PutNonIndexedSlotMethod(this, ctx, name, val, slot, throwable, e);
   }
-  method()->PutNonIndexedSlot(this, ctx, name, val, slot, th, e);
+  method()->PutNonIndexedSlot(this, ctx, name, val, slot, throwable, e);
 }
 
-inline void JSObject::PutIndexedSlot(Context* ctx, uint32_t index, JSVal val, Slot* slot, bool th, Error* e) {
+inline void JSObject::PutIndexedSlot(Context* ctx, uint32_t index, JSVal val, Slot* slot, bool throwable, Error* e) {
   if (method()->PutIndexedSlot == JSObject::PutIndexedSlotMethod) {
-    return JSObject::PutIndexedSlotMethod(this, ctx, index, val, slot, th, e);
+    return JSObject::PutIndexedSlotMethod(this, ctx, index, val, slot, throwable, e);
   }
-  method()->PutIndexedSlot(this, ctx, index, val, slot, th, e);
+  method()->PutIndexedSlot(this, ctx, index, val, slot, throwable, e);
 }
 
 // Delete
-inline bool JSObject::Delete(Context* ctx, Symbol name, bool th, Error* e) {
+inline bool JSObject::Delete(Context* ctx, Symbol name, bool throwable, Error* e) {
   if (symbol::IsArrayIndexSymbol(name)) {
-    return JSObject::DeleteIndexed(ctx, symbol::GetIndexFromSymbol(name), th, e);
+    return JSObject::DeleteIndexed(ctx, symbol::GetIndexFromSymbol(name), throwable, e);
   }
-  return JSObject::DeleteNonIndexed(ctx, name, th, e);
+  return JSObject::DeleteNonIndexed(ctx, name, throwable, e);
 }
 
-inline bool JSObject::DeleteNonIndexed(Context* ctx, Symbol name, bool th, Error* e) {
+inline bool JSObject::DeleteNonIndexed(Context* ctx, Symbol name, bool throwable, Error* e) {
   if (method()->DeleteNonIndexed == JSObject::DeleteNonIndexedMethod) {
-    return JSObject::DeleteNonIndexedMethod(this, ctx, name, th, e);
+    return JSObject::DeleteNonIndexedMethod(this, ctx, name, throwable, e);
   }
-  return method()->DeleteNonIndexed(this, ctx, name, th, e);
+  return method()->DeleteNonIndexed(this, ctx, name, throwable, e);
 }
 
-inline bool JSObject::DeleteIndexed(Context* ctx, uint32_t index, bool th, Error* e) {
+inline bool JSObject::DeleteIndexed(Context* ctx, uint32_t index, bool throwable, Error* e) {
   if (method()->DeleteIndexed == JSObject::DeleteIndexedMethod) {
-    return JSObject::DeleteIndexedMethod(this, ctx, index, th, e);
+    return JSObject::DeleteIndexedMethod(this, ctx, index, throwable, e);
   }
-  return method()->DeleteIndexed(this, ctx, index, th, e);
+  return method()->DeleteIndexed(this, ctx, index, throwable, e);
 }
 
 // DefineOwnPropertySlot
-inline bool JSObject::DefineOwnPropertySlot(Context* ctx, Symbol name, const PropertyDescriptor& desc, Slot* slot, bool th, Error* e) {
+inline bool JSObject::DefineOwnPropertySlot(Context* ctx, Symbol name, const PropertyDescriptor& desc, Slot* slot, bool throwable, Error* e) {
   if (symbol::IsArrayIndexSymbol(name)) {
-    return JSObject::DefineOwnIndexedPropertySlot(ctx, symbol::GetIndexFromSymbol(name), desc, slot, th, e);
+    return JSObject::DefineOwnIndexedPropertySlot(ctx, symbol::GetIndexFromSymbol(name), desc, slot, throwable, e);
   }
-  return JSObject::DefineOwnNonIndexedPropertySlot(ctx, name, desc, slot, th, e);
+  return JSObject::DefineOwnNonIndexedPropertySlot(ctx, name, desc, slot, throwable, e);
 }
 
-inline bool JSObject::DefineOwnNonIndexedPropertySlot(Context* ctx, Symbol name, const PropertyDescriptor& desc, Slot* slot, bool th, Error* e) {
+inline bool JSObject::DefineOwnNonIndexedPropertySlot(Context* ctx, Symbol name, const PropertyDescriptor& desc, Slot* slot, bool throwable, Error* e) {
   if (method()->DefineOwnNonIndexedPropertySlot == JSObject::DefineOwnNonIndexedPropertySlotMethod) {
-    return JSObject::DefineOwnNonIndexedPropertySlotMethod(this, ctx, name, desc, slot, th, e);
+    return JSObject::DefineOwnNonIndexedPropertySlotMethod(this, ctx, name, desc, slot, throwable, e);
   }
-  return method()->DefineOwnNonIndexedPropertySlot(this, ctx, name, desc, slot, th, e);
+  return method()->DefineOwnNonIndexedPropertySlot(this, ctx, name, desc, slot, throwable, e);
 }
 
-inline bool JSObject::DefineOwnIndexedPropertySlot(Context* ctx, uint32_t index, const PropertyDescriptor& desc, Slot* slot, bool th, Error* e) {
+inline bool JSObject::DefineOwnIndexedPropertySlot(Context* ctx, uint32_t index, const PropertyDescriptor& desc, Slot* slot, bool throwable, Error* e) {
   if (method()->DefineOwnIndexedPropertySlot == JSObject::DefineOwnIndexedPropertySlotMethod) {
-    return JSObject::DefineOwnIndexedPropertySlotMethod(this, ctx, index, desc, slot, th, e);
+    return JSObject::DefineOwnIndexedPropertySlotMethod(this, ctx, index, desc, slot, throwable, e);
   }
-  return method()->DefineOwnIndexedPropertySlot(this, ctx, index, desc, slot, th, e);
+  return method()->DefineOwnIndexedPropertySlot(this, ctx, index, desc, slot, throwable, e);
 }
 
 inline void JSObject::GetPropertyNames(Context* ctx, PropertyNamesCollector* collector, EnumerationMode mode) const {

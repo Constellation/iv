@@ -66,6 +66,10 @@ struct Class {
   const char* name;
   uint32_t type;
   MethodTable method;
+
+  static std::size_t MethodTableOffset() {
+    return IV_OFFSETOF(Class, method);
+  }
 };
 
 struct ClassSlot {

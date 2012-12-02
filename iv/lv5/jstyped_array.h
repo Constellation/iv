@@ -56,13 +56,13 @@ class TypedArrayImpl : public JSObject {
                                                                  uint32_t index,
                                                                  const PropertyDescriptor& desc,
                                                                  Slot* slot,
-                                                                 bool th, Error* e) {
+                                                                 bool throwable, Error* e) {
     const TypedArrayImpl* impl = static_cast<const TypedArrayImpl*>(obj);
     JSArrayBuffer* buf = impl->buffer();
     const uint32_t off = impl->byte_offset();
     const uint64_t total = off + sizeof(T) * (index + 1);
     if (total > buf->length()) {
-      return JSObject::DefineOwnIndexedPropertySlotMethod(obj, ctx, index, desc, slot, th, e);
+      return JSObject::DefineOwnIndexedPropertySlotMethod(obj, ctx, index, desc, slot, throwable, e);
     }
 
     // FIXME(Constellation) writable check is not found...

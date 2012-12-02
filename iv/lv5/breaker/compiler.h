@@ -382,6 +382,9 @@ class Compiler {
         case r::OP::TYPEOF:
           EmitTYPEOF(instr);
           break;
+        case r::OP::STORE_OBJECT_INDEXED:
+          EmitSTORE_OBJECT_INDEXED(instr);
+          break;
         case r::OP::STORE_OBJECT_DATA:
           EmitSTORE_OBJECT_DATA(instr);
           break;
@@ -1316,6 +1319,28 @@ class Compiler {
     type_record_.Put(dst, dst_type_entry);
   }
 
+  // opcode | (obj | item) | (index | type)
+  void EmitSTORE_OBJECT_INDEXED(const Instruction* instr) {
+    const register_t obj = Reg(instr[1].i16[0]);
+    const register_t item = Reg(instr[1].i16[1]);
+    const uint32_t index = instr[2].u32[0];
+    const uint32_t type = instr[2].u32[1];
+    LoadVRs(rsi, obj, rdx, item);
+    asm_->mov(rdi, r12);
+    asm_->mov(ecx, index);
+    switch (type) {
+      case ObjectLiteral::DATA:
+        asm_->Call(&stub::STORE_OBJECT_INDEXED<ObjectLiteral::DATA>);
+        break;
+      case ObjectLiteral::GET:
+        asm_->Call(&stub::STORE_OBJECT_INDEXED<ObjectLiteral::GET>);
+        break;
+      case ObjectLiteral::SET:
+        asm_->Call(&stub::STORE_OBJECT_INDEXED<ObjectLiteral::SET>);
+        break;
+    }
+  }
+
   // opcode | (obj | item) | (offset | merged)
   void EmitSTORE_OBJECT_DATA(const Instruction* instr) {
     const register_t obj = Reg(instr[1].i16[0]);
@@ -1423,20 +1448,19 @@ class Compiler {
     if (symbol::IsArrayIndexSymbol(name)) {
       // generate Array index fast path
       const uint32_t index = symbol::GetIndexFromSymbol(name);
-#if 0
-      DenseArrayGuard(base, rsi, rdi, ".ARRAY_FAST_PATH_EXIT");
+      DenseArrayGuard(base, rsi, rdi, rdx, false, ".ARRAY_FAST_PATH_EXIT");
 
       // check index is not out of range
       const std::ptrdiff_t vector_offset =
-          IV_CAST_OFFSET(radio::Cell*, JSArray*) + JSArray::VectorOffset();
+          IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ElementsOffset() + IndexedElements::VectorOffset();
       const std::ptrdiff_t size_offset =
-          vector_offset + JSArray::JSValVector::SizeOffset();
+          vector_offset + IndexedElements::DenseArrayVector::SizeOffset();
       asm_->cmp(qword[rsi + size_offset], index);
       asm_->jbe(".ARRAY_FAST_PATH_EXIT");
 
       // load element from index directly
       const std::ptrdiff_t data_offset =
-          vector_offset + JSArray::JSValVector::DataOffset();
+          vector_offset + IndexedElements::DenseArrayVector::DataOffset();
       asm_->mov(rax, qword[rsi + data_offset]);
       asm_->mov(rax, qword[rax + kJSValSize * index]);
 
@@ -1444,7 +1468,6 @@ class Compiler {
       NotEmptyGuard(rax, ".ARRAY_FAST_PATH_EXIT");
       asm_->jmp(".EXIT");
       asm_->L(".ARRAY_FAST_PATH_EXIT");
-#endif
 
       // load from value
       asm_->mov(rdi, r14);
@@ -1479,27 +1502,27 @@ class Compiler {
     if (symbol::IsArrayIndexSymbol(name)) {
       // generate Array index fast path
       const uint32_t index = symbol::GetIndexFromSymbol(name);
-#if 0
-      DenseArrayGuard(base, rsi, rdi, ".ARRAY_FAST_PATH_EXIT");
+      DenseArrayGuard(base, rsi, rdi, r11, true, ".ARRAY_FAST_PATH_EXIT");
 
       // check index is not out of range
       const std::ptrdiff_t vector_offset =
-          IV_CAST_OFFSET(radio::Cell*, JSArray*) + JSArray::VectorOffset();
+          IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ElementsOffset() + IndexedElements::VectorOffset();
       const std::ptrdiff_t size_offset =
-          vector_offset + JSArray::JSValVector::SizeOffset();
+          vector_offset + IndexedElements::DenseArrayVector::SizeOffset();
       asm_->cmp(qword[rsi + size_offset], index);
       asm_->jbe(".ARRAY_FAST_PATH_EXIT");
 
       // load element from index directly
       const std::ptrdiff_t data_offset =
-          vector_offset + JSArray::JSValVector::DataOffset();
+          vector_offset + IndexedElements::DenseArrayVector::DataOffset();
       asm_->mov(rax, qword[rsi + data_offset]);
       asm_->mov(qword[rax + kJSValSize * index], rdx);
       asm_->jmp(".EXIT");
+
       asm_->L(".ARRAY_FAST_PATH_EXIT");
-#endif
 
       // store element
+      CheckObjectCoercible(base, rsi, rdi);
       asm_->mov(rdi, r14);
       asm_->mov(rcx, Extract(JSVal::UInt32(index)));
       if (code_->strict()) {
@@ -1724,40 +1747,33 @@ class Compiler {
     LoadVRs(rsi, base, rdx, element);
 
     {
-#if 0
       // check element is int32_t and element >= 0
       Int32Guard(element, rdx, ".ARRAY_FAST_PATH_EXIT");
-      asm_->cmp(edx, 0);
-      asm_->jl(".ARRAY_FAST_PATH_EXIT");
 
       // generate Array index fast path
-      DenseArrayGuard(base, rsi, rdi, ".ARRAY_FAST_PATH_EXIT");
+      DenseArrayGuard(base, rsi, rdi, r11, false, ".ARRAY_FAST_PATH_EXIT");
 
       // check index is not out of range
       const std::ptrdiff_t vector_offset =
-          IV_CAST_OFFSET(radio::Cell*, JSArray*) + JSArray::VectorOffset();
+          IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ElementsOffset() + IndexedElements::VectorOffset();
       const std::ptrdiff_t size_offset =
-          vector_offset + JSArray::JSValVector::SizeOffset();
-      // TODO(Constellation): change Storage size to uint32_t
+          vector_offset + IndexedElements::DenseArrayVector::SizeOffset();
       asm_->mov(ecx, edx);
       asm_->cmp(rcx, qword[rsi + size_offset]);
       asm_->jae(".ARRAY_FAST_PATH_EXIT");
 
       // load element from index directly
       const std::ptrdiff_t data_offset =
-          vector_offset + JSArray::JSValVector::DataOffset();
+          vector_offset + IndexedElements::DenseArrayVector::DataOffset();
       asm_->mov(rax, qword[rsi + data_offset]);
-      asm_->lea(rax, ptr[rax + rcx * kJSValSize]);
-      asm_->mov(rax, qword[rax]);
+      asm_->mov(rax, qword[rax + rcx * kJSValSize]);
 
       // check element is not JSEmpty
       NotEmptyGuard(rax, ".ARRAY_FAST_PATH_EXIT");
       asm_->jmp(".EXIT");
       asm_->L(".ARRAY_FAST_PATH_EXIT");
-#endif
     }
 
-    CheckObjectCoercible(base, rsi, rcx);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::LOAD_ELEMENT);
 
@@ -1780,38 +1796,34 @@ class Compiler {
     LoadVR(rdx, src);
 
     {
-#if 0
       // check element is int32_t and element >= 0
       Int32Guard(element, rcx, ".ARRAY_FAST_PATH_EXIT");
       asm_->cmp(ecx, 0);
       asm_->jl(".ARRAY_FAST_PATH_EXIT");
 
       // generate Array index fast path
-      DenseArrayGuard(base, rsi, rdi, ".ARRAY_FAST_PATH_EXIT");
+      DenseArrayGuard(base, rsi, rdi, r11, true, ".ARRAY_FAST_PATH_EXIT");
 
       // check index is not out of range
       const std::ptrdiff_t vector_offset =
-          IV_CAST_OFFSET(radio::Cell*, JSArray*) + JSArray::VectorOffset();
+          IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ElementsOffset() + IndexedElements::VectorOffset();
       const std::ptrdiff_t size_offset =
-          vector_offset + JSArray::JSValVector::SizeOffset();
-      // TODO(Constellation): change Storage size to uint32_t
+          vector_offset + IndexedElements::DenseArrayVector::SizeOffset();
       asm_->mov(edi, ecx);
       asm_->cmp(rdi, qword[rsi + size_offset]);
       asm_->jae(".ARRAY_FAST_PATH_EXIT");
 
-      // load element from index directly
+      // store element from index directly
       const std::ptrdiff_t data_offset =
-          vector_offset + JSArray::JSValVector::DataOffset();
+          vector_offset + IndexedElements::DenseArrayVector::DataOffset();
       asm_->mov(rax, qword[rsi + data_offset]);
       asm_->mov(qword[rax + rdi * kJSValSize], rdx);
       asm_->jmp(".EXIT");
       asm_->L(".ARRAY_FAST_PATH_EXIT");
-#endif
     }
 
     CheckObjectCoercible(base, rsi, rdi);
     asm_->mov(rdi, r14);
-
     if (code_->strict()) {
       asm_->Call(&stub::STORE_ELEMENT<true>);
     } else {
@@ -2905,13 +2917,6 @@ class Compiler {
     asm_->mov(out, word[tmp + IV_OFFSETOF(Class, type)]);
   }
 
-  void CompareClassType(const Xbyak::Reg64& target,
-                        const Xbyak::Reg64& tmp, const Class* ptr) {
-    const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
-    asm_->mov(tmp, core::BitCast<uintptr_t>(ptr));
-    asm_->cmp(qword[target + offset], tmp);
-  }
-
   void EmptyGuard(const Xbyak::Reg64& target,
                   const char* label,
                   Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
@@ -2966,10 +2971,11 @@ class Compiler {
     asm_->L(".EXIT");
   }
 
-#if 0
   void DenseArrayGuard(register_t base,
                        const Xbyak::Reg64& target,
                        const Xbyak::Reg64& tmp,
+                       const Xbyak::Reg64& tmp2,
+                       bool store_check,
                        const char* label,
                        Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
     IV_STATIC_ASSERT(core::kLittleEndian);
@@ -2990,17 +2996,22 @@ class Compiler {
     // target is guaranteed as object
     // load Class tag from object and check it is Array
     if (!type_entry.type().IsArray()) {
-      CompareClassType(target, tmp, JSArray::GetClass());
-      asm_->jne(label, type);
-    }
+      const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
+      asm_->mov(tmp, qword[target + offset]);
 
-    // target is guaranteed as Array (pointer to Cell)
-    // load dense field and check it is dense
-    const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSArray*) + JSArray::DenseOffset();
-    asm_->test(byte[target + offset], 0xFF);
-    asm_->jz(label, type);
+      const std::ptrdiff_t get_method = Class::MethodTableOffset() + IV_OFFSETOF(MethodTable, GetOwnIndexedPropertySlot);
+      // tmp is class
+      asm_->mov(tmp2, core::BitCast<uintptr_t>(&JSObject::GetOwnIndexedPropertySlotMethod));
+      asm_->cmp(qword[tmp + get_method], tmp2);
+      asm_->jne(label, type);
+      if (store_check) {
+        const std::ptrdiff_t store_method = Class::MethodTableOffset() + IV_OFFSETOF(MethodTable, DefineOwnIndexedPropertySlot);
+        asm_->mov(tmp2, core::BitCast<uintptr_t>(&JSObject::DefineOwnIndexedPropertySlotMethod));
+        asm_->cmp(qword[tmp + store_method], tmp2);
+        asm_->jne(label, type);
+      }
+    }
   }
-#endif
 
   void EmitConstantDest(const TypeEntry& entry, register_t dst) {
     asm_->mov(rax, Extract(entry.constant()));

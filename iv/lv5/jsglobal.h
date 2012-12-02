@@ -71,30 +71,30 @@ class JSGlobal : public JSObject {
                                                                     Symbol name,
                                                                     const PropertyDescriptor& desc,
                                                                     Slot* slot,
-                                                                    bool th, Error* e) {
+                                                                    bool throwable, Error* e) {
     JSGlobal* global = static_cast<JSGlobal*>(obj);
     const uint32_t entry = global->LookupVariable(name);
     if (entry != core::kNotFound32) {
       StoredSlot stored(global->variables_[entry]);
       bool returned = false;
-      if (stored.IsDefineOwnPropertyAccepted(desc, th, &returned, e)) {
+      if (stored.IsDefineOwnPropertyAccepted(desc, throwable, &returned, e)) {
         // if desc is accessor, IsDefineOwnPropertyAccepted reject it.
         stored.Merge(ctx, desc);
         global->variables_[entry] = stored;
       }
       return returned;
     }
-    return JSObject::DefineOwnNonIndexedPropertySlotMethod(obj, ctx, name, desc, slot, th, e);
+    return JSObject::DefineOwnNonIndexedPropertySlotMethod(obj, ctx, name, desc, slot, throwable, e);
   }
 
-  IV_LV5_INTERNAL_METHOD bool DeleteNonIndexedMethod(JSObject* obj, Context* ctx, Symbol name, bool th, Error* e) {
+  IV_LV5_INTERNAL_METHOD bool DeleteNonIndexedMethod(JSObject* obj, Context* ctx, Symbol name, bool throwable, Error* e) {
     JSGlobal* global = static_cast<JSGlobal*>(obj);
     const uint32_t entry = global->LookupVariable(name);
     if (entry != core::kNotFound32) {
       // because all variables are configurable:false
       return false;
     }
-    return JSObject::DeleteNonIndexedMethod(obj, ctx, name, th, e);
+    return JSObject::DeleteNonIndexedMethod(obj, ctx, name, throwable, e);
   }
 
   IV_LV5_INTERNAL_METHOD void GetOwnPropertyNamesMethod(const JSObject* obj,

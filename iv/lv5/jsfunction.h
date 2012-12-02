@@ -84,7 +84,7 @@ inline bool JSFunction::DefineOwnNonIndexedPropertySlotMethod(JSObject* obj,
                                                               Symbol name,
                                                               const PropertyDescriptor& desc,
                                                               Slot* slot,
-                                                              bool th,
+                                                              bool throwable,
                                                               Error* e) {
   JSFunction* function = static_cast<JSFunction*>(obj);
   if (name == symbol::prototype()) {
@@ -92,7 +92,7 @@ inline bool JSFunction::DefineOwnNonIndexedPropertySlotMethod(JSObject* obj,
     function->construct_map_ = NULL;
     slot->MakePutUnCacheable();
   }
-  return JSObject::DefineOwnNonIndexedPropertySlotMethod(obj, ctx, name, desc, slot, th, e);
+  return JSObject::DefineOwnNonIndexedPropertySlotMethod(obj, ctx, name, desc, slot, throwable, e);
 }
 
 

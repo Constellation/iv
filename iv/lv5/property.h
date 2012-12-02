@@ -38,10 +38,10 @@ inline PropertyDescriptor StoredSlot::ToDescriptor() const {
 //
 // current is currently set PropertyDescriptor, and desc is which we try to set.
 inline bool StoredSlot::IsDefineOwnPropertyAccepted(
-    const PropertyDescriptor& desc, bool th, bool* returned, Error* e) const {
+    const PropertyDescriptor& desc, bool throwable, bool* returned, Error* e) const {
 #define REJECT(str)\
   do {\
-    if (th) {\
+    if (throwable) {\
       e->Report(Error::Type, str);\
     }\
     *returned = false;\

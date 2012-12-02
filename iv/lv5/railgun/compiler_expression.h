@@ -1031,30 +1031,36 @@ inline void Compiler::Visit(const ObjectLiteral* lit) {
     const ObjectLiteral::PropertyDescriptorType type(std::get<0>(prop));
     const Symbol name = std::get<1>(prop);
 
-    uint32_t merged = 0;
-    uint32_t position = 0;
     Attributes::Safe attributes =
         (type == ObjectLiteral::DATA) ?
         ATTR::Object::Data() : ATTR::Object::Accessor();
-
-    const Map::Entry entry = builder.Find(name);
-    if (entry.IsNotFound()) {
-      position = builder.Add(name, attributes).offset;
-    } else {
-      position = entry.offset;
-      merged = 1;  // already defined property
-    }
-
     RegisterID item = EmitExpression(std::get<2>(prop));
-    if (type == ObjectLiteral::DATA) {
-      Emit<OP::STORE_OBJECT_DATA>(
-          Instruction::Reg2(obj, item), Instruction::UInt32(position, merged));
-    } else if (type == ObjectLiteral::GET) {
-      Emit<OP::STORE_OBJECT_GET>(
-          Instruction::Reg2(obj, item), Instruction::UInt32(position, merged));
+
+    if (symbol::IsArrayIndexSymbol(name)) {
+      const uint32_t index = symbol::GetIndexFromSymbol(name);
+      Emit<OP::STORE_OBJECT_INDEXED>(
+          Instruction::Reg2(obj, item), Instruction::UInt32(index, type));
     } else {
-      Emit<OP::STORE_OBJECT_SET>(
-          Instruction::Reg2(obj, item), Instruction::UInt32(position, merged));
+      uint32_t position = 0;
+      uint32_t merged = 0;
+      const Map::Entry entry = builder.Find(name);
+      if (entry.IsNotFound()) {
+        position = builder.Add(name, attributes).offset;
+      } else {
+        position = entry.offset;
+        merged = 1;  // already defined property
+      }
+
+      if (type == ObjectLiteral::DATA) {
+        Emit<OP::STORE_OBJECT_DATA>(
+            Instruction::Reg2(obj, item), Instruction::UInt32(position, merged));
+      } else if (type == ObjectLiteral::GET) {
+        Emit<OP::STORE_OBJECT_GET>(
+            Instruction::Reg2(obj, item), Instruction::UInt32(position, merged));
+      } else {
+        Emit<OP::STORE_OBJECT_SET>(
+            Instruction::Reg2(obj, item), Instruction::UInt32(position, merged));
+      }
     }
   }
   Map* map = builder.Build();

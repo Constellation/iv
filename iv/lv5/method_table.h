@@ -12,12 +12,12 @@ struct MethodTable {
   typedef bool(*GetIndexedPropertySlotType)(const JSObject* obj, Context* ctx, uint32_t index, Slot* slot);
   typedef bool(*GetOwnNonIndexedPropertySlotType)(const JSObject* obj, Context* ctx, Symbol name, Slot* slot);
   typedef bool(*GetOwnIndexedPropertySlotType)(const JSObject* obj, Context* ctx, uint32_t index, Slot* slot);
-  typedef void(*PutNonIndexedSlotType)(JSObject* obj, Context* context, Symbol name, JSVal val, Slot* slot, bool th, Error* e);
-  typedef void(*PutIndexedSlotType)(JSObject* obj, Context* context, uint32_t index, JSVal val, Slot* slot, bool th, Error* e);
-  typedef bool(*DeleteNonIndexedType)(JSObject* obj, Context* ctx, Symbol name, bool th, Error* e);
-  typedef bool(*DeleteIndexedType)(JSObject* obj, Context* ctx, uint32_t name, bool th, Error* e);
-  typedef bool(*DefineOwnNonIndexedPropertySlotType)(JSObject* obj, Context* ctx, Symbol name, const PropertyDescriptor& desc, Slot* slot, bool th, Error* e);
-  typedef bool(*DefineOwnIndexedPropertySlotType)(JSObject* obj, Context* ctx, uint32_t index, const PropertyDescriptor& desc, Slot* slot, bool th, Error* e);
+  typedef void(*PutNonIndexedSlotType)(JSObject* obj, Context* context, Symbol name, JSVal val, Slot* slot, bool throwable, Error* e);
+  typedef void(*PutIndexedSlotType)(JSObject* obj, Context* context, uint32_t index, JSVal val, Slot* slot, bool throwable, Error* e);
+  typedef bool(*DeleteNonIndexedType)(JSObject* obj, Context* ctx, Symbol name, bool throwable, Error* e);
+  typedef bool(*DeleteIndexedType)(JSObject* obj, Context* ctx, uint32_t name, bool throwable, Error* e);
+  typedef bool(*DefineOwnNonIndexedPropertySlotType)(JSObject* obj, Context* ctx, Symbol name, const PropertyDescriptor& desc, Slot* slot, bool throwable, Error* e);
+  typedef bool(*DefineOwnIndexedPropertySlotType)(JSObject* obj, Context* ctx, uint32_t index, const PropertyDescriptor& desc, Slot* slot, bool throwable, Error* e);
   typedef void(*GetPropertyNamesType)(const JSObject* obj, Context* ctx, PropertyNamesCollector* collector, EnumerationMode mode);
   typedef void(*GetOwnPropertyNamesType)(const JSObject* obj, Context* ctx, PropertyNamesCollector* collector, EnumerationMode mode);
   typedef JSVal(*DefaultValueType)(JSObject* obj, Context* ctx, Hint::Object hint, Error* e);

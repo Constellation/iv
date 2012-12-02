@@ -247,7 +247,7 @@ class GlobalData {
     {
       MapBuilder builder(ctx(), proto);
       builder.Add(symbol::length(), ATTR::CreateData(ATTR::W | ATTR::C));
-      builder.Add(symbol::callee(), ATTR::CreateData(ATTR::N));
+      builder.Add(symbol::callee(), ATTR::CreateData(ATTR::W | ATTR::C));
       normal_arguments_map_ = builder.Build(false);
     }
     // strict arguments map

@@ -1908,6 +1908,47 @@ JSVal VM::Execute(Frame* start, Error* e) {
         DISPATCH(LOAD_REGEXP);
       }
 
+      DEFINE_OPCODE(STORE_OBJECT_INDEXED) {
+        // opcode | (obj | item) | (index | type)
+        assert(REG(instr[1].i16[0]).IsObject());
+        JSObject* const obj = REG(instr[1].i16[0]).object();
+        const JSVal item = REG(instr[1].i16[0]);
+        const uint32_t index = instr[2].u32[0];
+        const uint32_t type = instr[2].u32[1];
+        Slot slot;
+        switch (type) {
+          case ObjectLiteral::DATA:
+            obj->DefineOwnIndexedPropertySlot(
+                ctx(), index,
+                DataDescriptor(
+                    item,
+                    ATTR::W | ATTR::E| ATTR::C),
+                &slot, false, e);
+            break;
+          case ObjectLiteral::GET:
+            obj->DefineOwnIndexedPropertySlot(
+                ctx(), index,
+                AccessorDescriptor(
+                    item.object(),
+                    NULL,
+                    ATTR::E| ATTR::C|
+                    ATTR::UNDEF_SETTER),
+                &slot, false, e);
+            break;
+          case ObjectLiteral::SET:
+            obj->DefineOwnIndexedPropertySlot(
+                ctx(), index,
+                AccessorDescriptor(
+                    NULL,
+                    item.object(),
+                    ATTR::E| ATTR::C|
+                    ATTR::UNDEF_GETTER),
+                &slot, false, e);
+            break;
+        }
+        DISPATCH(STORE_OBJECT_INDEXED);
+      }
+
       DEFINE_OPCODE(STORE_OBJECT_DATA) {
         // opcode | (obj | item) | (offset | merged)
         assert(REG(instr[1].i16[0]).IsObject());

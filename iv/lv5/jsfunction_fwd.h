@@ -71,7 +71,7 @@ class JSFunction : public JSObject {
                                                                     Symbol name,
                                                                     const PropertyDescriptor& desc,
                                                                     Slot* slot,
-                                                                    bool th, Error* e);
+                                                                    bool throwable, Error* e);
   IV_LV5_INTERNAL_METHOD JSVal GetNonIndexedSlotMethod(JSObject* obj, Context* ctx, Symbol name, Slot* slot, Error* e);
 
   Map* construct_map(Context* ctx, Error* e);

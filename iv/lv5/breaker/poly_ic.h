@@ -210,7 +210,6 @@ class LoadPropertyIC : public PolyIC {
     uint32_t offset_;
   };
 
-#if 0
   class LoadArrayLengthCompiler {
    public:
     static const Unit::Type kType = Unit::LOAD_ARRAY_LENGTH;
@@ -224,11 +223,14 @@ class LoadPropertyIC : public PolyIC {
       as->cmp(r10, qword[r8 + offset]);
       as->jne(fail);
       // load
-      as->mov(rax, qword[r8 + JSArray::LengthOffset()]);
+      const std::size_t length = JSObject::ElementsOffset() + IndexedElements::LengthOffset();
+      as->mov(eax, word[r8 + length]);
+      as->cmp(eax, INT32_MAX);
+      as->ja(fail);
+      as->or(rax, r15);
       as->ret();
     }
   };
-#endif
 
   void LoadOwnProperty(Context* ctx, Map* map, uint32_t offset) {
     if (Unit* ic = Generate(ctx, LoadOwnPropertyCompiler(map, offset))) {
@@ -252,9 +254,7 @@ class LoadPropertyIC : public PolyIC {
   }
 
   void LoadArrayLength(Context* ctx) {
-#if 0
     Generate(ctx, LoadArrayLengthCompiler());
-#endif
   }
 
   void LoadStringLength(Context* ctx) {

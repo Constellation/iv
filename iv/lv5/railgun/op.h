@@ -74,6 +74,7 @@ V(TYPEOF, 2)\
 V(STORE_OBJECT_DATA, 3)\
 V(STORE_OBJECT_GET, 3)\
 V(STORE_OBJECT_SET, 3)\
+V(STORE_OBJECT_INDEXED, 3)\
 \
 /* property lookup opcodes */\
 V(LOAD_PROP, 5)\

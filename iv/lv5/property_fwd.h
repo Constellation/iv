@@ -196,7 +196,7 @@ class StoredSlot {
   }
 
   bool IsDefineOwnPropertyAccepted(
-      const PropertyDescriptor& desc, bool th, bool* returned, Error* e) const;
+      const PropertyDescriptor& desc, bool throwable, bool* returned, Error* e) const;
 
   bool MergeWithNoEffect(const PropertyDescriptor& desc) const;
 

@@ -66,7 +66,9 @@ class JSNormalArguments : public JSArguments {
 
   IV_LV5_INTERNAL_METHOD bool GetOwnIndexedPropertySlotMethod(const JSObject* obj, Context* ctx, uint32_t index, Slot* slot) {
     const JSNormalArguments* arg = static_cast<const JSNormalArguments*>(obj);
-    JSObject::GetOwnIndexedPropertySlotMethod(obj, ctx, index, slot);
+    if (!JSObject::GetOwnIndexedPropertySlotMethod(obj, ctx, index, slot)) {
+      return false;
+    }
     if (arg->mapping_.size() > index) {
       const Symbol mapped = arg->mapping_[index];
       if (mapped != symbol::kDummySymbol) {
@@ -82,10 +84,10 @@ class JSNormalArguments : public JSArguments {
                                                                  Context* ctx, uint32_t index,
                                                                  const PropertyDescriptor& desc,
                                                                  Slot* slot,
-                                                                 bool th, Error* e) {
+                                                                 bool throwable, Error* e) {
     JSNormalArguments* arg = static_cast<JSNormalArguments*>(obj);
     if (!arg->DefineOwnIndexedPropertyInternal(ctx, index, desc, false, e)) {
-      if (th) {
+      if (throwable) {
         e->Report(Error::Type, "[[DefineOwnProperty]] failed");
       }
       return false;
@@ -93,21 +95,18 @@ class JSNormalArguments : public JSArguments {
 
     if (arg->mapping_.size() > index) {
       const Symbol mapped = arg->mapping_[index];
-      bool dummy = false;
       if (mapped != symbol::kDummySymbol) {
         if (desc.IsAccessor()) {
           arg->mapping_[index] = symbol::kDummySymbol;
-          dummy = true;
         } else {
           if (desc.IsData()) {
             const DataDescriptor* const data = desc.AsDataDescriptor();
             if (!data->IsValueAbsent()) {
               arg->env_->SetMutableBinding(ctx, mapped, data->value(),
-                                           th, IV_LV5_ERROR_WITH(e, false));
+                                           throwable, IV_LV5_ERROR_WITH(e, false));
             }
             if (!data->IsWritableAbsent() && !data->IsWritable()) {
               arg->mapping_[index] = symbol::kDummySymbol;
-              dummy = true;
             }
           }
         }
@@ -116,9 +115,9 @@ class JSNormalArguments : public JSArguments {
     return true;
   }
 
-  IV_LV5_INTERNAL_METHOD bool DeleteIndexedMethod(JSObject* obj, Context* ctx, uint32_t index, bool th, Error* e) {
+  IV_LV5_INTERNAL_METHOD bool DeleteIndexedMethod(JSObject* obj, Context* ctx, uint32_t index, bool throwable, Error* e) {
     JSNormalArguments* arg = static_cast<JSNormalArguments*>(obj);
-    const bool result = JSObject::DeleteIndexedMethod(obj, ctx, index, th, IV_LV5_ERROR_WITH(e, false));
+    const bool result = JSObject::DeleteIndexedMethod(obj, ctx, index, throwable, IV_LV5_ERROR_WITH(e, false));
     if (arg->mapping_.size() > index) {
       const Symbol mapped = arg->mapping_[index];
       if (mapped != symbol::kDummySymbol) {

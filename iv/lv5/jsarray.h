@@ -59,24 +59,24 @@ class JSArray : public JSObject {
                                                                     Symbol name,
                                                                     const PropertyDescriptor& desc,
                                                                     Slot* slot,
-                                                                    bool th,
+                                                                    bool throwable,
                                                                     Error* e) {
     if (name == symbol::length()) {
       // section 15.4.5.1 step 3
-      return static_cast<JSArray*>(obj)->DefineLengthProperty(ctx, desc, th, e);
+      return static_cast<JSArray*>(obj)->DefineLengthProperty(ctx, desc, throwable, e);
     }
     // section 15.4.5.1 step 5
-    return JSObject::DefineOwnNonIndexedPropertySlotMethod(obj, ctx, name, desc, slot, th, e);
+    return JSObject::DefineOwnNonIndexedPropertySlotMethod(obj, ctx, name, desc, slot, throwable, e);
   }
 
-  IV_LV5_INTERNAL_METHOD bool DeleteNonIndexedMethod(JSObject* obj, Context* ctx, Symbol name, bool th, Error* e) {
+  IV_LV5_INTERNAL_METHOD bool DeleteNonIndexedMethod(JSObject* obj, Context* ctx, Symbol name, bool throwable, Error* e) {
     if (symbol::length() == name) {
-      if (th) {
+      if (throwable) {
         e->Report(Error::Type, "delete failed");
       }
       return false;
     }
-    return JSObject::DeleteNonIndexedMethod(obj, ctx, name, th, e);
+    return JSObject::DeleteNonIndexedMethod(obj, ctx, name, throwable, e);
   }
 
   IV_LV5_INTERNAL_METHOD void GetOwnPropertyNamesMethod(const JSObject* obj,
@@ -137,47 +137,55 @@ class JSArray : public JSObject {
   // section 15.4.5.1 step 3
   bool DefineLengthProperty(Context* ctx,
                             const PropertyDescriptor& desc,
-                            bool th, Error* e);
+                            bool throwable, Error* e);
 
-  bool SetLength(Context* ctx, uint32_t len, bool th, Error* e);
+  bool ChangeLengthWritable(bool writable, bool throwable, Error* e);
+  bool SetLength(Context* ctx, uint32_t len, bool throwable, Error* e);
 };
 
+inline bool JSArray::ChangeLengthWritable(bool writable, bool throwable, Error* e) {
+  if (!writable) {
+    elements_.MakeReadOnly();
+  } else {
+    // [[Writable]]: false
+    if (!elements_.writable()) {
+      if (throwable) {
+        e->Report(Error::Type, "changing [[Writable]] of unconfigurable property not allowed");
+      }
+      return false;
+    }
+  }
+  return true;
+}
 
-  // section 15.4.5.1 step 3
+// section 15.4.5.1 step 3
 inline bool JSArray::DefineLengthProperty(Context* ctx,
                                           const PropertyDescriptor& desc,
-                                          bool th, Error* e) {
+                                          bool throwable, Error* e) {
   if (desc.IsConfigurable()) {
-    if (th) {
+    if (throwable) {
       e->Report(Error::Type, "changing [[Configurable]] of unconfigurable property not allowed");
     }
     return false;
   }
 
   if (desc.IsEnumerable()) {
-    if (th) {
+    if (throwable) {
       e->Report(Error::Type, "changing [[Enumerable]] of unconfigurable property not allowed");
     }
     return false;
   }
 
   if (desc.IsAccessor()) {
-    if (th) {
+    if (throwable) {
       e->Report(Error::Type, "changing descriptor type of unconfigurable property not allowed");
     }
     return false;
   }
 
   if (desc.IsValueAbsent()) {
-    if (!desc.IsWritableAbsent() && !desc.IsWritable()) {
-      // [[Writable]]: false
-      if (!elements_.writable()) {
-        if (th) {
-          e->Report(Error::Type, "changing [[Writable]] of unconfigurable property not allowed");
-        }
-        return false;
-      }
-      elements_.MakeReadOnly();
+    if (!desc.IsWritableAbsent()) {
+      return ChangeLengthWritable(desc.IsWritable(), throwable, e);
     }
     return true;
   }
@@ -187,9 +195,9 @@ inline bool JSArray::DefineLengthProperty(Context* ctx,
   // length must be uint32_t
   const uint32_t new_len = core::DoubleToUInt32(new_len_double);
   if (new_len != new_len_double) {
-    if (th) {
-      e->Report(Error::Range, "invalid array length");
-    }
+    // Important:
+    // range error occurs even if throwable is false
+    e->Report(Error::Range, "invalid array length");
     return false;
   }
 
@@ -198,27 +206,27 @@ inline bool JSArray::DefineLengthProperty(Context* ctx,
   if (new_len == old_len) {
     // no change.
     // pass even if writable is false.
-    if (!desc.IsWritableAbsent() && !desc.IsWritable()) {
-      elements_.MakeReadOnly();
+    if (!desc.IsWritableAbsent()) {
+      return ChangeLengthWritable(desc.IsWritable(), throwable, e);
     }
     return true;
   }
 
   if (!elements_.writable()) {
-    if (th) {
+    if (throwable) {
       e->Report(Error::Type, "\"length\" not writable");
     }
     return false;
   }
 
-  const bool succeeded = SetLength(ctx, new_len, th, e);
-  if (!desc.IsWritableAbsent() && !desc.IsWritable()) {
-    elements_.MakeReadOnly();
+  const bool succeeded = SetLength(ctx, new_len, throwable, e);
+  if (!desc.IsWritableAbsent()) {
+    return ChangeLengthWritable(desc.IsWritable(), throwable, e);
   }
   return succeeded;
 }
 
-inline bool JSArray::SetLength(Context* ctx, uint32_t len, bool th, Error* e) {
+inline bool JSArray::SetLength(Context* ctx, uint32_t len, bool throwable, Error* e) {
   assert(elements_.writable());
   uint32_t old = length();
   if (len >= old) {
@@ -262,7 +270,7 @@ inline bool JSArray::SetLength(Context* ctx, uint32_t len, bool th, Error* e) {
       old -= 1;
       if (!JSObject::DeleteIndexedInternal(ctx, old, false, e)) {
         elements_.set_length(old + 1);
-        if (th) {
+        if (throwable) {
           e->Report(Error::Type, "shrink array failed");
         }
         return false;
@@ -286,7 +294,7 @@ inline bool JSArray::SetLength(Context* ctx, uint32_t len, bool th, Error* e) {
     const uint32_t index = symbol::GetIndexFromSymbol(*it);
     if (!JSObject::DeleteIndexedInternal(ctx, index, false, e)) {
       elements_.set_length(index + 1);
-      if (th) {
+      if (throwable) {
         e->Report(Error::Type, "shrink array failed");
       }
       return false;

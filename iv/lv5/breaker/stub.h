@@ -609,6 +609,43 @@ inline Rep TO_PRIMITIVE_AND_TO_STRING(Frame* stack, JSVal src) {
   return Extract(str);
 }
 
+template<int Type>
+inline void STORE_OBJECT_INDEXED(Context* ctx, JSVal target, JSVal item, uint32_t index) {
+  JSObject* obj = target.object();
+  Slot slot;
+  Error::Dummy dummy;
+  switch (Type) {
+    case ObjectLiteral::DATA:
+      obj->DefineOwnIndexedPropertySlot(
+          ctx, index,
+          DataDescriptor(
+              item,
+              ATTR::W | ATTR::E| ATTR::C),
+          &slot, false, &dummy);
+      break;
+    case ObjectLiteral::GET:
+      obj->DefineOwnIndexedPropertySlot(
+          ctx, index,
+          AccessorDescriptor(
+              item.object(),
+              NULL,
+              ATTR::E| ATTR::C|
+              ATTR::UNDEF_SETTER),
+          &slot, false, &dummy);
+      break;
+    case ObjectLiteral::SET:
+      obj->DefineOwnIndexedPropertySlot(
+          ctx, index,
+          AccessorDescriptor(
+              NULL,
+              item.object(),
+              ATTR::E| ATTR::C|
+              ATTR::UNDEF_GETTER),
+          &slot, false, &dummy);
+      break;
+  }
+}
+
 inline void STORE_OBJECT_GET(Context* ctx, JSVal target, JSVal item, uint32_t offset) {
   JSObject* obj = target.object();
   obj->Direct(offset) = JSVal::Cell(Accessor::New(ctx, item.object(), NULL));
@@ -792,48 +829,17 @@ inline Rep TYPEOF_NAME(Frame* stack, JSEnv* env, Symbol name) {
   return Extract(ctx->global_data()->string_undefined());
 }
 
-inline bool GetPrimitiveOwnProperty(Context* ctx,
-                                    JSVal base, Symbol name, JSVal* res) {
-  // section 8.7.1 special [[Get]]
-  assert(base.IsPrimitive());
-  if (base.IsString()) {
-    // string short circuit
-    JSString* str = base.string();
-    if (name == symbol::length()) {
-      *res = JSVal::UInt32(static_cast<uint32_t>(str->size()));
-      return true;
-    }
-    if (symbol::IsArrayIndexSymbol(name)) {
-      const uint32_t index = symbol::GetIndexFromSymbol(name);
-      if (index < str->size()) {
-        *res = JSString::NewSingle(ctx, str->At(index));
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-inline JSVal LoadPropPrimitive(Context* ctx,
-                               JSVal base, Symbol name, Error* e) {
-  JSVal res;
-  if (GetPrimitiveOwnProperty(ctx, base, name, &res)) {
-    return res;
-  }
-  // if base is primitive, property not found in "this" object
-  // so, lookup from proto
-  Slot slot;
-  JSObject* const proto = base.GetPrimitiveProto(ctx);
-  if (proto->GetPropertySlot(ctx, name, &slot)) {
-    return slot.Get(ctx, base, e);
-  } else {
-    return JSUndefined;
-  }
-}
-
 inline Rep LOAD_ELEMENT(Frame* stack, JSVal base, JSVal element) {
   Context* ctx = stack->ctx;
   Slot slot;
+  if (element.IsInt32() && base.IsObject()) {
+    const int32_t value = element.int32();
+    JSObject* obj = base.object();
+    if (value >= 0) {
+      const JSVal res = obj->GetIndexedSlot(ctx, value, &slot, ERR);
+      return Extract(res);
+    }
+  }
   const Symbol name = element.ToSymbol(ctx, ERR);
   const JSVal res = base.GetSlot(ctx, name, &slot, ERR);
   return Extract(res);
@@ -1019,6 +1025,7 @@ inline Rep LOAD_PROP(Frame* stack, JSVal base, LoadPropertyIC* ic) {  // NOLINT
 }
 
 inline Rep STORE_PROP(Frame* stack, JSVal base, JSVal src, StorePropertyIC* ic) {
+  assert(!symbol::IsArrayIndexSymbol(ic->name()));
   Context* ctx = stack->ctx;
   const Symbol name = ic->name();
   if (base.IsPrimitive()) {
