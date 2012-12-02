@@ -615,8 +615,9 @@ JSVal VM::Execute(Frame* start, Error* e) {
           global->Direct(instr[3].u32[0]) = src;
         } else {
           const Symbol name = frame->GetName(instr[1].ssw.u32);
+          assert(!symbol::IsArrayIndexSymbol(name));
           Slot slot;
-          if (global->GetOwnPropertySlot(ctx(), name, &slot) && slot.IsStoreCacheable()) {
+          if (global->GetOwnNonIndexedPropertySlot(ctx(), name, &slot) && slot.IsStoreCacheable()) {
             instr[2].map = global->map();
             instr[3].u32[0] = slot.offset();
             global->Direct(slot.offset()) = src;

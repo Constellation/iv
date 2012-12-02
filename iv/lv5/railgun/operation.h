@@ -135,11 +135,13 @@ class Operation {
     }
 
     // property found
-    if (!slot.IsLoadCacheable()) {
+    if (!slot.IsLoadCacheable() || symbol::IsArrayIndexSymbol(s)) {
       // bailout to generic
       instr[0] = Instruction::GetOPInstruction(generic);
       return slot.Get(ctx_, base, e);
     }
+
+    assert(symbol::IsArrayIndexSymbol(s));
 
     JSObject* obj = NULL;
     if (base.IsPrimitive()) {
@@ -268,7 +270,7 @@ class Operation {
         Slot slot;
         if (obj->GetOwnPropertySlot(ctx_, s, &slot)) {
           // only data property
-          if (slot.IsStoreCacheable()) {
+          if (slot.IsStoreCacheable() && !symbol::IsArrayIndexSymbol(s)) {
             instr[2].map = obj->map();
             instr[3].u32[0] = slot.offset();
             obj->Direct(slot.offset()) = stored;
@@ -569,6 +571,7 @@ class Operation {
     } else {
       // now Own Property Pattern only implemented
       Slot slot;
+      assert(!symbol::IsArrayIndexSymbol(s));
       if (global->GetOwnPropertySlot(ctx_, s, &slot)) {
         if (slot.IsLoadCacheable()) {
           instr[2].map = global->map();
