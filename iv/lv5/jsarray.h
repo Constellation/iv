@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <vector>
 #include <algorithm>
+#include <functional>
 #include <iv/conversions.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/gc_template.h>
@@ -244,10 +245,13 @@ inline bool JSArray::SetLength(Context* ctx, uint32_t len, bool throwable, Error
         std::transform(map->begin(), map->end(),
                        copy.begin(),
                        adapter::select1st<SparseArrayMap::value_type>());
+        std::sort(copy.begin(), copy.end(), std::greater<uint32_t>());
         for (std::vector<uint32_t>::const_iterator it = copy.begin(),
              last = copy.end(); it != last; ++it) {
           if (*it >= len) {
             map->erase(*it);
+          } else {
+            break;
           }
         }
         if (map->empty()) {
@@ -283,12 +287,12 @@ inline bool JSArray::SetLength(Context* ctx, uint32_t len, bool throwable, Error
   // big shrink
   PropertyNamesCollector collector;
   JSObject::GetOwnPropertyNames(ctx, &collector, INCLUDE_NOT_ENUMERABLE);
-  for (PropertyNamesCollector::Names::const_iterator
-       it = collector.names().begin(),
-       last = collector.names().end();
+  for (PropertyNamesCollector::Names::const_reverse_iterator
+       it = collector.names().rbegin(),
+       last = collector.names().rend();
        it != last; ++it) {
     if (!symbol::IsArrayIndexSymbol(*it)) {
-      break;
+      continue;
     }
 
     const uint32_t index = symbol::GetIndexFromSymbol(*it);

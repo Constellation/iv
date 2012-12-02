@@ -893,18 +893,18 @@ inline Rep STORE_ELEMENT(Frame* stack, JSVal base, JSVal src, JSVal element) {
 template<bool Strict>
 inline Rep DELETE_ELEMENT(Frame* stack, JSVal base, JSVal element) {
   Context* ctx = stack->ctx;
-  uint32_t index;
-  if (element.GetUInt32(&index)) {
-    JSObject* const obj = base.ToObject(ctx, ERR);
-    const bool result =
-        obj->Delete(ctx, symbol::MakeSymbolFromIndex(index), Strict, ERR);
-    return Extract(JSVal::Bool(result));
-  } else {
-    const Symbol name = element.ToSymbol(ctx, ERR);
-    JSObject* const obj = base.ToObject(ctx, ERR);
-    const bool result = obj->Delete(ctx, name, Strict, ERR);
-    return Extract(JSVal::Bool(result));
+  if (element.IsInt32()) {
+    int32_t index = element.int32();
+    if (index >= 0) {
+      JSObject* const obj = base.ToObject(ctx, ERR);
+      const bool result = obj->DeleteIndexed(ctx, index, Strict, ERR);
+      return Extract(JSVal::Bool(result));
+    }
   }
+  const Symbol name = element.ToSymbol(ctx, ERR);
+  JSObject* const obj = base.ToObject(ctx, ERR);
+  const bool result = obj->Delete(ctx, name, Strict, ERR);
+  return Extract(JSVal::Bool(result));
 }
 
 template<int Target, std::size_t Returned, bool Strict>
