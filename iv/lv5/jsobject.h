@@ -38,6 +38,9 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
 
   virtual ~JSObject() { }
 
+  // implementation is in map.h
+  bool HasIndexedProperty() const;
+
   bool CanPut(Context* ctx, Symbol name, Slot* slot) const;
   bool CanPutNonIndexed(Context* ctx, Symbol name, Slot* slot) const;
   bool CanPutIndexed(Context* ctx, uint32_t index, Slot* slot) const;
@@ -100,6 +103,7 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
   bool DefineOwnIndexedPropertyInternal(Context* ctx, uint32_t index,
                                         const PropertyDescriptor& desc,
                                         bool throwable, Error* e);
+  void DefineOwnIndexedValueDenseInternal(Context* ctx, uint32_t index, JSVal value, bool absent);
   bool DeleteIndexedInternal(Context* ctx, uint32_t inex, bool throwable, Error* e);
 
   virtual bool IsNativeObject() const { return true; }
@@ -223,5 +227,4 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
 };
 
 } }  // namespace iv::lv5
-#include "jsobject_interface.h"
 #endif  // IV_LV5_JSOBJECT_H_

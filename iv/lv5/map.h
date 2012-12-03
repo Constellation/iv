@@ -546,4 +546,5 @@ class Map : public radio::HeapObject<radio::POINTER> {
 };
 
 } }  // namespace iv::lv5
+#include "jsobject_interface.h"
 #endif  // IV_LV5_MAP_H_

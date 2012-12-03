@@ -325,6 +325,15 @@ void JSObject::PutNonIndexedSlotMethod(JSObject* obj, Context* ctx, Symbol name,
 }
 
 void JSObject::PutIndexedSlotMethod(JSObject* obj, Context* ctx, uint32_t index, JSVal val, Slot* slot, bool throwable, Error* e) {
+  if (index < IndexedElements::kMaxVectorSize &&
+      obj->elements_.dense() &&
+      obj->method()->GetOwnIndexedPropertySlot == JSObject::GetOwnIndexedPropertySlotMethod &&
+      (!obj->prototype() || !obj->prototype()->HasIndexedProperty())) {
+    // array fast path
+    obj->DefineOwnIndexedValueDenseInternal(ctx, index, val, false);
+    return;
+  }
+
   if (!obj->CanPutIndexed(ctx, index, slot)) {
     if (throwable) {
       e->Report(Error::Type, "put failed");
@@ -531,6 +540,30 @@ bool JSObject::DeleteIndexedInternal(Context* ctx, uint32_t index, bool throwabl
   return true;
 }
 
+void JSObject::DefineOwnIndexedValueDenseInternal(Context* ctx, uint32_t index, JSVal value, bool absent) {
+  assert(elements_.dense());
+  assert(index < IndexedElements::kMaxVectorSize);
+  // fast path
+  if (index < elements_.vector.size()) {
+    if (!absent) {
+      elements_.vector[index] = value;
+    } else if (elements_.vector[index].IsEmpty()) {
+      elements_.vector[index] = JSUndefined;
+    }
+    return;
+  }
+
+  elements_.vector.resize(index + 1, JSEmpty);
+  if (!absent) {
+    elements_.vector[index] = value;
+  } else {
+    elements_.vector[index] = JSUndefined;
+  }
+  if (index >= elements_.length()) {
+    elements_.set_length(index + 1);
+  }
+}
+
 bool JSObject::DefineOwnIndexedPropertyInternal(Context* ctx, uint32_t index,
                                                 const PropertyDescriptor& desc, bool throwable, Error* e) {
   if (!map()->IsIndexed()) {
@@ -547,37 +580,24 @@ bool JSObject::DefineOwnIndexedPropertyInternal(Context* ctx, uint32_t index,
 
   if (elements_.dense()) {
     assert(IsExtensible());
-    const bool def = desc.IsDefault();
-    if (def || IsAbsentDescriptor(desc)) {
+
+    if (desc.IsDefault()) {
       // fast path
-      if (index < elements_.vector.size()) {
-        if (desc.AsDataDescriptor()->IsValueAbsent()) {
-          return true;
-        }
-        elements_.vector[index] = desc.AsDataDescriptor()->value();
+      if (index < IndexedElements::kMaxVectorSize) {
+        DefineOwnIndexedValueDenseInternal(ctx, index, desc.AsDataDescriptor()->value(), desc.AsDataDescriptor()->IsValueAbsent());
         return true;
       }
-
-      if (!def) {
-        // purge vector
-        elements_.MakeSparse();
-      } else {
-        if (index < IndexedElements::kMaxVectorSize) {
-          // new element
-          elements_.vector.resize(index + 1, JSEmpty);
+      // fall through to sparse array
+    } else {
+      if (IsAbsentDescriptor(desc)) {
+        if (index < elements_.vector.size() && !elements_.vector[index].IsEmpty()) {
           if (!desc.AsDataDescriptor()->IsValueAbsent()) {
             elements_.vector[index] = desc.AsDataDescriptor()->value();
-          } else {
-            elements_.vector[index] = JSUndefined;
-          }
-          if (index >= elements_.length()) {
-            elements_.set_length(index + 1);
           }
           return true;
         }
       }
-      // purged vector case or index > kMaxVectorSize case
-    } else {
+
       if (index < IndexedElements::kMaxVectorSize) {
         // purge vector
         elements_.MakeSparse();

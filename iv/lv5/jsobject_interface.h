@@ -3,6 +3,17 @@
 namespace iv {
 namespace lv5 {
 
+inline bool JSObject::HasIndexedProperty() const {
+  const JSObject* obj = this;
+  do {
+    if (obj->map()->IsIndexed()) {
+      return true;
+    }
+    obj = obj->prototype();
+  } while (obj);
+  return false;
+}
+
 // GetSlot
 inline JSVal JSObject::GetSlot(Context* ctx, Symbol name, Slot* slot, Error* e) {
   if (symbol::IsArrayIndexSymbol(name)) {
@@ -32,7 +43,7 @@ inline bool JSObject::GetNonIndexedPropertySlot(Context* ctx, Symbol name, Slot*
 }
 
 inline bool JSObject::GetIndexedPropertySlot(Context* ctx, uint32_t index, Slot* slot) const {
-  return method()->GetIndexedPropertySlot(this, ctx, index, slot);
+  return map()->IsIndexed() && method()->GetIndexedPropertySlot(this, ctx, index, slot);
 }
 
 // GetOwnPropertySlot
@@ -48,7 +59,7 @@ inline bool JSObject::GetOwnNonIndexedPropertySlot(Context* ctx, Symbol name, Sl
 }
 
 inline bool JSObject::GetOwnIndexedPropertySlot(Context* ctx, uint32_t index, Slot* slot) const {
-  return method()->GetOwnIndexedPropertySlot(this, ctx, index, slot);
+  return map()->IsIndexed() && method()->GetOwnIndexedPropertySlot(this, ctx, index, slot);
 }
 
 // PutSlot
