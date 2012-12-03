@@ -43,7 +43,7 @@ inline bool JSObject::GetNonIndexedPropertySlot(Context* ctx, Symbol name, Slot*
 }
 
 inline bool JSObject::GetIndexedPropertySlot(Context* ctx, uint32_t index, Slot* slot) const {
-  return map()->IsIndexed() && method()->GetIndexedPropertySlot(this, ctx, index, slot);
+  return method()->GetIndexedPropertySlot(this, ctx, index, slot);
 }
 
 // GetOwnPropertySlot
