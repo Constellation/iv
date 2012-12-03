@@ -39,6 +39,8 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
   virtual ~JSObject() { }
 
   bool CanPut(Context* ctx, Symbol name, Slot* slot) const;
+  bool CanPutNonIndexed(Context* ctx, Symbol name, Slot* slot) const;
+  bool CanPutIndexed(Context* ctx, uint32_t index, Slot* slot) const;
 
   // generic interfaces in ECMA262 and more
   JSVal Get(Context* ctx, Symbol name, Error* e);

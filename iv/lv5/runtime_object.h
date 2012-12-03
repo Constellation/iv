@@ -162,7 +162,7 @@ inline JSVal ObjectCreate(const Arguments& args, Error* e) {
       if (first.IsObject()) {
         prototype = first.object();
       }
-      JSObject* const res = JSObject::New(args.ctx(), Map::NewUniqueMap(args.ctx(), prototype));
+      JSObject* const res = JSObject::New(args.ctx(), Map::NewUniqueMap(args.ctx(), prototype, false));
       const JSVal second = args.At(1);
       if (!second.IsUndefined()) {
         JSObject* const props = second.ToObject(args.ctx(), IV_LV5_ERROR(e));

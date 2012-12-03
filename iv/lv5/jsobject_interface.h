@@ -111,5 +111,13 @@ inline JSVal JSObject::DefaultValue(Context* ctx, Hint::Object hint, Error* e) {
   return method()->DefaultValue(this, ctx, hint, e);
 }
 
+// CanPut
+inline bool JSObject::CanPut(Context* ctx, Symbol name, Slot* slot) const {
+  if (symbol::IsArrayIndexSymbol(name)) {
+    return CanPutIndexed(ctx, symbol::GetIndexFromSymbol(name), slot);
+  }
+  return CanPutNonIndexed(ctx, name, slot);
+}
+
 } }  // namespace iv::lv5
 #endif  // IV_LV5_JSOBJECT_INTERFACE_H_

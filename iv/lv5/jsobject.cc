@@ -105,8 +105,20 @@ bool JSObject::HasProperty(Context* ctx, Symbol name) const {
   return GetPropertySlot(ctx, name, &slot);
 }
 
-bool JSObject::CanPut(Context* ctx, Symbol name, Slot* slot) const {
-  if (GetPropertySlot(ctx, name, slot)) {
+bool JSObject::CanPutNonIndexed(Context* ctx, Symbol name, Slot* slot) const {
+  if (GetNonIndexedPropertySlot(ctx, name, slot)) {
+    if (slot->attributes().IsAccessor()) {
+      return slot->accessor()->setter();
+    } else {
+      assert(slot->attributes().IsData());
+      return slot->attributes().IsWritable();
+    }
+  }
+  return IsExtensible();
+}
+
+bool JSObject::CanPutIndexed(Context* ctx, uint32_t index, Slot* slot) const {
+  if (GetIndexedPropertySlot(ctx, index, slot)) {
     if (slot->attributes().IsAccessor()) {
       return slot->accessor()->setter();
     } else {
@@ -313,7 +325,7 @@ void JSObject::PutNonIndexedSlotMethod(JSObject* obj, Context* ctx, Symbol name,
 }
 
 void JSObject::PutIndexedSlotMethod(JSObject* obj, Context* ctx, uint32_t index, JSVal val, Slot* slot, bool throwable, Error* e) {
-  if (!obj->CanPut(ctx, symbol::MakeSymbolFromIndex(index), slot)) {
+  if (!obj->CanPutIndexed(ctx, index, slot)) {
     if (throwable) {
       e->Report(Error::Type, "put failed");
     }
@@ -521,6 +533,9 @@ bool JSObject::DeleteIndexedInternal(Context* ctx, uint32_t index, bool throwabl
 
 bool JSObject::DefineOwnIndexedPropertyInternal(Context* ctx, uint32_t index,
                                                 const PropertyDescriptor& desc, bool throwable, Error* e) {
+  if (!map()->IsIndexed()) {
+    set_map(map()->ChangeIndexedTransition(ctx));
+  }
   if (index >= elements_.length() && !elements_.writable()) {
     if (throwable) {
       e->Report(Error::Type,

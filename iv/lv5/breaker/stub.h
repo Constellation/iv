@@ -885,8 +885,24 @@ inline void StorePropImpl(Context* ctx,
 template<bool Strict>
 inline Rep STORE_ELEMENT(Frame* stack, JSVal base, JSVal src, JSVal element) {
   Context* ctx = stack->ctx;
+  if (base.IsPrimitive()) {
+    const Symbol name = element.ToSymbol(ctx, ERR);
+    StorePropPrimitive<Strict>(ctx, base, name, src, ERR);
+    return 0;
+  }
+
+  JSObject* obj = base.object();
+
+  if (element.IsInt32()) {
+    int32_t index = element.int32();
+    if (index >= 0) {
+      Slot slot;
+      obj->PutIndexedSlot(ctx, index, src, &slot, Strict, ERR);
+      return 0;
+    }
+  }
   const Symbol name = element.ToSymbol(ctx, ERR);
-  StorePropImpl<Strict>(ctx, base, name, src, ERR);
+  obj->Put(ctx, name, src, Strict, ERR);
   return 0;
 }
 

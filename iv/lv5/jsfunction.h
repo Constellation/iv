@@ -70,7 +70,7 @@ inline Map* JSFunction::construct_map(Context* ctx, Error* e) {
   Slot slot;
   const JSVal res = GetNonIndexedSlot(ctx, symbol::prototype(), &slot, IV_LV5_ERROR_WITH(e, NULL));
 
-  Map* map = Map::New(ctx, res.IsObject() ? res.object() : ctx->global_data()->object_prototype());
+  Map* map = Map::New(ctx, res.IsObject() ? res.object() : ctx->global_data()->object_prototype(), false);
   // no side effect and own prototype
   if (slot.IsLoadCacheable() && slot.base() == this && slot.attributes().IsData()) {
     construct_map_ = map;

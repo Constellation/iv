@@ -14,7 +14,7 @@ class JSDateTimeFormatHolder : public JSObject {
   typedef GCHandle<core::i18n::DateTimeFormat> FormatHandle;
 
   explicit JSDateTimeFormatHolder(Context* ctx)
-    : JSObject(Map::NewUniqueMap(ctx, ctx->global_data()->object_prototype())),
+    : JSObject(Map::NewUniqueMap(ctx, ctx->global_data()->object_prototype(), false)),
       format_(new FormatHandle()),
       bound_(NULL) { }
 

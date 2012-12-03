@@ -40,7 +40,8 @@ class Map : public radio::HeapObject<radio::POINTER> {
       MASK_ENABLED = 1,
       MASK_UNIQUE_TRANSITION = 2,
       MASK_HOLD_SINGLE = 4,
-      MASK_HOLD_TABLE = 8
+      MASK_HOLD_TABLE = 8,
+      MASK_INDEXED = 16
     };
 
     struct Key {
@@ -73,9 +74,13 @@ class Map : public radio::HeapObject<radio::POINTER> {
 
     typedef GCHashMap<Key, Map*, Key::Hasher>::type Table;
 
-    explicit Transitions(bool enabled) : holder_(), flags_(enabled ? 1 : 0) { }
+    explicit Transitions(bool enabled, bool indexed) : holder_(), flags_(0) {
+      set_enabled(enabled);
+      set_indexed(indexed);
+    }
 
     bool IsEnabled() const { return flags_ & MASK_ENABLED; }
+    bool IsIndexed() const { return flags_ & MASK_INDEXED; }
 
     Map* Find(Symbol name, Attributes::Safe attributes) {
       assert(IsEnabled());
@@ -121,6 +126,22 @@ class Map : public radio::HeapObject<radio::POINTER> {
 
     bool IsEnabledUniqueTransition() const {
       return flags_ & MASK_UNIQUE_TRANSITION;
+    }
+
+    void set_enabled(bool enabled) {
+      if (enabled) {
+        flags_ |= MASK_ENABLED;
+      } else {
+        flags_ &= ~MASK_ENABLED;
+      }
+    }
+
+    void set_indexed(bool indexed) {
+      if (indexed) {
+        flags_ |= MASK_INDEXED;
+      } else {
+        flags_ &= ~MASK_INDEXED;
+      }
     }
 
    private:
@@ -173,21 +194,24 @@ class Map : public radio::HeapObject<radio::POINTER> {
     uint32_t size_;
   };
 
-  struct UniqueTag { };
-
   static const std::size_t kMaxTransition = 32;
 
-  static Map* NewUniqueMap(Context* ctx, JSObject* prototype) {
-    return new Map(prototype, UniqueTag());
+  static Map* New(Context* ctx, Map* previous) {
+    assert(previous);
+    return new Map(previous, false);
   }
 
   static Map* NewUniqueMap(Context* ctx, Map* previous) {
     assert(previous);
-    return new Map(previous, UniqueTag());
+    return new Map(previous, true);
   }
 
-  static Map* New(Context* ctx, JSObject* prototype) {
-    return new Map(prototype);
+  static Map* New(Context* ctx, JSObject* prototype, bool indexed) {
+    return new Map(prototype, false, indexed);
+  }
+
+  static Map* NewUniqueMap(Context* ctx, JSObject* prototype, bool indexed) {
+    return new Map(prototype, true, indexed);
   }
 
   // If unique map is provided, copy this.
@@ -362,83 +386,67 @@ class Map : public radio::HeapObject<radio::POINTER> {
       return map;
     }
 
-    if (transit_count_ > kMaxTransition) {
-      // stop transition
-      Map* map = NewUniqueMap(ctx, this);
-      // go to above unique path
-      return map->ChangePrototypeTransition(ctx, prototype);
+    // stop transition
+    Map* map = NewUniqueMap(ctx, this);
+    // go to above unique path
+    return map->ChangePrototypeTransition(ctx, prototype);
+  }
+
+  Map* ChangeIndexedTransition(Context* ctx) {
+    if (IsUnique()) {
+      // extend this map with no transition
+      Map* map = NULL;
+      if (transitions_.IsEnabledUniqueTransition()) {
+        map = NewUniqueMap(ctx, this);
+      } else {
+        map = this;
+      }
+      map->transitions_.set_indexed(true);
+      return map;
     }
 
-    Map* map = New(ctx, this);
-
-    map->transit_count_ = transit_count_ + 1;
-    map->prototype_ = prototype;
-    return map;
-
+    // stop transition
+    Map* map = NewUniqueMap(ctx, this);
+    // go to above unique path
+    return map->ChangeIndexedTransition(ctx);
   }
 
   static std::size_t PrototypeOffset() { return IV_OFFSETOF(Map, prototype_); }
+
+  inline bool IsIndexed() const { return transitions_.IsIndexed(); }
+
  private:
   bool HasTable() const {
     return table_;
   }
 
-  static Map* New(Context* ctx, Map* previous) {
-    assert(previous);
-    return new Map(previous);
-  }
-
-  // empty not unique map
-  Map(JSObject* prototype)
+  Map(JSObject* prototype, bool unique, bool indexed)
     : prototype_(prototype),
       previous_(NULL),
       table_(NULL),
-      transitions_(true),
+      transitions_(!unique, indexed),
       deleted_(),
       added_(std::make_pair(symbol::kDummySymbol, Entry::NotFound())),
       calculated_size_(0),
       transit_count_(0) {
   }
 
-  explicit Map(Map* previous)
+  Map(Map* previous, bool unique)
     : prototype_(previous->prototype()),
       previous_(previous),
-      table_(NULL),
-      transitions_(true),
+      table_((unique && previous->IsUnique()) ? previous->table_ : NULL),
+      transitions_(!unique, previous->transitions_.IsIndexed()),
       deleted_(previous->deleted_),
       added_(std::make_pair(symbol::kDummySymbol, Entry::NotFound())),
       calculated_size_(previous->GetSlotsSize()),
       transit_count_(0) {
   }
 
-  // empty unique table
-  explicit Map(JSObject* prototype, UniqueTag dummy)
-    : prototype_(prototype),
-      previous_(NULL),
-      table_(NULL),
-      transitions_(false),
-      deleted_(),
-      added_(std::make_pair(symbol::kDummySymbol, Entry::NotFound())),
-      calculated_size_(0),
-      transit_count_(0) {
-  }
-
-  Map(Map* previous, UniqueTag dummy)
-    : prototype_(previous->prototype()),
-      previous_(previous),
-      table_((previous->IsUnique()) ? previous->table_ : NULL),
-      transitions_(false),
-      deleted_(previous->deleted_),
-      added_(std::make_pair(symbol::kDummySymbol, Entry::NotFound())),
-      calculated_size_(previous->GetSlotsSize()),
-      transit_count_(0) {
-  }
-
-  explicit Map(TargetTable* table, JSObject* prototype, bool unique)
+  explicit Map(TargetTable* table, JSObject* prototype, bool unique, bool indexed)
     : prototype_(prototype),
       previous_(NULL),
       table_(table),
-      transitions_(!unique),
+      transitions_(!unique, indexed),
       deleted_(),
       added_(std::make_pair(symbol::kDummySymbol, Entry::NotFound())),
       calculated_size_(GetSlotsSize()),
@@ -451,7 +459,7 @@ class Map : public radio::HeapObject<radio::POINTER> {
     : prototype_(NULL),
       previous_(NULL),
       table_(new(GC)TargetTable(it, last)),
-      transitions_(true),
+      transitions_(true, false),
       deleted_(),
       added_(std::make_pair(symbol::kDummySymbol, Entry::NotFound())),
       calculated_size_(GetSlotsSize()),

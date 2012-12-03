@@ -15,7 +15,7 @@ class JSNumberFormatHolder : public JSObject {
   typedef GCHandle<core::i18n::NumberFormat> FormatHandle;
 
   explicit JSNumberFormatHolder(Context* ctx, JSString* currency)
-    : JSObject(Map::NewUniqueMap(ctx, ctx->global_data()->object_prototype())),
+    : JSObject(Map::NewUniqueMap(ctx, ctx->global_data()->object_prototype(), false)),
       format_(new FormatHandle()),
       currency_(currency),
       bound_(NULL) { }

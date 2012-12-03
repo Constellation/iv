@@ -35,7 +35,7 @@ Context::Context(JSAPI fc, JSAPI ge)
   : global_data_(this),
     throw_type_error_(
         JSInlinedFunction<&runtime::ThrowTypeError, 0>::NewPlain(
-            this, Intern("ThrowError"), Map::NewUniqueMap(this, static_cast<JSObject*>(NULL)))),
+            this, Intern("ThrowError"), Map::NewUniqueMap(this, static_cast<JSObject*>(NULL), false))),
     global_env_(JSObjectEnv::New(this, NULL, global_obj())),
     regexp_allocator_(),
     regexp_vm_(),
@@ -49,7 +49,7 @@ Context::Context(JSAPI fc, JSAPI ge)
 void Context::Initialize() {
   Error::Dummy dummy;
   // Object and Function
-  JSObject* const obj_proto = JSObject::NewPlain(this, Map::NewUniqueMap(this, static_cast<JSObject*>(NULL)));
+  JSObject* const obj_proto = JSObject::NewPlain(this, Map::NewUniqueMap(this, static_cast<JSObject*>(NULL), false));
   global_data()->empty_object_map()->ChangePrototypeWithNoTransition(obj_proto);
   global_obj()->ChangePrototype(this, obj_proto);
 
@@ -57,7 +57,7 @@ void Context::Initialize() {
       JSInlinedFunction<&runtime::FunctionPrototype, 0>::NewPlain(
           this,
           Intern("Function"),
-          Map::NewUniqueMap(this, obj_proto));
+          Map::NewUniqueMap(this, obj_proto, false));
   global_data()->function_map()->ChangePrototypeWithNoTransition(func_proto);
 
   JSFunction* const obj_constructor =
@@ -262,7 +262,7 @@ void Context::InitArray(const ClassSlot& func_cls,
                         JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.4 Array
   Error::Dummy dummy;
-  JSObject* const proto = JSArray::NewPlain(this, Map::NewUniqueMap(this, obj_proto));
+  JSObject* const proto = JSArray::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false));
   global_data()->array_map()->ChangePrototypeWithNoTransition(proto);
   // section 15.4.2 The Array Constructor
   JSFunction* const constructor =
@@ -344,7 +344,7 @@ void Context::InitString(const ClassSlot& func_cls,
                          JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.5 String
   Error::Dummy dummy;
-  JSStringObject* const proto = JSStringObject::NewPlain(this, Map::NewUniqueMap(this, obj_proto));
+  JSStringObject* const proto = JSStringObject::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false));
   global_data()->string_map()->ChangePrototypeWithNoTransition(proto);
   // section 15.5.2 The String Constructor
   JSFunction* const constructor =
@@ -436,7 +436,7 @@ void Context::InitBoolean(const ClassSlot& func_cls,
   // Boolean
   Error::Dummy dummy;
   JSBooleanObject* const proto =
-      JSBooleanObject::NewPlain(this, Map::NewUniqueMap(this, obj_proto), false);
+      JSBooleanObject::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false), false);
   global_data()->boolean_map()->ChangePrototypeWithNoTransition(proto);
   // section 15.6.2 The Boolean Constructor
   JSFunction* const constructor =
@@ -472,7 +472,7 @@ void Context::InitNumber(const ClassSlot& func_cls,
   // 15.7 Number
   Error::Dummy dummy;
   JSNumberObject* const proto =
-      JSNumberObject::NewPlain(this, Map::NewUniqueMap(this, obj_proto), 0);
+      JSNumberObject::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false), 0);
   global_data()->number_map()->ChangePrototypeWithNoTransition(proto);
   // section 15.7.3 The Number Constructor
   JSFunction* const constructor =
@@ -551,7 +551,7 @@ void Context::InitMath(const ClassSlot& func_cls,
     obj_proto
   };
   global_data_.RegisterClass<Class::Math>(cls);
-  JSObject* const math = JSMath::NewPlain(this, Map::NewUniqueMap(this, obj_proto));
+  JSObject* const math = JSMath::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false));
   global_binder->def("Math", math, ATTR::W | ATTR::C);
 
   bind::Object(this, math)
@@ -643,7 +643,7 @@ void Context::InitDate(const ClassSlot& func_cls,
   // section 15.9 Date
   Error::Dummy dummy;
   JSObject* const proto =
-      JSDate::NewPlain(this, Map::NewUniqueMap(this, obj_proto), core::kNaN);
+      JSDate::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false), core::kNaN);
   global_data()->date_map()->ChangePrototypeWithNoTransition(proto);
   // section 15.9.2.1 The Date Constructor
   JSFunction* const constructor =
@@ -817,7 +817,7 @@ void Context::InitError(const ClassSlot& func_cls,
                         JSObject* obj_proto, bind::Object* global_binder) {
   // Error
   Error::Dummy dummy;
-  JSObject* const proto = JSObject::NewPlain(this, Map::NewUniqueMap(this, obj_proto));
+  JSObject* const proto = JSObject::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false));
   global_data()->error_map()->ChangePrototypeWithNoTransition(proto);
   // section 15.11.2 The Error Constructor
   JSFunction* const constructor =
@@ -852,7 +852,7 @@ void Context::InitError(const ClassSlot& func_cls,
   {
     // section 15.11.6.1 EvalError
     JSObject* const sub_proto =
-        JSObject::NewPlain(this, Map::NewUniqueMap(this, proto));
+        JSObject::NewPlain(this, Map::NewUniqueMap(this, proto, false));
     global_data()->eval_error_map()->ChangePrototypeWithNoTransition(sub_proto);
     const Symbol sym = Intern("EvalError");
     JSFunction* const sub_constructor =
@@ -882,7 +882,7 @@ void Context::InitError(const ClassSlot& func_cls,
   {
     // section 15.11.6.2 RangeError
     JSObject* const sub_proto =
-        JSObject::NewPlain(this, Map::NewUniqueMap(this, proto));
+        JSObject::NewPlain(this, Map::NewUniqueMap(this, proto, false));
     global_data()->range_error_map()->ChangePrototypeWithNoTransition(sub_proto);
     const Symbol sym = Intern("RangeError");
     JSFunction* const sub_constructor =
@@ -912,7 +912,7 @@ void Context::InitError(const ClassSlot& func_cls,
   {
     // section 15.11.6.3 ReferenceError
     JSObject* const sub_proto =
-        JSObject::NewPlain(this, Map::NewUniqueMap(this, proto));
+        JSObject::NewPlain(this, Map::NewUniqueMap(this, proto, false));
     global_data()->reference_error_map()->ChangePrototypeWithNoTransition(sub_proto);
     const Symbol sym = Intern("ReferenceError");
     JSFunction* const sub_constructor =
@@ -943,7 +943,7 @@ void Context::InitError(const ClassSlot& func_cls,
   {
     // section 15.11.6.4 SyntaxError
     JSObject* const sub_proto =
-        JSObject::NewPlain(this, Map::NewUniqueMap(this, proto));
+        JSObject::NewPlain(this, Map::NewUniqueMap(this, proto, false));
     global_data()->syntax_error_map()->ChangePrototypeWithNoTransition(sub_proto);
     const Symbol sym = Intern("SyntaxError");
     JSFunction* const sub_constructor =
@@ -973,7 +973,7 @@ void Context::InitError(const ClassSlot& func_cls,
   {
     // section 15.11.6.5 TypeError
     JSObject* const sub_proto =
-        JSObject::NewPlain(this, Map::NewUniqueMap(this, proto));
+        JSObject::NewPlain(this, Map::NewUniqueMap(this, proto, false));
     global_data()->type_error_map()->ChangePrototypeWithNoTransition(sub_proto);
     const Symbol sym = Intern("TypeError");
     JSFunction* const sub_constructor =
@@ -1003,7 +1003,7 @@ void Context::InitError(const ClassSlot& func_cls,
   {
     // section 15.11.6.6 URIError
     JSObject* const sub_proto =
-        JSObject::NewPlain(this, Map::NewUniqueMap(this, proto));
+        JSObject::NewPlain(this, Map::NewUniqueMap(this, proto, false));
     global_data()->uri_error_map()->ChangePrototypeWithNoTransition(sub_proto);
     const Symbol sym = Intern("URIError");
     JSFunction* const sub_constructor =
@@ -1044,7 +1044,7 @@ void Context::InitJSON(const ClassSlot& func_cls,
     obj_proto
   };
   global_data_.RegisterClass<Class::JSON>(cls);
-  JSObject* const json = JSJSON::NewPlain(this, Map::NewUniqueMap(this, obj_proto));
+  JSObject* const json = JSJSON::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false));
   global_binder->def("JSON", json, ATTR::W | ATTR::C);
   bind::Object(this, json)
       .cls(cls.cls)
@@ -1059,7 +1059,7 @@ void Context::InitMap(const ClassSlot& func_cls,
   // ES.next Map
   // http://wiki.ecmascript.org/doku.php?id=harmony:simple_maps_and_sets
   Error::Dummy dummy;
-  JSObject* const proto = JSObject::New(this, Map::NewUniqueMap(this, obj_proto));
+  JSObject* const proto = JSObject::New(this, Map::NewUniqueMap(this, obj_proto, false));
   global_data()->map_map()->ChangePrototypeWithNoTransition(proto);
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::MapConstructor, 0>::New(this, Intern("Map"));
@@ -1086,7 +1086,7 @@ void Context::InitMap(const ClassSlot& func_cls,
 void Context::InitWeakMap(const ClassSlot& func_cls,
                           JSObject* obj_proto, bind::Object* global_binder) {
   Error::Dummy dummy;
-  JSObject* const proto = JSObject::New(this, Map::NewUniqueMap(this, obj_proto));
+  JSObject* const proto = JSObject::New(this, Map::NewUniqueMap(this, obj_proto, false));
   global_data()->weak_map_map()->ChangePrototypeWithNoTransition(proto);
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::WeakMapConstructor, 0>::New(this, Intern("WeakMap"));
@@ -1113,7 +1113,7 @@ void Context::InitSet(const ClassSlot& func_cls,
   // ES.next Set
   // http://wiki.ecmascript.org/doku.php?id=harmony:simple_maps_and_sets
   Error::Dummy dummy;
-  JSObject* const proto = JSObject::New(this, Map::NewUniqueMap(this, obj_proto));
+  JSObject* const proto = JSObject::New(this, Map::NewUniqueMap(this, obj_proto, false));
   global_data()->set_map()->ChangePrototypeWithNoTransition(proto);
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::SetConstructor, 0>::New(this, Intern("Set"));
@@ -1178,7 +1178,7 @@ void Context::InitIntl(const ClassSlot& func_cls,
   {
     // NumberFormat
     JSObject* const proto =
-        JSObject::New(this, Map::NewUniqueMap(this, obj_proto));
+        JSObject::New(this, Map::NewUniqueMap(this, obj_proto, false));
     global_data()->number_format_map()->ChangePrototypeWithNoTransition(proto);
     JSFunction* const constructor =
         JSInlinedFunction<&runtime::NumberFormatConstructor, 0>::New(this, symbol::NumberFormat());

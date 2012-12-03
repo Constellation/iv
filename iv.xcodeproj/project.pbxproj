@@ -388,7 +388,6 @@
 		70F46BA4146015730026DD83 /* constructor_check.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = constructor_check.h; sourceTree = "<group>"; };
 		70F46BA5146015730026DD83 /* context.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = context.cc; sourceTree = "<group>"; };
 		70F46BA6146015730026DD83 /* context.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = context.h; sourceTree = "<group>"; };
-		70F46BA7146015730026DD83 /* context_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = context_utils.h; sourceTree = "<group>"; };
 		70F46BAD146015730026DD83 /* error.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = error.h; sourceTree = "<group>"; };
 		70F46BAE146015730026DD83 /* error_check.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = error_check.h; sourceTree = "<group>"; };
 		70F46BAF146015730026DD83 /* eval_source.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = eval_source.h; sourceTree = "<group>"; };
@@ -940,7 +939,6 @@
 				70F46BA4146015730026DD83 /* constructor_check.h */,
 				70F46BA5146015730026DD83 /* context.cc */,
 				70F46BA6146015730026DD83 /* context.h */,
-				70F46BA7146015730026DD83 /* context_utils.h */,
 				70F46BAD146015730026DD83 /* error.h */,
 				70F46BAE146015730026DD83 /* error_check.h */,
 				70F46BAF146015730026DD83 /* eval_source.h */,

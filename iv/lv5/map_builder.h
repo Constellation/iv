@@ -11,7 +11,7 @@ class MapBuilder {
       table_(new(GC)Map::TargetTable()),
       prototype_(prototype) { }
 
-  Map* Build(bool unique = false) { return new Map(table_, prototype_, unique); }
+  Map* Build(bool unique = false, bool indexed = false) { return new Map(table_, prototype_, unique, indexed); }
 
   void Add(Symbol symbol, std::size_t index, Attributes::Safe attributes) {
     assert(Find(symbol).IsNotFound());

@@ -53,31 +53,31 @@ class GlobalData {
       string_string_(),
       string_boolean_(),
       string_empty_regexp_(),
-      empty_object_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
-      function_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
-      array_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
-      string_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
-      boolean_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
-      number_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
-      date_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
+      empty_object_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
+      function_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
+      array_map_(Map::New(ctx, static_cast<JSObject*>(NULL), true)),
+      string_map_(Map::New(ctx, static_cast<JSObject*>(NULL), true)),
+      boolean_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
+      number_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
+      date_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
       regexp_map_(NULL),
-      error_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
-      eval_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
-      range_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
-      reference_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
-      syntax_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
-      type_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
-      uri_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
-      map_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
-      weak_map_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
-      set_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
+      error_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
+      eval_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
+      range_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
+      reference_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
+      syntax_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
+      type_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
+      uri_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
+      map_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
+      weak_map_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
+      set_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
       array_buffer_map_(NULL),
       data_view_map_(NULL),
       typed_array_maps_(),
       normal_arguments_map_(NULL),
       strict_arguments_map_(NULL),
-      number_format_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
-      date_time_format_map_(Map::New(ctx, static_cast<JSObject*>(NULL))),
+      number_format_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
+      date_time_format_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
       gc_hook_(this) {
     {
       Error::Dummy e;
@@ -131,7 +131,7 @@ class GlobalData {
         builder.Add(symbol::byteLength(), ATTR::CreateData(ATTR::N));
         builder.Add(symbol::buffer(), ATTR::CreateData(ATTR::N));
         builder.Add(symbol::byteOffset(), ATTR::CreateData(ATTR::N));
-        *it = builder.Build(false);
+        *it = builder.Build(false, true);
       }
     }
   }
@@ -248,7 +248,7 @@ class GlobalData {
       MapBuilder builder(ctx(), proto);
       builder.Add(symbol::length(), ATTR::CreateData(ATTR::W | ATTR::C));
       builder.Add(symbol::callee(), ATTR::CreateData(ATTR::W | ATTR::C));
-      normal_arguments_map_ = builder.Build(false);
+      normal_arguments_map_ = builder.Build(false, true);
     }
     // strict arguments map
     {
@@ -256,7 +256,7 @@ class GlobalData {
       builder.Add(symbol::length(), ATTR::CreateData(ATTR::W | ATTR::C));
       builder.Add(symbol::callee(), ATTR::CreateAccessor(ATTR::N));
       builder.Add(symbol::caller(), ATTR::CreateAccessor(ATTR::N));
-      strict_arguments_map_ = builder.Build(false);
+      strict_arguments_map_ = builder.Build(false, true);
     }
   }
 
