@@ -167,4 +167,12 @@
   #endif
 #endif
 
+#ifndef IV_UNALIGNED_WORD_ACCESS
+  #if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
+      defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD86) || \
+      defined(__mc68020__)
+    #define IV_UNALIGNED_WORD_ACCESS 1
+  #endif
+#endif
+
 #endif  // IV_PLATFORM_H_
