@@ -54,7 +54,8 @@ class PropertyNamesCollector;
   V(Float32Array, 33)\
   V(Float64Array, 34)\
   V(Uint8ClampedArray, 35)\
-  V(NOT_CACHED, 36)
+  V(Reflect, 36)\
+  V(NOT_CACHED, 37)
 
 struct Class {
   enum JSClassType {

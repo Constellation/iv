@@ -415,6 +415,11 @@ class Map : public radio::HeapObject<radio::POINTER> {
 
   inline bool IsIndexed() const { return transitions_.IsIndexed(); }
 
+  inline bool IsShaped() const {
+    // we can use this map id as shape or not
+    return !IsUnique() || transitions_.IsEnabled();
+  }
+
  private:
   bool HasTable() const {
     return table_;

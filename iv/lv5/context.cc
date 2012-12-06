@@ -16,6 +16,7 @@
 #include <iv/lv5/jsarguments.h>
 #include <iv/lv5/jsnumberobject.h>
 #include <iv/lv5/jsbooleanobject.h>
+#include <iv/lv5/jsreflect.h>
 #include <iv/lv5/jsi18n.h>
 #include <iv/lv5/arguments.h>
 #include <iv/lv5/context.h>
@@ -195,6 +196,7 @@ void Context::Initialize() {
   InitWeakMap(func_cls, obj_proto, &global_binder);
   InitSet(func_cls, obj_proto, &global_binder);
   InitBinaryBlocks(func_cls, obj_proto, &global_binder);
+  InitReflect(func_cls, obj_proto, &global_binder);
 
   {
     // Arguments
@@ -1345,6 +1347,65 @@ inline void Context::InitTypedArray(const ClassSlot& func_cls, bind::Object* glo
   proto_binder.def<&runtime::TypedArraySet<typename TypedArray::Element, TypedArray>, 1>("set");
   proto_binder.def<&runtime::TypedArraySubarray<typename TypedArray::Element, TypedArray>, 1>("subarray");
 }
+
+void Context::InitReflect(const ClassSlot& func_cls,
+                          JSObject* obj_proto, bind::Object* global_binder) {
+  // section 15.17 Reflect
+  Error::Dummy dummy;
+  struct ClassSlot cls = {
+    JSReflect::GetClass(),
+    Intern("Reflect"),
+    JSString::NewAsciiString(this, "Reflect", &dummy),
+    NULL,
+    obj_proto
+  };
+  global_data_.RegisterClass<Class::Reflect>(cls);
+  JSObject* const ref = JSReflect::New(this, Map::NewUniqueMap(this, obj_proto, false));
+  global_binder->def("Reflect", ref, ATTR::W | ATTR::C);
+
+  bind::Object(this, ref)
+      .cls(cls.cls)
+      // 15.17.1.1 Reflect.getPrototypeOf(target)
+      .def<&runtime::ReflectGetPrototypeOf, 1>("getPrototypeOf")
+      // 15.17.1.2 Reflect.setPrototypeOf(target, proto)
+      .def<&runtime::ReflectSetPrototypeOf, 2>("setPrototypeOf")
+      // 15.17.1.3 Reflect.isExtensible(target)
+      .def<&runtime::ReflectIsExtensible, 1>("isExtensible")
+      // 15.17.1.4 Reflect.preventExtensions(target)
+      .def<&runtime::ReflectPreventExtensions, 1>("preventExtensions")
+      // 15.17.1.5 Reflect.hasOwn(target, propertyKey)
+      .def<&runtime::ReflectHasOwn, 2>("hasOwn")
+      // 15.17.1.6 Reflect.getOwnPropertyDescriptor(target, propertyKey)
+      .def<&runtime::ReflectGetOwnPropertyDescriptor, 2>("getOwnPropertyDescriptor")
+      // 15.17.1.7 Reflect.get(target, propertyKey, receiver=target)
+      // .def<&runtime::ReflectGet, 3>("get")
+      // 15.17.1.8 Reflect.set(target, propertyKey, V, receiver=target)
+      // .def<&runtime::ReflectSet, 4>("set")
+      // 15.17.1.9 Reflect.deleteProperty(target, propertyKey)
+      .def<&runtime::ReflectDeleteProperty, 2>("deleteProperty")
+      // 15.17.1.10 Reflect.defineProperty(target, propertyKey, attributes)
+      .def<&runtime::ReflectDefineProperty, 3>("defineProperty")
+      // 15.17.1.11 Reflect.enumerate(target)
+      // .def<&runtime::ReflectEnumerate, 1>("enumerate")
+      // 15.17.1.12 Reflect.keys(target)
+      .def<&runtime::ReflectKeys, 1>("keys")
+      // 15.17.1.13 Reflect.getOwnPropertyNames(target)
+      .def<&runtime::ReflectGetOwnPropertyNames, 1>("getOwnPropertyNames")
+      // 15.17.1.14 Reflect.freeze(target)
+      .def<&runtime::ReflectFreeze, 1>("freeze")
+      // 15.17.1.15 Reflect.seal(target)
+      .def<&runtime::ReflectSeal, 1>("seal")
+      // 15.17.1.16 Reflect.isFrozen(target)
+      .def<&runtime::ReflectIsFrozen, 1>("isFrozen")
+      // 15.17.1.17 Reflect.isSealed(target)
+      .def<&runtime::ReflectIsSealed, 1>("isSealed")
+      // 15.17.2.1 Reflect.has(target, propertyKey)
+      .def<&runtime::ReflectHas, 2>("has")
+      // 15.17.2.2 Reflect.instanceOf(target, O)
+      .def<&runtime::ReflectInstanceOf, 2>("instanceOf");
+}
+
+
 
 Symbol Context::Intern(const core::StringPiece& str) {
   return global_data()->Intern(str);
