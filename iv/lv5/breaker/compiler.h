@@ -1776,6 +1776,7 @@ class Compiler {
       asm_->L(".ARRAY_FAST_PATH_EXIT");
     }
 
+    CheckObjectCoercible(base, rsi, rdi);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::LOAD_ELEMENT);
 

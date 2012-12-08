@@ -141,7 +141,7 @@ class Operation {
       return slot.Get(ctx_, base, e);
     }
 
-    assert(symbol::IsArrayIndexSymbol(s));
+    assert(!symbol::IsArrayIndexSymbol(s));
 
     JSObject* obj = NULL;
     if (base.IsPrimitive()) {
