@@ -1512,10 +1512,12 @@ class Compiler {
       asm_->cmp(qword[rsi + size_offset], index);
       asm_->jbe(".ARRAY_FAST_PATH_EXIT");
 
-      // load element from index directly
       const std::ptrdiff_t data_offset =
           vector_offset + IndexedElements::DenseArrayVector::DataOffset();
       asm_->mov(rax, qword[rsi + data_offset]);
+      asm_->mov(r11, qword[rax + kJSValSize * index]);
+      asm_->test(r11, r11);
+      asm_->jz(".ARRAY_FAST_PATH_EXIT");
       asm_->mov(qword[rax + kJSValSize * index], rdx);
       asm_->jmp(".EXIT");
 
@@ -1817,6 +1819,9 @@ class Compiler {
       const std::ptrdiff_t data_offset =
           vector_offset + IndexedElements::DenseArrayVector::DataOffset();
       asm_->mov(rax, qword[rsi + data_offset]);
+      asm_->mov(r11, qword[rax + rdi * kJSValSize]);
+      asm_->test(r11, r11);
+      asm_->jz(".ARRAY_FAST_PATH_EXIT");
       asm_->mov(qword[rax + rdi * kJSValSize], rdx);
       asm_->jmp(".EXIT");
       asm_->L(".ARRAY_FAST_PATH_EXIT");

@@ -892,16 +892,15 @@ inline Rep STORE_ELEMENT(Frame* stack, JSVal base, JSVal src, JSVal element) {
 
   JSObject* obj = base.object();
 
-  if (element.IsInt32()) {
-    int32_t index = element.int32();
-    if (index >= 0) {
-      Slot slot;
-      obj->PutIndexedSlot(ctx, index, src, &slot, Strict, ERR);
-      return 0;
-    }
+  if (!element.IsInt32() || element.int32() < 0) {
+    const Symbol name = element.ToSymbol(ctx, ERR);
+    obj->Put(ctx, name, src, Strict, ERR);
+    return 0;
   }
-  const Symbol name = element.ToSymbol(ctx, ERR);
-  obj->Put(ctx, name, src, Strict, ERR);
+
+  const uint32_t index = element.int32();
+  Slot slot;
+  obj->PutIndexedSlot(ctx, index, src, &slot, Strict, ERR);
   return 0;
 }
 
