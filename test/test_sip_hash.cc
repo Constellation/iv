@@ -110,9 +110,9 @@ static const uint8_t SPEC_VECTORS[64][8] =
 
 TEST(SipHashCase, test_spec_streaming) {
   uint64_t digest64;
-  SipHash* h;
+  SipHash* h = new SipHash(SPEC_KEY, 2, 4);
 
-  EXPECT_TRUE(h = new SipHash(SPEC_KEY, 2, 4));
+  EXPECT_TRUE(h);
   EXPECT_TRUE(h->Update(SPEC_MSG, 15));
   EXPECT_TRUE(h->FinalInteger(&digest64));
 
@@ -123,9 +123,9 @@ TEST(SipHashCase, test_spec_streaming) {
 
 TEST(SipHashCase, test_spec_one_pass) {
   uint64_t digest64;
-  SipHash *h;
+  SipHash* h = new SipHash(SPEC_KEY, 2, 4);
 
-  EXPECT_TRUE(h = new SipHash(SPEC_KEY, 2, 4));
+  EXPECT_TRUE(h);
   EXPECT_TRUE(h->DigestInteger(SPEC_MSG, 15, &digest64));
   delete h;
   EXPECT_EQ(digest64, 0xa129ca6149be45e5ULL);
@@ -133,9 +133,9 @@ TEST(SipHashCase, test_spec_one_pass) {
 
 TEST(SipHashCase, test_empty_string) {
   uint64_t digest64;
-  SipHash* h;
+  SipHash* h = new SipHash(SPEC_KEY, 2, 4);
 
-  EXPECT_TRUE(h = new SipHash(SPEC_KEY, 2, 4));
+  EXPECT_TRUE(h);
   EXPECT_TRUE(h->DigestInteger((uint8_t *) "", 0, &digest64));
   delete h;
   EXPECT_EQ(digest64, 0x726fdb47dd0e0e31ULL);
@@ -143,9 +143,9 @@ TEST(SipHashCase, test_empty_string) {
 
 TEST(SipHashCase, test_one_byte) {
   uint64_t digest64;
-  SipHash *h;
+  SipHash* h = new SipHash(SPEC_KEY, 2, 4);
 
-  EXPECT_TRUE(h = new SipHash(SPEC_KEY, 2, 4));
+  EXPECT_TRUE(h);
   EXPECT_TRUE(h->DigestInteger((uint8_t *) "a", 1, &digest64));
   delete h;
   EXPECT_EQ(digest64, 0x2ba3e8e9a71148caULL);
@@ -153,9 +153,9 @@ TEST(SipHashCase, test_one_byte) {
 
 TEST(SipHashCase, test_six_bytes) {
   uint64_t digest64;
-  SipHash *h;
+  SipHash* h = new SipHash(SPEC_KEY, 2, 4);
 
-  EXPECT_TRUE(h = new SipHash(SPEC_KEY, 2, 4));
+  EXPECT_TRUE(h);
   EXPECT_TRUE(h->DigestInteger((uint8_t *) "abcdef", 6, &digest64));
   delete h;
   EXPECT_EQ(digest64, 0x2a6e77e733c7c05dULL);
@@ -163,9 +163,9 @@ TEST(SipHashCase, test_six_bytes) {
 
 TEST(SipHashCase, test_seven_bytes) {
   uint64_t digest64;
-  SipHash *h;
+  SipHash* h = new SipHash(SPEC_KEY, 2, 4);
 
-  EXPECT_TRUE(h = new SipHash(SPEC_KEY, 2, 4));
+  EXPECT_TRUE(h);
   EXPECT_TRUE(h->DigestInteger((uint8_t *) "SipHash", 7, &digest64));
   delete h;
   EXPECT_EQ(digest64, 0x8325093242a96f60ULL);
@@ -173,9 +173,9 @@ TEST(SipHashCase, test_seven_bytes) {
 
 TEST(SipHashCase, test_eight_bytes) {
   uint64_t digest64;
-  SipHash *h;
+  SipHash* h = new SipHash(SPEC_KEY, 2, 4);
 
-  EXPECT_TRUE(h = new SipHash(SPEC_KEY, 2, 4));
+  EXPECT_TRUE(h);
   EXPECT_TRUE(h->DigestInteger((uint8_t *) "12345678", 8, &digest64));
   delete h;
   EXPECT_EQ(digest64, 0x2130609caea37ebULL);
@@ -184,24 +184,24 @@ TEST(SipHashCase, test_eight_bytes) {
 TEST(SipHashCase, test_one_mio_zero_bytes) {
   uint64_t digest64;
   uint8_t msg[1000000] = { };
-  SipHash *h;
+  SipHash* h = new SipHash(SPEC_KEY, 2, 4);
 
-  EXPECT_TRUE(h = new SipHash(SPEC_KEY, 2, 4));
+  EXPECT_TRUE(h);
   EXPECT_TRUE(h->DigestInteger(msg, 1000000, &digest64));
   delete h;
   EXPECT_EQ(digest64, 0x28205108397aa742ULL);
 }
 
 TEST(SipHashCase, test_reference_vectors) {
-  uint8_t *digest;
+  uint8_t* digest = 0;
   size_t digest_len;
   uint8_t msg[64];
-  SipHash* h;
   int i;
 
   for(i = 0; i < 64; ++i) {
     msg[i] = i;
-    EXPECT_TRUE(h = new SipHash(SPEC_KEY, 2, 4));
+    SipHash* h = new SipHash(SPEC_KEY, 2, 4);
+    EXPECT_TRUE(h);
     h->Digest(msg, i, &digest, &digest_len);
     EXPECT_EQ(digest_len, sizeof(uint64_t));
     EXPECT_TRUE(!memcmp(SPEC_VECTORS[i], digest, 8));
