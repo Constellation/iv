@@ -19,6 +19,14 @@ class ExecutablePages {
     using container_type::size;
     using container_type::data;
 
+    inline void* operator new(std::size_t size) {
+      return Xbyak::AlignedMalloc(PageSize, PageSize);
+    }
+
+    inline void  operator delete(void* p) {
+      Xbyak::AlignedFree(p);
+    }
+
     Page() {
       Xbyak::CodeArray::protect(data(), size(), true);
     }
@@ -39,8 +47,8 @@ class ExecutablePages {
     for (typename Pages::iterator it = pages_.begin(),
          last = pages_.end(); it != last; ++it) {
       Page* page = *it;
+      delete page;
       page->~Page();
-      Xbyak::AlignedFree(page);
     }
   }
 
@@ -63,8 +71,7 @@ class ExecutablePages {
       return buffer;
     }
 
-    void* mem = Xbyak::AlignedMalloc(PageSize, PageSize);
-    Page* page = new(mem)Page;
+    Page* page = new Page;
     pages_.push_back(page);
     buffer.ptr = page->data();
     cursor_ = reserve;
