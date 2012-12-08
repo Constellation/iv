@@ -273,14 +273,6 @@ bool JSObject::DefineOwnIndexedPropertySlotMethod(JSObject* obj,
         return returned;
       }
       // through
-    } else {
-      // not found
-      if (!obj->IsExtensible()) {
-        if (throwable) {
-          e->Report(Error::Type, "object not extensible");\
-        }
-        return false;
-      }
     }
   }
   return obj->DefineOwnIndexedPropertyInternal(ctx, index, desc, throwable, e);
@@ -332,9 +324,6 @@ void JSObject::PutIndexedSlotMethod(JSObject* obj, Context* ctx, uint32_t index,
       obj->method()->GetOwnIndexedPropertySlot == JSObject::GetOwnIndexedPropertySlotMethod &&
       (!obj->prototype() || !obj->prototype()->HasIndexedProperty())) {
     // array fast path
-    if (!obj->map()->IsIndexed()) {
-      obj->set_map(obj->map()->ChangeIndexedTransition(ctx));
-    }
     obj->DefineOwnIndexedValueDenseInternal(ctx, index, val, false);
     return;
   }
@@ -552,12 +541,16 @@ void JSObject::DefineOwnIndexedValueDenseInternal(Context* ctx, uint32_t index, 
   assert(index < IndexedElements::kMaxVectorSize);
   // fast path
   if (index < elements_.vector.size()) {
+    assert(map()->IsIndexed());
     if (!absent) {
       elements_.vector[index] = value;
     } else if (elements_.vector[index].IsEmpty()) {
       elements_.vector[index] = JSUndefined;
     }
   } else {
+    if (!map()->IsIndexed()) {
+      set_map(map()->ChangeIndexedTransition(ctx));
+    }
     elements_.vector.resize(index + 1, JSEmpty);
     if (!absent) {
       elements_.vector[index] = value;
@@ -572,9 +565,6 @@ void JSObject::DefineOwnIndexedValueDenseInternal(Context* ctx, uint32_t index, 
 
 bool JSObject::DefineOwnIndexedPropertyInternal(Context* ctx, uint32_t index,
                                                 const PropertyDescriptor& desc, bool throwable, Error* e) {
-  if (!map()->IsIndexed()) {
-    set_map(map()->ChangeIndexedTransition(ctx));
-  }
   if (index >= elements_.length() && !elements_.writable()) {
     if (throwable) {
       e->Report(Error::Type,
@@ -629,6 +619,10 @@ bool JSObject::DefineOwnIndexedPropertyInternal(Context* ctx, uint32_t index,
       e->Report(Error::Type, "object not extensible");\
     }
     return false;
+  }
+
+  if (!map()->IsIndexed()) {
+    set_map(map()->ChangeIndexedTransition(ctx));
   }
   if (index >= elements_.length()) {
     elements_.set_length(index + 1);
