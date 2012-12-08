@@ -832,16 +832,15 @@ inline Rep TYPEOF_NAME(Frame* stack, JSEnv* env, Symbol name) {
 inline Rep LOAD_ELEMENT(Frame* stack, JSVal base, JSVal element) {
   Context* ctx = stack->ctx;
   Slot slot;
-  if (element.IsInt32() && base.IsObject()) {
-    const int32_t value = element.int32();
-    JSObject* obj = base.object();
-    if (value >= 0) {
-      const JSVal res = obj->GetIndexedSlot(ctx, value, &slot, ERR);
-      return Extract(res);
-    }
+  if (!base.IsObject() || !element.IsInt32() || element.int32() < 0) {
+    const Symbol name = element.ToSymbol(ctx, ERR);
+    const JSVal res = base.GetSlot(ctx, name, &slot, ERR);
+    return Extract(res);
   }
-  const Symbol name = element.ToSymbol(ctx, ERR);
-  const JSVal res = base.GetSlot(ctx, name, &slot, ERR);
+
+  const uint32_t value = element.int32();
+  JSObject* obj = base.object();
+  const JSVal res = obj->GetIndexedSlot(ctx, value, &slot, ERR);
   return Extract(res);
 }
 
