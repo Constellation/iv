@@ -153,6 +153,7 @@ bool JSObject::GetNonIndexedPropertySlotMethod(const JSObject* obj, Context* ctx
     }
     obj = obj->prototype();
   } while (obj);
+  slot->MakeUsed();
   return false;
 }
 
@@ -164,6 +165,7 @@ bool JSObject::GetIndexedPropertySlotMethod(const JSObject* obj, Context* ctx, u
     }
     obj = obj->prototype();
   } while (obj);
+  slot->MakeUsed();
   return false;
 }
 
@@ -262,7 +264,7 @@ bool JSObject::DefineOwnIndexedPropertySlotMethod(JSObject* obj,
     //   var str = new String('str');
     //   Object.defineProperty(str, '0', { value: 0 });
     if (!slot->IsUsed()) {
-      obj->method()->GetOwnIndexedPropertySlot(obj, ctx, index, slot);
+      obj->GetOwnIndexedPropertySlot(ctx, index, slot);
     }
 
     bool returned = false;
