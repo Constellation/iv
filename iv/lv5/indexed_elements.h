@@ -12,14 +12,20 @@ class IndexedElements {
  public:
   typedef GCHashMap<uint32_t, StoredSlot>::type SparseArrayMap;
   typedef Storage<JSVal> DenseArrayVector;
-  static const uint32_t kMaxVectorSize = 10000;
+
+  enum Flags {
+    FLAG_DENSE = 1,
+    FLAG_WRITABLE = 2
+  };
+
+  // 256 * n
+  static const uint32_t kMaxVectorSize = 10240;
 
   IndexedElements()
     : vector(),
       map(NULL),
       length_(0),
-      dense_(true),
-      writable_(true) {
+      flags_(FLAG_DENSE | FLAG_WRITABLE) {
   }
 
   SparseArrayMap* EnsureMap() {
@@ -30,7 +36,7 @@ class IndexedElements {
   }
 
   void MakeSparse() {
-    dense_ = false;
+    flags_ &= ~static_cast<uint32_t>(FLAG_DENSE);
     SparseArrayMap* sparse = EnsureMap();
     uint32_t index = 0;
     for (DenseArrayVector::const_iterator it = vector.begin(),
@@ -39,17 +45,17 @@ class IndexedElements {
         sparse->insert(std::make_pair(index, StoredSlot(*it, ATTR::Object::Data())));
       }
     }
-    vector.clear();
+    std::fill(vector.begin(), vector.end(), JSEmpty);
   }
 
   void MakeDense() {
-    dense_ = true;
+    flags_ |= static_cast<uint32_t>(FLAG_DENSE);
     map = NULL;
   }
 
-  void MakeReadOnly() { writable_ = false; }
-  bool dense() const { return dense_; }
-  bool writable() const { return writable_; }
+  void MakeReadOnly() { flags_ &= ~static_cast<uint32_t>(FLAG_WRITABLE); }
+  bool dense() const { return flags_ & FLAG_DENSE; }
+  bool writable() const { return flags_ & FLAG_WRITABLE; }
 
   uint32_t length() const { return length_; }
   void set_length(uint32_t len) { length_ = len; }
@@ -63,19 +69,15 @@ class IndexedElements {
   static std::size_t LengthOffset() {
     return IV_OFFSETOF(IndexedElements, length_);
   }
-  static std::size_t DenseOffset() {
-    return IV_OFFSETOF(IndexedElements, dense_);
-  }
-  static std::size_t WritableOffset() {
-    return IV_OFFSETOF(IndexedElements, writable_);
+  static std::size_t FlagsOffset() {
+    return IV_OFFSETOF(IndexedElements, flags_);
   }
 
   DenseArrayVector vector;
   SparseArrayMap* map;
  private:
   uint32_t length_;
-  bool dense_;
-  bool writable_;
+  uint32_t flags_;
 };
 
 } }  // namespace iv::lv5

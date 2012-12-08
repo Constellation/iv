@@ -177,7 +177,7 @@ bool JSObject::GetOwnNonIndexedPropertySlotMethod(const JSObject* obj, Context* 
 }
 
 bool JSObject::GetOwnIndexedPropertySlotMethod(const JSObject* obj, Context* ctx, uint32_t index, Slot* slot) {
-  if (index < obj->elements_.vector.size()) {
+  if (obj->elements_.dense() && index < obj->elements_.vector.size()) {
     const JSVal value = obj->elements_.vector[index];
     if (value.IsEmpty()) {
       return false;
@@ -330,6 +330,9 @@ void JSObject::PutIndexedSlotMethod(JSObject* obj, Context* ctx, uint32_t index,
       obj->method()->GetOwnIndexedPropertySlot == JSObject::GetOwnIndexedPropertySlotMethod &&
       (!obj->prototype() || !obj->prototype()->HasIndexedProperty())) {
     // array fast path
+    if (!obj->map()->IsIndexed()) {
+      obj->set_map(obj->map()->ChangeIndexedTransition(ctx));
+    }
     obj->DefineOwnIndexedValueDenseInternal(ctx, index, val, false);
     return;
   }
@@ -451,10 +454,12 @@ void JSObject::GetOwnPropertyNamesMethod(const JSObject* obj,
                                          PropertyNamesCollector* collector,
                                          EnumerationMode mode) {
   uint32_t index = 0;
-  for (DenseArrayVector::const_iterator it = obj->elements_.vector.begin(),
-       last = obj->elements_.vector.end(); it != last; ++it, ++index) {
-    if (!it->IsEmpty()) {
-      collector->Add(index);
+  if (obj->elements_.dense()) {
+    for (DenseArrayVector::const_iterator it = obj->elements_.vector.begin(),
+         last = obj->elements_.vector.end(); it != last; ++it, ++index) {
+      if (!it->IsEmpty()) {
+        collector->Add(index);
+      }
     }
   }
   if (obj->elements_.map) {
@@ -550,14 +555,13 @@ void JSObject::DefineOwnIndexedValueDenseInternal(Context* ctx, uint32_t index, 
     } else if (elements_.vector[index].IsEmpty()) {
       elements_.vector[index] = JSUndefined;
     }
-    return;
-  }
-
-  elements_.vector.resize(index + 1, JSEmpty);
-  if (!absent) {
-    elements_.vector[index] = value;
   } else {
-    elements_.vector[index] = JSUndefined;
+    elements_.vector.resize(index + 1, JSEmpty);
+    if (!absent) {
+      elements_.vector[index] = value;
+    } else {
+      elements_.vector[index] = JSUndefined;
+    }
   }
   if (index >= elements_.length()) {
     elements_.set_length(index + 1);
@@ -663,7 +667,9 @@ void JSObject::MapTransitionWithReallocation(
 void JSObject::MarkChildren(radio::Core* core) {
   core->MarkCell(map_);
   std::for_each(slots_.begin(), slots_.end(), radio::Core::Marker(core));
-  std::for_each(elements_.vector.begin(), elements_.vector.end(), radio::Core::Marker(core));
+  if (elements_.dense()) {
+    std::for_each(elements_.vector.begin(), elements_.vector.end(), radio::Core::Marker(core));
+  }
   if (elements_.map) {
     for (SparseArrayMap::const_iterator it = elements_.map->begin(),
          last = elements_.map->end(); it != last; ++it) {
