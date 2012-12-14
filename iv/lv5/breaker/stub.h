@@ -303,15 +303,14 @@ inline JSEnv* GetEnv(Context* ctx, JSEnv* env, Symbol name) {
   return NULL;
 }
 
-template<bool Strict>
-inline Rep LOAD_GLOBAL(Frame* stack, Symbol name, MonoIC* ic, Assembler* as) {
+inline Rep LOAD_GLOBAL(Frame* stack, Symbol name, GlobalIC* ic, Assembler* as) {
   // opcode | (dst | index) | nop | nop
   Context* ctx = stack->ctx;
   JSGlobal* global = ctx->global_obj();
   Slot slot;
   if (global->GetOwnPropertySlot(ctx, name, &slot)) {
     // now Own Property Pattern only implemented
-    if (slot.IsLoadCacheable() && (slot.offset() * sizeof(JSVal)) <= MonoIC::kMaxOffset) {
+    if (slot.IsLoadCacheable()) {
       ic->Repatch(as, global->map(), slot.offset() * sizeof(JSVal));
       return Extract(slot.value());
     }
@@ -319,7 +318,7 @@ inline Rep LOAD_GLOBAL(Frame* stack, Symbol name, MonoIC* ic, Assembler* as) {
     return Extract(ret);
   } else {
     if (ctx->global_env()->HasBinding(ctx, name)) {
-      const JSVal res = ctx->global_env()->GetBindingValue(ctx, name, Strict, ERR);
+      const JSVal res = ctx->global_env()->GetBindingValue(ctx, name, ic->strict(), ERR);
       return Extract(res);
     }
     RaiseReferenceError(name, stack->error);
@@ -328,31 +327,30 @@ inline Rep LOAD_GLOBAL(Frame* stack, Symbol name, MonoIC* ic, Assembler* as) {
   }
 }
 
-template<bool Strict>
 inline Rep STORE_GLOBAL(Frame* stack, Symbol name,
-                        MonoIC* ic, Assembler* as, JSVal src) {
+                        GlobalIC* ic, Assembler* as, JSVal src) {
   // opcode | (src | name) | nop | nop
   Context* ctx = stack->ctx;
   JSGlobal* global = ctx->global_obj();
   Slot slot;
   if (global->GetOwnPropertySlot(ctx, name, &slot)) {
-    if (slot.IsStoreCacheable() && (slot.offset() * sizeof(JSVal)) <= MonoIC::kMaxOffset) {
+    if (slot.IsStoreCacheable()) {
       ic->Repatch(as, global->map(), slot.offset() * sizeof(JSVal));
       global->Direct(slot.offset()) = src;
     } else {
-      global->Put(ctx, name, src, Strict, ERR);
+      global->Put(ctx, name, src, ic->strict(), ERR);
     }
   } else {
     if (ctx->global_env()->HasBinding(ctx, name)) {
-      ctx->global_env()->SetMutableBinding(ctx, name, src, Strict, ERR);
+      ctx->global_env()->SetMutableBinding(ctx, name, src, ic->strict(), ERR);
     } else {
-      if (Strict) {
+      if (ic->strict()) {
         stack->error->Report(Error::Reference,
                   "putting to unresolvable reference "
                   "not allowed in strict reference");
         IV_LV5_BREAKER_RAISE();
       } else {
-        ctx->global_obj()->Put(ctx, name, src, Strict, ERR);
+        ctx->global_obj()->Put(ctx, name, src, false, ERR);
       }
     }
   }
@@ -362,13 +360,12 @@ inline Rep STORE_GLOBAL(Frame* stack, Symbol name,
 inline Rep DELETE_GLOBAL(Frame* stack, Symbol name) {
   Context* ctx = stack->ctx;
   JSEnv* global = ctx->global_env();
-  if (global->HasBinding(ctx, name)) {
-    const bool res = global->DeleteBinding(ctx, name);
-    return Extract(JSVal::Bool(res));
-  } else {
+  if (!global->HasBinding(ctx, name)) {
     // not found -> unresolvable reference
     return Extract(JSTrue);
   }
+  const bool res = global->DeleteBinding(ctx, name);
+  return Extract(JSVal::Bool(res));
 }
 
 template<bool Strict>
@@ -376,12 +373,11 @@ inline Rep TYPEOF_GLOBAL(Frame* stack, Symbol name) {
   Context* ctx = stack->ctx;
   JSEnv* global = ctx->global_env();
   if (global->HasBinding(ctx, name)) {
-    const JSVal res = global->GetBindingValue(ctx, name, Strict, ERR);
-    return Extract(res.TypeOf(ctx));
-  } else {
     // not found -> unresolvable reference
     return Extract(ctx->global_data()->string_undefined());
   }
+  const JSVal res = global->GetBindingValue(ctx, name, Strict, ERR);
+  return Extract(res.TypeOf(ctx));
 }
 
 template<int Target, std::size_t Returned, bool Strict>
@@ -881,12 +877,33 @@ inline void StorePropImpl(Context* ctx,
   }
 }
 
-template<bool Strict>
-inline Rep STORE_ELEMENT(Frame* stack, JSVal base, JSVal src, JSVal element) {
+inline Rep STORE_ELEMENT_GENERIC(Frame* stack, JSVal base, JSVal src, JSVal element, StoreElementIC* ic) {
   Context* ctx = stack->ctx;
   if (base.IsPrimitive()) {
     const Symbol name = element.ToSymbol(ctx, ERR);
-    StorePropPrimitive<Strict>(ctx, base, name, src, ERR);
+    Slot slot;
+    JSObject* const o = base.ToObject(ctx, ERR);
+    if (!o->CanPut(ctx, name, &slot)) {
+      if (ic->strict()) {
+        stack->error->Report(Error::Type, "cannot put value to object");
+        IV_LV5_BREAKER_RAISE();
+      }
+      return 0;
+    }
+
+    if (slot.IsNotFound() || slot.attributes().IsData()) {
+      if (ic->strict()) {
+        stack->error->Report(Error::Type, "value to symbol in transient object");
+        IV_LV5_BREAKER_RAISE();
+      }
+      return 0;
+    }
+
+    const Accessor* ac = slot.accessor();
+    assert(ac->setter());
+    ScopedArguments args(ctx, 1, ERR);
+    args[0] = src;
+    static_cast<JSFunction*>(ac->setter())->Call(&args, base, ERR);
     return 0;
   }
 
@@ -894,15 +911,94 @@ inline Rep STORE_ELEMENT(Frame* stack, JSVal base, JSVal src, JSVal element) {
 
   if (!element.IsInt32() || element.int32() < 0) {
     const Symbol name = element.ToSymbol(ctx, ERR);
-    obj->Put(ctx, name, src, Strict, ERR);
+    obj->Put(ctx, name, src, ic->strict(), ERR);
     return 0;
   }
 
   const uint32_t index = element.int32();
   Slot slot;
-  obj->PutIndexedSlot(ctx, index, src, &slot, Strict, ERR);
+  obj->PutIndexedSlot(ctx, index, src, &slot, ic->strict(), ERR);
   return 0;
 }
+
+inline Rep STORE_ELEMENT_INDEXED(Frame* stack, JSVal base, JSVal src, int32_t index, StoreElementIC* ic) {
+  Context* ctx = stack->ctx;
+  assert(base.IsObject());
+  JSObject* obj = base.object();
+
+  if (index < 0) {
+    std::array<char, 15> buffer;
+    char* end = core::Int32ToString(index, buffer.data());
+    const Symbol name =
+        ctx->Intern(core::StringPiece(buffer.data(), std::distance(buffer.data(), end)));
+    obj->Put(ctx, name, src, ic->strict(), ERR);
+    return 0;
+  }
+
+  const bool indexed = obj->map()->IsIndexed();
+  Slot slot;
+  obj->PutIndexedSlot(ctx, index, src, &slot, ic->strict(), ERR);
+  if (indexed && slot.put_result_type() == Slot::PUT_INDEXED_OPTIMIZED &&
+      obj->method()->DefineOwnIndexedPropertySlot == JSObject::DefineOwnIndexedPropertySlotMethod) {
+    // ic to hole path
+    Chain* chain = Chain::New(obj, NULL);
+    ic->StoreNewElement(chain);
+  }
+  return 0;
+}
+
+inline Rep STORE_ELEMENT(Frame* stack, JSVal base, JSVal src, JSVal element, StoreElementIC* ic) {
+  Context* ctx = stack->ctx;
+  if (base.IsPrimitive()) {
+    ic->Invalidate();
+    const Symbol name = element.ToSymbol(ctx, ERR);
+    Slot slot;
+    JSObject* const o = base.ToObject(ctx, ERR);
+    if (!o->CanPut(ctx, name, &slot)) {
+      if (ic->strict()) {
+        stack->error->Report(Error::Type, "cannot put value to object");
+        IV_LV5_BREAKER_RAISE();
+      }
+      return 0;
+    }
+
+    if (slot.IsNotFound() || slot.attributes().IsData()) {
+      if (ic->strict()) {
+        stack->error->Report(Error::Type, "value to symbol in transient object");
+        IV_LV5_BREAKER_RAISE();
+      }
+      return 0;
+    }
+
+    const Accessor* ac = slot.accessor();
+    assert(ac->setter());
+    ScopedArguments args(ctx, 1, ERR);
+    args[0] = src;
+    static_cast<JSFunction*>(ac->setter())->Call(&args, base, ERR);
+    return 0;
+  }
+
+  JSObject* obj = base.object();
+
+  if (!element.IsInt32() || element.int32() < 0) {
+    const Symbol name = element.ToSymbol(ctx, ERR);
+    obj->Put(ctx, name, src, ic->strict(), ERR);
+    return 0;
+  }
+
+  const bool indexed = obj->map()->IsIndexed();
+  const uint32_t index = element.int32();
+  Slot slot;
+  obj->PutIndexedSlot(ctx, index, src, &slot, ic->strict(), ERR);
+  if (indexed && slot.put_result_type() == Slot::PUT_INDEXED_OPTIMIZED &&
+      obj->method()->DefineOwnIndexedPropertySlot == JSObject::DefineOwnIndexedPropertySlotMethod) {
+    // ic to hole path
+    Chain* chain = Chain::New(obj, NULL);
+    ic->StoreNewElement(chain);
+  }
+  return 0;
+}
+
 
 template<bool Strict>
 inline Rep DELETE_ELEMENT(Frame* stack, JSVal base, JSVal element) {

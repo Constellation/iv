@@ -29,11 +29,15 @@ class IC {
     return entry;
   }
 
-  static std::size_t Generate64Mov(Xbyak::CodeGenerator* as) {
+  static std::size_t Generate64Mov(Xbyak::CodeGenerator* as, const Xbyak::Reg64& reg) {
     const uint64_t dummy64 = UINT64_C(0x0FFF000000000000);
     const std::size_t result = as->getSize() + k64MovImmOffset;
-    as->mov(rax, dummy64);
+    as->mov(reg, dummy64);
     return result;
+  }
+
+  static std::size_t Generate64Mov(Xbyak::CodeGenerator* as) {
+    return Generate64Mov(as, rax);
   }
 
   // Generate Tail position
@@ -49,16 +53,35 @@ class IC {
     }
   }
 
-  static void TestMap(
+  static std::size_t TestMap(
       Xbyak::CodeGenerator* as, Map* map,
       const Xbyak::Reg64& obj,
       const Xbyak::Reg64& tmp,
       const char* fail,
       Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
-    as->mov(tmp, core::BitCast<uintptr_t>(map));
+    const std::size_t offset = Generate64Mov(as, tmp);
+    as->rewrite(offset, core::BitCast<uintptr_t>(map), k64Size);
     as->cmp(tmp, qword[obj + JSObject::MapOffset()]);
     as->jne(fail, type);
+    return offset;
   }
+
+  static void TestMapConstant(
+      Xbyak::CodeGenerator* as, Map* map,
+      const Xbyak::Reg64& obj,
+      const Xbyak::Reg64& tmp,
+      const char* fail,
+      Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
+    // in uint32_t
+    const uintptr_t ptr = core::BitCast<uintptr_t>(map);
+    if (!Xbyak::inner::IsInInt32(ptr)) {
+      TestMap(as, map, obj, tmp, fail, type);
+      return;
+    }
+    as->cmp(qword[obj + JSObject::MapOffset()], static_cast<uint32_t>(ptr));
+    as->jne(fail, type);
+  }
+
  private:
   Type type_;
 };

@@ -19,8 +19,7 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     : Xbyak::CodeGenerator(size, ptr) {
     Xbyak::CodeArray::protect(ptr, size, true);
     dispatch_exception_handler = CompileDispatchExceptionHandler();
-    exception_handler_is_not_found = CompileExceptionHandlerIsNotFound();
-    prologue = CompileBreakerPrologue();
+    CompileBreakerPrologue();
   }
 
   void* CompileDispatchExceptionHandler() {
@@ -42,25 +41,13 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     return core::BitCast<void*>(getCode() + size);
   }
 
-  void* CompileExceptionHandlerIsNotFound() {
-    // restore callee-save registers
-    const std::size_t size = getSize();
-    mov(r15, ptr[rsp + offsetof(Frame, r15)]);
-    mov(r14, ptr[rsp + offsetof(Frame, r14)]);
-    mov(r13, ptr[rsp + offsetof(Frame, r13)]);
-    mov(r12, ptr[rsp + offsetof(Frame, r12)]);
-    add(rsp, sizeof(Frame));
-    ret();
-    return core::BitCast<void*>(getCode() + size);
-  }
-
   typedef JSVal(*PrologueType)(Context* ctx,
                                railgun::Frame* frame, void* code, Error* e);
   // rdi : context
   // rsi : frame
   // rdx : code ptr
   // rcx : error ptr
-  PrologueType CompileBreakerPrologue() {
+  void CompileBreakerPrologue() {
     const std::size_t size = getSize();
     sub(rsp, sizeof(Frame));
 
@@ -84,6 +71,9 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     // initialize return address of frame
     call(rdx);
 
+    // exception or normal return
+    const std::size_t not_found = getSize();
+
     mov(r15, ptr[rsp + offsetof(Frame, r15)]);
     mov(r14, ptr[rsp + offsetof(Frame, r14)]);
     mov(r13, ptr[rsp + offsetof(Frame, r13)]);
@@ -91,7 +81,9 @@ class TemplatesGenerator : public Xbyak::CodeGenerator {
     add(rsp, sizeof(Frame));
 
     ret();
-    return core::BitCast<PrologueType>(getCode() + size);
+
+    exception_handler_is_not_found = core::BitCast<void*>(getCode() + not_found);
+    prologue = core::BitCast<PrologueType>(getCode() + size);
   }
 
  public:  // opened

@@ -324,6 +324,7 @@ void JSObject::PutIndexedSlotMethod(JSObject* obj, Context* ctx, uint32_t index,
       obj->method()->GetOwnIndexedPropertySlot == JSObject::GetOwnIndexedPropertySlotMethod &&
       (!obj->prototype() || !obj->prototype()->HasIndexedProperty())) {
     // array fast path
+    slot->MarkPutResult(Slot::PUT_INDEXED_OPTIMIZED, index);
     obj->DefineOwnIndexedValueDenseInternal(ctx, index, val, false);
     return;
   }

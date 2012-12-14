@@ -33,7 +33,8 @@ class Slot : public StoredSlot {
   enum PutResultType {
     PUT_NONE = 0,
     PUT_REPLACE = 1,
-    PUT_NEW = 2
+    PUT_NEW = 2,
+    PUT_INDEXED_OPTIMIZED = 3
   };
   static const uint32_t PUT_MASK = 3;
   static const uint32_t PUT_SHIFT = 3;

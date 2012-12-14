@@ -20,7 +20,9 @@ class PolyICUnit: public core::IntrusiveListBase {
     STORE_REPLACE_PROPERTY,
     STORE_REPLACE_PROPERTY_WITH_MAP_TRANSITION,
     STORE_NEW_PROPERTY,
-    STORE_NEW_PROPERTY_WITH_REALLOCATION
+    STORE_NEW_PROPERTY_WITH_REALLOCATION,
+    STORE_NEW_ELEMENT,
+    LOAD_ARRAY_HOLE
   };
 
   explicit PolyICUnit(Type type)
@@ -136,7 +138,7 @@ class LoadPropertyIC : public PolyIC {
 
     void operator()(LoadPropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
       // own map guard
-      IC::TestMap(as, map_, r8, r10, fail);
+      IC::TestMapConstant(as, map_, r8, r10, fail);
       // load
       LoadPropertyIC::GenerateFastLoad(as, r8, offset_);
     }
@@ -161,10 +163,10 @@ class LoadPropertyIC : public PolyIC {
 
     void operator()(LoadPropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
       // own map guard
-      IC::TestMap(as, map_, r8, r10, fail);
+      IC::TestMapConstant(as, map_, r8, r10, fail);
       // prototype map guard
       as->mov(r11, core::BitCast<uintptr_t>(map_->prototype()));
-      IC::TestMap(as, prototype_, r11, r10, fail);
+      IC::TestMapConstant(as, prototype_, r11, r10, fail);
       // load
       LoadPropertyIC::GenerateFastLoad(as, r11, offset_);
     }
@@ -194,12 +196,12 @@ class LoadPropertyIC : public PolyIC {
       for (Chain::const_iterator it = chain_->begin(),
            last = chain_->end(); it != last; ++it) {
         Map* map = *it;
-        IC::TestMap(as, map, r11, r10, fail, Xbyak::CodeGenerator::T_NEAR);
+        IC::TestMapConstant(as, map, r11, r10, fail, Xbyak::CodeGenerator::T_NEAR);
         prototype = map->prototype();
         as->mov(r11, core::BitCast<uintptr_t>(prototype));
       }
       // last check
-      IC::TestMap(as, map_, r11, r10, fail, Xbyak::CodeGenerator::T_NEAR);
+      IC::TestMapConstant(as, map_, r11, r10, fail, Xbyak::CodeGenerator::T_NEAR);
       // load
       LoadPropertyIC::GenerateFastLoad(as, r11, offset_);
     }
@@ -476,7 +478,7 @@ class StorePropertyIC : public PolyIC {
 
     void operator()(StorePropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
       // own map guard
-      IC::TestMap(as, map_, rsi, r10, fail);
+      IC::TestMapConstant(as, map_, rsi, r10, fail);
       // transition
       as->mov(r10, core::BitCast<uintptr_t>(transit_));
       as->mov(qword[rsi + JSObject::MapOffset()], r10);
@@ -509,7 +511,7 @@ class StorePropertyIC : public PolyIC {
       for (Chain::const_iterator it = chain_->begin(),
            last = chain_->end(); it != last; ++it) {
         Map* map = *it;
-        IC::TestMap(as, map, r11, r10, fail, Xbyak::CodeGenerator::T_NEAR);
+        IC::TestMapConstant(as, map, r11, r10, fail, Xbyak::CodeGenerator::T_NEAR);
         prototype = map->prototype();
         as->mov(r11, core::BitCast<uintptr_t>(prototype));
       }
@@ -529,7 +531,7 @@ class StorePropertyIC : public PolyIC {
 
   class StoreNewPropertyWithReallocationCompiler {
    public:
-    static const Unit::Type kType = Unit::STORE_NEW_PROPERTY;
+    static const Unit::Type kType = Unit::STORE_NEW_PROPERTY_WITH_REALLOCATION;
     static const int kSize = 64;
 
     std::size_t size() const { return kSize * (chain_->size() + 1); }
@@ -546,7 +548,7 @@ class StorePropertyIC : public PolyIC {
       for (Chain::const_iterator it = chain_->begin(),
            last = chain_->end(); it != last; ++it) {
         Map* map = *it;
-        IC::TestMap(as, map, r11, r10, fail, Xbyak::CodeGenerator::T_NEAR);
+        IC::TestMapConstant(as, map, r11, r10, fail, Xbyak::CodeGenerator::T_NEAR);
         prototype = map->prototype();
         as->mov(r11, core::BitCast<uintptr_t>(prototype));
       }
@@ -669,6 +671,154 @@ class StorePropertyIC : public PolyIC {
   std::size_t from_original_;
   NativeCode* native_code_;
   Symbol name_;
+  bool strict_;
+};
+
+class StoreElementIC : public PolyIC {
+ public:
+  static const std::size_t kMaxPolyICSize = 5;
+
+  StoreElementIC(NativeCode* native_code, bool strict, uint32_t index = UINT32_MAX)
+    : from_original_(),
+      native_code_(native_code),
+      index_(index),
+      strict_(strict) {
+  }
+
+  void BindOriginal(std::size_t from_original) {
+    from_original_ = from_original;
+    const uintptr_t call = core::BitCast<uintptr_t>(&stub::STORE_ELEMENT_INDEXED);
+    native_code()->assembler()->rewrite(from_original_, call, k64Size);
+  }
+
+  void StoreNewElement(Chain* chain) {
+    if (Unit* ic = Generate(StoreNewElementCompiler(chain))) {
+      ic->set_chain(chain);
+    }
+  }
+
+  void Invalidate() {
+  }
+
+  NativeCode* native_code() const { return native_code_; }
+  bool strict() const { return strict_; }
+  uint32_t index() const { return index_; }
+
+ private:
+  class StoreNewElementCompiler {
+   public:
+    static const Unit::Type kType = Unit::STORE_NEW_ELEMENT;
+    static const int kSize = 64;
+
+    std::size_t size() const { return kSize * (chain_->size() + 1); }
+
+    StoreNewElementCompiler(Chain* chain)
+      : chain_(chain) {
+    }
+
+    void operator()(StoreElementIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
+      JSObject* prototype = NULL;
+      as->mov(r9, rsi);
+      for (Chain::const_iterator it = chain_->begin(),
+           last = chain_->end(); it != last; ++it) {
+        Map* map = *it;
+        IC::TestMapConstant(as, map, r9, r10, fail, Xbyak::CodeGenerator::T_NEAR);
+        prototype = map->prototype();
+        as->mov(r9, core::BitCast<uintptr_t>(prototype));
+      }
+
+      // pass
+
+      // length grow check
+      as->test(r11d, r11d);
+      as->jnz(".GROW");
+
+      // store path
+      as->L(".MAIN");
+      const std::ptrdiff_t vector_offset =
+          IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ElementsOffset() + IndexedElements::VectorOffset();
+      const std::ptrdiff_t data_offset =
+          vector_offset + IndexedElements::DenseArrayVector::DataOffset();
+      as->mov(rax, qword[rsi + data_offset]);
+      if (site->index() != UINT32_MAX) {
+        as->mov(qword[rax + site->index() * kJSValSize], rdx);
+      } else {
+        // rcx is index
+        as->mov(qword[rax + rcx * kJSValSize], rdx);
+      }
+      as->ret();
+
+      as->L(".GROW");
+      const std::ptrdiff_t size_offset =
+          vector_offset + IndexedElements::DenseArrayVector::SizeOffset();
+      const std::ptrdiff_t length_offset =
+          IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ElementsOffset() + IndexedElements::LengthOffset();
+      if (site->index() != UINT32_MAX) {
+        as->mov(qword[rsi + size_offset], site->index() + 1);
+        as->cmp(dword[rsi + length_offset], site->index() + 1);
+        as->jae(".END");
+        as->mov(dword[rsi + length_offset], site->index() + 1);
+        as->L(".END");
+      } else {
+        as->inc(ecx);
+        as->mov(qword[rsi + size_offset], rcx);
+        as->cmp(dword[rsi + length_offset], ecx);
+        as->jae(".END");
+        as->mov(dword[rsi + length_offset], ecx);
+        as->L(".END");
+        as->sub(ecx, 1);
+      }
+      as->jmp(".MAIN");
+    }
+
+   private:
+    Chain* chain_;
+  };
+
+  template<typename Generator>
+  Unit* Generate(const Generator& gen) {
+    if (size() >= kMaxPolyICSize) {
+      return NULL;
+    }
+
+    Unit* ic = new Unit(Generator::kType);
+
+    NativeCode::Pages::Buffer buffer = native_code()->pages()->Gain(gen.size());
+    Xbyak::CodeGenerator as(buffer.size, buffer.ptr);
+
+    as.inLocalLabel();
+    gen(this, &as, ".EXIT");
+    // fail path
+    as.L(".EXIT");
+    const std::size_t pos = GenerateTail(&as);
+    ic->set_tail(const_cast<uint8_t*>(as.getCode()) + pos);
+    as.outLocalLabel();
+
+    Chaining(ic, core::BitCast<uintptr_t>(as.getCode()));
+    push_back(*ic);
+    assert(as.getSize() <= gen.size());
+    return ic;
+  }
+
+  void Chaining(Unit* ic, uintptr_t code) {
+    if (empty()) {
+      // rewrite original
+      native_code()->assembler()->rewrite(from_original_, code, k64Size);
+    } else {
+      back().Redirect(code);
+    }
+
+    if ((size() + 1) == kMaxPolyICSize) {
+      // last one
+      ic->Redirect(core::BitCast<uintptr_t>(&stub::STORE_ELEMENT_GENERIC));
+    } else {
+      ic->Redirect(core::BitCast<uintptr_t>(&stub::STORE_ELEMENT_INDEXED));
+    }
+  }
+
+  std::size_t from_original_;
+  NativeCode* native_code_;
+  uint32_t index_;
   bool strict_;
 };
 

@@ -9,28 +9,27 @@ namespace breaker {
 
 class MonoIC : public IC {
  public:
-  static const int k64MovImmOffset = 2;
+  MonoIC() : IC(IC::MONO) { }
+};
+
+class GlobalIC : public MonoIC {
+ public:
   static const int kMovAddressImmOffset = 3;
-  static const int kJSValSize = sizeof(JSVal);
   static const std::size_t kMaxOffset = 0x7FFFFFFF;
 
-  MonoIC()
-    : IC(IC::MONO),
+  GlobalIC(bool strict)
+    : MonoIC(),
       map_position_(),
       offset_position_(),
-      map_(NULL) {
+      map_(NULL),
+      strict_(strict) {
   }
 
   void CompileLoad(Assembler* as, JSObject* global, railgun::Code* code, Symbol name) {
     const Assembler::LocalLabelScope scope(as);
 
-    MapCompile(as, rdx);
-
     as->mov(rax, core::BitCast<uint64_t>(global));
-
-    // load map pointer
-    as->cmp(rdx, qword[rax + JSObject::MapOffset()]);
-    as->jne(".SLOW");
+    map_position_ = IC::TestMap(as, NULL, rax, rdx, ".SLOW");
 
     const uint32_t dummy32 = 0x7FFF0000;
     const std::ptrdiff_t data_offset =
@@ -46,11 +45,7 @@ class MonoIC : public IC {
     as->mov(rsi, core::BitCast<uint64_t>(name));
     as->mov(rdx, core::BitCast<uint64_t>(this));
     as->mov(rcx, core::BitCast<uint64_t>(as));
-    if (code->strict()) {
-      as->Call(&stub::LOAD_GLOBAL<true>);
-    } else {
-      as->Call(&stub::LOAD_GLOBAL<false>);
-    }
+    as->Call(&stub::LOAD_GLOBAL);
 
     as->L(".EXIT");
   }
@@ -59,13 +54,8 @@ class MonoIC : public IC {
   void CompileStore(Assembler* as, JSObject* global, railgun::Code* code, Symbol name) {
     const Assembler::LocalLabelScope scope(as);
 
-    MapCompile(as, rdx);
-
     as->mov(rcx, core::BitCast<uint64_t>(global));
-
-    // load map pointer
-    as->cmp(rdx, qword[rcx + JSObject::MapOffset()]);
-    as->jne(".SLOW");
+    map_position_ = IC::TestMap(as, NULL, rcx, rdx, ".SLOW");
 
     const uint32_t dummy32 = 0x7FFF0000;
     const std::ptrdiff_t data_offset =
@@ -82,26 +72,22 @@ class MonoIC : public IC {
     as->mov(rdx, core::BitCast<uint64_t>(this));
     as->mov(rcx, core::BitCast<uint64_t>(as));
     as->mov(r8, rax);
-    if (code->strict()) {
-      as->Call(&stub::STORE_GLOBAL<true>);
-    } else {
-      as->Call(&stub::STORE_GLOBAL<false>);
-    }
+    as->Call(&stub::STORE_GLOBAL);
 
     as->L(".EXIT");
   }
 
   void Repatch(Assembler* as, Map* map, uint32_t offset) {
-    // Repatch map pointer in machine code
-    assert(offset <= kMaxOffset);
-    as->rewrite(map_position(), core::BitCast<uint64_t>(map), k64Size);
-    as->rewrite(offset_position(), offset, k32Size);
-    map_ = map;
+    if (offset <= GlobalIC::kMaxOffset) {
+      as->rewrite(map_position(), core::BitCast<uint64_t>(map), k64Size);
+      as->rewrite(offset_position(), offset, k32Size);
+      map_ = map;
+    }
   }
 
   std::size_t map_position() const { return map_position_; }
-
   std::size_t offset_position() const { return offset_position_; }
+  bool strict() const { return strict_; }
 
   virtual void MarkChildren(radio::Core* core) {
     core->MarkCell(map_);
@@ -114,17 +100,12 @@ class MonoIC : public IC {
     return GC_MARK_AND_PUSH(
         map_, entry, mark_sp_limit, reinterpret_cast<void**>(this));
   }
- private:
-  void MapCompile(Assembler* as, const Xbyak::Reg64& map) {
-    const uint64_t dummy64 = UINT64_C(0x0FFF000000000000);
-    map_position_ = as->size() + k64MovImmOffset;
-    as->mov(map, dummy64);
-    as->rewrite(map_position(), 0, k64Size);
-  }
 
+ private:
   std::size_t map_position_;
   std::size_t offset_position_;
   Map* map_;
+  bool strict_;
 };
 
 } } }  // namespace iv::lv5::breaker

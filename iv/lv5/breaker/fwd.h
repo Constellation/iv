@@ -29,10 +29,13 @@ using namespace Xbyak::util;  // NOLINT
 // we must define mangling macro for each systems.
 #if defined(IV_OS_MACOSX)
   #define IV_LV5_BREAKER_SYMBOL(sym) IV_LV5_BREAKER_TO_STRING(_ ##sym)
+  #define IV_LV5_BREAKER_HIDDEN(sym) ".private_extern " IV_LV5_BREAKER_SYMBOL(sym)
 #elif defined(IV_OS_LINUX)
   #define IV_LV5_BREAKER_SYMBOL(sym) IV_LV5_BREAKER_TO_STRING(sym)
+  #define IV_LV5_BREAKER_HIDDEN(sym) ".hidden " #sym
 #else
   #define IV_LV5_BREAKER_SYMBOL(sym) IV_LV5_BREAKER_TO_STRING(sym)
+  #define IV_LV5_BREAKER_HIDDEN(sym) ".hidden " #sym
 #endif
 
 namespace iv {
@@ -59,15 +62,16 @@ static const int kJSValSize = sizeof(JSVal);  // NOLINT
 
 class Context;
 class Compiler;
-class MonoIC;
 class Assembler;
 class NativeCode;
 class JSJITFunction;
 class IC;
 class TemplatesGenerator;
 
+class GlobalIC;
 class LoadPropertyIC;
 class StorePropertyIC;
+class StoreElementIC;
 
 // JIT Frame layout. This frame layout is constructed on breaker prologue
 struct Frame {
@@ -109,18 +113,20 @@ typedef int32_t register_t;
 
 namespace stub {
 
-template<bool Strict>
-Rep LOAD_GLOBAL(Frame* stack, Symbol name, MonoIC* ic, Assembler* as);
+Rep LOAD_GLOBAL(Frame* stack, Symbol name, GlobalIC* ic, Assembler* as);
 
-template<bool Strict>
 Rep STORE_GLOBAL(Frame* stack, Symbol name,
-                 MonoIC* ic, Assembler* as, JSVal src);
+                 GlobalIC* ic, Assembler* as, JSVal src);
 
 Rep LOAD_PROP_GENERIC(Frame* stack, JSVal base, LoadPropertyIC* site);
 Rep LOAD_PROP(Frame* stack, JSVal base, LoadPropertyIC* site);
 
 Rep STORE_PROP(Frame* stack, JSVal base, JSVal src, StorePropertyIC* ic);
 Rep STORE_PROP_GENERIC(Frame* stack, JSVal base, JSVal src, StorePropertyIC* ic);  // NOLINT
+
+Rep STORE_ELEMENT(Frame* stack, JSVal base, JSVal src, JSVal element, StoreElementIC* ic);  // NOLINT
+Rep STORE_ELEMENT_GENERIC(Frame* stack, JSVal base, JSVal src, JSVal element, StoreElementIC* ic);  // NOLINT
+Rep STORE_ELEMENT_INDEXED(Frame* stack, JSVal base, JSVal src, int32_t index, StoreElementIC* ic);  // NOLINT
 
 } } } }  // namespace iv::lv5::breaker::stub
 #endif  // IV_LV5_BREAKER_FWD_H_

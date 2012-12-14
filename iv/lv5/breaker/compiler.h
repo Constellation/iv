@@ -1502,36 +1502,57 @@ class Compiler {
     if (symbol::IsArrayIndexSymbol(name)) {
       // generate Array index fast path
       const uint32_t index = symbol::GetIndexFromSymbol(name);
-      DenseArrayGuard(base, rsi, rdi, r11, true, ".ARRAY_FAST_PATH_EXIT");
+      StoreElementIC* ic(new StoreElementIC(native_code(), code_->strict(), index));
 
-      // check index is not out of range
-      const std::ptrdiff_t vector_offset =
-          IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ElementsOffset() + IndexedElements::VectorOffset();
-      const std::ptrdiff_t size_offset =
-          vector_offset + IndexedElements::DenseArrayVector::SizeOffset();
-      asm_->cmp(qword[rsi + size_offset], index);
-      asm_->jbe(".ARRAY_FAST_PATH_EXIT");
+      if (index < IndexedElements::kMaxVectorSize) {
+        DenseArrayGuard(base, rsi, rdi, r11, true, ".ARRAY_EXIT");
 
-      const std::ptrdiff_t data_offset =
-          vector_offset + IndexedElements::DenseArrayVector::DataOffset();
-      asm_->mov(rax, qword[rsi + data_offset]);
-      asm_->mov(r11, qword[rax + kJSValSize * index]);
-      asm_->test(r11, r11);
-      asm_->jz(".ARRAY_FAST_PATH_EXIT");
-      asm_->mov(qword[rax + kJSValSize * index], rdx);
-      asm_->jmp(".EXIT");
+        // check index is not out of range
+        const std::ptrdiff_t vector_offset =
+            IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ElementsOffset() + IndexedElements::VectorOffset();
+        const std::ptrdiff_t size_offset =
+            vector_offset + IndexedElements::DenseArrayVector::SizeOffset();
+        asm_->cmp(qword[rsi + size_offset], index);
+        asm_->jbe(".ARRAY_CAPACITY");
 
-      asm_->L(".ARRAY_FAST_PATH_EXIT");
+        // fast path
+        const std::ptrdiff_t data_offset =
+            vector_offset + IndexedElements::DenseArrayVector::DataOffset();
+        asm_->mov(rax, qword[rsi + data_offset]);
+        asm_->mov(r11, qword[rax + kJSValSize * index]);
+        asm_->test(r11, r11);
+        asm_->jz(".ARRAY_IC_PATH");
+        asm_->mov(qword[rax + kJSValSize * index], rdx);
+        asm_->jmp(".EXIT");
 
-      // store element
+        // capacity check
+        // This path may introduce length grow
+        asm_->L(".ARRAY_CAPACITY");
+        const std::ptrdiff_t capacity_offset =
+            vector_offset + IndexedElements::DenseArrayVector::CapacityOffset();
+        asm_->cmp(qword[rsi + capacity_offset], index);
+        asm_->jbe(".ARRAY_EXIT");
+        asm_->mov(r11d, 1);  // this is flag
+
+        asm_->L(".ARRAY_IC_PATH");
+        native_code()->BindIC(ic);
+
+        asm_->mov(rdi, r14);
+        asm_->mov(ecx, index);
+        asm_->mov(r8, core::BitCast<uint64_t>(ic));
+        const std::size_t offset = PolyIC::Generate64Mov(asm_);
+        ic->BindOriginal(offset);
+        asm_->call(rax);
+        asm_->jmp(".EXIT");
+      }
+
+      // store element generic
+      asm_->L(".ARRAY_EXIT");
       CheckObjectCoercible(base, rsi, rdi);
       asm_->mov(rdi, r14);
       asm_->mov(rcx, Extract(JSVal::UInt32(index)));
-      if (code_->strict()) {
-        asm_->Call(&stub::STORE_ELEMENT<true>);
-      } else {
-        asm_->Call(&stub::STORE_ELEMENT<false>);
-      }
+      asm_->mov(r8, core::BitCast<uint64_t>(ic));
+      asm_->Call(&stub::STORE_ELEMENT_GENERIC);
     } else {
       asm_->mov(rdi, r14);
       StorePropertyIC* ic(new StorePropertyIC(native_code(), name, code_->strict()));
@@ -1798,43 +1819,64 @@ class Compiler {
     LoadVRs(rsi, base, rcx, element);
     LoadVR(rdx, src);
 
-    {
-      // check element is int32_t and element >= 0
-      Int32Guard(element, rcx, ".ARRAY_FAST_PATH_EXIT");
-      asm_->cmp(ecx, 0);
-      asm_->jl(".ARRAY_FAST_PATH_EXIT");
+    // check element is int32_t and element >= 0
+    Int32Guard(element, rcx, ".ARRAY_EXIT", Xbyak::CodeGenerator::T_NEAR);
+    asm_->cmp(ecx, 0);
+    asm_->jl(".ARRAY_EXIT", Xbyak::CodeGenerator::T_NEAR);
 
-      // generate Array index fast path
-      DenseArrayGuard(base, rsi, rdi, r11, true, ".ARRAY_FAST_PATH_EXIT");
+    // generate Array index fast path
+    DenseArrayGuard(base, rsi, rdi, r11, true, ".ARRAY_EXIT", Xbyak::CodeGenerator::T_NEAR);
 
-      // check index is not out of range
-      const std::ptrdiff_t vector_offset =
-          IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ElementsOffset() + IndexedElements::VectorOffset();
-      const std::ptrdiff_t size_offset =
-          vector_offset + IndexedElements::DenseArrayVector::SizeOffset();
-      asm_->mov(edi, ecx);
-      asm_->cmp(rdi, qword[rsi + size_offset]);
-      asm_->jae(".ARRAY_FAST_PATH_EXIT");
+    // check index is not out of range
+    const std::ptrdiff_t vector_offset =
+        IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ElementsOffset() + IndexedElements::VectorOffset();
+    const std::ptrdiff_t size_offset =
+        vector_offset + IndexedElements::DenseArrayVector::SizeOffset();
+    asm_->mov(rdi, rcx);
+    asm_->mov(ecx, ecx);
+    asm_->cmp(qword[rsi + size_offset], rcx);
+    asm_->jbe(".ARRAY_CAPACITY");
 
-      // store element from index directly
-      const std::ptrdiff_t data_offset =
-          vector_offset + IndexedElements::DenseArrayVector::DataOffset();
-      asm_->mov(rax, qword[rsi + data_offset]);
-      asm_->mov(r11, qword[rax + rdi * kJSValSize]);
-      asm_->test(r11, r11);
-      asm_->jz(".ARRAY_FAST_PATH_EXIT");
-      asm_->mov(qword[rax + rdi * kJSValSize], rdx);
-      asm_->jmp(".EXIT");
-      asm_->L(".ARRAY_FAST_PATH_EXIT");
-    }
+    // store element directly
+    const std::ptrdiff_t data_offset =
+        vector_offset + IndexedElements::DenseArrayVector::DataOffset();
+    asm_->mov(rax, qword[rsi + data_offset]);
+    asm_->mov(r11, qword[rax + rcx * kJSValSize]);
+    asm_->test(r11, r11);  // check empty
+    asm_->jz(".ARRAY_IC_PATH");
+    asm_->mov(qword[rax + rcx * kJSValSize], rdx);
+    asm_->jmp(".EXIT");
 
+    // capacity check
+    // This path may introduce length grow
+    asm_->L(".ARRAY_CAPACITY");
+    const std::ptrdiff_t capacity_offset =
+        vector_offset + IndexedElements::DenseArrayVector::CapacityOffset();
+    asm_->cmp(qword[rsi + capacity_offset], rcx);
+    asm_->jbe(".ARRAY_RESTORE_INDEX");
+    asm_->mov(r11d, 1);  // this is flag
+
+    asm_->L(".ARRAY_IC_PATH");
+    StoreElementIC* ic(new StoreElementIC(native_code(), code_->strict()));
+    native_code()->BindIC(ic);
+
+    asm_->mov(rdi, r14);
+    asm_->mov(r8, core::BitCast<uint64_t>(ic));
+    const std::size_t offset = PolyIC::Generate64Mov(asm_);
+    ic->BindOriginal(offset);
+    asm_->call(rax);
+    asm_->jmp(".EXIT");
+
+    asm_->L(".ARRAY_RESTORE_INDEX");
+    asm_->mov(rcx, rdi);
+
+    // store element generic
+    asm_->L(".ARRAY_EXIT");
     CheckObjectCoercible(base, rsi, rdi);
     asm_->mov(rdi, r14);
-    if (code_->strict()) {
-      asm_->Call(&stub::STORE_ELEMENT<true>);
-    } else {
-      asm_->Call(&stub::STORE_ELEMENT<false>);
-    }
+    asm_->mov(r8, core::BitCast<uint64_t>(ic));
+    asm_->Call(&stub::STORE_ELEMENT_GENERIC);
+
     asm_->L(".EXIT");
   }
 
@@ -1968,7 +2010,7 @@ class Compiler {
       asm_->mov(rax, Extract(constant.second));
       dst_entry = TypeEntry(constant.second);
     } else {
-      MonoIC* ic(new MonoIC());
+      GlobalIC* ic(new GlobalIC(code_->strict()));
       ic->CompileLoad(asm_, ctx_->global_obj(), code_, name);
       native_code()->BindIC(ic);
     }
@@ -1983,7 +2025,7 @@ class Compiler {
     const register_t src = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
     LoadVR(rax, src);
-    MonoIC* ic(new MonoIC());
+    GlobalIC* ic(new GlobalIC(code_->strict()));
     ic->CompileStore(asm_, ctx_->global_obj(), code_, name);
     native_code()->BindIC(ic);
   }
@@ -2698,8 +2740,8 @@ class Compiler {
     asm_->mov(rdi, r12);
     LoadVR(rsi, iterator);
     asm_->Call(&stub::FORIN_ENUMERATE);
-    asm_->cmp(rax, 0);
-    asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+    asm_->test(rax, rax);
+    asm_->jz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
     asm_->mov(ptr[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::String()));
