@@ -132,7 +132,11 @@ def Build():
     env.Append(CCFLAGS=["-g3"])
     # env.Append(CCFLAGS=["-Werror"])
   else:
-    env.Append(CCFLAGS=["-O3", "-fomit-frame-pointer"], CPPDEFINES=["NDEBUG"])
+    env.Append(CCFLAGS=["-fomit-frame-pointer"], CPPDEFINES=["NDEBUG"])
+    if env['clang']:
+      env.Append(CCFLAGS=["-O4"])
+    else:
+      env.Append(CCFLAGS=["-O3"])
 
   if env['debug_iterator']:
     env.Append(CPPDEFINES=['_GLIBCXX_DEBUG'])
