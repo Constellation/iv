@@ -781,8 +781,11 @@ class Parser : private Noncopyable<> {
     Target target(this, Target::kIterationStatement);
     Statement* const body = ParseStatement(CHECK);
     assert(body);
-    ForStatement* const forstmt =
-        factory_->NewForStatement(body, init, cond, next, for_stmt_begin, for_stmt_line_number);
+    ForStatement* const forstmt = factory_->NewForStatement(
+        body,
+        init,
+        cond,
+        next, for_stmt_begin, for_stmt_line_number);
     target.set_node(forstmt);
     return forstmt;
   }
