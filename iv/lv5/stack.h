@@ -51,9 +51,9 @@ class Stack : core::Noncopyable<Stack> {
   explicit Stack()
     : stack_(NULL),
       stack_pointer_(NULL) {
-    stack_pointer_ = stack_ =
-        reinterpret_cast<JSVal*>(
-            core::OSAllocator::Allocate(kStackBytes));
+    void* ptr = core::OSAllocator::Allocate(kStackBytes);
+    core::OSAllocator::Commit(ptr, kStackBytes);
+    stack_pointer_ = stack_ = reinterpret_cast<JSVal*>(ptr);
   }
 
   Stack(EmptyTag tag) { }  // empty
