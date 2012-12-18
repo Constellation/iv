@@ -316,15 +316,15 @@ inline Rep LOAD_GLOBAL(Frame* stack, Symbol name, GlobalIC* ic, Assembler* as) {
     }
     const JSVal ret = slot.Get(ctx, global, ERR);
     return Extract(ret);
-  } else {
-    if (ctx->global_env()->HasBinding(ctx, name)) {
-      const JSVal res = ctx->global_env()->GetBindingValue(ctx, name, ic->strict(), ERR);
-      return Extract(res);
-    }
-    RaiseReferenceError(name, stack->error);
-    IV_LV5_BREAKER_RAISE();
-    return 0;
   }
+
+  if (ctx->global_env()->HasBinding(ctx, name)) {
+    const JSVal res = ctx->global_env()->GetBindingValue(ctx, name, ic->strict(), ERR);
+    return Extract(res);
+  }
+  RaiseReferenceError(name, stack->error);
+  IV_LV5_BREAKER_RAISE();
+  return 0;
 }
 
 inline Rep STORE_GLOBAL(Frame* stack, Symbol name,
@@ -372,7 +372,7 @@ template<bool Strict>
 inline Rep TYPEOF_GLOBAL(Frame* stack, Symbol name) {
   Context* ctx = stack->ctx;
   JSEnv* global = ctx->global_env();
-  if (global->HasBinding(ctx, name)) {
+  if (!global->HasBinding(ctx, name)) {
     // not found -> unresolvable reference
     return Extract(ctx->global_data()->string_undefined());
   }
