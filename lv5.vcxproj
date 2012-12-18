@@ -12,7 +12,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="iv\lv5\context.cc" />
-    <ClCompile Include="iv\lv5\jsobject.cc" />
     <ClCompile Include="iv\lv5\main.cc" />
     <ClCompile Include="iv\lv5\third_party\netlib_dtoa\netlib_dtoa.c" />
     <ClCompile Include="iv\lv5\third_party\v8_dtoa\checks.cc" />

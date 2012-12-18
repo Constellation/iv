@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		70253BFD1460161B00B6D41E /* context.cc in Sources */ = {isa = PBXBuildFile; fileRef = 70F46BA5146015730026DD83 /* context.cc */; };
-		70253BFE1460161B00B6D41E /* jsobject.cc in Sources */ = {isa = PBXBuildFile; fileRef = 70F46BC4146015730026DD83 /* jsobject.cc */; };
 		70253BFF1460161B00B6D41E /* main.cc in Sources */ = {isa = PBXBuildFile; fileRef = 70F46BD4146015730026DD83 /* main.cc */; };
 		70253C0F146017D900B6D41E /* checks.cc in Sources */ = {isa = PBXBuildFile; fileRef = 70F46C2F146015730026DD83 /* checks.cc */; };
 		70253C10146017D900B6D41E /* conversions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 70F46C31146015730026DD83 /* conversions.cc */; };
@@ -63,7 +62,6 @@
 		70253CE81463D82500B6D41E /* libv8_dtoa.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 70253C0B146017BA00B6D41E /* libv8_dtoa.a */; };
 		70253CEA1463D83800B6D41E /* libgc.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 70253C271460195500B6D41E /* libgc.dylib */; };
 		70253CEF1463D87200B6D41E /* context.cc in Sources */ = {isa = PBXBuildFile; fileRef = 70F46BA5146015730026DD83 /* context.cc */; };
-		70253CF01463D87200B6D41E /* jsobject.cc in Sources */ = {isa = PBXBuildFile; fileRef = 70F46BC4146015730026DD83 /* jsobject.cc */; };
 		70961BE414FD035E007DD322 /* test_aero_jit.cc in Sources */ = {isa = PBXBuildFile; fileRef = 70961BB714FD035D007DD322 /* test_aero_jit.cc */; };
 		70961BE514FD035E007DD322 /* test_intrusive_ptr.cc in Sources */ = {isa = PBXBuildFile; fileRef = 70961BB814FD035D007DD322 /* test_intrusive_ptr.cc */; };
 		70961BE614FD035E007DD322 /* test_math.cc in Sources */ = {isa = PBXBuildFile; fileRef = 70961BB914FD035D007DD322 /* test_math.cc */; };
@@ -411,7 +409,6 @@
 		70F46BC1146015730026DD83 /* jsjson.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jsjson.h; sourceTree = "<group>"; };
 		70F46BC2146015730026DD83 /* jsmath.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jsmath.h; sourceTree = "<group>"; };
 		70F46BC3146015730026DD83 /* jsnumberobject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jsnumberobject.h; sourceTree = "<group>"; };
-		70F46BC4146015730026DD83 /* jsobject.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = jsobject.cc; sourceTree = "<group>"; };
 		70F46BC5146015730026DD83 /* jsobject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jsobject.h; sourceTree = "<group>"; };
 		70F46BC6146015730026DD83 /* json.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = json.h; sourceTree = "<group>"; };
 		70F46BC7146015730026DD83 /* json_lexer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = json_lexer.h; sourceTree = "<group>"; };
@@ -962,7 +959,6 @@
 				70F46BC1146015730026DD83 /* jsjson.h */,
 				70F46BC2146015730026DD83 /* jsmath.h */,
 				70F46BC3146015730026DD83 /* jsnumberobject.h */,
-				70F46BC4146015730026DD83 /* jsobject.cc */,
 				70F46BC5146015730026DD83 /* jsobject.h */,
 				70F46BC6146015730026DD83 /* json.h */,
 				70F46BC7146015730026DD83 /* json_lexer.h */,
@@ -1400,7 +1396,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				70253BFD1460161B00B6D41E /* context.cc in Sources */,
-				70253BFE1460161B00B6D41E /* jsobject.cc in Sources */,
 				70253BFF1460161B00B6D41E /* main.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1479,7 +1474,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				70253CEF1463D87200B6D41E /* context.cc in Sources */,
-				70253CF01463D87200B6D41E /* jsobject.cc in Sources */,
 				70961C1514FD0378007DD322 /* main.cc in Sources */,
 				70961C1614FD0378007DD322 /* date-parse.js in Sources */,
 				70961C1714FD0378007DD322 /* acosh.js in Sources */,
