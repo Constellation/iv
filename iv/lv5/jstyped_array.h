@@ -1,7 +1,7 @@
 #ifndef IV_LV5_JSTYPED_ARRAY_H_
 #define IV_LV5_JSTYPED_ARRAY_H_
 #include <iv/detail/cstdint.h>
-#include <iv/lv5/jsobject.h>
+#include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/jsarray_buffer.h>
 #include <iv/lv5/binary_blocks.h>
 namespace iv {

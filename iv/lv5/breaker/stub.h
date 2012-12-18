@@ -937,9 +937,8 @@ inline Rep STORE_ELEMENT_INDEXED(Frame* stack, JSVal base, JSVal src, int32_t in
 
   const bool indexed = obj->map()->IsIndexed();
   Slot slot;
-  obj->PutIndexedSlot(ctx, index, src, &slot, ic->strict(), ERR);
-  if (indexed && slot.put_result_type() == Slot::PUT_INDEXED_OPTIMIZED &&
-      obj->method()->DefineOwnIndexedPropertySlot == JSObject::DefineOwnIndexedPropertySlotMethod) {
+  JSObject::PutIndexedSlotMethod(obj, ctx, index, src, &slot, ic->strict(), ERR);
+  if (indexed && slot.put_result_type() == Slot::PUT_INDEXED_OPTIMIZED) {
     // ic to hole path
     Chain* chain = Chain::New(obj, NULL);
     ic->StoreNewElement(chain);

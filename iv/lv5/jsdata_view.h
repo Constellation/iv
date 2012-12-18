@@ -1,7 +1,7 @@
 #ifndef IV_LV5_JSDATA_VIEW_H_
 #define IV_LV5_JSDATA_VIEW_H_
 #include <iv/detail/cstdint.h>
-#include <iv/lv5/jsobject.h>
+#include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/jsarray_buffer.h>
 namespace iv {
 namespace lv5 {

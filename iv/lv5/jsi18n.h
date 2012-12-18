@@ -7,7 +7,7 @@
 #include <iv/i18n.h>
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/jsval.h>
-#include <iv/lv5/jsobject.h>
+#include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/jsfunction.h>
 #include <iv/lv5/map.h>
 #include <iv/lv5/class.h>

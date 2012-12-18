@@ -1,6 +1,6 @@
 #ifndef IV_LV5_JSSTRING_H_
 #define IV_LV5_JSSTRING_H_
-#include <iv/lv5/jsobject.h>
+#include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/jsarray.h>
 #include <iv/lv5/jsvector.h>
 #include <iv/lv5/jsstring_fwd.h>

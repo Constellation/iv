@@ -11,7 +11,7 @@
 #include <iv/debug.h>
 #include <iv/utils.h>
 #include <iv/noncopyable.h>
-#include <iv/lv5/jsobject.h>
+#include <iv/lv5/jsobject_fwd.h>
 namespace iv {
 namespace lv5 {
 

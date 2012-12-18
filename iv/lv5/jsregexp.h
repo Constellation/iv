@@ -6,7 +6,7 @@
 #include <iv/ustringpiece.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/error.h>
-#include <iv/lv5/jsobject.h>
+#include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/jsarray.h>
 #include <iv/lv5/jsstring.h>
 #include <iv/lv5/map.h>

@@ -1,6 +1,6 @@
 #ifndef IV_LV5_JSSTRINGOBJECT_H_
 #define IV_LV5_JSSTRINGOBJECT_H_
-#include <iv/lv5/jsobject.h>
+#include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/jsstring.h>
 #include <iv/lv5/map.h>
 #include <iv/lv5/slot.h>

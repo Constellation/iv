@@ -1,6 +1,6 @@
 #ifndef IV_LV5_JSMATH_H_
 #define IV_LV5_JSMATH_H_
-#include <iv/lv5/jsobject.h>
+#include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/class.h>
 namespace iv {
 namespace lv5 {

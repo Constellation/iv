@@ -2,7 +2,7 @@
 #define IV_LV5_PROPERTY_H_
 #include <iv/bit_cast.h>
 #include <iv/lv5/property_fwd.h>
-#include <iv/lv5/jsobject.h>
+#include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/jsfunction_fwd.h>
 #include <iv/lv5/accessor.h>
 #include <iv/lv5/arguments.h>

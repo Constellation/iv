@@ -10,7 +10,7 @@
 #include <iv/platform_math.h>
 #include <iv/lv5/hint.h>
 #include <iv/lv5/jsreference.h>
-#include <iv/lv5/jsobject.h>
+#include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/jsstring.h>
 #include <iv/lv5/jsfunction.h>
 #include <iv/lv5/jsregexp.h>

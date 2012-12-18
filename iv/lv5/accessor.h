@@ -2,7 +2,7 @@
 #define IV_LV5_ACCESSOR_H_
 #include <iv/lv5/radio/cell.h>
 #include <iv/lv5/radio/core.h>
-#include <iv/lv5/jsobject.h>
+#include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/context_fwd.h>
 namespace iv {
 namespace lv5 {

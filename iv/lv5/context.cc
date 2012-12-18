@@ -29,6 +29,7 @@
 #include <iv/lv5/radio/radio.h>
 #include <iv/lv5/jsarray_buffer.h>
 #include <iv/lv5/jsdata_view.h>
+#include <iv/lv5/jsobject.h>
 namespace iv {
 namespace lv5 {
 

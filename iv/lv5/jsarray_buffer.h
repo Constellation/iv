@@ -2,7 +2,7 @@
 #define IV_LV5_JSARRAY_BUFFER_H_
 #include <iv/byteorder.h>
 #include <iv/detail/cstdint.h>
-#include <iv/lv5/jsobject.h>
+#include <iv/lv5/jsobject_fwd.h>
 namespace iv {
 namespace lv5 {
 

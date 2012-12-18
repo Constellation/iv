@@ -1,230 +1,694 @@
 #ifndef IV_LV5_JSOBJECT_H_
 #define IV_LV5_JSOBJECT_H_
-#include <iv/lv5/gc_template.h>
-#include <iv/lv5/jsval_fwd.h>
-#include <iv/lv5/error_check.h>
-#include <iv/lv5/property_fwd.h>
-#include <iv/lv5/property_names_collector.h>
-#include <iv/lv5/hint.h>
-#include <iv/lv5/symbol.h>
+#include <cassert>
+#include <algorithm>
+#include <iv/lv5/jsobject_fwd.h>
+#include <iv/lv5/property.h>
+#include <iv/lv5/jsfunction.h>
+#include <iv/lv5/jsval.h>
+#include <iv/lv5/jsenv.h>
+#include <iv/lv5/context.h>
 #include <iv/lv5/class.h>
-#include <iv/lv5/error.h>
-#include <iv/lv5/storage.h>
-#include <iv/lv5/indexed_elements.h>
-#include <iv/lv5/radio/cell.h>
-#include <iv/lv5/radio/core_fwd.h>
+#include <iv/lv5/jsbooleanobject.h>
+#include <iv/lv5/jsnumberobject.h>
+#include <iv/lv5/map.h>
+#include <iv/lv5/slot.h>
+#include <iv/lv5/error_check.h>
+#include <iv/lv5/radio/radio.h>
 namespace iv {
 namespace lv5 {
 
-class Map;
-class Slot;
-class JSFunction;
-class Context;
-class Error;
+inline bool IsAbsentDescriptor(const PropertyDescriptor& desc) {
+  if (!desc.IsEnumerable() && !desc.IsEnumerableAbsent()) {
+    // explicitly not enumerable
+    return false;
+  }
+  if (!desc.IsConfigurable() && !desc.IsConfigurableAbsent()) {
+    // explicitly not configurable
+    return false;
+  }
+  if (desc.IsAccessor()) {
+    return false;
+  }
+  if (desc.IsData()) {
+    const DataDescriptor* const data = desc.AsDataDescriptor();
+    return data->IsWritable() || data->IsWritableAbsent();
+  }
+  return true;
+}
 
-class JSObject : public radio::HeapObject<radio::OBJECT> {
- public:
-  IV_LV5_DEFINE_JSCLASS(JSObject, Object)
+inline JSObject::JSObject(Map* map)
+  : cls_(NULL),
+    map_(map),
+    slots_(map->GetSlotsSize()),
+    elements_(),
+    flags_(kFlagExtensible) {
+}
 
-  // structure for normal property (hash map is defined in Map)
-  typedef FixedStorage<JSVal> Slots;
+inline JSObject::JSObject(const JSObject& obj)
+  : cls_(obj.cls_),
+    map_(obj.map_),
+    slots_(obj.slots_),
+    elements_(obj.elements_),
+    flags_(obj.flags_) {
+}
 
-  // structures for indexed elements
-  typedef IndexedElements::SparseArrayMap SparseArrayMap;
-  typedef IndexedElements::DenseArrayVector DenseArrayVector;
+inline JSObject::JSObject(Map* map, const Class* cls)
+  : cls_(cls),
+    map_(map),
+    slots_(map->GetSlotsSize()),
+    elements_(),
+    flags_(kFlagExtensible) {
+}
 
-  static const uint32_t kFlagExtensible = 0x1;
-  static const uint32_t kFlagCallable = 0x2;
+inline JSVal JSObject::Get(Context* ctx, Symbol name, Error* e) {
+  Slot slot;
+  return GetSlot(ctx, name, &slot, e);
+}
 
-  virtual ~JSObject() { }
+inline PropertyDescriptor JSObject::GetOwnProperty(Context* ctx, Symbol name) const {
+  Slot slot;
+  if (GetOwnPropertySlot(ctx, name, &slot)) {
+    assert(!slot.IsNotFound());
+    return slot.ToDescriptor();
+  }
+  return JSEmpty;
+}
 
-  // implementation is in map.h
-  bool HasIndexedProperty() const;
+inline PropertyDescriptor JSObject::GetProperty(Context* ctx, Symbol name) const {
+  Slot slot;
+  if (GetPropertySlot(ctx, name, &slot)) {
+    return slot.ToDescriptor();
+  }
+  return JSEmpty;
+}
 
-  bool CanPut(Context* ctx, Symbol name, Slot* slot) const;
-  bool CanPutNonIndexed(Context* ctx, Symbol name, Slot* slot) const;
-  bool CanPutIndexed(Context* ctx, uint32_t index, Slot* slot) const;
+inline bool JSObject::HasOwnProperty(Context* ctx, Symbol name) const {
+  Slot slot;
+  return GetOwnPropertySlot(ctx, name, &slot);
+}
 
-  // generic interfaces in ECMA262 and more
-  JSVal Get(Context* ctx, Symbol name, Error* e);
-  PropertyDescriptor GetProperty(Context* ctx, Symbol name) const;
-  PropertyDescriptor GetOwnProperty(Context* ctx, Symbol name) const;
-  void Put(Context* ctx, Symbol name, JSVal val, bool throwable, Error* e);
-  bool DefineOwnProperty(Context* ctx, Symbol name, const PropertyDescriptor& desc, bool throwable, Error* e);
-  bool HasProperty(Context* ctx, Symbol name) const;
-  bool HasOwnProperty(Context* ctx, Symbol name) const;
+inline void JSObject::Put(Context* ctx, Symbol name, JSVal val, bool throwable, Error* e) {
+  Slot slot;
+  PutSlot(ctx, name, val, &slot, throwable, e);
+}
 
-  // simple wrappers
-  JSVal GetSlot(Context* ctx, Symbol name, Slot* slot, Error* e);
-  JSVal GetNonIndexedSlot(Context* ctx, Symbol name, Slot* slot, Error* e);
-  JSVal GetIndexedSlot(Context* ctx, uint32_t index, Slot* slot, Error* e);
-
-  bool GetPropertySlot(Context* ctx, Symbol name, Slot* slot) const;
-  bool GetNonIndexedPropertySlot(Context* ctx, Symbol name, Slot* slot) const;
-  bool GetIndexedPropertySlot(Context* ctx, uint32_t index, Slot* slot) const;
-
-  bool GetOwnPropertySlot(Context* ctx, Symbol name, Slot* slot) const;
-  bool GetOwnNonIndexedPropertySlot(Context* ctx, Symbol name, Slot* slot) const;
-  bool GetOwnIndexedPropertySlot(Context* ctx, uint32_t index, Slot* slot) const;
-
-  void PutSlot(Context* ctx, Symbol name, JSVal val, Slot* slot, bool throwable, Error* e);
-  void PutNonIndexedSlot(Context* ctx, Symbol name, JSVal val, Slot* slot, bool throwable, Error* e);
-  void PutIndexedSlot(Context* ctx, uint32_t index, JSVal val, Slot* slot, bool throwable, Error* e);
-
-  bool Delete(Context* ctx, Symbol name, bool throwable, Error* e);
-  bool DeleteNonIndexed(Context* ctx, Symbol name, bool throwable, Error* e);
-  bool DeleteIndexed(Context* ctx, uint32_t index, bool throwable, Error* e);
-
-  bool DefineOwnPropertySlot(Context* ctx, Symbol name, const PropertyDescriptor& desc, Slot* slot, bool throwable, Error* e);
-  bool DefineOwnNonIndexedPropertySlot(Context* ctx, Symbol name, const PropertyDescriptor& desc, Slot* slot, bool throwable, Error* e);
-  bool DefineOwnIndexedPropertySlot(Context* ctx, uint32_t index, const PropertyDescriptor& desc, Slot* slot, bool throwable, Error* e);
-
-  void GetPropertyNames(Context* ctx, PropertyNamesCollector* collector, EnumerationMode mode) const;
-  void GetOwnPropertyNames(Context* ctx, PropertyNamesCollector* collector, EnumerationMode mode) const;
-  JSVal DefaultValue(Context* ctx, Hint::Object hint, Error* e);
-
-  // override them
-  IV_LV5_INTERNAL_METHOD JSVal GetNonIndexedSlotMethod(JSObject* obj, Context* ctx, Symbol name, Slot* slot, Error* e);
-  IV_LV5_INTERNAL_METHOD JSVal GetIndexedSlotMethod(JSObject* obj, Context* ctx, uint32_t index, Slot* slot, Error* e);
-  IV_LV5_INTERNAL_METHOD bool GetNonIndexedPropertySlotMethod(const JSObject* obj, Context* ctx, Symbol name, Slot* slot);
-  IV_LV5_INTERNAL_METHOD bool GetIndexedPropertySlotMethod(const JSObject* obj, Context* ctx, uint32_t index, Slot* slot);
-  IV_LV5_INTERNAL_METHOD bool GetOwnNonIndexedPropertySlotMethod(const JSObject* obj, Context* ctx, Symbol name, Slot* slot);
-  IV_LV5_INTERNAL_METHOD bool GetOwnIndexedPropertySlotMethod(const JSObject* obj, Context* ctx, uint32_t index, Slot* slot);
-  IV_LV5_INTERNAL_METHOD void PutNonIndexedSlotMethod(JSObject* obj, Context* ctx, Symbol name, JSVal val, Slot* slot, bool throwable, Error* e);
-  IV_LV5_INTERNAL_METHOD void PutIndexedSlotMethod(JSObject* obj, Context* ctx, uint32_t index, JSVal val, Slot* slot, bool throwable, Error* e);
-  IV_LV5_INTERNAL_METHOD bool DeleteNonIndexedMethod(JSObject* obj, Context* ctx, Symbol name, bool throwable, Error* e);
-  IV_LV5_INTERNAL_METHOD bool DeleteIndexedMethod(JSObject* obj, Context* ctx, uint32_t index, bool throwable, Error* e);
-  IV_LV5_INTERNAL_METHOD bool DefineOwnNonIndexedPropertySlotMethod(JSObject* obj, Context* ctx, Symbol name, const PropertyDescriptor& desc, Slot* slot, bool throwable, Error* e);
-  IV_LV5_INTERNAL_METHOD bool DefineOwnIndexedPropertySlotMethod(JSObject* obj, Context* ctx, uint32_t index, const PropertyDescriptor& desc, Slot* slot, bool throwable, Error* e);
-  IV_LV5_INTERNAL_METHOD void GetPropertyNamesMethod(const JSObject* obj, Context* ctx, PropertyNamesCollector* collector, EnumerationMode mode);
-  IV_LV5_INTERNAL_METHOD void GetOwnPropertyNamesMethod(const JSObject* obj, Context* ctx, PropertyNamesCollector* collector, EnumerationMode mode);
-  IV_LV5_INTERNAL_METHOD JSVal DefaultValueMethod(JSObject* obj, Context* ctx, Hint::Object hint, Error* e);
-
-  bool DefineOwnIndexedPropertyInternal(Context* ctx, uint32_t index,
+inline bool JSObject::DefineOwnProperty(Context* ctx,
+                                        Symbol name,
                                         const PropertyDescriptor& desc,
-                                        bool throwable, Error* e);
-  void DefineOwnIndexedValueDenseInternal(Context* ctx, uint32_t index, JSVal value, bool absent);
-  bool DeleteIndexedInternal(Context* ctx, uint32_t inex, bool throwable, Error* e);
+                                        bool throwable,
+                                        Error* e) {
+  Slot slot;
+  return DefineOwnPropertySlot(ctx, name, desc, &slot, throwable, e);
+}
 
-  virtual bool IsNativeObject() const { return true; }
+inline bool JSObject::HasProperty(Context* ctx, Symbol name) const {
+  Slot slot;
+  return GetPropertySlot(ctx, name, &slot);
+}
 
-  bool Freeze(Context* ctx, Error* e) {
-    PropertyNamesCollector collector;
-    GetOwnPropertyNames(ctx, &collector, INCLUDE_NOT_ENUMERABLE);
-    for (PropertyNamesCollector::Names::const_iterator
-         it = collector.names().begin(),
-         last = collector.names().end();
-         it != last; ++it) {
-      const Symbol sym = *it;
-      PropertyDescriptor desc = GetOwnProperty(ctx, sym);
-      if (desc.IsData()) {
-        desc.AsDataDescriptor()->set_writable(false);
-      }
-      if (desc.IsConfigurable()) {
-        desc.set_configurable(false);
-      }
-      DefineOwnProperty(ctx, sym, desc, true, IV_LV5_ERROR_WITH(e, false));
-    }
-    ChangeExtensible(ctx, false);
-    return true;
-  }
-
-  bool Seal(Context* ctx, Error* e) {
-    PropertyNamesCollector collector;
-    GetOwnPropertyNames(ctx, &collector, INCLUDE_NOT_ENUMERABLE);
-    for (PropertyNamesCollector::Names::const_iterator
-         it = collector.names().begin(),
-         last = collector.names().end();
-         it != last; ++it) {
-      const Symbol sym = *it;
-      PropertyDescriptor desc = GetOwnProperty(ctx, sym);
-      if (desc.IsConfigurable()) {
-        desc.set_configurable(false);
-      }
-      DefineOwnProperty(ctx, sym, desc, true, IV_LV5_ERROR_WITH(e, false));
-    }
-    ChangeExtensible(ctx, false);
-    return true;
-  }
-
-  bool IsCallable() const { return flags_ & kFlagCallable; }
-
-  void set_callable(bool val) {
-    if (val) {
-      flags_ |= kFlagCallable;
+inline bool JSObject::CanPutNonIndexed(Context* ctx, Symbol name, Slot* slot) const {
+  if (GetNonIndexedPropertySlot(ctx, name, slot)) {
+    if (slot->attributes().IsAccessor()) {
+      return slot->accessor()->setter();
     } else {
-      flags_ &= ~kFlagCallable;
+      assert(slot->attributes().IsData());
+      return slot->attributes().IsWritable();
+    }
+  }
+  return IsExtensible();
+}
+
+inline bool JSObject::CanPutIndexed(Context* ctx, uint32_t index, Slot* slot) const {
+  if (GetIndexedPropertySlot(ctx, index, slot)) {
+    if (slot->attributes().IsAccessor()) {
+      return slot->accessor()->setter();
+    } else {
+      assert(slot->attributes().IsData());
+      return slot->attributes().IsWritable();
+    }
+  }
+  return IsExtensible();
+}
+
+// real code
+
+inline JSVal JSObject::GetNonIndexedSlotMethod(JSObject* obj, Context* ctx, Symbol name, Slot* slot, Error* e) {
+  if (obj->GetNonIndexedPropertySlot(ctx, name, slot)) {
+    return slot->Get(ctx, obj, e);
+  }
+  return JSUndefined;
+}
+
+inline JSVal JSObject::GetIndexedSlotMethod(JSObject* obj, Context* ctx, uint32_t name, Slot* slot, Error* e) {
+  if (obj->GetIndexedPropertySlot(ctx, name, slot)) {
+    return slot->Get(ctx, obj, e);
+  }
+  return JSUndefined;
+}
+
+inline bool JSObject::GetNonIndexedPropertySlotMethod(const JSObject* obj, Context* ctx, Symbol name, Slot* slot) {
+  do {
+    if (obj->GetOwnNonIndexedPropertySlot(ctx, name, slot)) {
+      assert(!slot->IsNotFound());
+      return true;
+    }
+    obj = obj->prototype();
+  } while (obj);
+  slot->MakeUsed();
+  return false;
+}
+
+inline bool JSObject::GetIndexedPropertySlotMethod(const JSObject* obj, Context* ctx, uint32_t index, Slot* slot) {
+  do {
+    if (obj->GetOwnIndexedPropertySlot(ctx, index, slot)) {
+      assert(!slot->IsNotFound());
+      return true;
+    }
+    obj = obj->prototype();
+  } while (obj);
+  slot->MakeUsed();
+  return false;
+}
+
+inline bool JSObject::GetOwnNonIndexedPropertySlotMethod(const JSObject* obj, Context* ctx, Symbol name, Slot* slot) {
+  const Map::Entry entry = obj->map()->Get(ctx, name);
+  if (!entry.IsNotFound()) {
+    slot->set(obj->Direct(entry.offset), entry.attributes, obj, entry.offset);
+    return true;
+  }
+  return false;
+}
+
+inline bool JSObject::GetOwnIndexedPropertySlotMethod(const JSObject* obj, Context* ctx, uint32_t index, Slot* slot) {
+  if (obj->elements_.dense() && index < obj->elements_.vector.size()) {
+    const JSVal value = obj->elements_.vector[index];
+    if (value.IsEmpty()) {
+      return false;
+    }
+    slot->set(value, ATTR::Object::Data(), obj);
+    return true;
+  }
+  if (obj->elements_.map && index < obj->elements_.length()) {
+    const SparseArrayMap::const_iterator it = obj->elements_.map->find(index);
+    if (it != obj->elements_.map->end()) {
+      slot->set(it->second, obj);
+      return true;
+    }
+  }
+  return false;
+}
+
+// section 8.12.9 [[DefineOwnProperty]]
+inline bool JSObject::DefineOwnNonIndexedPropertySlotMethod(JSObject* obj,
+                                                            Context* ctx,
+                                                            Symbol name,
+                                                            const PropertyDescriptor& desc,
+                                                            Slot* slot, bool throwable, Error* e) {
+  if (!slot->IsUsed()) {
+    obj->GetOwnPropertySlot(ctx, name, slot);
+  }
+
+  if (!slot->IsNotFound() && slot->base() == obj) {
+    // found
+    bool returned = false;
+    if (slot->IsDefineOwnPropertyAccepted(desc, throwable, &returned, e)) {
+      if (slot->HasOffset()) {
+        const Attributes::Safe old(slot->attributes());
+        slot->Merge(ctx, desc);
+        if (old != slot->attributes()) {
+          obj->set_map(obj->map()->ChangeAttributesTransition(ctx, name, slot->attributes()));
+        }
+        obj->Direct(slot->offset()) = slot->value();
+        slot->MarkPutResult(Slot::PUT_REPLACE, slot->offset());
+      } else {
+        // add property transition
+        // searching already created maps and if this is available, move to this
+        uint32_t offset;
+        slot->Merge(ctx, desc);
+        obj->set_map(obj->map()->AddPropertyTransition(ctx, name, slot->attributes(), &offset));
+        obj->slots_.resize(obj->map()->GetSlotsSize(), JSEmpty);
+        // set newly created property
+        obj->Direct(offset) = slot->value();
+        slot->MarkPutResult(Slot::PUT_NEW, offset);
+      }
+    }
+    return returned;
+  }
+
+  // not found
+  if (!obj->IsExtensible()) {
+    if (throwable) {
+      e->Report(Error::Type, "object not extensible");\
+    }
+    return false;
+  }
+
+  // add property transition
+  // set newly created property
+  // searching already created maps and if this is available, move to this
+  uint32_t offset;
+  const StoredSlot stored(ctx, desc);
+  obj->set_map(obj->map()->AddPropertyTransition(ctx, name, stored.attributes(), &offset));
+  obj->slots_.resize(obj->map()->GetSlotsSize(), JSEmpty);
+  obj->Direct(offset) = stored.value();
+  slot->MarkPutResult(Slot::PUT_NEW, offset);
+  return true;
+}
+
+inline bool JSObject::DefineOwnIndexedPropertySlotMethod(JSObject* obj,
+                                                         Context* ctx,
+                                                         uint32_t index,
+                                                         const PropertyDescriptor& desc,
+                                                         Slot* slot, bool throwable, Error* e) {
+  if (obj->method()->GetOwnIndexedPropertySlot != JSObject::GetOwnIndexedPropertySlotMethod) {
+    // We should reject following case
+    //   var str = new String('str');
+    //   Object.defineProperty(str, '0', { value: 0 });
+    if (!slot->IsUsed()) {
+      obj->GetOwnIndexedPropertySlot(ctx, index, slot);
+    }
+
+    bool returned = false;
+    if (!slot->IsNotFound() && slot->base() == obj) {
+      if (!slot->IsDefineOwnPropertyAccepted(desc, throwable, &returned, e)) {
+        return returned;
+      }
+      // through
+    }
+  }
+  return obj->DefineOwnIndexedPropertyInternal(ctx, index, desc, throwable, e);
+}
+
+inline void JSObject::PutNonIndexedSlotMethod(JSObject* obj, Context* ctx, Symbol name, JSVal val, Slot* slot, bool throwable, Error* e) {
+  if (!obj->CanPut(ctx, name, slot)) {
+    if (throwable) {
+      e->Report(Error::Type, "put failed");
+    }
+    return;
+  }
+
+  if (!slot->IsNotFound()) {
+    // own property and attributes is data
+    if (slot->base() == obj && slot->attributes().IsData()) {
+      obj->DefineOwnNonIndexedPropertySlot(
+          ctx,
+          name,
+          DataDescriptor(val,
+                         ATTR::UNDEF_ENUMERABLE |
+                         ATTR::UNDEF_CONFIGURABLE |
+                         ATTR::UNDEF_WRITABLE),
+          slot,
+          throwable, e);
+      return;
+    }
+
+    // accessor is found
+    if (slot->attributes().IsAccessor()) {
+      const Accessor* ac = slot->accessor();
+      assert(ac->setter());
+      ScopedArguments args(ctx, 1, IV_LV5_ERROR_VOID(e));
+      args[0] = val;
+      static_cast<JSFunction*>(ac->setter())->Call(&args, obj, e);
+      return;
+    }
+  }
+  // not found or found but data property.
+  // create or modify data property
+  obj->DefineOwnNonIndexedPropertySlot(
+      ctx, name,
+      DataDescriptor(val, ATTR::W | ATTR::E | ATTR::C), slot, throwable, e);
+}
+
+inline void JSObject::PutIndexedSlotMethod(JSObject* obj, Context* ctx, uint32_t index, JSVal val, Slot* slot, bool throwable, Error* e) {
+  if (index < IndexedElements::kMaxVectorSize &&
+      obj->elements_.dense() &&
+      obj->method()->GetOwnIndexedPropertySlot == JSObject::GetOwnIndexedPropertySlotMethod &&
+      (!obj->prototype() || !obj->prototype()->HasIndexedProperty())) {
+    // array fast path
+    slot->MarkPutResult(Slot::PUT_INDEXED_OPTIMIZED, index);
+    obj->DefineOwnIndexedValueDenseInternal(ctx, index, val, false);
+    return;
+  }
+
+  if (!obj->CanPutIndexed(ctx, index, slot)) {
+    if (throwable) {
+      e->Report(Error::Type, "put failed");
+    }
+    return;
+  }
+
+  if (!slot->IsNotFound()) {
+    // own property and attributes is data
+    if (slot->base() == obj && slot->attributes().IsData()) {
+      obj->DefineOwnIndexedPropertySlot(
+          ctx,
+          index,
+          DataDescriptor(val,
+                         ATTR::UNDEF_ENUMERABLE |
+                         ATTR::UNDEF_CONFIGURABLE |
+                         ATTR::UNDEF_WRITABLE),
+          slot,
+          throwable, e);
+      return;
+    }
+
+    // accessor is found
+    if (slot->attributes().IsAccessor()) {
+      const Accessor* ac = slot->accessor();
+      assert(ac->setter());
+      ScopedArguments args(ctx, 1, IV_LV5_ERROR_VOID(e));
+      args[0] = val;
+      static_cast<JSFunction*>(ac->setter())->Call(&args, obj, e);
+      return;
+    }
+  }
+  // not found or found but data property.
+  // create or modify data property
+  obj->DefineOwnIndexedPropertySlot(
+      ctx, index,
+      DataDescriptor(val, ATTR::W | ATTR::E | ATTR::C), slot, throwable, e);
+}
+
+inline bool JSObject::DeleteNonIndexedMethod(JSObject* obj, Context* ctx, Symbol name, bool throwable, Error* e) {
+  Slot slot;
+  if (!obj->GetOwnPropertySlot(ctx, name, &slot)) {
+    return true;
+  }
+
+  if (!slot.attributes().IsConfigurable()) {
+    if (throwable) {
+      e->Report(Error::Type, "delete failed");
+    }
+    return false;
+  }
+
+  // If target is JSNormalArguments,
+  // Descriptor maybe configurable but not cacheable.
+  uint32_t offset;
+  if (slot.HasOffset()) {
+    offset = slot.offset();
+  } else {
+    const Map::Entry entry = obj->map()->Get(ctx, name);
+    if (entry.IsNotFound()) {
+      return true;
+    }
+    offset = entry.offset;
+  }
+
+  // delete property transition
+  // if previous map is avaiable shape, move to this.
+  // and if that is not avaiable, create new map and move to it.
+  // newly created slots size is always smaller than before
+  obj->set_map(obj->map()->DeletePropertyTransition(ctx, name));
+  obj->Direct(offset) = JSEmpty;
+  return true;
+}
+
+inline bool JSObject::DeleteIndexedMethod(JSObject* obj, Context* ctx, uint32_t index, bool throwable, Error* e) {
+  // fast path
+  if (obj->method()->GetOwnIndexedPropertySlot == JSObject::GetOwnIndexedPropertySlotMethod) {
+    return obj->DeleteIndexedInternal(ctx, index, throwable, e);
+  }
+
+  // We should raise error to following case
+  //   var str = new String('test');
+  //   (function () {
+  //     'use strict';
+  //     delete str[0];
+  //   }());
+  Slot slot;
+  if (!obj->method()->GetOwnIndexedPropertySlot(obj, ctx, index, &slot)) {
+    return true;
+  }
+
+  if (!slot.attributes().IsConfigurable()) {
+    if (throwable) {
+      e->Report(Error::Type, "try to delete not configurable property");
+    }
+    return false;
+  }
+  return obj->DeleteIndexedInternal(ctx, index, throwable, e);
+}
+
+inline void JSObject::GetPropertyNamesMethod(const JSObject* obj,
+                                             Context* ctx,
+                                             PropertyNamesCollector* collector,
+                                             EnumerationMode mode) {
+  obj->GetOwnPropertyNames(ctx, collector, mode);
+  obj = obj->prototype();
+  while (obj) {
+    obj->GetOwnPropertyNames(ctx, collector->LevelUp(), mode);
+    obj = obj->prototype();
+  }
+}
+
+inline void JSObject::GetOwnPropertyNamesMethod(const JSObject* obj,
+                                                Context* ctx,
+                                                PropertyNamesCollector* collector,
+                                                EnumerationMode mode) {
+  uint32_t index = 0;
+  if (obj->elements_.dense()) {
+    for (DenseArrayVector::const_iterator it = obj->elements_.vector.begin(),
+         last = obj->elements_.vector.end(); it != last; ++it, ++index) {
+      if (!it->IsEmpty()) {
+        collector->Add(index);
+      }
+    }
+  }
+  if (obj->elements_.map) {
+    for (SparseArrayMap::const_iterator it = obj->elements_.map->begin(),
+         last = obj->elements_.map->end(); it != last; ++it) {
+      if (mode == INCLUDE_NOT_ENUMERABLE || it->second.attributes().IsEnumerable()) {
+        collector->Add(it->first);
+      }
+    }
+  }
+  obj->map()->GetOwnPropertyNames(collector, mode);
+}
+
+#define TRY(context, sym, arg, e)\
+  do {\
+    const JSVal m = obj->Get(context, sym, IV_LV5_ERROR(e));\
+    if (m.IsCallable()) {\
+      const JSVal val =\
+        static_cast<JSFunction*>(m.object())->Call(&arg, obj, IV_LV5_ERROR(e));\
+      if (val.IsPrimitive() || val.IsNullOrUndefined()) {\
+        return val;\
+      }\
+    }\
+  } while (0)
+inline JSVal JSObject::DefaultValueMethod(JSObject* obj, Context* ctx, Hint::Object hint, Error* e) {
+  ScopedArguments args(ctx, 0, IV_LV5_ERROR(e));
+  if (hint == Hint::STRING) {
+    // hint is STRING
+    TRY(ctx, symbol::toString(), args, e);
+    TRY(ctx, symbol::valueOf(), args, e);
+  } else {
+    // section 8.12.8
+    // hint is NUMBER or NONE
+    TRY(ctx, symbol::valueOf(), args, e);
+    TRY(ctx, symbol::toString(), args, e);
+  }
+  e->Report(Error::Type, "invalid default value");
+  return JSUndefined;
+}
+#undef TRY
+
+inline void JSObject::ChangePrototype(Context* ctx, JSObject* proto) {
+  set_map(map()->ChangePrototypeTransition(ctx, proto));
+}
+
+inline bool JSObject::DeleteIndexedInternal(Context* ctx, uint32_t index, bool throwable, Error* e) {
+  if (elements_.length() <= index) {
+    return true;
+  }
+
+  if (elements_.dense()) {
+    if (index < elements_.vector.size()) {
+      elements_.vector[index] = JSEmpty;
+      return true;
+    }
+
+    if (index < IndexedElements::kMaxVectorSize) {
+      return true;
     }
   }
 
-  bool IsExtensible() const { return flags_ & kFlagExtensible; }
-
-  void ChangeExtensible(Context* ctx, bool val);
-
-  JSObject* prototype() const;
-
-  const Class* cls() const {
-    return cls_;
+  if (!elements_.map) {
+    return true;
   }
 
-  void set_cls(const Class* cls) {
-    cls_ = cls;
+  SparseArrayMap* sparse = elements_.map;
+  SparseArrayMap::iterator it = sparse->find(index);
+  if (it == sparse->end()) {
+    return true;
   }
 
-  template<Class::JSClassType CLS>
-  bool IsClass() const {
-    return cls_->type == static_cast<uint32_t>(CLS);
+  if (!it->second.attributes().IsConfigurable()) {
+    if (throwable) {
+      e->Report(Error::Type, "delete failed");
+    }
+    return false;
   }
 
-  bool IsClass(Class::JSClassType cls) const {
-    return cls_->type == static_cast<uint32_t>(cls);
+  sparse->erase(it);
+  if (sparse->empty()) {
+    elements_.MakeDense();
+  }
+  return true;
+}
+
+inline void JSObject::DefineOwnIndexedValueDenseInternal(Context* ctx, uint32_t index, JSVal value, bool absent) {
+  assert(elements_.dense());
+  assert(index < IndexedElements::kMaxVectorSize);
+  // fast path
+  if (index < elements_.vector.size()) {
+    assert(map()->IsIndexed());
+    if (!absent) {
+      elements_.vector[index] = value;
+    } else if (elements_.vector[index].IsEmpty()) {
+      elements_.vector[index] = JSUndefined;
+    }
+  } else {
+    if (!map()->IsIndexed()) {
+      set_map(map()->ChangeIndexedTransition(ctx));
+    }
+    elements_.vector.resize(index + 1, JSEmpty);
+    if (!absent) {
+      elements_.vector[index] = value;
+    } else {
+      elements_.vector[index] = JSUndefined;
+    }
+  }
+  if (index >= elements_.length()) {
+    elements_.set_length(index + 1);
+  }
+}
+
+inline bool JSObject::DefineOwnIndexedPropertyInternal(Context* ctx, uint32_t index,
+                                                       const PropertyDescriptor& desc, bool throwable, Error* e) {
+  if (index >= elements_.length() && !elements_.writable()) {
+    if (throwable) {
+      e->Report(Error::Type,
+                "adding an element to the array "
+                "which length is not writable is rejected");
+    }
+    return false;
   }
 
-  static JSObject* New(Context* ctx);
+  if (elements_.dense()) {
+    assert(IsExtensible());
 
-  static JSObject* New(Context* ctx, Map* map);
+    if (desc.IsDefault()) {
+      // fast path
+      if (index < IndexedElements::kMaxVectorSize) {
+        DefineOwnIndexedValueDenseInternal(ctx, index, desc.AsDataDescriptor()->value(), desc.AsDataDescriptor()->IsValueAbsent());
+        return true;
+      }
+      // fall through to sparse array
+    } else {
+      if (IsAbsentDescriptor(desc)) {
+        if (index < elements_.vector.size() && !elements_.vector[index].IsEmpty()) {
+          if (!desc.AsDataDescriptor()->IsValueAbsent()) {
+            elements_.vector[index] = desc.AsDataDescriptor()->value();
+          }
+          return true;
+        }
+      }
 
-  static JSObject* NewPlain(Context* ctx, Map* map);
-
-  inline const JSVal& Direct(std::size_t n) const {
-    assert(slots_.size() > n);
-    return slots_[n];
+      if (index < IndexedElements::kMaxVectorSize) {
+        // purge vector
+        elements_.MakeSparse();
+      }
+    }
   }
 
-  inline JSVal& Direct(std::size_t n) {
-    assert(slots_.size() > n);
-    return slots_[n];
+  SparseArrayMap* sparse = elements_.EnsureMap();
+  SparseArrayMap::iterator it = sparse->find(index);
+  if (it != sparse->end()) {
+    StoredSlot merge(it->second);
+    bool returned = false;
+    if (merge.IsDefineOwnPropertyAccepted(desc, throwable, &returned, e)) {
+      merge.Merge(ctx, desc);
+      (*sparse)[index] = merge;
+    }
+    return returned;
   }
 
-  void MarkChildren(radio::Core* core);
+  // new element
+  if (!IsExtensible()) {
+    if (throwable) {
+      e->Report(Error::Type, "object not extensible");\
+    }
+    return false;
+  }
 
-  Map* map() const { return map_; }
-  void set_map(Map* map) { map_ = map; }
+  if (!map()->IsIndexed()) {
+    set_map(map()->ChangeIndexedTransition(ctx));
+  }
+  if (index >= elements_.length()) {
+    elements_.set_length(index + 1);
+  }
+  sparse->insert(std::make_pair(index, StoredSlot(ctx, desc)));
+  return true;
+}
 
-  const MethodTable* method() const { return &cls_->method; }
+inline JSObject* JSObject::New(Context* ctx) {
+  JSObject* const obj = NewPlain(ctx, ctx->global_data()->empty_object_map());
+  obj->set_cls(JSObject::GetClass());
+  return obj;
+}
 
-  Map* FlattenMap() const;
+inline JSObject* JSObject::New(Context* ctx, Map* map) {
+  JSObject* const obj = NewPlain(ctx, map);
+  obj->set_cls(JSObject::GetClass());
+  return obj;
+}
 
-  void ChangePrototype(Context* ctx, JSObject* proto);
+inline Map* JSObject::FlattenMap() const {
+  // make map transitable
+  map_->Flatten();
+  return map_;
+}
 
-  static std::size_t MapOffset() { return IV_OFFSETOF(JSObject, map_); }
-  static std::size_t SlotsOffset() { return IV_OFFSETOF(JSObject, slots_); }
-  static std::size_t ClassOffset() { return IV_OFFSETOF(JSObject, cls_); }
-  static std::size_t ElementsOffset() { return IV_OFFSETOF(JSObject, elements_); }
+inline JSObject* JSObject::NewPlain(Context* ctx, Map* map) {
+  return new JSObject(map);
+}
 
-  static void MapTransitionWithReallocation(
-      JSObject* base, JSVal src, Map* transit, uint32_t offset);
- protected:
-  explicit JSObject(Map* map);
-  explicit JSObject(const JSObject& obj);
-  JSObject(Map* map, const Class* cls);
+inline void JSObject::MapTransitionWithReallocation(
+    JSObject* base, JSVal src, Map* transit, uint32_t offset) {
+  base->set_map(transit);
+  base->slots_.resize(transit->GetSlotsSize(), JSEmpty);
+  base->Direct(offset) = src;
+}
 
-  const Class* cls_;
-  Map* map_;
-  Slots slots_;
-  IndexedElements elements_;
-  uint32_t flags_;
-};
+inline void JSObject::MarkChildren(radio::Core* core) {
+  core->MarkCell(map_);
+  std::for_each(slots_.begin(), slots_.end(), radio::Core::Marker(core));
+  if (elements_.dense()) {
+    std::for_each(elements_.vector.begin(), elements_.vector.end(), radio::Core::Marker(core));
+  }
+  if (elements_.map) {
+    for (SparseArrayMap::const_iterator it = elements_.map->begin(),
+         last = elements_.map->end(); it != last; ++it) {
+      core->MarkValue(it->second.value());
+    }
+  }
+}
+
+inline void JSObject::ChangeExtensible(Context* ctx, bool val) {
+  if (val) {
+    flags_ |= kFlagExtensible;
+  } else {
+    flags_ &= ~kFlagExtensible;
+  }
+  set_map(map()->ChangeExtensibleTransition(ctx));
+  elements_.MakeSparse();
+}
+
+
+inline JSObject* JSObject::prototype() const { return map()->prototype(); }
 
 } }  // namespace iv::lv5
 #endif  // IV_LV5_JSOBJECT_H_

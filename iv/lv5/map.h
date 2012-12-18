@@ -9,7 +9,7 @@
 #include <gc/gc_cpp.h>
 #include <iv/notfound.h>
 #include <iv/debug.h>
-#include <iv/lv5/jsobject.h>
+#include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/symbol.h>
 #include <iv/lv5/attributes.h>
 #include <iv/lv5/gc_template.h>

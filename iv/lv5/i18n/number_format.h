@@ -2,7 +2,7 @@
 #define IV_LV5_I18N_NUMBER_FORMAT_H_
 #include <iv/i18n.h>
 #include <iv/ignore_unused_variable_warning.h>
-#include <iv/lv5/jsobject.h>
+#include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/bind.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/i18n/utility.h>

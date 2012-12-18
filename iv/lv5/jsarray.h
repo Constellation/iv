@@ -9,7 +9,7 @@
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/property.h>
 #include <iv/lv5/jsval.h>
-#include <iv/lv5/jsobject.h>
+#include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/map.h>
 #include <iv/lv5/slot.h>
 #include <iv/lv5/class.h>

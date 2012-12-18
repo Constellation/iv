@@ -13,7 +13,7 @@
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/jsarray.h>
 #include <iv/lv5/jsstring.h>
-#include <iv/lv5/jsobject.h>
+#include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/jsnumberobject.h>
 #include <iv/lv5/jsstring_builder.h>
 #include <iv/lv5/jsbooleanobject.h>

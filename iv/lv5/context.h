@@ -10,7 +10,7 @@
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/jsval_fwd.h>
 #include <iv/lv5/jsenv.h>
-#include <iv/lv5/jsobject.h>
+#include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/jsfunction_fwd.h>
 #include <iv/lv5/class.h>
 #include <iv/lv5/error.h>

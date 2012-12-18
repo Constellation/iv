@@ -6,7 +6,7 @@
 #include <iv/debug.h>
 #include <iv/string_builder.h>
 #include <iv/lv5/gc_template.h>
-#include <iv/lv5/jsobject.h>
+#include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/symbol.h>
 #include <iv/lv5/property_fwd.h>
 #include <iv/lv5/error.h>

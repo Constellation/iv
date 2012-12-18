@@ -4,7 +4,7 @@
 #include <iv/ustring.h>
 #include <iv/unicode.h>
 #include <iv/lv5/error.h>
-#include <iv/lv5/jsobject.h>
+#include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/jsval.h>
 
 namespace iv {
