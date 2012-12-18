@@ -19,7 +19,7 @@ class IndexedElements {
   };
 
   // 256 * n
-  static const uint32_t kMaxVectorSize = 10240;
+  static const uint32_t kMaxVectorSize = 1024UL << 6;
 
   IndexedElements()
     : vector(),

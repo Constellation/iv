@@ -124,12 +124,20 @@ class JSArray : public JSObject {
   JSArray(Context* ctx, uint32_t len)
     : JSObject(ctx->global_data()->array_map()) {
     elements_.set_length(len);
+//    elements_.vector.resize(
+//        (std::min<uint32_t>)(
+//            len,
+//            static_cast<uint32_t>(IndexedElements::kMaxVectorSize)), JSEmpty);
     set_cls(GetClass());
   }
 
   JSArray(Context* ctx, Map* map, uint32_t len)
     : JSObject(map) {
     elements_.set_length(len);
+//    elements_.vector.resize(
+//        (std::min<uint32_t>)(
+//            len,
+//            static_cast<uint32_t>(IndexedElements::kMaxVectorSize)), JSEmpty);
     set_cls(GetClass());
   }
 

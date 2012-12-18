@@ -52,7 +52,7 @@ class Stack : core::Noncopyable<Stack> {
     : stack_(NULL),
       stack_pointer_(NULL) {
     void* ptr = core::OSAllocator::Allocate(kStackBytes);
-    core::OSAllocator::Commit(ptr, kStackBytes);
+    // core::OSAllocator::Commit(ptr, kStackBytes);
     stack_pointer_ = stack_ = reinterpret_cast<JSVal*>(ptr);
   }
 
