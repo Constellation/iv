@@ -1505,7 +1505,7 @@ class Compiler {
       StoreElementIC* ic(new StoreElementIC(native_code(), code_->strict(), index));
 
       if (index < IndexedElements::kMaxVectorSize) {
-        DenseArrayGuard(base, rsi, rdi, r11, true, ".ARRAY_EXIT");
+        DenseArrayGuard(base, rsi, rdi, r11, true, ".ARRAY_EXIT", Xbyak::CodeGenerator::T_NEAR);
 
         // check index is not out of range
         const std::ptrdiff_t vector_offset =
