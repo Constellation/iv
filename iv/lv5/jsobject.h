@@ -590,7 +590,7 @@ inline bool JSObject::DefineOwnIndexedPropertyInternal(Context* ctx, uint32_t in
     } else {
       if (IsAbsentDescriptor(desc)) {
         if (index < elements_.vector.size() && !elements_.vector[index].IsEmpty()) {
-          if (!desc.AsDataDescriptor()->IsValueAbsent()) {
+          if (!desc.IsValueAbsent()) {
             elements_.vector[index] = desc.AsDataDescriptor()->value();
           }
           return true;
