@@ -1503,6 +1503,7 @@ class Compiler {
       // generate Array index fast path
       const uint32_t index = symbol::GetIndexFromSymbol(name);
       StoreElementIC* ic(new StoreElementIC(native_code(), code_->strict(), index));
+      native_code()->BindIC(ic);
 
       if (index < IndexedElements::kMaxVectorSize) {
         DenseArrayGuard(base, rsi, rdi, r11, true, ".ARRAY_EXIT", Xbyak::CodeGenerator::T_NEAR);
@@ -1523,7 +1524,7 @@ class Compiler {
         asm_->test(r11, r11);
         asm_->jz(".ARRAY_IC_PATH");
         asm_->mov(qword[rax + kJSValSize * index], rdx);
-        asm_->jmp(".EXIT");
+        asm_->jmp(".EXIT", Xbyak::CodeGenerator::T_NEAR);
 
         // capacity check
         // This path may introduce length grow
@@ -1535,8 +1536,6 @@ class Compiler {
         asm_->mov(r11d, 1);  // this is flag
 
         asm_->L(".ARRAY_IC_PATH");
-        native_code()->BindIC(ic);
-
         asm_->mov(rdi, r14);
         asm_->mov(ecx, index);
         asm_->mov(r8, core::BitCast<uint64_t>(ic));
