@@ -13,6 +13,7 @@
 #include <iv/lv5/indexed_elements.h>
 #include <iv/lv5/radio/cell.h>
 #include <iv/lv5/radio/core_fwd.h>
+#include <iv/lv5/jscell.h>
 namespace iv {
 namespace lv5 {
 
@@ -22,7 +23,7 @@ class JSFunction;
 class Context;
 class Error;
 
-class JSObject : public radio::HeapObject<radio::OBJECT> {
+class JSObject : public JSCell {
  public:
   IV_LV5_DEFINE_JSCLASS(JSObject, Object)
 
@@ -196,10 +197,7 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
     return slots_[n];
   }
 
-  void MarkChildren(radio::Core* core);
-
-  Map* map() const { return map_; }
-  void set_map(Map* map) { map_ = map; }
+  virtual void MarkChildren(radio::Core* core);
 
   const MethodTable* method() const { return &cls_->method; }
 
@@ -207,7 +205,6 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
 
   void ChangePrototype(Context* ctx, JSObject* proto);
 
-  static std::size_t MapOffset() { return IV_OFFSETOF(JSObject, map_); }
   static std::size_t SlotsOffset() { return IV_OFFSETOF(JSObject, slots_); }
   static std::size_t ClassOffset() { return IV_OFFSETOF(JSObject, cls_); }
   static std::size_t ElementsOffset() { return IV_OFFSETOF(JSObject, elements_); }
@@ -219,7 +216,6 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
   explicit JSObject(const JSObject& obj);
   JSObject(Map* map, const Class* cls);
 
-  Map* map_;
   const Class* cls_;
   Slots slots_;
   IndexedElements elements_;

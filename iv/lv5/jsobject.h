@@ -38,7 +38,7 @@ inline bool IsAbsentDescriptor(const PropertyDescriptor& desc) {
 }
 
 inline JSObject::JSObject(Map* map)
-  : map_(map),
+  : JSCell(radio::OBJECT, map),
     cls_(NULL),
     slots_(map->GetSlotsSize()),
     elements_(),
@@ -46,7 +46,7 @@ inline JSObject::JSObject(Map* map)
 }
 
 inline JSObject::JSObject(const JSObject& obj)
-  : map_(obj.map_),
+  : JSCell(obj),
     cls_(obj.cls_),
     slots_(obj.slots_),
     elements_(obj.elements_),
@@ -54,7 +54,7 @@ inline JSObject::JSObject(const JSObject& obj)
 }
 
 inline JSObject::JSObject(Map* map, const Class* cls)
-  : map_(map),
+  : JSCell(radio::OBJECT, map),
     cls_(cls),
     slots_(map->GetSlotsSize()),
     elements_(),
@@ -649,8 +649,8 @@ inline JSObject* JSObject::New(Context* ctx, Map* map) {
 
 inline Map* JSObject::FlattenMap() const {
   // make map transitable
-  map_->Flatten();
-  return map_;
+  map()->Flatten();
+  return map();
 }
 
 inline JSObject* JSObject::NewPlain(Context* ctx, Map* map) {
@@ -664,8 +664,12 @@ inline void JSObject::MapTransitionWithReallocation(
   base->Direct(offset) = src;
 }
 
-inline void JSObject::MarkChildren(radio::Core* core) {
+inline void JSCell::MarkChildren(radio::Core* core) {
   core->MarkCell(map_);
+}
+
+inline void JSObject::MarkChildren(radio::Core* core) {
+  JSCell::MarkChildren(core);
   std::for_each(slots_.begin(), slots_.end(), radio::Core::Marker(core));
   if (elements_.dense()) {
     std::for_each(elements_.vector.begin(), elements_.vector.end(), radio::Core::Marker(core));

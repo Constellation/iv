@@ -37,7 +37,7 @@ class Error;
 //       have Fiber array <Cons|Fiber>*
 //       this class is only seen in JSString
 
-class JSString: public radio::HeapObject<radio::STRING> {
+class JSString: public JSCell {
  public:
   friend class GlobalData;
   typedef JSString this_type;
@@ -618,7 +618,6 @@ class JSString: public radio::HeapObject<radio::STRING> {
   JSString(Context* ctx, JSVal* src, uint32_t count,
            size_type size, size_type fiber_count, bool is_8bit);
 
-  Map* map_;
   uint32_t size_;
   bool is_8bit_;
   mutable std::size_t fiber_count_;

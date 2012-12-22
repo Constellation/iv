@@ -67,7 +67,7 @@ inline JSString* JSString::NewEmptyString(Context* ctx) {
 
 // empty string
 inline JSString::JSString(Context* ctx)
-  : map_(ctx->global_data()->primitive_string_map()),
+  : JSCell(radio::STRING, ctx->global_data()->primitive_string_map()),
     size_(0),
     is_8bit_(true),
     fiber_count_(1),
@@ -76,7 +76,7 @@ inline JSString::JSString(Context* ctx)
 }
 
 inline JSString::JSString(Context* ctx, const FiberBase* fiber)
-  : map_(ctx->global_data()->primitive_string_map()),
+  : JSCell(radio::STRING, ctx->global_data()->primitive_string_map()),
     size_(fiber->size()),
     is_8bit_(fiber->Is8Bit()),
     fiber_count_(1),
@@ -86,7 +86,7 @@ inline JSString::JSString(Context* ctx, const FiberBase* fiber)
 
 template<typename FiberType>
 inline JSString::JSString(Context* ctx, const FiberType* fiber, std::size_t from, std::size_t to)
-  : map_(ctx->global_data()->primitive_string_map()),
+  : JSCell(radio::STRING, ctx->global_data()->primitive_string_map()),
     size_(to - from),
     is_8bit_(fiber->Is8Bit()),
     fiber_count_(1),
@@ -96,7 +96,7 @@ inline JSString::JSString(Context* ctx, const FiberType* fiber, std::size_t from
 
 // single char string
 inline JSString::JSString(Context* ctx, uint16_t ch)
-  : map_(ctx->global_data()->primitive_string_map()),
+  : JSCell(radio::STRING, ctx->global_data()->primitive_string_map()),
     size_(1),
     is_8bit_(core::character::IsASCII(ch)),
     fiber_count_(1),
@@ -110,7 +110,7 @@ inline JSString::JSString(Context* ctx, uint16_t ch)
 
 // external string
 inline JSString::JSString(Context* ctx, const core::UStringPiece& str)
-  : map_(ctx->global_data()->primitive_string_map()),
+  : JSCell(radio::STRING, ctx->global_data()->primitive_string_map()),
     size_(str.size()),
     is_8bit_(false),
     fiber_count_(1),
@@ -120,7 +120,7 @@ inline JSString::JSString(Context* ctx, const core::UStringPiece& str)
 
 template<typename Iter>
 inline JSString::JSString(Context* ctx, Iter it, std::size_t n, bool is_8bit)
-  : map_(ctx->global_data()->primitive_string_map()),
+  : JSCell(radio::STRING, ctx->global_data()->primitive_string_map()),
     size_(n),
     is_8bit_(is_8bit),
     fiber_count_(1),
@@ -133,7 +133,7 @@ inline JSString::JSString(Context* ctx, Iter it, std::size_t n, bool is_8bit)
 }
 
 inline JSString::JSString(Context* ctx, this_type* lhs, this_type* rhs)
-  : map_(ctx->global_data()->primitive_string_map()),
+  : JSCell(radio::STRING, ctx->global_data()->primitive_string_map()),
     size_(lhs->size() + rhs->size()),
     is_8bit_(lhs->Is8Bit() && rhs->Is8Bit()),
     fiber_count_(lhs->fiber_count_ + rhs->fiber_count_),
@@ -157,7 +157,7 @@ inline JSString::JSString(Context* ctx, this_type* lhs, this_type* rhs)
 }
 
 inline JSString::JSString(Context* ctx, this_type* target, uint32_t repeat)
-  : map_(ctx->global_data()->primitive_string_map()),
+  : JSCell(radio::STRING, ctx->global_data()->primitive_string_map()),
     size_(target->size() * repeat),
     is_8bit_(target->Is8Bit()),
     fiber_count_(target->fiber_count() * repeat),
@@ -187,7 +187,7 @@ inline JSString::JSString(Context* ctx, this_type* target, uint32_t repeat)
 inline JSString::JSString(Context* ctx,
                           JSVal* src, uint32_t count,
                           size_type s, size_type fibers, bool is_8bit)
-  : map_(ctx->global_data()->primitive_string_map()),
+  : JSCell(radio::STRING, ctx->global_data()->primitive_string_map()),
     size_(s),
     is_8bit_(is_8bit),
     fiber_count_(fibers),

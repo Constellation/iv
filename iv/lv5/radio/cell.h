@@ -126,5 +126,10 @@ class HeapObject<POINTER_CLEANUP>
   HeapObject() : gc_cleanup(), Cell(POINTER) { }
 };
 
+class CellObject : public gc, public Cell {
+ public:
+  CellObject(CellTag tag) : gc(), Cell(tag) { }
+};
+
 } } }  // namespace iv::lv5::radio
 #endif  // IV_LV5_RADIO_CELL_H_
