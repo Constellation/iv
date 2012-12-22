@@ -33,6 +33,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <utility>
 #include <iv/platform.h>
 
 struct QHashMapDefaultAlloc {
@@ -59,10 +60,8 @@ class QHashMap {
   // HashMap entries are (key, value, hash) triplets.
   // Some clients may not need to use the value slot
   // (e.g. implementers of sets, where the key is the value).
-  struct Entry {
-    KeyType first;
-    ValueType second;
-  };
+  typedef std::pair<KeyType, ValueType> value_type;
+  typedef value_type Entry;
 
   // If an entry with matching key is found, Lookup()
   // returns that entry. If no matching entry is found,
@@ -80,6 +79,7 @@ class QHashMap {
 
   // The number of (non-empty) entries in the table.
   size_t size() const { return occupancy_; }
+  bool empty() const { return size() == 0; }
 
   // The capacity of the table. The implementation
   // makes sure that occupancy is at most 80% of
@@ -120,7 +120,7 @@ class QHashMap {
       return *this;
     }
 
-    const Entry* operator*() const { return entry_; }
+    const Entry& operator*() const { return *entry_; }
     const Entry* operator->() const { return entry_; }
     bool operator==(const const_iterator& other) const { return entry_ == other.entry_; }
     bool operator!=(const const_iterator& other) const { return entry_ != other.entry_; }
@@ -142,7 +142,7 @@ class QHashMap {
       this->entry_ = this->map_->Next(this->entry_);
       return *this;
     }
-    Entry* operator*() const { return this->entry_; }
+    Entry& operator*() const { return *this->entry_; }
     Entry* operator->() const { return this->entry_; }
    private:
     iterator(const QHashMap* map, Entry* entry)
@@ -150,6 +150,9 @@ class QHashMap {
 
     friend class QHashMap<KeyType, ValueType, KeyTraits, Allocator>;
   };
+
+  typedef KeyType key_type;
+  typedef ValueType mapped_type;
 
   iterator begin() { return iterator(this, this->Start()); }
   iterator end() { return iterator(this, NULL); }
@@ -166,8 +169,19 @@ class QHashMap {
     return const_iterator(this, this->Lookup(key));
   }
 
-  void erase(const iterator& i) {
+  void clear() { Clear(); }
+
+  // They're not compatible to STL
+  void erase(const const_iterator& i) {
     Remove(i.entry_);
+  }
+
+  void erase(const key_type& i) {
+    Remove(i);
+  }
+
+  void insert(const value_type& pair) {
+    Lookup(pair.first, true)->second = pair.second;
   }
 };
 
@@ -344,13 +358,14 @@ QHashMap<KeyType, ValueType, KeyTraits, Allocator>::Probe(KeyType key) const {
   assert(key != NULL);
 
   assert((capacity_ & (capacity_ - 1)) == 0);
-  Entry* p = map_ + (KeyTraits::hash(key) & (capacity_ - 1));
+  const unsigned hash = KeyTraits::hash(key);
+  Entry* p = map_ + (hash & (capacity_ - 1));
   const Entry* end = map_end();
   assert(map_ <= p && p < end);
 
   assert(occupancy_ < capacity_);  // Guarantees loop termination.
   while (p->first != KeyTraits::null()
-         && (KeyTraits::hash(key) != KeyTraits::hash(p->first) ||
+         && (hash != KeyTraits::hash(p->first) ||
              ! KeyTraits::equals(key, p->first))) {
     p++;
     if (p >= end) {

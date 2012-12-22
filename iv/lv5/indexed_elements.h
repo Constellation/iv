@@ -5,12 +5,31 @@
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/jsval_fwd.h>
 #include <iv/lv5/storage.h>
+#include <iv/third_party/qhashmap/qhashmap.hpp>
 namespace iv {
 namespace lv5 {
 
 class IndexedElements {
  public:
-  typedef GCHashMap<uint32_t, StoredSlot>::type SparseArrayMap;
+  struct GCAlloc {
+    void* New(size_t sz) { return operator new(sz, GC); }
+    static void Delete(void* p) {
+      // do nothing
+    }
+  };
+
+  struct KeyTraits {
+    static unsigned hash(uint32_t val) {
+      return std::hash<uint32_t>()(val);
+    }
+    static bool equals(uint32_t lhs, uint32_t rhs) {
+      return lhs == rhs;
+    }
+    // because of Array index
+    static uint32_t null() { return UINT32_MAX; }
+  };
+
+  typedef QHashMap<uint32_t, StoredSlot, KeyTraits, GCAlloc> SparseArrayMap;
   typedef Storage<JSVal> DenseArrayVector;
 
   enum Flags {
