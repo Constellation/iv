@@ -718,6 +718,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
   JSString(JSVal* src, uint32_t count,
            size_type size, size_type fiber_count, bool is_8bit);
 
+  Map* map_;
   uint32_t size_;
   bool is_8bit_;
   mutable std::size_t fiber_count_;

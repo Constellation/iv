@@ -219,8 +219,8 @@ class JSObject : public radio::HeapObject<radio::OBJECT> {
   explicit JSObject(const JSObject& obj);
   JSObject(Map* map, const Class* cls);
 
-  const Class* cls_;
   Map* map_;
+  const Class* cls_;
   Slots slots_;
   IndexedElements elements_;
   uint32_t flags_;

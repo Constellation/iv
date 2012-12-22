@@ -38,24 +38,24 @@ inline bool IsAbsentDescriptor(const PropertyDescriptor& desc) {
 }
 
 inline JSObject::JSObject(Map* map)
-  : cls_(NULL),
-    map_(map),
+  : map_(map),
+    cls_(NULL),
     slots_(map->GetSlotsSize()),
     elements_(),
     flags_(kFlagExtensible) {
 }
 
 inline JSObject::JSObject(const JSObject& obj)
-  : cls_(obj.cls_),
-    map_(obj.map_),
+  : map_(obj.map_),
+    cls_(obj.cls_),
     slots_(obj.slots_),
     elements_(obj.elements_),
     flags_(obj.flags_) {
 }
 
 inline JSObject::JSObject(Map* map, const Class* cls)
-  : cls_(cls),
-    map_(map),
+  : map_(map),
+    cls_(cls),
     slots_(map->GetSlotsSize()),
     elements_(),
     flags_(kFlagExtensible) {
