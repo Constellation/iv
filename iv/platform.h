@@ -177,10 +177,15 @@
 
 #if defined(IV_COMPILER_GCC) || defined(IV_COMPILER_CLANG)
   #define IV_ALWAYS_INLINE inline __attribute__((always_inline))
+  #define IV_NEVER_INLINE __attribute__((noinline))
 #elif defined(IV_COMPILER_MSVC)
   #define IV_ALWAYS_INLINE __forceinline
+  #define IV_NEVER_INLINE
 #else
   #define IV_ALWAYS_INLINE inline
+  #define IV_NEVER_INLINE
 #endif
+
+
 
 #endif  // IV_PLATFORM_H_

@@ -16,9 +16,6 @@ using namespace Xbyak::util;  // NOLINT
 
 #include <iv/detail/cstdint.h>
 
-#define IV_NEVER_INLINE __attribute__((noinline))
-#define IV_ALWAYS_INLINE __attribute__((always_inline))
-
 #define IV_LV5_BREAKER_TO_STRING_IMPL(s) #s
 #define IV_LV5_BREAKER_TO_STRING(s) IV_LV5_BREAKER_TO_STRING_IMPL(s)
 
