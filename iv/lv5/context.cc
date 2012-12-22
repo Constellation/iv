@@ -349,6 +349,7 @@ void Context::InitString(const ClassSlot& func_cls,
   Error::Dummy dummy;
   JSStringObject* const proto = JSStringObject::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false));
   global_data()->string_map()->ChangePrototypeWithNoTransition(proto);
+  global_data()->primitive_string_map()->ChangePrototypeWithNoTransition(proto);
   // section 15.5.2 The String Constructor
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::StringConstructor, 1>::New(this, Intern("String"));

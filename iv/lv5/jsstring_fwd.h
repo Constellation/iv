@@ -367,7 +367,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
       return NULL;
     }
 
-    return new this_type(this, count);
+    return new this_type(ctx, this, count);
   }
 
   inline JSArray* Split(Context* ctx,
@@ -462,9 +462,9 @@ class JSString: public radio::HeapObject<radio::STRING> {
       return NewSingle(ctx, (*fiber)[from]);
     }
     if (size == fiber->size()) {
-      return new this_type(fiber);
+      return new this_type(ctx, fiber);
     }
-    return new this_type(fiber, from, to);
+    return new this_type(ctx, fiber, from, to);
   }
 
   static this_type* New(Context* ctx, this_type* lhs, this_type* rhs, Error * e) {
@@ -481,7 +481,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
       return NULL;
     }
 
-    return new this_type(lhs, rhs);
+    return new this_type(ctx, lhs, rhs);
   }
 
   static this_type* New(Context* ctx, Symbol sym) {
@@ -504,7 +504,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
         return NewSingle(ctx, (*str)[0]);
       }
       assert(str->size() <= kMaxSize);
-      return new this_type(*str);
+      return new this_type(ctx, *str);
     }
   }
 
@@ -526,7 +526,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
       return NULL;
     }
 
-    return new this_type(src, count, size, fiber_count, is_8bit);
+    return new this_type(ctx, src, count, size, fiber_count, is_8bit);
   }
 
   // destructor
@@ -551,7 +551,7 @@ class JSString: public radio::HeapObject<radio::STRING> {
       e->Report(Error::Type, "too long string is prohibited");
       return NULL;
     }
-    return new this_type(it, n, is_8bit);
+    return new this_type(ctx, it, n, is_8bit);
   }
 
   inline const FiberBase* Flatten() const {
@@ -604,118 +604,18 @@ class JSString: public radio::HeapObject<radio::STRING> {
     }
   }
 
-  // empty string
-  JSString()
-    : size_(0),
-      is_8bit_(true),
-      fiber_count_(1),
-      fibers_() {
-    fibers_[0] = Fiber8::NewWithSize(0);
-  }
-
-  explicit JSString(const FiberBase* fiber)
-    : size_(fiber->size()),
-      is_8bit_(fiber->Is8Bit()),
-      fiber_count_(1),
-      fibers_() {
-    fibers_[0] = fiber;
-  }
-
+  // constructors
+  JSString(Context* ctx);
+  explicit JSString(Context* ctx, const FiberBase* fiber);
   template<typename FiberType>
-  JSString(const FiberType* fiber, std::size_t from, std::size_t to)
-    : size_(to - from),
-      is_8bit_(fiber->Is8Bit()),
-      fiber_count_(1),
-      fibers_() {
-    fibers_[0] = FiberType::New(fiber, from, to);
-  }
-
-  // single char string
-  explicit JSString(uint16_t ch)
-    : size_(1),
-      is_8bit_(core::character::IsASCII(ch)),
-      fiber_count_(1),
-      fibers_() {
-    if (Is8Bit()) {
-      fibers_[0] = Fiber8::New(&ch, 1);
-    } else {
-      fibers_[0] = Fiber16::New(&ch, 1);
-    }
-  }
-
-  // external string
-  explicit JSString(const core::UStringPiece& str)
-    : size_(str.size()),
-      is_8bit_(false),
-      fiber_count_(1),
-      fibers_() {
-    fibers_[0] = Fiber16::NewWithExternal(str);
-  }
-
+  JSString(Context* ctx, const FiberType* fiber, std::size_t from, std::size_t to);
+  explicit JSString(Context* ctx, uint16_t ch);
+  explicit JSString(Context* ctx, const core::UStringPiece& str);
   template<typename Iter>
-  JSString(Iter it, std::size_t n, bool is_8bit)
-    : size_(n),
-      is_8bit_(is_8bit),
-      fiber_count_(1),
-      fibers_() {
-    if (Is8Bit()) {
-      fibers_[0] = Fiber8::New(it, size_);
-    } else {
-      fibers_[0] = Fiber16::New(it, size_);
-    }
-  }
-
-  JSString(this_type* lhs, this_type* rhs)
-    : size_(lhs->size() + rhs->size()),
-      is_8bit_(lhs->Is8Bit() && rhs->Is8Bit()),
-      fiber_count_(lhs->fiber_count_ + rhs->fiber_count_),
-      fibers_() {
-    if (fiber_count() > kMaxFibers) {
-      // flatten version
-      Cons* cons = Cons::New(lhs, rhs);
-      fiber_count_ = 1;
-      fibers_[0] = cons;
-      assert(Is8Bit() == fibers_[0]->Is8Bit());
-    } else {
-      assert(fiber_count_ <= kMaxFibers);
-      // insert fibers by reverse order (rhs first)
-      std::copy(
-          lhs->fibers().begin(),
-          lhs->fibers().begin() + lhs->fiber_count(),
-          std::copy(rhs->fibers().begin(),
-                    rhs->fibers().begin() + rhs->fiber_count(),
-                    fibers_.begin()));
-    }
-  }
-
-  JSString(this_type* target, uint32_t repeat)
-    : size_(target->size() * repeat),
-      is_8bit_(target->Is8Bit()),
-      fiber_count_(target->fiber_count() * repeat),
-      fibers_() {
-    if (fiber_count() > kMaxFibers) {
-      Cons* cons = Cons::NewWithSize(size(), Is8Bit(), fiber_count());
-      fiber_count_ = 1;
-      Cons::iterator it = cons->begin();
-      for (uint32_t i = 0; i < repeat; ++i) {
-        it = std::copy(
-            target->fibers().begin(),
-            target->fibers().begin() + target->fiber_count(),
-            it);
-      }
-      fibers_[0] = cons;
-    } else {
-      FiberSlots::iterator it = fibers_.begin();
-      for (uint32_t i = 0; i < repeat; ++i) {
-        it = std::copy(
-            target->fibers().begin(),
-            target->fibers().begin() + target->fiber_count(),
-            it);
-      }
-    }
-  }
-
-  JSString(JSVal* src, uint32_t count,
+  JSString(Context* ctx, Iter it, std::size_t n, bool is_8bit);
+  JSString(Context* ctx, this_type* lhs, this_type* rhs);
+  JSString(Context* ctx, this_type* target, uint32_t repeat);
+  JSString(Context* ctx, JSVal* src, uint32_t count,
            size_type size, size_type fiber_count, bool is_8bit);
 
   Map* map_;

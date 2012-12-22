@@ -56,16 +56,139 @@ inline JSString* JSString::NewSingle(Context* ctx, uint16_t ch) {
   if (this_type* res = ctx->global_data()->GetSingleString(ch)) {
     return res;
   }
-  return new this_type(ch);
+  return new this_type(ctx, ch);
 }
 
 inline JSString* JSString::NewEmptyString(Context* ctx) {
   return ctx->global_data()->string_empty();
 }
 
-inline JSString::JSString(JSVal* src, uint32_t count,
+// constructors
+
+// empty string
+inline JSString::JSString(Context* ctx)
+  : map_(ctx->global_data()->primitive_string_map()),
+    size_(0),
+    is_8bit_(true),
+    fiber_count_(1),
+    fibers_() {
+  fibers_[0] = Fiber8::NewWithSize(0);
+}
+
+inline JSString::JSString(Context* ctx, const FiberBase* fiber)
+  : map_(ctx->global_data()->primitive_string_map()),
+    size_(fiber->size()),
+    is_8bit_(fiber->Is8Bit()),
+    fiber_count_(1),
+    fibers_() {
+  fibers_[0] = fiber;
+}
+
+template<typename FiberType>
+inline JSString::JSString(Context* ctx, const FiberType* fiber, std::size_t from, std::size_t to)
+  : map_(ctx->global_data()->primitive_string_map()),
+    size_(to - from),
+    is_8bit_(fiber->Is8Bit()),
+    fiber_count_(1),
+    fibers_() {
+  fibers_[0] = FiberType::New(fiber, from, to);
+}
+
+// single char string
+inline JSString::JSString(Context* ctx, uint16_t ch)
+  : map_(ctx->global_data()->primitive_string_map()),
+    size_(1),
+    is_8bit_(core::character::IsASCII(ch)),
+    fiber_count_(1),
+    fibers_() {
+  if (Is8Bit()) {
+    fibers_[0] = Fiber8::New(&ch, 1);
+  } else {
+    fibers_[0] = Fiber16::New(&ch, 1);
+  }
+}
+
+// external string
+inline JSString::JSString(Context* ctx, const core::UStringPiece& str)
+  : map_(ctx->global_data()->primitive_string_map()),
+    size_(str.size()),
+    is_8bit_(false),
+    fiber_count_(1),
+    fibers_() {
+  fibers_[0] = Fiber16::NewWithExternal(str);
+}
+
+template<typename Iter>
+inline JSString::JSString(Context* ctx, Iter it, std::size_t n, bool is_8bit)
+  : map_(ctx->global_data()->primitive_string_map()),
+    size_(n),
+    is_8bit_(is_8bit),
+    fiber_count_(1),
+    fibers_() {
+  if (Is8Bit()) {
+    fibers_[0] = Fiber8::New(it, size_);
+  } else {
+    fibers_[0] = Fiber16::New(it, size_);
+  }
+}
+
+inline JSString::JSString(Context* ctx, this_type* lhs, this_type* rhs)
+  : map_(ctx->global_data()->primitive_string_map()),
+    size_(lhs->size() + rhs->size()),
+    is_8bit_(lhs->Is8Bit() && rhs->Is8Bit()),
+    fiber_count_(lhs->fiber_count_ + rhs->fiber_count_),
+    fibers_() {
+  if (fiber_count() > kMaxFibers) {
+    // flatten version
+    Cons* cons = Cons::New(lhs, rhs);
+    fiber_count_ = 1;
+    fibers_[0] = cons;
+    assert(Is8Bit() == fibers_[0]->Is8Bit());
+  } else {
+    assert(fiber_count_ <= kMaxFibers);
+    // insert fibers by reverse order (rhs first)
+    std::copy(
+        lhs->fibers().begin(),
+        lhs->fibers().begin() + lhs->fiber_count(),
+        std::copy(rhs->fibers().begin(),
+                  rhs->fibers().begin() + rhs->fiber_count(),
+                  fibers_.begin()));
+  }
+}
+
+inline JSString::JSString(Context* ctx, this_type* target, uint32_t repeat)
+  : map_(ctx->global_data()->primitive_string_map()),
+    size_(target->size() * repeat),
+    is_8bit_(target->Is8Bit()),
+    fiber_count_(target->fiber_count() * repeat),
+    fibers_() {
+  if (fiber_count() > kMaxFibers) {
+    Cons* cons = Cons::NewWithSize(size(), Is8Bit(), fiber_count());
+    fiber_count_ = 1;
+    Cons::iterator it = cons->begin();
+    for (uint32_t i = 0; i < repeat; ++i) {
+      it = std::copy(
+          target->fibers().begin(),
+          target->fibers().begin() + target->fiber_count(),
+          it);
+    }
+    fibers_[0] = cons;
+  } else {
+    FiberSlots::iterator it = fibers_.begin();
+    for (uint32_t i = 0; i < repeat; ++i) {
+      it = std::copy(
+          target->fibers().begin(),
+          target->fibers().begin() + target->fiber_count(),
+          it);
+    }
+  }
+}
+
+inline JSString::JSString(Context* ctx,
+                          JSVal* src, uint32_t count,
                           size_type s, size_type fibers, bool is_8bit)
-  : size_(s),
+  : map_(ctx->global_data()->primitive_string_map()),
+    size_(s),
     is_8bit_(is_8bit),
     fiber_count_(fibers),
     fibers_() {

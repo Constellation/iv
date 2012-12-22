@@ -42,7 +42,7 @@ class GlobalData {
       classes_(),
       string_cache_(),
       global_obj_(JSGlobal::New(ctx)),
-      string_empty_(new JSString()),
+      string_empty_(NULL),
       string_null_(),
       string_true_(),
       string_false_(),
@@ -53,6 +53,7 @@ class GlobalData {
       string_string_(),
       string_boolean_(),
       string_empty_regexp_(),
+      primitive_string_map_(Map::New(ctx, static_cast<JSObject*>(NULL), true)),
       empty_object_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
       function_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
       array_map_(Map::New(ctx, static_cast<JSObject*>(NULL), true)),
@@ -81,6 +82,7 @@ class GlobalData {
       gc_hook_(this) {
     {
       Error::Dummy e;
+      string_empty_ = new JSString(ctx);
       string_null_ = JSString::NewAsciiString(ctx, "null", &e);
       string_true_ = JSString::NewAsciiString(ctx, "true", &e);
       string_false_ = JSString::NewAsciiString(ctx, "false", &e);
@@ -210,11 +212,12 @@ class GlobalData {
       if (string_cache_[ch]) {
         return string_cache_[ch];
       }
-      return (string_cache_[ch] = new JSString(ch));
+      return (string_cache_[ch] = new JSString(ctx_, ch));
     }
     return NULL;
   }
 
+  Map* primitive_string_map() const { return primitive_string_map_; }
   Map* empty_object_map() const { return empty_object_map_; }
   Map* function_map() const { return function_map_; }
   Map* array_map() const { return array_map_; }
@@ -369,6 +372,7 @@ class GlobalData {
   JSObject* date_time_format_prototype_;
 
   // builtin maps
+  Map* primitive_string_map_;
   Map* empty_object_map_;
   Map* function_map_;
   Map* array_map_;
