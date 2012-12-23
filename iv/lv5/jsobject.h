@@ -622,7 +622,6 @@ inline bool JSObject::DefineOwnIndexedPropertyInternal(Context* ctx, uint32_t in
     StoredSlot merge(entry->second);
     bool returned = false;
     if (merge.IsDefineOwnPropertyAccepted(desc, throwable, &returned, e)) {
-      using std::swap;
       merge.Merge(ctx, desc);
       entry->second = merge;
     }
