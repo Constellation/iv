@@ -11,13 +11,6 @@ namespace lv5 {
 
 class IndexedElements {
  public:
-  struct GCAlloc {
-    void* New(size_t sz) { return operator new(sz, GC); }
-    static void Delete(void* p) {
-      // do nothing
-    }
-  };
-
   struct KeyTraits {
     static unsigned hash(uint32_t val) {
       return std::hash<uint32_t>()(val);
@@ -61,7 +54,7 @@ class IndexedElements {
     for (DenseArrayVector::const_iterator it = vector.begin(),
          last = vector.end(); it != last; ++it, ++index) {
       if (!it->IsEmpty()) {
-        sparse->insert(std::make_pair(index, StoredSlot(*it, ATTR::Object::Data())));
+        sparse->Lookup(index, true)->second = StoredSlot(*it, ATTR::Object::Data());
       }
     }
     std::fill(vector.begin(), vector.end(), JSEmpty);

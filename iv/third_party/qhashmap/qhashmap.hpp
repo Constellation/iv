@@ -69,6 +69,8 @@ class QHashMap {
   // corresponding key, key hash, and NULL value.
   // Otherwise, NULL is returned.
   IV_ALWAYS_INLINE Entry* Lookup(KeyType key, bool insert, Allocator allocator = Allocator());
+  IV_ALWAYS_INLINE std::pair<Entry*, bool>
+      LookupWithFound(KeyType key, bool insert, Allocator allocator = Allocator());
 
   // Removes the entry with matching key.
   void Remove(Entry* p);
@@ -249,6 +251,37 @@ QHashMap<KeyType, ValueType, KeyTraits, Allocator>::Lookup(
 
   // No entry found and none inserted.
   return NULL;
+}
+
+
+template<typename KeyType, typename ValueType, class KeyTraits, class Allocator>
+inline std::pair<
+  typename QHashMap<KeyType, ValueType, KeyTraits, Allocator>::Entry*, bool>
+QHashMap<KeyType, ValueType, KeyTraits, Allocator>::LookupWithFound(
+    KeyType key, bool insert, Allocator allocator) {
+  // Find a matching entry.
+  Entry* p = Probe(key);
+  if (p->first != KeyTraits::null()) {
+    return std::make_pair(p, true);
+  }
+
+  // No entry found; insert one if necessary.
+  if (insert) {
+    p->first = key;
+    // p->second = NULL;
+    occupancy_++;
+
+    // Grow the map if we reached >= 80% occupancy.
+    if (occupancy_ + occupancy_/4 >= capacity_) {
+      Resize(allocator);
+      p = Probe(key);
+    }
+
+    return std::make_pair(p, false);
+  }
+
+  // No entry found and none inserted.
+  return std::make_pair(static_cast<Entry*>(NULL), false);
 }
 
 

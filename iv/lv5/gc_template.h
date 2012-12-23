@@ -4,6 +4,7 @@
 #include <vector>
 #include <map>
 #include <gc/gc_allocator.h>
+#include <gc/gc_cpp.h>
 #include <iv/detail/unordered_map.h>
 #include <iv/detail/unordered_set.h>
 #include <iv/detail/cstdint.h>
@@ -70,6 +71,13 @@ struct GCHashSet {
 typedef std::basic_string<uint16_t,
                           std::char_traits<uint16_t>,
                           gc_allocator<uint16_t> > GCUString;
+
+struct GCAlloc {
+  void* New(size_t sz) { return operator new(sz, GC); }
+  static void Delete(void* p) {
+    // do nothing because of GC
+  }
+};
 
 } }  // namespace iv::lv5
 #endif  // IV_LV5_GC_TEMPLATE_H_

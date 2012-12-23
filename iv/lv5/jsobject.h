@@ -605,25 +605,31 @@ inline bool JSObject::DefineOwnIndexedPropertyInternal(Context* ctx, uint32_t in
   }
 
   SparseArrayMap* sparse = elements_.EnsureMap();
-  SparseArrayMap::iterator it = sparse->find(index);
-  if (it != sparse->end()) {
-    StoredSlot merge(it->second);
-    bool returned = false;
-    if (merge.IsDefineOwnPropertyAccepted(desc, throwable, &returned, e)) {
-      using std::swap;
-      merge.Merge(ctx, desc);
-      swap(it->second, merge);
-    }
-    return returned;
-  }
+  std::pair<SparseArrayMap::Entry*, bool> pair =
+      sparse->LookupWithFound(index, IsExtensible());
+  SparseArrayMap::Entry* entry = pair.first;
 
-  // new element
-  if (!IsExtensible()) {
+  if (!entry) {
+    // No entry is found & object is not extensible
     if (throwable) {
       e->Report(Error::Type, "object not extensible");\
     }
     return false;
   }
+
+  if (pair.second) {
+    // Entry is found.
+    StoredSlot merge(entry->second);
+    bool returned = false;
+    if (merge.IsDefineOwnPropertyAccepted(desc, throwable, &returned, e)) {
+      using std::swap;
+      merge.Merge(ctx, desc);
+      entry->second = merge;
+    }
+    return returned;
+  }
+
+  assert(!pair.second);
 
   if (!map()->IsIndexed()) {
     set_map(map()->ChangeIndexedTransition(ctx));
@@ -631,7 +637,7 @@ inline bool JSObject::DefineOwnIndexedPropertyInternal(Context* ctx, uint32_t in
   if (index >= elements_.length()) {
     elements_.set_length(index + 1);
   }
-  sparse->insert(std::make_pair(index, StoredSlot(ctx, desc)));
+  entry->second = StoredSlot(ctx, desc);
   return true;
 }
 
