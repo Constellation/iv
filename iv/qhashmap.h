@@ -28,22 +28,26 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // And this is modified by iv project
-#ifndef QHASHMAP_HPP
-#define QHASHMAP_HPP
+#ifndef IV_QHASHMAP_H_
+#define IV_QHASHMAP_H_
 
 #include <algorithm>
 #include <cassert>
 #include <utility>
 #include <iv/platform.h>
+namespace iv {
+namespace core {
 
 struct QHashMapDefaultAlloc {
   void* New(size_t sz) { return operator new(sz); }
   static void Delete(void* p) { operator delete(p); }
 };
 
-template<typename KeyType, typename ValueType, class KeyTraits, class Allocator = QHashMapDefaultAlloc>
+template<typename KeyType,
+         typename ValueType,
+         class KeyTraits, class Allocator = QHashMapDefaultAlloc>
 class QHashMap {
-  QHashMap& operator=(const QHashMap&); // = delete
+  QHashMap& operator=(const QHashMap&);  // = delete
  public:
   // The default capacity.  This is used by the call sites which want
   // to pass in a non-default AllocationPolicy but want to use the
@@ -68,9 +72,11 @@ class QHashMap {
   // but insert is set, a new entry is inserted with
   // corresponding key, key hash, and NULL value.
   // Otherwise, NULL is returned.
-  IV_ALWAYS_INLINE Entry* Lookup(KeyType key, bool insert, Allocator allocator = Allocator());
+  IV_ALWAYS_INLINE Entry* Lookup(
+      KeyType key, bool insert, Allocator allocator = Allocator());
   IV_ALWAYS_INLINE std::pair<Entry*, bool>
-      LookupWithFound(KeyType key, bool insert, Allocator allocator = Allocator());
+      LookupWithFound(
+          KeyType key, bool insert, Allocator allocator = Allocator());
 
   // Removes the entry with matching key.
   void Remove(Entry* p);
@@ -111,11 +117,12 @@ class QHashMap {
 
   // If an entry with matching key is found, Lookup()
   // returns that entry. If no matching entry is found, NULL is returned.
-  IV_ALWAYS_INLINE Entry* Lookup(KeyType key, Allocator allocator = Allocator()) const;
+  IV_ALWAYS_INLINE Entry*
+      Lookup(KeyType key, Allocator allocator = Allocator()) const;
 
  public:
   class const_iterator {
-    const_iterator operator++(int); // disabled
+    const_iterator operator++(int);  // disabled NOLINT
    public:
     const_iterator& operator++() {
       entry_ = map_->Next(entry_);
@@ -124,8 +131,12 @@ class QHashMap {
 
     const Entry& operator*() const { return *entry_; }
     const Entry* operator->() const { return entry_; }
-    bool operator==(const const_iterator& other) const { return entry_ == other.entry_; }
-    bool operator!=(const const_iterator& other) const { return entry_ != other.entry_; }
+    bool operator==(const const_iterator& other) const {
+      return entry_ == other.entry_;
+    }
+    bool operator!=(const const_iterator& other) const {
+      return entry_ != other.entry_;
+    }
 
    private:
     const_iterator(const QHashMap* map, Entry* entry)
@@ -399,7 +410,7 @@ QHashMap<KeyType, ValueType, KeyTraits, Allocator>::Probe(KeyType key) const {
   assert(occupancy_ < capacity_);  // Guarantees loop termination.
   while (p->first != KeyTraits::null()
          && (hash != KeyTraits::hash(p->first) ||
-             ! KeyTraits::equals(key, p->first))) {
+             !KeyTraits::equals(key, p->first))) {
     p++;
     if (p >= end) {
       p = map_;
@@ -441,4 +452,5 @@ inline void QHashMap<KeyType, ValueType, KeyTraits, Allocator>::Resize(
   Allocator::Delete(map);
 }
 
-#endif  // QHASHMAP_HPP
+} }  // namespace iv::core
+#endif  // IV_QHASHMAP_H_

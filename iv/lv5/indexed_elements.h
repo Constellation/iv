@@ -2,10 +2,10 @@
 #ifndef IV_LV5_INDEXED_ELEMENTS_H_
 #define IV_LV5_INDEXED_ELEMENTS_H_
 #include <iv/utils.h>
+#include <iv/qhashmap.h>
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/jsval_fwd.h>
 #include <iv/lv5/storage.h>
-#include <iv/third_party/qhashmap/qhashmap.hpp>
 namespace iv {
 namespace lv5 {
 
@@ -22,7 +22,7 @@ class IndexedElements {
     static uint32_t null() { return UINT32_MAX; }
   };
 
-  typedef QHashMap<uint32_t, StoredSlot, KeyTraits, GCAlloc> SparseArrayMap;
+  typedef core::QHashMap<uint32_t, StoredSlot, KeyTraits, GCAlloc> SparseArrayMap;
   typedef Storage<JSVal> DenseArrayVector;
 
   enum Flags {
