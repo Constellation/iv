@@ -27,7 +27,7 @@ class MapBuilder {
   }
 
   void Override(Symbol symbol, Map::Entry entry) {
-    (*table_)[symbol] = entry;
+    table_->Lookup(symbol, true)->second = entry;
   }
 
   Map::Entry Find(Symbol symbol) const {

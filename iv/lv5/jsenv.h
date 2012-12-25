@@ -5,6 +5,7 @@
 #include <iv/notfound.h>
 #include <iv/debug.h>
 #include <iv/string_builder.h>
+#include <iv/qhashmap.h>
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/symbol.h>
@@ -129,7 +130,7 @@ class JSDeclEnv : public JSEnv {
  public:
   typedef Storage<JSVal> StaticVals;
   typedef Storage<DynamicVal> DynamicVals;
-  typedef GCHashMap<Symbol, uint32_t>::type Offsets;
+  typedef core::QHashMap<Symbol, uint32_t, symbol::KeyTraits, GCAlloc> Offsets;
 
   bool HasBinding(Context* ctx, Symbol name) const {
     return offsets_.find(name) != offsets_.end();
@@ -158,7 +159,7 @@ class JSDeclEnv : public JSEnv {
     if (del) {
       flag |= DynamicVal::DELETABLE;
     }
-    offsets_[name] = static_.size() + dynamic_.size();
+    offsets_.Lookup(name, true)->second = static_.size() + dynamic_.size();
     dynamic_.push_back(DynamicVal(flag));
   }
 
@@ -182,7 +183,7 @@ class JSDeclEnv : public JSEnv {
 
   void CreateImmutableBinding(Symbol name) {
     assert(offsets_.find(name) == offsets_.end());
-    offsets_[name] = static_.size() + dynamic_.size();
+    offsets_.Lookup(name, true)->second = static_.size() + dynamic_.size();
     dynamic_.push_back(DynamicVal(DynamicVal::IM_UNINITIALIZED));
   }
 
@@ -309,10 +310,10 @@ class JSDeclEnv : public JSEnv {
     uint32_t i = 0;
     for (; i < mutable_start; ++i, ++it) {
       static_[i] = JSEmpty;
-      offsets_[*it] = i;
+      offsets_.Lookup(*it, true)->second = i;
     }
     for (; i < size; ++i, ++it) {
-      offsets_[*it] = i;
+      offsets_.Lookup(*it, true)->second = i;
     }
   }
 

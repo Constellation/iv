@@ -163,7 +163,8 @@ inline Symbol MakeSymbolFromIndex(uint32_t index) {
 
 inline const core::UString* GetStringFromSymbol(Symbol sym) {
   assert(IsStringSymbol(sym));
-  return reinterpret_cast<const core::UString*>(sym.str_.str_ & ~static_cast<uintptr_t>(1));
+  return reinterpret_cast<const core::UString*>(
+      sym.str_.str_ & ~static_cast<uintptr_t>(1));
 }
 
 inline uint32_t GetIndexFromSymbol(Symbol sym) {

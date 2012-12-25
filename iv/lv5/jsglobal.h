@@ -2,6 +2,7 @@
 #define IV_LV5_JSGLOBAL_H_
 #include <iv/notfound.h>
 #include <iv/segmented_vector.h>
+#include <iv/qhashmap.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/map.h>
 #include <iv/lv5/jsobject_fwd.h>
@@ -14,7 +15,7 @@ class JSGlobal : public JSObject {
  public:
   IV_LV5_DEFINE_JSCLASS(JSGlobal, global)
 
-  typedef GCHashMap<Symbol, uint32_t>::type SymbolMap;
+  typedef core::QHashMap<Symbol, uint32_t, symbol::KeyTraits, GCAlloc> SymbolMap;
   typedef core::SegmentedVector<StoredSlot, 8, gc_allocator<StoredSlot> > Vector;
 
   static JSGlobal* New(Context* ctx) { return new JSGlobal(ctx); }
@@ -41,7 +42,7 @@ class JSGlobal : public JSObject {
 
   void PushVariable(Symbol name, JSVal init, Attributes::Safe attributes) {
     assert(symbol_map_.find(name) == symbol_map_.end());
-    symbol_map_[name] = variables_.size();
+    symbol_map_.Lookup(name, true)->second = variables_.size();
     variables_.push_back(StoredSlot(init, attributes));
   }
 

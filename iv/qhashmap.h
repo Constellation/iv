@@ -59,6 +59,15 @@ class QHashMap {
   QHashMap(size_t capacity = kDefaultHashMapCapacity,
            Allocator allocator = Allocator());
   QHashMap(const QHashMap& x, Allocator allocator = Allocator());
+  template<typename Iter>
+  QHashMap(Iter it, Iter last, Allocator allocator = Allocator()) {
+    Initialize(kDefaultHashMapCapacity, allocator);
+    for (; it != last; ++it) {
+      Lookup(it->first, true)->second = it->second;
+    }
+  }
+
+
   ~QHashMap();
 
   // HashMap entries are (key, value, hash) triplets.

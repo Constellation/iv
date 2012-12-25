@@ -32,7 +32,7 @@ class Map : public radio::HeapObject<radio::POINTER> {
     static Entry NotFound() { return Entry(); }
   };
 
-  typedef GCHashMap<Symbol, Entry>::type TargetTable;
+  typedef core::QHashMap<Symbol, Entry, symbol::KeyTraits, GCAlloc> TargetTable;
 
   class Transitions {
    public:
@@ -70,9 +70,25 @@ class Map : public radio::HeapObject<radio::POINTER> {
         key.attributes = attributes.raw();
         return key;
       }
+
+      // traits
+      static unsigned hash(const Key& val) {
+        return Hasher()(val);
+      }
+      static bool equals(const Key& lhs, const Key& rhs) {
+        return lhs == rhs;
+      }
+      // because of Array index
+      static Key null() {
+        static const Key kDummy = {
+          symbol::kDummySymbol,
+          0
+        };
+        return kDummy;
+      }
     };
 
-    typedef GCHashMap<Key, Map*, Key::Hasher>::type Table;
+    typedef core::QHashMap<Key, Map*, Key, GCAlloc> Table;
 
     explicit Transitions(bool enabled, bool indexed) : holder_(), flags_(0) {
       set_enabled(enabled);
@@ -291,7 +307,7 @@ class Map : public radio::HeapObject<radio::POINTER> {
         entry.offset = map->GetSlotsSize();
       }
       assert(name != symbol::kDummySymbol);
-      map->table_->insert(std::make_pair(name, entry));
+      map->table_->Lookup(name, true)->second = entry;
       *offset = entry.offset;
       return map;
     }
@@ -511,7 +527,7 @@ class Map : public radio::HeapObject<radio::POINTER> {
     }
     assert(table_);
 
-    table_->rehash(stack.size());
+    // table_->rehash(stack.size());
     for (std::vector<Map*>::const_reverse_iterator it = stack.rbegin(),
          last = stack.rend(); it != last; ++it) {
       assert((*it)->IsAddingMap());
