@@ -205,6 +205,10 @@ class QHashMap {
   void insert(const value_type& pair) {
     Lookup(pair.first, true)->second = pair.second;
   }
+
+  mapped_type& operator[](const key_type& key) {
+    return Lookup(key, true)->second;
+  }
 };
 
 template<typename KeyType, typename ValueType, class KeyTraits, class Allocator>
