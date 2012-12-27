@@ -1434,7 +1434,13 @@ class Compiler {
         dst_entry = TypeEntry(Type::Number());
       } else if (base_entry.type().IsString()) {
         if (base_entry.IsConstant()) {
-          dst_entry = TypeEntry(base_entry.constant().string()->size());
+          const int32_t length = base_entry.constant().string()->size();
+          dst_entry = TypeEntry(length);
+          asm_->mov(rax, Extract(JSVal::Int32(length)));
+          asm_->mov(qword[r13 + dst * kJSValSize], rax);
+          set_last_used_candidate(dst);
+          type_record_.Put(dst, dst_entry);
+          return;
         } else {
           dst_entry = TypeEntry(Type::Int32());
         }
