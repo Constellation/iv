@@ -91,7 +91,8 @@ inline Rep BINARY_ADD(Frame* stack, JSVal lhs, JSVal rhs) {
   Context* ctx = stack->ctx;
   if (lhs.IsString()) {
     if (rhs.IsString()) {
-      JSString* const result = JSString::New(ctx, lhs.string(), rhs.string(), ERR);
+      JSString* const result =
+          JSString::New(ctx, lhs.string(), rhs.string(), ERR);
       return Extract(result);
     } else {
       const JSVal rp = rhs.ToPrimitive(ctx, Hint::NONE, ERR);
@@ -278,7 +279,8 @@ inline Rep THROW(Frame* stack, JSVal src) {
   IV_LV5_BREAKER_RAISE();
 }
 
-inline Rep THROW_WITH_TYPE_AND_MESSAGE(Frame* stack, Error::Code type, const char* message) {
+inline Rep THROW_WITH_TYPE_AND_MESSAGE(
+    Frame* stack, Error::Code type, const char* message) {
   stack->error->Report(type, message);
   IV_LV5_BREAKER_RAISE();
 }
@@ -319,7 +321,8 @@ inline Rep LOAD_GLOBAL(Frame* stack, Symbol name, GlobalIC* ic, Assembler* as) {
   }
 
   if (ctx->global_env()->HasBinding(ctx, name)) {
-    const JSVal res = ctx->global_env()->GetBindingValue(ctx, name, ic->strict(), ERR);
+    const JSVal res =
+       ctx->global_env()->GetBindingValue(ctx, name, ic->strict(), ERR);
     return Extract(res);
   }
   RaiseReferenceError(name, stack->error);
@@ -406,7 +409,8 @@ template<int Target, std::size_t Returned, bool Strict>
 inline JSVal IncrementName(Context* ctx,
                            JSEnv* env, Symbol name, Error* e) {
   if (JSEnv* current = GetEnv(ctx, env, name)) {
-    const JSVal w = current->GetBindingValue(ctx, name, Strict, IV_LV5_ERROR(e));
+    const JSVal w =
+        current->GetBindingValue(ctx, name, Strict, IV_LV5_ERROR(e));
     if (w.IsInt32() &&
         railgun::detail::IsIncrementOverflowSafe<Target>(w.int32())) {
       std::tuple<JSVal, JSVal> results;
@@ -606,7 +610,8 @@ inline Rep TO_PRIMITIVE_AND_TO_STRING(Frame* stack, JSVal src) {
 }
 
 template<int Type>
-inline void STORE_OBJECT_INDEXED(Context* ctx, JSVal target, JSVal item, uint32_t index) {
+inline void STORE_OBJECT_INDEXED(
+     Context* ctx, JSVal target, JSVal item, uint32_t index) {
   JSObject* obj = target.object();
   Slot slot;
   Error::Dummy dummy;
@@ -642,12 +647,14 @@ inline void STORE_OBJECT_INDEXED(Context* ctx, JSVal target, JSVal item, uint32_
   }
 }
 
-inline void STORE_OBJECT_GET(Context* ctx, JSVal target, JSVal item, uint32_t offset) {
+inline void STORE_OBJECT_GET(
+    Context* ctx, JSVal target, JSVal item, uint32_t offset) {
   JSObject* obj = target.object();
   obj->Direct(offset) = JSVal::Cell(Accessor::New(ctx, item.object(), NULL));
 }
 
-inline void STORE_OBJECT_SET(Context* ctx, JSVal target, JSVal item, uint32_t offset) {
+inline void STORE_OBJECT_SET(
+    Context* ctx, JSVal target, JSVal item, uint32_t offset) {
   JSObject* obj = target.object();
   obj->Direct(offset) = JSVal::Cell(Accessor::New(ctx, NULL, item.object()));
 }
@@ -665,7 +672,8 @@ inline void INIT_SPARSE_ARRAY_ELEMENT(
 }
 
 template<bool CONFIGURABLE>
-inline Rep INSTANTIATE_DECLARATION_BINDING(Frame* stack, JSEnv* env, Symbol name) {
+inline Rep INSTANTIATE_DECLARATION_BINDING(
+    Frame* stack, JSEnv* env, Symbol name) {
   Context* ctx = stack->ctx;
   if (!env->HasBinding(ctx, name)) {
     env->CreateMutableBinding(ctx, name, CONFIGURABLE, ERR);
@@ -877,7 +885,8 @@ inline void StorePropImpl(Context* ctx,
   }
 }
 
-inline Rep STORE_ELEMENT_GENERIC(Frame* stack, JSVal base, JSVal src, JSVal element, StoreElementIC* ic) {
+inline Rep STORE_ELEMENT_GENERIC(
+    Frame* stack, JSVal base, JSVal src, JSVal element, StoreElementIC* ic) {
   Context* ctx = stack->ctx;
   if (base.IsPrimitive()) {
     const Symbol name = element.ToSymbol(ctx, ERR);
@@ -893,7 +902,8 @@ inline Rep STORE_ELEMENT_GENERIC(Frame* stack, JSVal base, JSVal src, JSVal elem
 
     if (slot.IsNotFound() || slot.attributes().IsData()) {
       if (ic->strict()) {
-        stack->error->Report(Error::Type, "value to symbol in transient object");
+        stack->error->Report(
+            Error::Type, "value to symbol in transient object");
         IV_LV5_BREAKER_RAISE();
       }
       return 0;
@@ -921,7 +931,8 @@ inline Rep STORE_ELEMENT_GENERIC(Frame* stack, JSVal base, JSVal src, JSVal elem
   return 0;
 }
 
-inline Rep STORE_ELEMENT_INDEXED(Frame* stack, JSVal base, JSVal src, int32_t index, StoreElementIC* ic) {
+inline Rep STORE_ELEMENT_INDEXED(
+    Frame* stack, JSVal base, JSVal src, int32_t index, StoreElementIC* ic) {
   Context* ctx = stack->ctx;
   assert(base.IsObject());
   JSObject* obj = base.object();
@@ -930,14 +941,16 @@ inline Rep STORE_ELEMENT_INDEXED(Frame* stack, JSVal base, JSVal src, int32_t in
     std::array<char, 15> buffer;
     char* end = core::Int32ToString(index, buffer.data());
     const Symbol name =
-        ctx->Intern(core::StringPiece(buffer.data(), std::distance(buffer.data(), end)));
+        ctx->Intern(core::StringPiece(
+                buffer.data(), std::distance(buffer.data(), end)));
     obj->Put(ctx, name, src, ic->strict(), ERR);
     return 0;
   }
 
   const bool indexed = obj->map()->IsIndexed();
   Slot slot;
-  JSObject::PutIndexedSlotMethod(obj, ctx, index, src, &slot, ic->strict(), ERR);
+  JSObject::PutIndexedSlotMethod(
+      obj, ctx, index, src, &slot, ic->strict(), ERR);
   if (indexed && slot.put_result_type() == Slot::PUT_INDEXED_OPTIMIZED) {
     // ic to hole path
     Chain* chain = Chain::New(obj, NULL);
@@ -946,7 +959,8 @@ inline Rep STORE_ELEMENT_INDEXED(Frame* stack, JSVal base, JSVal src, int32_t in
   return 0;
 }
 
-inline Rep STORE_ELEMENT(Frame* stack, JSVal base, JSVal src, JSVal element, StoreElementIC* ic) {
+inline Rep STORE_ELEMENT(
+    Frame* stack, JSVal base, JSVal src, JSVal element, StoreElementIC* ic) {
   Context* ctx = stack->ctx;
   if (base.IsPrimitive()) {
     ic->Invalidate();
@@ -963,7 +977,8 @@ inline Rep STORE_ELEMENT(Frame* stack, JSVal base, JSVal src, JSVal element, Sto
 
     if (slot.IsNotFound() || slot.attributes().IsData()) {
       if (ic->strict()) {
-        stack->error->Report(Error::Type, "value to symbol in transient object");
+        stack->error->Report(
+            Error::Type, "value to symbol in transient object");
         IV_LV5_BREAKER_RAISE();
       }
       return 0;
@@ -990,7 +1005,7 @@ inline Rep STORE_ELEMENT(Frame* stack, JSVal base, JSVal src, JSVal element, Sto
   Slot slot;
   obj->PutIndexedSlot(ctx, index, src, &slot, ic->strict(), ERR);
   if (indexed && slot.put_result_type() == Slot::PUT_INDEXED_OPTIMIZED &&
-      obj->method()->DefineOwnIndexedPropertySlot == JSObject::DefineOwnIndexedPropertySlotMethod) {
+      obj->method()->DefineOwnIndexedPropertySlot == JSObject::DefineOwnIndexedPropertySlotMethod) {  // NOLINT
     // ic to hole path
     Chain* chain = Chain::New(obj, NULL);
     ic->StoreNewElement(chain);
@@ -1060,7 +1075,8 @@ inline JSEnv* TRY_CATCH_SETUP(Context* ctx,
   return JSStaticEnv::New(ctx, outer, sym, value);
 }
 
-inline Rep STORE_PROP_GENERIC(Frame* stack, JSVal base, JSVal src, StorePropertyIC* ic) {
+inline Rep STORE_PROP_GENERIC(
+    Frame* stack, JSVal base, JSVal src, StorePropertyIC* ic) {
   if (ic->strict()) {
     StorePropImpl<true>(stack->ctx, base, ic->name(), src, ERR);
   } else {
@@ -1088,7 +1104,8 @@ inline Rep LOAD_PROP(Frame* stack, JSVal base, LoadPropertyIC* ic) {  // NOLINT
       return Extract(JSVal::UInt32(base.string()->size()));
     } else if (base.IsObject() && base.object()->IsClass<Class::Array>()) {
       ic->LoadArrayLength(ctx);
-      return Extract(JSVal::UInt32(static_cast<JSArray*>(base.object())->length()));
+      return Extract(
+          JSVal::UInt32(static_cast<JSArray*>(base.object())->length()));
     }
   }
 
@@ -1120,16 +1137,19 @@ inline Rep LOAD_PROP(Frame* stack, JSVal base, LoadPropertyIC* ic) {  // NOLINT
   if (slot.base() == cell->prototype()) {
     // proto property
     cell->FlattenMap();
-    ic->LoadPrototypeProperty(ctx, cell->map(), slot.base()->map(), slot.offset());
+    ic->LoadPrototypeProperty(
+        ctx, cell->map(), slot.base()->map(), slot.offset());
     return Extract(res);
   }
 
   // chain property
-  ic->LoadChainProperty(ctx, Chain::New(cell, slot.base()), slot.base()->map(), slot.offset());
+  ic->LoadChainProperty(
+      ctx, Chain::New(cell, slot.base()), slot.base()->map(), slot.offset());
   return Extract(res);
 }
 
-inline Rep STORE_PROP(Frame* stack, JSVal base, JSVal src, StorePropertyIC* ic) {
+inline Rep STORE_PROP(
+    Frame* stack, JSVal base, JSVal src, StorePropertyIC* ic) {
   assert(!symbol::IsArrayIndexSymbol(ic->name()));
   Context* ctx = stack->ctx;
   const Symbol name = ic->name();
@@ -1162,7 +1182,8 @@ inline Rep STORE_PROP(Frame* stack, JSVal base, JSVal src, StorePropertyIC* ic) 
       // we can cache even if map is unique
       ic->StoreReplaceProperty(obj->map(), slot.offset());
     } else if (!unique) {
-      ic->StoreReplacePropertyWithMapTransition(previous, obj->map(), slot.offset());
+      ic->StoreReplacePropertyWithMapTransition(
+          previous, obj->map(), slot.offset());
     }
     return 0;
   }
