@@ -3040,10 +3040,6 @@ class Compiler {
       asm_->mov(tmp, detail::jsval64::kValueMask);
       asm_->test(tmp, target);
       asm_->jnz(label, type);
-
-      // target is guaranteed as cell
-      CompareCellTag(target, radio::OBJECT);
-      asm_->jne(label, type);
     }
 
     // target is guaranteed as object
@@ -3051,6 +3047,8 @@ class Compiler {
     if (!type_entry.type().IsArray()) {
       const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
       asm_->mov(tmp, qword[target + offset]);
+      asm_->test(tmp, tmp);  // class is NULL => String...
+      asm_->jz(label, type);
 
       const std::ptrdiff_t get_method = Class::MethodTableOffset() + IV_OFFSETOF(MethodTable, GetOwnIndexedPropertySlot);
       // tmp is class
