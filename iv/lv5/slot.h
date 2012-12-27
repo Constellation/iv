@@ -63,7 +63,7 @@ class Slot : public StoredSlot {
     return IsCacheable() && attributes().IsData();
   }
 
-  void set(JSVal value, Attributes::Safe attributes, const JSObject* obj) {
+  void set(JSVal value, Attributes::Safe attributes, const JSCell* obj) {
     StoredSlot::set(value, attributes);
     MakeUsed();
     MakeUnCacheable();
@@ -73,28 +73,18 @@ class Slot : public StoredSlot {
 
   void set(JSVal value,
            Attributes::Safe attributes,
-           const JSObject* obj, uint32_t offset) {
+           const JSCell* obj, uint32_t offset) {
     StoredSlot::set(value, attributes);
     MakeUsed();
     base_ = obj;
     offset_ = offset;
   }
 
-  void set(const StoredSlot& slot, const JSObject* obj) {
+  void set(const StoredSlot& slot, const JSCell* obj) {
     set(slot.value(), slot.attributes(), obj);
   }
 
-  void StringSet(JSVal value, Attributes::Safe attributes) {
-    StoredSlot::set(value, attributes);
-    MakeUsed();
-    MakeUnCacheable();
-    base_ = NULL;
-    offset_ = UINT32_MAX;
-  }
-
-  const JSObject* base() const { return base_; }
-
-  bool IsStringBase() const { return !base(); };
+  const JSCell* base() const { return base_; }
 
   uint32_t offset() const { return offset_; }
 
@@ -146,7 +136,7 @@ class Slot : public StoredSlot {
     flags_ |= (type << PUT_SHIFT);
   }
 
-  const JSObject* base_;
+  const JSCell* base_;
   uint32_t offset_;
   uint32_t flags_;
 };

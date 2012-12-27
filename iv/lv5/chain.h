@@ -33,12 +33,12 @@ class Chain : public radio::HeapObject<radio::POINTER> {
   typedef std::size_t size_type;
 
   // chain not contains end map
-  static Chain* New(const JSObject* begin, const JSObject* end) {
+  static Chain* New(const JSCell* begin, const JSCell* end) {
     assert(begin != end);
     assert(begin != NULL);
     std::vector<Map*> maps;
     maps.reserve(4);
-    const JSObject* current = begin;
+    const JSCell* current = begin;
     do {
       Map* map = current->FlattenMap();
       maps.push_back(map);

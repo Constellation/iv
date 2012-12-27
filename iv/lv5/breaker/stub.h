@@ -1106,30 +1106,26 @@ inline Rep LOAD_PROP(Frame* stack, JSVal base, LoadPropertyIC* ic) {  // NOLINT
     return Extract(res);
   }
 
-  JSObject* obj = NULL;
-  if (base.IsString()) {
-    obj = ctx->global_data()->string_prototype();
-  } else {
-    obj = base.object();
-  }
+  // object or string
+  JSCell* cell = static_cast<JSCell*>(base.cell());
 
   // cache phase
   // own property / proto property / chain lookup property
-  if (slot.base() == obj) {
+  if (slot.base() == cell) {
     // own property
-    ic->LoadOwnProperty(ctx, obj->map(), slot.offset());
+    ic->LoadOwnProperty(ctx, cell->map(), slot.offset());
     return Extract(res);
   }
 
-  if (slot.base() == obj->prototype()) {
+  if (slot.base() == cell->prototype()) {
     // proto property
-    obj->FlattenMap();
-    ic->LoadPrototypeProperty(ctx, obj->map(), slot.base()->map(), slot.offset());
+    cell->FlattenMap();
+    ic->LoadPrototypeProperty(ctx, cell->map(), slot.base()->map(), slot.offset());
     return Extract(res);
   }
 
   // chain property
-  ic->LoadChainProperty(ctx, Chain::New(obj, slot.base()), slot.base()->map(), slot.offset());
+  ic->LoadChainProperty(ctx, Chain::New(cell, slot.base()), slot.base()->map(), slot.offset());
   return Extract(res);
 }
 

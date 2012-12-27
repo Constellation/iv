@@ -995,18 +995,20 @@ inline JSVal JSVal::GetSlot(Context* ctx,
     if (IsString()) {
       JSString* str = string();
       if (name == symbol::length()) {
-        slot->StringSet(
+        slot->set(
             JSVal::UInt32(str->size()),
-            Attributes::String::Length());
+            Attributes::String::Length(),
+            str);
         return slot->value();
       }
 
       if (symbol::IsArrayIndexSymbol(name)) {
         const uint32_t index = symbol::GetIndexFromSymbol(name);
         if (index < str->size()) {
-          slot->StringSet(
+          slot->set(
               JSString::NewSingle(ctx, str->At(index)),
-              Attributes::String::Indexed());
+              Attributes::String::Indexed(),
+              str);
           return slot->value();
         }
       }
@@ -1033,18 +1035,20 @@ inline bool JSVal::GetPropertySlot(Context* ctx,
     if (IsString()) {
       JSString* str = string();
       if (name == symbol::length()) {
-        slot->StringSet(
+        slot->set(
             JSVal::UInt32(str->size()),
-            Attributes::String::Length());
+            Attributes::String::Length(),
+            str);
         return true;
       }
 
       if (symbol::IsArrayIndexSymbol(name)) {
         const uint32_t index = symbol::GetIndexFromSymbol(name);
         if (index < str->size()) {
-          slot->StringSet(
+          slot->set(
               JSString::NewSingle(ctx, str->At(index)),
-              Attributes::String::Indexed());
+              Attributes::String::Indexed(),
+              str);
           return true;
         }
       }

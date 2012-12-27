@@ -38,8 +38,7 @@ inline bool IsAbsentDescriptor(const PropertyDescriptor& desc) {
 }
 
 inline JSObject::JSObject(Map* map)
-  : JSCell(radio::OBJECT, map),
-    cls_(NULL),
+  : JSCell(radio::OBJECT, map, NULL),
     slots_(map->GetSlotsSize()),
     elements_(),
     flags_(kFlagExtensible) {
@@ -47,15 +46,13 @@ inline JSObject::JSObject(Map* map)
 
 inline JSObject::JSObject(const JSObject& obj)
   : JSCell(obj),
-    cls_(obj.cls_),
     slots_(obj.slots_),
     elements_(obj.elements_),
     flags_(obj.flags_) {
 }
 
 inline JSObject::JSObject(Map* map, const Class* cls)
-  : JSCell(radio::OBJECT, map),
-    cls_(cls),
+  : JSCell(radio::OBJECT, map, cls),
     slots_(map->GetSlotsSize()),
     elements_(),
     flags_(kFlagExtensible) {
@@ -652,12 +649,6 @@ inline JSObject* JSObject::New(Context* ctx, Map* map) {
   return obj;
 }
 
-inline Map* JSObject::FlattenMap() const {
-  // make map transitable
-  map()->Flatten();
-  return map();
-}
-
 inline JSObject* JSObject::NewPlain(Context* ctx, Map* map) {
   return new JSObject(map);
 }
@@ -687,6 +678,14 @@ inline void JSObject::MarkChildren(radio::Core* core) {
   }
 }
 
+inline Map* JSCell::FlattenMap() const {
+  // make map transitable
+  map()->Flatten();
+  return map();
+}
+
+inline JSObject* JSCell::prototype() const { return map()->prototype(); }
+
 inline void JSObject::ChangeExtensible(Context* ctx, bool val) {
   if (val) {
     flags_ |= kFlagExtensible;
@@ -697,8 +696,6 @@ inline void JSObject::ChangeExtensible(Context* ctx, bool val) {
   elements_.MakeSparse();
 }
 
-
-inline JSObject* JSObject::prototype() const { return map()->prototype(); }
 
 } }  // namespace iv::lv5
 #endif  // IV_LV5_JSOBJECT_H_

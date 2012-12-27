@@ -162,25 +162,6 @@ class JSObject : public JSCell {
 
   void ChangeExtensible(Context* ctx, bool val);
 
-  JSObject* prototype() const;
-
-  const Class* cls() const {
-    return cls_;
-  }
-
-  void set_cls(const Class* cls) {
-    cls_ = cls;
-  }
-
-  template<Class::JSClassType CLS>
-  bool IsClass() const {
-    return cls_->type == static_cast<uint32_t>(CLS);
-  }
-
-  bool IsClass(Class::JSClassType cls) const {
-    return cls_->type == static_cast<uint32_t>(cls);
-  }
-
   static JSObject* New(Context* ctx);
 
   static JSObject* New(Context* ctx, Map* map);
@@ -199,14 +180,11 @@ class JSObject : public JSCell {
 
   virtual void MarkChildren(radio::Core* core);
 
-  const MethodTable* method() const { return &cls_->method; }
-
-  Map* FlattenMap() const;
+  const MethodTable* method() const { return &cls()->method; }
 
   void ChangePrototype(Context* ctx, JSObject* proto);
 
   static std::size_t SlotsOffset() { return IV_OFFSETOF(JSObject, slots_); }
-  static std::size_t ClassOffset() { return IV_OFFSETOF(JSObject, cls_); }
   static std::size_t ElementsOffset() { return IV_OFFSETOF(JSObject, elements_); }
 
   static void MapTransitionWithReallocation(
@@ -216,7 +194,6 @@ class JSObject : public JSCell {
   explicit JSObject(const JSObject& obj);
   JSObject(Map* map, const Class* cls);
 
-  const Class* cls_;
   Slots slots_;
   IndexedElements elements_;
   uint32_t flags_;
