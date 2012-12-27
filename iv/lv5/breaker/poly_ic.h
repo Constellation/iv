@@ -218,9 +218,14 @@ class LoadPropertyIC : public PolyIC {
     std::size_t size() const { return kSize; }
     void operator()(LoadPropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
       const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
+      static const uintptr_t cls = core::BitCast<uintptr_t>(JSArray::GetClass());
       // check target class is Array
-      as->mov(r10, core::BitCast<uintptr_t>(JSArray::GetClass()));
-      as->cmp(r10, qword[r8 + offset]);
+      if (!Xbyak::inner::IsInInt32(cls)) {
+        as->mov(r10, cls);
+        as->cmp(qword[r8 + offset], r10);
+      } else {
+        as->cmp(qword[r8 + offset], cls);
+      }
       as->jne(fail);
       // load
       const std::size_t length = JSObject::ElementsOffset() + IndexedElements::LengthOffset();
@@ -246,7 +251,6 @@ class LoadPropertyIC : public PolyIC {
     void operator()(LoadPropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
       // own map guard
       IC::TestMapConstant(as, map_, r8, r10, fail);
-      // load
       // load string length
       const std::ptrdiff_t length_offset =
           IV_CAST_OFFSET(radio::Cell*, JSString*) + JSString::SizeOffset();
@@ -559,10 +563,6 @@ class StorePropertyIC : public PolyIC {
     as->mov(r10, detail::jsval64::kValueMask);
     as->test(rsi, r10);
     as->jnz("POLY_IC_GUARD_GENERIC", Xbyak::CodeGenerator::T_NEAR);
-
-    // target is guaranteed as cell
-    as->cmp(word[rsi + radio::Cell::TagOffset()], radio::OBJECT);
-    as->jne("POLY_IC_GUARD_GENERIC", Xbyak::CodeGenerator::T_NEAR);  // we should purge this to string check path
   }
 
   void GenerateGuardEpilogue(Xbyak::CodeGenerator* as) {
