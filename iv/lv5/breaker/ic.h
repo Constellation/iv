@@ -1,6 +1,7 @@
 #ifndef IV_BREAKER_IC_H_
 #define IV_BREAKER_IC_H_
 #include <iv/lv5/breaker/fwd.h>
+#include <iv/lv5/breaker/helper.h>
 #include <iv/lv5/radio/core_fwd.h>
 namespace iv {
 namespace lv5 {
@@ -8,7 +9,6 @@ namespace breaker {
 
 class IC {
  public:
-  static const std::size_t k64MovImmOffset = 2;
 
   enum Type {
     MONO,
@@ -29,20 +29,9 @@ class IC {
     return entry;
   }
 
-  static std::size_t Generate64Mov(Xbyak::CodeGenerator* as, const Xbyak::Reg64& reg) {
-    const uint64_t dummy64 = UINT64_C(0x0FFF000000000000);
-    const std::size_t result = as->getSize() + k64MovImmOffset;
-    as->mov(reg, dummy64);
-    return result;
-  }
-
-  static std::size_t Generate64Mov(Xbyak::CodeGenerator* as) {
-    return Generate64Mov(as, rax);
-  }
-
   // Generate Tail position
   static std::size_t GenerateTail(Xbyak::CodeGenerator* as) {
-    const std::size_t result = Generate64Mov(as);
+    const std::size_t result = helper::Generate64Mov(as);
     as->jmp(rax);
     return result;
   }
@@ -59,14 +48,14 @@ class IC {
       const Xbyak::Reg64& tmp,
       const char* fail,
       Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
-    const std::size_t offset = Generate64Mov(as, tmp);
+    const std::size_t offset = helper::Generate64Mov(as, tmp);
     as->rewrite(offset, core::BitCast<uintptr_t>(map), k64Size);
     as->cmp(tmp, qword[obj + JSObject::MapOffset()]);
     as->jne(fail, type);
     return offset;
   }
 
-  static void TestMapConstant(
+  static bool TestMapConstant(
       Xbyak::CodeGenerator* as, Map* map,
       const Xbyak::Reg64& obj,
       const Xbyak::Reg64& tmp,
@@ -74,12 +63,10 @@ class IC {
       Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
     // in uint32_t
     const uintptr_t ptr = core::BitCast<uintptr_t>(map);
-    if (!Xbyak::inner::IsInInt32(ptr)) {
-      TestMap(as, map, obj, tmp, fail, type);
-      return;
-    }
-    as->cmp(qword[obj + JSObject::MapOffset()], static_cast<uint32_t>(ptr));
+    const bool packed = helper::CmpConstant(
+        as, qword[obj + JSObject::MapOffset()], ptr, tmp);
     as->jne(fail, type);
+    return packed;
   }
 
  private:

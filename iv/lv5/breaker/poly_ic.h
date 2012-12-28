@@ -220,12 +220,7 @@ class LoadPropertyIC : public PolyIC {
       const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
       static const uintptr_t cls = core::BitCast<uintptr_t>(JSArray::GetClass());
       // check target class is Array
-      if (!Xbyak::inner::IsInInt32(cls)) {
-        as->mov(r10, cls);
-        as->cmp(qword[r8 + offset], r10);
-      } else {
-        as->cmp(qword[r8 + offset], cls);
-      }
+      helper::CmpConstant(as, qword[r8 + offset], cls, r10);
       as->jne(fail);
       // load
       const std::size_t length = JSObject::ElementsOffset() + IndexedElements::LengthOffset();
@@ -299,8 +294,7 @@ class LoadPropertyIC : public PolyIC {
  private:
   void GenerateGuardPrologue(Xbyak::CodeGenerator* as) {
     // check target is Cell
-    as->mov(r10, detail::jsval64::kValueMask);
-    as->test(rsi, r10);
+    helper::TestConstant(as, rsi, detail::jsval64::kValueMask, r10);
     as->jnz("POLY_IC_GUARD_GENERIC", Xbyak::CodeGenerator::T_NEAR);
     // target is guaranteed as cell
     as->mov(r8, rsi);
@@ -409,9 +403,7 @@ class StorePropertyIC : public PolyIC {
 
     void operator()(StorePropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
       // own map guard
-      as->mov(r10, core::BitCast<uintptr_t>(map_));
-      as->cmp(r10, qword[rsi + JSObject::MapOffset()]);
-      as->jne(fail);
+      IC::TestMapConstant(as, map_, rsi, r10, fail);
       // store
       StorePropertyIC::GenerateFastStore(as, rsi, offset_);
     }
@@ -438,8 +430,7 @@ class StorePropertyIC : public PolyIC {
       // own map guard
       IC::TestMapConstant(as, map_, rsi, r10, fail);
       // transition
-      as->mov(r10, core::BitCast<uintptr_t>(transit_));
-      as->mov(qword[rsi + JSObject::MapOffset()], r10);
+      helper::MovConstant(as, qword[rsi + JSObject::MapOffset()], core::BitCast<uintptr_t>(transit_), r10);
       // store
       StorePropertyIC::GenerateFastStore(as, rsi, offset_);
     }
@@ -475,8 +466,7 @@ class StorePropertyIC : public PolyIC {
       }
       assert(prototype == NULL);  // last is NULL
       // transition
-      as->mov(r10, core::BitCast<uintptr_t>(transit_));
-      as->mov(qword[rsi + JSObject::MapOffset()], r10);
+      helper::MovConstant(as, qword[rsi + JSObject::MapOffset()], core::BitCast<uintptr_t>(transit_), r10);
       // store
       StorePropertyIC::GenerateFastStore(as, rsi, offset_);
     }
@@ -560,8 +550,7 @@ class StorePropertyIC : public PolyIC {
  private:
   void GenerateGuardPrologue(Xbyak::CodeGenerator* as) {
     // check target is Cell
-    as->mov(r10, detail::jsval64::kValueMask);
-    as->test(rsi, r10);
+    helper::TestConstant(as, rsi, detail::jsval64::kValueMask, r10);
     as->jnz("POLY_IC_GUARD_GENERIC", Xbyak::CodeGenerator::T_NEAR);
   }
 
