@@ -16,14 +16,14 @@ inline void* SearchExceptionHandler(void* pc, void** rsp,
   Context* ctx = stack->ctx;
   Error* e = stack->error;
   assert(*e);
-  railgun::Code* code = frame->code();
+  railgun::Code* raised_code = frame->code();
   const std::size_t bytecode_offset =
-      code->core_data()->native_code()->PCToBytecodeOffset(pc);
+      raised_code->core_data()->native_code()->PCToBytecodeOffset(pc);
   frame->MaterializeErrorStack(
-      ctx, e, code->core_data()->data()->data() + bytecode_offset);
+      ctx, e, raised_code->core_data()->data()->data() + bytecode_offset);
   while (true) {
     bool in_range = false;
-    const railgun::ExceptionTable& table = code->exception_table();
+    const railgun::ExceptionTable& table = frame->code()->exception_table();
     for (railgun::ExceptionTable::const_iterator it = table.begin(),
          last = table.end(); it != last; ++it) {
       const railgun::Handler& handler = *it;
