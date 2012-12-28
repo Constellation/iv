@@ -1482,12 +1482,10 @@ class Compiler {
       asm_->Call(&stub::LOAD_ELEMENT);
     } else {
       asm_->mov(rdi, r14);
-      LoadPropertyIC* ic(new LoadPropertyIC(native_code(), name));
+      LoadPropertyIC* ic(new LoadPropertyIC(native_code(), name, code_->strict()));
       native_code()->BindIC(ic);
       asm_->mov(rdx, core::BitCast<uint64_t>(ic));
-      const std::size_t offset = helper::Generate64Mov(asm_);
-      ic->BindOriginal(offset);
-      asm_->call(rax);
+      ic->Call(asm_);
     }
     asm_->L(".EXIT");
     asm_->mov(qword[r13 + dst * kJSValSize], rax);
@@ -1546,9 +1544,7 @@ class Compiler {
         asm_->mov(rdi, r14);
         asm_->mov(ecx, index);
         asm_->mov(r8, core::BitCast<uint64_t>(ic));
-        const std::size_t offset = helper::Generate64Mov(asm_);
-        ic->BindOriginal(offset);
-        asm_->call(rax);
+        ic->Call(asm_);
         asm_->jmp(".EXIT");
       }
 
@@ -1564,9 +1560,7 @@ class Compiler {
       StorePropertyIC* ic(new StorePropertyIC(native_code(), name, code_->strict()));
       native_code()->BindIC(ic);
       asm_->mov(rcx, core::BitCast<uint64_t>(ic));
-      const std::size_t offset = helper::Generate64Mov(asm_);
-      ic->BindOriginal(offset);
-      asm_->call(rax);
+      ic->Call(asm_);
     }
     asm_->L(".EXIT");
   }
@@ -1868,9 +1862,7 @@ class Compiler {
 
     asm_->mov(rdi, r14);
     asm_->mov(r8, core::BitCast<uint64_t>(ic));
-    const std::size_t offset = helper::Generate64Mov(asm_);
-    ic->BindOriginal(offset);
-    asm_->call(rax);
+    ic->Call(asm_);
     asm_->jmp(".EXIT");
 
     asm_->L(".ARRAY_RESTORE_INDEX");

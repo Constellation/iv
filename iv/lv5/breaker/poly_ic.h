@@ -104,15 +104,15 @@ class ChainedPolyIC : public PolyIC {
   NativeCode* native_code() const { return native_code_; }
   bool strict() const { return strict_; }
 
-  void BindOriginal(std::size_t from_original) {
-    from_original_ = from_original;
-    native_code()->assembler()->rewrite(
-        from_original_, Derived::ChainPath(), k64Size);
+  void Call(Xbyak::CodeGenerator* as) {
+    call_site_ = helper::Generate64Mov(as);
+    as->rewrite(call_site_, Derived::ChainPath(), k64Size);
+    as->call(rax);
   }
 
  protected:
   ChainedPolyIC(NativeCode* native_code, bool strict)
-    : from_original_(),
+    : call_site_(),
       native_code_(native_code),
       strict_(strict) {
   }
@@ -152,8 +152,8 @@ class ChainedPolyIC : public PolyIC {
 
   void ChainIC(Unit* ic, uintptr_t code) {
     if (empty()) {
-      // rewrite original
-      native_code()->assembler()->rewrite(from_original_, code, k64Size);
+      // rewrite original call site
+      native_code()->assembler()->rewrite(call_site_, code, k64Size);
     } else {
       back().Redirect(code);
     }
@@ -167,7 +167,7 @@ class ChainedPolyIC : public PolyIC {
   }
 
  private:
-  std::size_t from_original_;
+  std::size_t call_site_;
   NativeCode* native_code_;
   bool strict_;
 };
@@ -197,8 +197,8 @@ class LoadPropertyIC : public PropertyIC<LoadPropertyIC> {
  public:
   static const std::size_t kMaxPolyICSize = 5;
 
-  LoadPropertyIC(NativeCode* native_code, Symbol name)
-    : PropertyIC(native_code, false),
+  LoadPropertyIC(NativeCode* native_code, Symbol name, bool strict)
+    : PropertyIC(native_code, strict),
       name_(name) {
   }
 
