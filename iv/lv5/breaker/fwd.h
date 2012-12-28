@@ -27,12 +27,15 @@ using namespace Xbyak::util;  // NOLINT
 #if defined(IV_OS_MACOSX)
   #define IV_LV5_BREAKER_SYMBOL(sym) IV_LV5_BREAKER_TO_STRING(_ ##sym)
   #define IV_LV5_BREAKER_HIDDEN(sym) ".private_extern " IV_LV5_BREAKER_SYMBOL(sym)
+  #define IV_LV5_BREAKER_WEAK(sym) ".weak_definition " IV_LV5_BREAKER_SYMBOL(sym)
 #elif defined(IV_OS_LINUX)
   #define IV_LV5_BREAKER_SYMBOL(sym) IV_LV5_BREAKER_TO_STRING(sym)
-  #define IV_LV5_BREAKER_HIDDEN(sym) ".hidden " #sym
+  #define IV_LV5_BREAKER_HIDDEN(sym) ".hidden " IV_LV5_BREAKER_SYMBOL(sym)
+  #define IV_LV5_BREAKER_WEAK(sym) ".weak " IV_LV5_BREAKER_SYMBOL(sym)
 #else
   #define IV_LV5_BREAKER_SYMBOL(sym) IV_LV5_BREAKER_TO_STRING(sym)
-  #define IV_LV5_BREAKER_HIDDEN(sym) ".hidden " #sym
+  #define IV_LV5_BREAKER_HIDDEN(sym) ".hidden " IV_LV5_BREAKER_SYMBOL(sym)
+  #define IV_LV5_BREAKER_WEAK(sym) ".weak " IV_LV5_BREAKER_SYMBOL(sym)
 #endif
 
 #if defined(IV_COMPILER_GCC)
@@ -42,12 +45,14 @@ using namespace Xbyak::util;  // NOLINT
 #endif
 
 #define IV_LV5_BREAKER_ASM_HEADER(s)\
+    ".text""\n"\
     ".globl "IV_LV5_BREAKER_SYMBOL(s)"\n"\
-    IV_LV5_BREAKER_HIDE(s)"\n"\
+    IV_LV5_BREAKER_WEAK(s)"\n"\
+    ".align 4""\n"\
     IV_LV5_BREAKER_SYMBOL(s)":"
 
 #define IV_LV5_BREAKER_ASM_DEFINE(ret, name, args)\
-    extern "C" inline ret name args;\
+    extern "C" ret name args;\
     IV_LV5_BREAKER_ASM_DIRECTIVE(IV_LV5_BREAKER_ASM_HEADER(name));\
     IV_LV5_BREAKER_ASM_DIRECTIVE
 
