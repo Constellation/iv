@@ -38,21 +38,7 @@
 #endif
 
 // compiler
-#if defined(__GNUC__)
-  #ifndef IV_COMPILER_GCC
-    #if defined(__GNU_PATCHLEVEL__)
-      #define IV_COMPILER_GCC\
-        IV_MAKE_VERSION(__GNUC__, __GNUC_MINOR__, __GNU_PATCHLEVEL__)
-    #else
-      #define IV_COMPILER_GCC IV_MAKE_VERSION(__GNUC__, __GNUC_MINOR__, 0)
-    #endif
-  #endif
-#elif defined(_MSC_VER)
-  #ifndef IV_COMPILER_MSVC
-    #define IV_COMPILER_MSVC _MSC_VER
-    #define IV_COMPILER_MSVC_10 (_MSC_VER >= 1600)
-  #endif
-#elif defined(__clang__)
+#if defined(__clang__)
   #ifndef IV_COMPILER_CLANG
     #if defined(__clang_patchlevel__)
       #define IV_COMPILER_CLANG\
@@ -67,6 +53,20 @@
       #define IV_COMPILER_ICC __ICL
     #else
       #define IV_COMPILER_ICC __ICC
+    #endif
+  #endif
+#elif defined(_MSC_VER)
+  #ifndef IV_COMPILER_MSVC
+    #define IV_COMPILER_MSVC _MSC_VER
+    #define IV_COMPILER_MSVC_10 (_MSC_VER >= 1600)
+  #endif
+#elif defined(__GNUC__)
+  #ifndef IV_COMPILER_GCC
+    #if defined(__GNU_PATCHLEVEL__)
+      #define IV_COMPILER_GCC\
+        IV_MAKE_VERSION(__GNUC__, __GNUC_MINOR__, __GNU_PATCHLEVEL__)
+    #else
+      #define IV_COMPILER_GCC IV_MAKE_VERSION(__GNUC__, __GNUC_MINOR__, 0)
     #endif
   #endif
 #endif
@@ -185,7 +185,5 @@
   #define IV_ALWAYS_INLINE inline
   #define IV_NEVER_INLINE
 #endif
-
-
 
 #endif  // IV_PLATFORM_H_
