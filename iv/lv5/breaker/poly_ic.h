@@ -198,7 +198,7 @@ class LoadPropertyIC : public PropertyIC<LoadPropertyIC> {
   static const std::size_t kMaxPolyICSize = 5;
 
   LoadPropertyIC(NativeCode* native_code, Symbol name, bool strict)
-    : PropertyIC(native_code, strict),
+    : PropertyIC<LoadPropertyIC>(native_code, strict),
       name_(name) {
   }
 
@@ -399,7 +399,7 @@ class StorePropertyIC : public PropertyIC<StorePropertyIC> {
   static const std::size_t kMaxPolyICSize = 5;
 
   StorePropertyIC(NativeCode* native_code, Symbol name, bool strict)
-    : PropertyIC(native_code, strict),
+    : PropertyIC<StorePropertyIC>(native_code, strict),
       name_(name) {
   }
 
@@ -585,7 +585,7 @@ class StoreElementIC : public ChainedPolyIC<StoreElementIC> {
   static const std::size_t kMaxPolyICSize = 5;
 
   StoreElementIC(NativeCode* native_code, bool strict, uint32_t index = UINT32_MAX)
-    : ChainedPolyIC(native_code, strict),
+    : ChainedPolyIC<StoreElementIC>(native_code, strict),
       index_(index) {
   }
 
