@@ -35,6 +35,22 @@ using namespace Xbyak::util;  // NOLINT
   #define IV_LV5_BREAKER_HIDDEN(sym) ".hidden " #sym
 #endif
 
+#if defined(IV_COMPILER_GCC)
+  #define IV_LV5_BREAKER_ASM_DIRECTIVE __asm__ __volatile__
+#else
+  #define IV_LV5_BREAKER_ASM_DIRECTIVE __asm__
+#endif
+
+#define IV_LV5_BREAKER_ASM_HEADER(s)\
+    ".globl "IV_LV5_BREAKER_SYMBOL(s)"\n"\
+    IV_LV5_BREAKER_HIDE(s)"\n"\
+    IV_LV5_BREAKER_SYMBOL(s)":"
+
+#define IV_LV5_BREAKER_ASM_DEFINE(ret, name, args)\
+    extern "C" inline ret name args;\
+    IV_LV5_BREAKER_ASM_DIRECTIVE(IV_LV5_BREAKER_ASM_HEADER(name));\
+    IV_LV5_BREAKER_ASM_DIRECTIVE
+
 namespace iv {
 namespace lv5 {
 
