@@ -96,19 +96,110 @@ class PolyIC : public IC, public core::IntrusiveList<PolyICUnit> {
   }
 };
 
-class LoadPropertyIC : public PolyIC {
+template<typename Derived>
+class ChainedPolyIC : public PolyIC {
+ public:
+  static const std::size_t kMaxPolyICSize = 5;
+
+  NativeCode* native_code() const { return native_code_; }
+  bool strict() const { return strict_; }
+
+  void BindOriginal(std::size_t from_original) {
+    from_original_ = from_original;
+    native_code()->assembler()->rewrite(
+        from_original_, Derived::ChainPath(), k64Size);
+  }
+
+ protected:
+  ChainedPolyIC(NativeCode* native_code, bool strict)
+    : from_original_(),
+      native_code_(native_code),
+      strict_(strict) {
+  }
+
+  template<typename Generator>
+  Unit* Generate(const Generator& gen) {
+    if (size() >= Derived::kMaxPolyICSize) {
+      return NULL;
+    }
+
+    Unit* ic = new Unit(Generator::kType);
+
+    NativeCode::Pages::Buffer buffer = native_code()->pages()->Gain(gen.size());
+    Xbyak::CodeGenerator as(buffer.size, buffer.ptr);
+    const bool generate_guard = empty();
+
+    if (generate_guard) {
+      Derived::GenerateGuardPrologue(&as);
+    }
+
+    as.inLocalLabel();
+    gen(static_cast<Derived*>(this), &as, ".EXIT");
+    // fail path
+    as.L(".EXIT");
+    const std::size_t pos = GenerateTail(&as);
+    ic->set_tail(const_cast<uint8_t*>(as.getCode()) + pos);
+    as.outLocalLabel();
+
+    ChainIC(ic, core::BitCast<uintptr_t>(as.getCode()));
+    if (generate_guard) {
+      Derived::GenerateGuardEpilogue(&as);
+    }
+    push_back(*ic);
+    assert(as.getSize() <= gen.size());
+    return ic;
+  }
+
+  void ChainIC(Unit* ic, uintptr_t code) {
+    if (empty()) {
+      // rewrite original
+      native_code()->assembler()->rewrite(from_original_, code, k64Size);
+    } else {
+      back().Redirect(code);
+    }
+
+    if ((size() + 1) == kMaxPolyICSize) {
+      // last one
+      ic->Redirect(Derived::GenericPath());
+    } else {
+      ic->Redirect(Derived::ChainPath());
+    }
+  }
+
+ private:
+  std::size_t from_original_;
+  NativeCode* native_code_;
+  bool strict_;
+};
+
+template<typename Derived>
+class PropertyIC : public ChainedPolyIC<Derived> {
+ public:
+  PropertyIC(NativeCode* native_code, bool strict)
+    : ChainedPolyIC<Derived>(native_code, strict) {
+  }
+
+  static void GenerateGuardPrologue(Xbyak::CodeGenerator* as) {
+    // check target is Cell
+    helper::TestConstant(as, rsi, detail::jsval64::kValueMask, r10);
+    as->jnz("POLY_IC_GUARD_GENERIC", Xbyak::CodeGenerator::T_NEAR);
+  }
+
+  static void GenerateGuardEpilogue(Xbyak::CodeGenerator* as) {
+    // They are used as last entry
+    as->L("POLY_IC_GUARD_GENERIC");
+    as->mov(rax, Derived::GenericPath());
+    as->jmp(rax);
+  }
+};
+
+class LoadPropertyIC : public PropertyIC<LoadPropertyIC> {
  public:
   static const std::size_t kMaxPolyICSize = 5;
 
   LoadPropertyIC(NativeCode* native_code, Symbol name)
-    : from_original_(),
-      native_code_(native_code),
+    : PropertyIC(native_code, false),
       name_(name) {
-  }
-
-  void BindOriginal(std::size_t from_original) {
-    from_original_ = from_original;
-    native_code()->assembler()->rewrite(from_original_, core::BitCast<uintptr_t>(&stub::LOAD_PROP), k64Size);
   }
 
   // load to rax
@@ -260,123 +351,56 @@ class LoadPropertyIC : public PolyIC {
   };
 
   void LoadOwnProperty(Context* ctx, Map* map, uint32_t offset) {
-    if (Unit* ic = Generate(ctx, LoadOwnPropertyCompiler(map, offset))) {
+    if (Unit* ic = Generate(LoadOwnPropertyCompiler(map, offset))) {
       ic->set_own(map);
     }
   }
 
   void LoadPrototypeProperty(Context* ctx,
                              Map* map, Map* proto, uint32_t offset) {
-    if (Unit* ic = Generate(ctx, LoadPrototypePropertyCompiler(map, proto, offset))) {
+    if (Unit* ic = Generate(LoadPrototypePropertyCompiler(map, proto, offset))) {
       ic->set_own(map);
       ic->set_proto(proto);
     }
   }
 
   void LoadChainProperty(Context* ctx, Chain* chain, Map* last, uint32_t offset) {
-    if (Unit* ic = Generate(ctx, LoadChainPropertyCompiler(chain, last, offset))) {
+    if (Unit* ic = Generate(LoadChainPropertyCompiler(chain, last, offset))) {
       ic->set_chain(chain);
       ic->set_own(last);
     }
   }
 
   void LoadArrayLength(Context* ctx) {
-    Generate(ctx, LoadArrayLengthCompiler());
+    Generate(LoadArrayLengthCompiler());
   }
 
   void LoadStringLength(Context* ctx) {
-    Generate(ctx, LoadStringLengthCompiler(ctx->global_data()->primitive_string_map()));
+    Generate(LoadStringLengthCompiler(ctx->global_data()->primitive_string_map()));
   }
 
-  NativeCode* native_code() const { return native_code_; }
   bool length_property() const { return name_ == symbol::length(); }
   Symbol name() const { return name_; }
 
+  static uintptr_t GenericPath() {
+    return core::BitCast<uintptr_t>(&stub::LOAD_PROP_GENERIC);
+  }
+
+  static uintptr_t ChainPath() {
+    return core::BitCast<uintptr_t>(&stub::LOAD_PROP);
+  }
+
  private:
-  void GenerateGuardPrologue(Xbyak::CodeGenerator* as) {
-    // check target is Cell
-    helper::TestConstant(as, rsi, detail::jsval64::kValueMask, r10);
-    as->jnz("POLY_IC_GUARD_GENERIC", Xbyak::CodeGenerator::T_NEAR);
-  }
-
-  void GenerateGuardEpilogue(Xbyak::CodeGenerator* as) {
-    // They are used as last entry
-    const uintptr_t call = core::BitCast<uintptr_t>(&stub::LOAD_PROP_GENERIC);
-    as->L("POLY_IC_GUARD_GENERIC");
-    as->mov(rax, call);
-    as->jmp(rax);
-  }
-
-  // main generation path
-  template<typename Generator>
-  Unit* Generate(Context* ctx, const Generator& gen) {
-    if (size() >= kMaxPolyICSize) {
-      return NULL;
-    }
-
-    Unit* ic = new Unit(Generator::kType);
-
-    NativeCode::Pages::Buffer buffer = native_code()->pages()->Gain(gen.size());
-    Xbyak::CodeGenerator as(buffer.size, buffer.ptr);
-    const bool generate_guard = empty();
-
-    if (generate_guard) {
-      GenerateGuardPrologue(&as);
-    }
-
-    as.inLocalLabel();
-    gen(this, &as, ".EXIT");
-    // fail path
-    as.L(".EXIT");
-    const std::size_t pos = GenerateTail(&as);
-    ic->set_tail(const_cast<uint8_t*>(as.getCode()) + pos);
-    as.outLocalLabel();
-
-    Chaining(ic, core::BitCast<uintptr_t>(as.getCode()));
-    if (generate_guard) {
-      GenerateGuardEpilogue(&as);
-    }
-    push_back(*ic);
-    assert(as.getSize() <= gen.size());
-    return ic;
-  }
-
-  void Chaining(Unit* ic, uintptr_t code) {
-    if (empty()) {
-      // rewrite original
-      native_code()->assembler()->rewrite(from_original_, code, k64Size);
-    } else {
-      back().Redirect(code);
-    }
-
-    if ((size() + 1) == kMaxPolyICSize) {
-      // last one
-      ic->Redirect(core::BitCast<uintptr_t>(&stub::LOAD_PROP_GENERIC));
-    } else {
-      ic->Redirect(core::BitCast<uintptr_t>(&stub::LOAD_PROP));
-    }
-  }
-
-  std::size_t from_original_;
-  NativeCode* native_code_;
   Symbol name_;
 };
 
-class StorePropertyIC : public PolyIC {
+class StorePropertyIC : public PropertyIC<StorePropertyIC> {
  public:
   static const std::size_t kMaxPolyICSize = 5;
 
   StorePropertyIC(NativeCode* native_code, Symbol name, bool strict)
-    : from_original_(),
-      native_code_(native_code),
-      name_(name),
-      strict_(strict) {
-  }
-
-  void BindOriginal(std::size_t from_original) {
-    from_original_ = from_original;
-    const uintptr_t call = core::BitCast<uintptr_t>(&stub::STORE_PROP);
-    native_code()->assembler()->rewrite(from_original_, call, k64Size);
+    : PropertyIC(native_code, strict),
+      name_(name) {
   }
 
   static void GenerateFastStore(Xbyak::CodeGenerator* as, const Xbyak::Reg64& reg, uint32_t offset) {
@@ -542,95 +566,27 @@ class StorePropertyIC : public PolyIC {
     }
   }
 
-  NativeCode* native_code() const { return native_code_; }
-  bool strict() const { return strict_; }
   Symbol name() const { return name_; }
 
+  static uintptr_t GenericPath() {
+    return core::BitCast<uintptr_t>(&stub::STORE_PROP_GENERIC);
+  }
+
+  static uintptr_t ChainPath() {
+    return core::BitCast<uintptr_t>(&stub::STORE_PROP);
+  }
+
  private:
-  void GenerateGuardPrologue(Xbyak::CodeGenerator* as) {
-    // check target is Cell
-    helper::TestConstant(as, rsi, detail::jsval64::kValueMask, r10);
-    as->jnz("POLY_IC_GUARD_GENERIC", Xbyak::CodeGenerator::T_NEAR);
-  }
-
-  void GenerateGuardEpilogue(Xbyak::CodeGenerator* as) {
-    // They are used as last entry
-    const uintptr_t call = core::BitCast<uintptr_t>(&stub::STORE_PROP_GENERIC);
-    as->L("POLY_IC_GUARD_GENERIC");
-    as->mov(rax, call);
-    as->jmp(rax);
-  }
-
-  template<typename Generator>
-  Unit* Generate(const Generator& gen) {
-    if (size() >= kMaxPolyICSize) {
-      return NULL;
-    }
-
-    Unit* ic = new Unit(Generator::kType);
-
-    NativeCode::Pages::Buffer buffer = native_code()->pages()->Gain(gen.size());
-    Xbyak::CodeGenerator as(buffer.size, buffer.ptr);
-    const bool generate_guard = empty();
-
-    if (generate_guard) {
-      GenerateGuardPrologue(&as);
-    }
-
-    as.inLocalLabel();
-    gen(this, &as, ".EXIT");
-    // fail path
-    as.L(".EXIT");
-    const std::size_t pos = GenerateTail(&as);
-    ic->set_tail(const_cast<uint8_t*>(as.getCode()) + pos);
-    as.outLocalLabel();
-
-    Chaining(ic, core::BitCast<uintptr_t>(as.getCode()));
-    if (generate_guard) {
-      GenerateGuardEpilogue(&as);
-    }
-    push_back(*ic);
-    assert(as.getSize() <= gen.size());
-    return ic;
-  }
-
-  void Chaining(Unit* ic, uintptr_t code) {
-    if (empty()) {
-      // rewrite original
-      native_code()->assembler()->rewrite(from_original_, code, k64Size);
-    } else {
-      back().Redirect(code);
-    }
-
-    if ((size() + 1) == kMaxPolyICSize) {
-      // last one
-      ic->Redirect(core::BitCast<uintptr_t>(&stub::STORE_PROP_GENERIC));
-    } else {
-      ic->Redirect(core::BitCast<uintptr_t>(&stub::STORE_PROP));
-    }
-  }
-
-  std::size_t from_original_;
-  NativeCode* native_code_;
   Symbol name_;
-  bool strict_;
 };
 
-class StoreElementIC : public PolyIC {
+class StoreElementIC : public ChainedPolyIC<StoreElementIC> {
  public:
   static const std::size_t kMaxPolyICSize = 5;
 
   StoreElementIC(NativeCode* native_code, bool strict, uint32_t index = UINT32_MAX)
-    : from_original_(),
-      native_code_(native_code),
-      index_(index),
-      strict_(strict) {
-  }
-
-  void BindOriginal(std::size_t from_original) {
-    from_original_ = from_original;
-    const uintptr_t call = core::BitCast<uintptr_t>(&stub::STORE_ELEMENT_INDEXED);
-    native_code()->assembler()->rewrite(from_original_, call, k64Size);
+    : ChainedPolyIC(native_code, strict),
+      index_(index) {
   }
 
   void StoreNewElement(Chain* chain) {
@@ -642,9 +598,23 @@ class StoreElementIC : public PolyIC {
   void Invalidate() {
   }
 
-  NativeCode* native_code() const { return native_code_; }
-  bool strict() const { return strict_; }
   uint32_t index() const { return index_; }
+
+  static uintptr_t GenericPath() {
+    return core::BitCast<uintptr_t>(&stub::STORE_ELEMENT_GENERIC);
+  }
+
+  static uintptr_t ChainPath() {
+    return core::BitCast<uintptr_t>(&stub::STORE_ELEMENT_INDEXED);
+  }
+
+  static void GenerateGuardPrologue(Xbyak::CodeGenerator* as) {
+    // do nothing
+  }
+
+  static void GenerateGuardEpilogue(Xbyak::CodeGenerator* as) {
+    // do nothing
+  }
 
  private:
   class StoreNewElementCompiler {
@@ -717,51 +687,7 @@ class StoreElementIC : public PolyIC {
     Chain* chain_;
   };
 
-  template<typename Generator>
-  Unit* Generate(const Generator& gen) {
-    if (size() >= kMaxPolyICSize) {
-      return NULL;
-    }
-
-    Unit* ic = new Unit(Generator::kType);
-
-    NativeCode::Pages::Buffer buffer = native_code()->pages()->Gain(gen.size());
-    Xbyak::CodeGenerator as(buffer.size, buffer.ptr);
-
-    as.inLocalLabel();
-    gen(this, &as, ".EXIT");
-    // fail path
-    as.L(".EXIT");
-    const std::size_t pos = GenerateTail(&as);
-    ic->set_tail(const_cast<uint8_t*>(as.getCode()) + pos);
-    as.outLocalLabel();
-
-    Chaining(ic, core::BitCast<uintptr_t>(as.getCode()));
-    push_back(*ic);
-    assert(as.getSize() <= gen.size());
-    return ic;
-  }
-
-  void Chaining(Unit* ic, uintptr_t code) {
-    if (empty()) {
-      // rewrite original
-      native_code()->assembler()->rewrite(from_original_, code, k64Size);
-    } else {
-      back().Redirect(code);
-    }
-
-    if ((size() + 1) == kMaxPolyICSize) {
-      // last one
-      ic->Redirect(core::BitCast<uintptr_t>(&stub::STORE_ELEMENT_GENERIC));
-    } else {
-      ic->Redirect(core::BitCast<uintptr_t>(&stub::STORE_ELEMENT_INDEXED));
-    }
-  }
-
-  std::size_t from_original_;
-  NativeCode* native_code_;
   uint32_t index_;
-  bool strict_;
 };
 
 } } }  // namespace iv::lv5::breaker
