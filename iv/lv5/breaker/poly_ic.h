@@ -115,6 +115,7 @@ class LoadPropertyIC : public PolyIC {
   static void GenerateFastLoad(Xbyak::CodeGenerator* as,
                                const Xbyak::Reg64& reg, uint32_t offset) {
     const std::ptrdiff_t data_offset =
+        IV_CAST_OFFSET(radio::Cell*, JSObject*) +
         JSObject::SlotsOffset() +
         JSObject::Slots::DataOffset();
     as->mov(rax, qword[reg + data_offset]);
@@ -217,7 +218,7 @@ class LoadPropertyIC : public PolyIC {
 
     std::size_t size() const { return kSize; }
     void operator()(LoadPropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
-      const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
+      const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSCell*) + JSCell::ClassOffset();
       static const uintptr_t cls = core::BitCast<uintptr_t>(JSArray::GetClass());
       // check target class is Array
       helper::CmpConstant(as, qword[rsi + offset], cls, r10);

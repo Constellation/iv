@@ -49,8 +49,10 @@ class IC {
       const char* fail,
       Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
     const std::size_t offset = helper::Generate64Mov(as, tmp);
+    const std::size_t map_offset =
+        IV_CAST_OFFSET(radio::Cell*, JSCell*) + JSCell::MapOffset();
     as->rewrite(offset, core::BitCast<uintptr_t>(map), k64Size);
-    as->cmp(tmp, qword[obj + JSObject::MapOffset()]);
+    as->cmp(tmp, qword[obj + map_offset]);
     as->jne(fail, type);
     return offset;
   }
@@ -63,8 +65,9 @@ class IC {
       Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
     // in uint32_t
     const uintptr_t ptr = core::BitCast<uintptr_t>(map);
-    const bool packed = helper::CmpConstant(
-        as, qword[obj + JSObject::MapOffset()], ptr, tmp);
+    const std::size_t map_offset =
+        IV_CAST_OFFSET(radio::Cell*, JSCell*) + JSCell::MapOffset();
+    const bool packed = helper::CmpConstant(as, qword[obj + map_offset], ptr, tmp);
     as->jne(fail, type);
     return packed;
   }
