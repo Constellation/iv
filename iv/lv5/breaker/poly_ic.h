@@ -136,9 +136,9 @@ class LoadPropertyIC : public PolyIC {
 
     void operator()(LoadPropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
       // own map guard
-      IC::TestMapConstant(as, map_, r8, r10, fail);
+      IC::TestMapConstant(as, map_, rsi, r10, fail);
       // load
-      LoadPropertyIC::GenerateFastLoad(as, r8, offset_);
+      LoadPropertyIC::GenerateFastLoad(as, rsi, offset_);
     }
 
    private:
@@ -161,7 +161,7 @@ class LoadPropertyIC : public PolyIC {
 
     void operator()(LoadPropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
       // own map guard
-      IC::TestMapConstant(as, map_, r8, r10, fail);
+      IC::TestMapConstant(as, map_, rsi, r10, fail);
       // prototype map guard
       as->mov(r11, core::BitCast<uintptr_t>(map_->prototype()));
       IC::TestMapConstant(as, prototype_, r11, r10, fail);
@@ -190,7 +190,7 @@ class LoadPropertyIC : public PolyIC {
 
     void operator()(LoadPropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
       JSObject* prototype = NULL;
-      as->mov(r11, r8);
+      as->mov(r11, rsi);
       for (Chain::const_iterator it = chain_->begin(),
            last = chain_->end(); it != last; ++it) {
         Map* map = *it;
@@ -220,11 +220,11 @@ class LoadPropertyIC : public PolyIC {
       const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
       static const uintptr_t cls = core::BitCast<uintptr_t>(JSArray::GetClass());
       // check target class is Array
-      helper::CmpConstant(as, qword[r8 + offset], cls, r10);
+      helper::CmpConstant(as, qword[rsi + offset], cls, r10);
       as->jne(fail);
       // load
       const std::size_t length = JSObject::ElementsOffset() + IndexedElements::LengthOffset();
-      as->mov(eax, word[r8 + length]);
+      as->mov(eax, word[rsi + length]);
       as->cmp(eax, INT32_MAX);
       as->ja(fail);
       as->or(rax, r15);
@@ -245,11 +245,11 @@ class LoadPropertyIC : public PolyIC {
 
     void operator()(LoadPropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
       // own map guard
-      IC::TestMapConstant(as, map_, r8, r10, fail);
+      IC::TestMapConstant(as, map_, rsi, r10, fail);
       // load string length
       const std::ptrdiff_t length_offset =
           IV_CAST_OFFSET(radio::Cell*, JSString*) + JSString::SizeOffset();
-      as->mov(eax, word[r8 + length_offset]);
+      as->mov(eax, word[rsi + length_offset]);
       as->or(rax, r15);
       as->ret();
     }
@@ -296,8 +296,6 @@ class LoadPropertyIC : public PolyIC {
     // check target is Cell
     helper::TestConstant(as, rsi, detail::jsval64::kValueMask, r10);
     as->jnz("POLY_IC_GUARD_GENERIC", Xbyak::CodeGenerator::T_NEAR);
-    // target is guaranteed as cell
-    as->mov(r8, rsi);
   }
 
   void GenerateGuardEpilogue(Xbyak::CodeGenerator* as) {
