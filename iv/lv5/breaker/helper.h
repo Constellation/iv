@@ -10,16 +10,13 @@ namespace breaker {
 namespace helper {
 
 // helper functions for code generation
-inline std::size_t Generate64Mov(Xbyak::CodeGenerator* as, const Xbyak::Reg64& reg) {
+inline std::size_t Generate64Mov(Xbyak::CodeGenerator* as,
+                                 const Xbyak::Reg64& reg = rax) {
   const uint64_t dummy64 = UINT64_C(0x0FFF000000000000);
   const std::size_t k64MovImmOffset = 2;
   const std::size_t result = as->getSize() + k64MovImmOffset;
   as->mov(reg, dummy64);
   return result;
-}
-
-inline std::size_t Generate64Mov(Xbyak::CodeGenerator* as) {
-  return Generate64Mov(as, rax);
 }
 
 inline bool MovConstant(
