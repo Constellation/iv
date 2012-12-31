@@ -1760,9 +1760,8 @@ JSVal VM::Execute(Frame* start, Error* e) {
         // opcode | (jmp : dst | iterator)
         NativeIterator* it =
             static_cast<NativeIterator*>(REG(instr[1].jump.i16[1]).cell());
-        if (it->Has()) {
-          const Symbol sym = it->Get();
-          it->Next();
+        const Symbol sym = it->Next();
+        if (sym != symbol::kDummySymbol) {
           REG(instr[1].jump.i16[0]) = JSString::New(ctx(), sym);
         } else {
           JUMPBY(instr[1].jump.to);

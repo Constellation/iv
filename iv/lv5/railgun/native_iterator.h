@@ -18,16 +18,13 @@ class NativeIterator
       iter_() {
   }
 
-  Symbol Get() const {
-    return *iter_;
-  }
-
-  bool Has() const {
-    return iter_ != names().end();
-  }
-
-  void Next() {
-    ++iter_;
+  inline Symbol Next() {
+    if (iter_ != names().end()) {
+      const Symbol result = *iter_;
+      ++iter_;
+      return result;
+    }
+    return symbol::kDummySymbol;
   }
 
   void Fill(Context* ctx, JSObject* obj) {
@@ -42,10 +39,11 @@ class NativeIterator
     for (uint32_t i = 0, len = str->size(); i < len; ++i) {
       Add(i);
     }
-    JSObject* proto = ctx->global_data()->string_prototype();
+    JSObject* proto = str->prototype();
     proto->GetPropertyNames(ctx, LevelUp(), EXCLUDE_NOT_ENUMERABLE);
     iter_ = names().begin();
   }
+
  private:
   PropertyNamesCollector::Names::const_iterator iter_;
 };

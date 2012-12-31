@@ -73,9 +73,8 @@ inline Rep FORIN_SETUP(Frame* stack, JSVal enumerable) {
 inline Rep FORIN_ENUMERATE(Context* ctx, JSVal iterator) {
   railgun::NativeIterator* it =
       static_cast<railgun::NativeIterator*>(iterator.cell());
-  if (it->Has()) {
-    const Symbol sym = it->Get();
-    it->Next();
+  const Symbol sym = it->Next();
+  if (sym != symbol::kDummySymbol) {
     return Extract(JSString::New(ctx, sym));
   }
   return 0;
