@@ -9,6 +9,36 @@ namespace iv {
 namespace lv5 {
 namespace breaker {
 
+// For Xbyak
+class MainCodeAllocator : public Xbyak::Allocator {
+ public:
+  MainCodeAllocator()
+    : Xbyak::Allocator(),
+      pointer_(NULL),
+      locked_(false) { }
+
+  virtual ~MainCodeAllocator() {
+    if (pointer_) {
+      Xbyak::Allocator::free(pointer_);
+    }
+  }
+
+	virtual void free(uint8 *p) {
+    if (!locked_) {
+      Xbyak::Allocator::free(p);
+    } else {
+      assert(pointer_ == NULL);
+      pointer_ = p;
+    }
+  }
+
+  void Lock() { locked_ = true; }
+  void Unlock() { locked_ = false; }
+ private:
+  uint8_t* pointer_;
+  bool locked_;
+};
+
 class Assembler : public Xbyak::CodeGenerator {
  public:
   friend class Compiler;
