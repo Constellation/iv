@@ -100,41 +100,38 @@ class Compiler {
 
     // Repatch phase
     // link jump subroutine
-    {
-      for (UnresolvedAddressMap::const_iterator
-           it = unresolved_address_map_.begin(),
-           last = unresolved_address_map_.end();
-           it != last; ++it) {
-        uint64_t ptr =
-            core::BitCast<uint64_t>(asm_->GainExecutableByOffset(it->first));
-        assert(ptr % 2 == 0);
-        // encode ptr value to JSVal invalid number
-        // double offset value is
-        // 1000000000000000000000000000000000000000000000000
-        ptr += 0x1;
-        const uint64_t result = RotateLeft64(ptr, kEncodeRotateN);
-        it->second.Repatch(asm_, result);
-      }
+    for (UnresolvedAddressMap::const_iterator
+         it = unresolved_address_map_.begin(),
+         last = unresolved_address_map_.end();
+         it != last; ++it) {
+      uint64_t ptr =
+          core::BitCast<uint64_t>(asm_->GainExecutableByOffset(it->first));
+      assert(ptr % 2 == 0);
+      // encode ptr value to JSVal invalid number
+      // double offset value is
+      // 1000000000000000000000000000000000000000000000000
+      ptr += 0x1;
+      const uint64_t result = RotateLeft64(ptr, kEncodeRotateN);
+      it->second.Repatch(asm_, result);
     }
+
     // link exception handlers
-    {
-      for (Codes::const_iterator it = codes_.begin(),
-           last = codes_.end(); it != last; ++it) {
-        railgun::Code* code = *it;
-        const Instruction* first_instr = code->begin();
-        railgun::ExceptionTable& table = code->exception_table();
-        for (railgun::ExceptionTable::iterator it = table.begin(),
-             last = table.end(); it != last; ++it) {
-          railgun::Handler& handler = *it;
-          const Instruction* begin = first_instr + handler.begin();
-          const Instruction* end = first_instr + handler.end();
-          assert(handler_links_.find(begin) != handler_links_.end());
-          assert(handler_links_.find(end) != handler_links_.end());
-          handler.set_program_counter_begin(
-              asm_->GainExecutableByOffset(handler_links_.find(begin)->second));
-          handler.set_program_counter_end(
-              asm_->GainExecutableByOffset(handler_links_.find(end)->second));
-        }
+    for (Codes::const_iterator it = codes_.begin(),
+         last = codes_.end(); it != last; ++it) {
+      railgun::Code* code = *it;
+      const Instruction* first_instr = code->begin();
+      railgun::ExceptionTable& table = code->exception_table();
+      for (railgun::ExceptionTable::iterator it = table.begin(),
+           last = table.end(); it != last; ++it) {
+        railgun::Handler& handler = *it;
+        const Instruction* begin = first_instr + handler.begin();
+        const Instruction* end = first_instr + handler.end();
+        assert(handler_links_.find(begin) != handler_links_.end());
+        assert(handler_links_.find(end) != handler_links_.end());
+        handler.set_program_counter_begin(
+            asm_->GainExecutableByOffset(handler_links_.find(begin)->second));
+        handler.set_program_counter_end(
+            asm_->GainExecutableByOffset(handler_links_.find(end)->second));
       }
     }
   }
