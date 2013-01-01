@@ -23,7 +23,7 @@ class MainCodeAllocator : public Xbyak::Allocator {
     }
   }
 
-	virtual void free(uint8 *p) {
+	virtual void free(uint8_t *p) {
     if (!locked_) {
       Xbyak::Allocator::free(p);
     } else {
