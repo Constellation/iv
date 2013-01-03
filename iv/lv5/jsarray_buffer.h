@@ -13,13 +13,13 @@ inline T GetFromBuffer(
     uint8_t bytes[sizeof(T)];
     T raw;
   } data;
-  if (is_little_endian) {
+  if (is_little_endian == !!core::kLittleEndian) {
     for (std::size_t i = 0; i < sizeof(T); ++i) {
-      data.bytes[sizeof(T) - i - 1] = bytes[i];
+      data.bytes[i] = bytes[i];
     }
   } else {
     for (std::size_t i = 0; i < sizeof(T); ++i) {
-      data.bytes[i] = bytes[i];
+      data.bytes[sizeof(T) - i - 1] = bytes[i];
     }
   }
   return data.raw;
@@ -37,7 +37,7 @@ inline void SetToBuffer(uint8_t* bytes, bool is_little_endian, T value) {
     T raw;
   } data;
   data.raw = value;
-  if (is_little_endian == core::kLittleEndian) {
+  if (is_little_endian == !!core::kLittleEndian) {
     for (std::size_t i = 0; i < sizeof(T); ++i) {
       bytes[i] = data.bytes[i];
     }
@@ -104,7 +104,7 @@ class JSArrayBuffer : public JSObject {
     const uint32_t slide = offset + index * sizeof(Type);
     const uint8_t* const ptr = data_.u8 + slide;
     const uintptr_t ptr_value = reinterpret_cast<uintptr_t>(ptr);
-    if (is_little_endian == core::kLittleEndian && ptr_value % sizeof(Type) == 0) {
+    if (is_little_endian == !!core::kLittleEndian && ptr_value % sizeof(Type) == 0) {
       return *reinterpret_cast<const Type*>(ptr);
     }
     return GetFromBuffer<Type>(ptr, is_little_endian);
@@ -115,7 +115,7 @@ class JSArrayBuffer : public JSObject {
     const uint32_t slide = offset + index * sizeof(Type);
     uint8_t* const ptr = data_.u8 + slide;
     const uintptr_t ptr_value = reinterpret_cast<uintptr_t>(ptr);
-    if (is_little_endian == core::kLittleEndian && ptr_value % sizeof(Type) == 0) {
+    if (is_little_endian == !!core::kLittleEndian && ptr_value % sizeof(Type) == 0) {
       *reinterpret_cast<Type*>(ptr) = value;
       return;
     }
