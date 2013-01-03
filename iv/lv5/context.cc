@@ -1332,7 +1332,7 @@ inline void Context::InitTypedArray(const ClassSlot& func_cls, bind::Object* glo
           Intern(cls->name));
   struct ClassSlot slot = {
     TypedArray::GetClass(),
-    Intern(IV_TO_STRING(cls->name)),
+    Intern(cls->name),
     JSString::NewAsciiString(this, cls->name, &dummy),
     constructor,
     proto
