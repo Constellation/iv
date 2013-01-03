@@ -510,6 +510,11 @@ class TypeRecord {
         railgun::FrameConstant<>::kConstantOffset;
   }
 
+  static bool IsThis(register_t offset) {
+    return (offset - railgun::FrameConstant<>::kFrameSize) ==
+        railgun::FrameConstant<>::kThisOffset;
+  }
+
   static uint32_t ExtractConstantOffset(register_t reg) {
     assert(IsConstantID(reg));
     return reg -
@@ -534,6 +539,9 @@ class TypeRecord {
   TypeEntry Get(register_t offset) {
     if (IsConstantID(offset)) {
       return TypeEntry(code_->constants()[ExtractConstantOffset(offset)]);
+    }
+    if (!code_->strict() && IsThis(offset)) {
+      return TypeEntry(Type::Object());
     }
     return record_[offset];
   }
