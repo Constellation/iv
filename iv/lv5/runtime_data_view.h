@@ -203,7 +203,7 @@ inline JSVal DataViewSetInt16(const Arguments& args, Error* e) {
   }
   const uint32_t offset = args.At(0).ToUInt32(ctx, IV_LV5_ERROR(e));
   const int16_t value = args.At(1).ToInt32(ctx, IV_LV5_ERROR(e));
-  static_cast<JSDataView*>(view)->SetValue<int16_t>(offset, args.At(1).ToBoolean(), value, e);
+  static_cast<JSDataView*>(view)->SetValue<int16_t>(offset, args.At(2).ToBoolean(), value, e);
   return JSUndefined;
 }
 
@@ -219,7 +219,7 @@ inline JSVal DataViewSetUint16(const Arguments& args, Error* e) {
   }
   const uint32_t offset = args.At(0).ToUInt32(ctx, IV_LV5_ERROR(e));
   const uint16_t value = args.At(1).ToUInt32(ctx, IV_LV5_ERROR(e));
-  static_cast<JSDataView*>(view)->SetValue<uint16_t>(offset, args.At(1).ToBoolean(), value, e);
+  static_cast<JSDataView*>(view)->SetValue<uint16_t>(offset, args.At(2).ToBoolean(), value, e);
   return JSUndefined;
 }
 
@@ -235,7 +235,7 @@ inline JSVal DataViewSetInt32(const Arguments& args, Error* e) {
   }
   const uint32_t offset = args.At(0).ToUInt32(ctx, IV_LV5_ERROR(e));
   const int32_t value = args.At(1).ToInt32(ctx, IV_LV5_ERROR(e));
-  static_cast<JSDataView*>(view)->SetValue<int32_t>(offset, args.At(1).ToBoolean(), value, e);
+  static_cast<JSDataView*>(view)->SetValue<int32_t>(offset, args.At(2).ToBoolean(), value, e);
   return JSUndefined;
 }
 
@@ -251,7 +251,7 @@ inline JSVal DataViewSetUint32(const Arguments& args, Error* e) {
   }
   const uint32_t offset = args.At(0).ToUInt32(ctx, IV_LV5_ERROR(e));
   const uint32_t value = args.At(1).ToUInt32(ctx, IV_LV5_ERROR(e));
-  static_cast<JSDataView*>(view)->SetValue<uint32_t>(offset, args.At(1).ToBoolean(), value, e);
+  static_cast<JSDataView*>(view)->SetValue<uint32_t>(offset, args.At(2).ToBoolean(), value, e);
   return JSUndefined;
 }
 
@@ -267,7 +267,7 @@ inline JSVal DataViewSetFloat32(const Arguments& args, Error* e) {
   }
   const uint32_t offset = args.At(0).ToUInt32(ctx, IV_LV5_ERROR(e));
   const float value = args.At(1).ToNumber(ctx, IV_LV5_ERROR(e));
-  static_cast<JSDataView*>(view)->SetValue<float>(offset, args.At(1).ToBoolean(), value, e);
+  static_cast<JSDataView*>(view)->SetValue<float>(offset, args.At(2).ToBoolean(), value, e);
   return JSUndefined;
 }
 
