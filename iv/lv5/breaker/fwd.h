@@ -111,14 +111,14 @@ IV_ALWAYS_INLINE Rep Extract(JSVal val) {
 }
 
 // Representation of paired return value
-struct ReturnPair {
+struct RepPair {
   uint64_t rax;
-  uint64_t second;
+  uint64_t rdx;
 };
 
 template<typename T, typename U>
-IV_ALWAYS_INLINE ReturnPair Extract(T first, U second) {
-  const ReturnPair pair = {
+IV_ALWAYS_INLINE RepPair Extract(T first, U second) {
+  const RepPair pair = {
     core::BitCast<uint64_t>(first),
     core::BitCast<uint64_t>(second)
   };

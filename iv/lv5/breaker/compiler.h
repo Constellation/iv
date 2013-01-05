@@ -2300,16 +2300,13 @@ class Compiler {
       assert(!IsConstantID(offset));
       asm_->lea(rdx, ptr[r13 + offset * kJSValSize]);
       asm_->mov(ecx, argc_with_this);
-      asm_->mov(r8, rsp);
-      asm_->mov(qword[rsp], r13);
-      asm_->mov(r9, core::BitCast<uint64_t>(instr));
+      asm_->mov(r8, core::BitCast<uint64_t>(instr));
       asm_->Call(&stub::CALL);
-      asm_->mov(rcx, qword[rsp]);
-      asm_->cmp(rcx, r13);
-      asm_->je(".CALL_EXIT");
+      asm_->test(rdx, rdx);
+      asm_->jz(".CALL_EXIT");
 
       // move to new Frame
-      asm_->mov(r13, rcx);
+      asm_->mov(r13, rdx);
       asm_->call(rax);
 
       // unwind Frame
@@ -2343,16 +2340,13 @@ class Compiler {
       assert(!IsConstantID(offset));
       asm_->lea(rdx, ptr[r13 + offset * kJSValSize]);
       asm_->mov(ecx, argc_with_this);
-      asm_->mov(r8, rsp);
-      asm_->mov(qword[rsp], r13);
-      asm_->mov(r9, core::BitCast<uint64_t>(instr));
+      asm_->mov(r8, core::BitCast<uint64_t>(instr));
       asm_->Call(&stub::CONSTRUCT);
-      asm_->mov(rcx, qword[rsp]);
-      asm_->cmp(rcx, r13);
-      asm_->je(".CONSTRUCT_EXIT");
+      asm_->test(rdx, rdx);
+      asm_->jz(".CONSTRUCT_EXIT");
 
       // move to new Frame
-      asm_->mov(r13, rcx);
+      asm_->mov(r13, rdx);
       asm_->call(rax);
 
       // unwind Frame
@@ -2400,16 +2394,14 @@ class Compiler {
       assert(!IsConstantID(offset));
       asm_->lea(rdx, ptr[r13 + offset * kJSValSize]);
       asm_->mov(ecx, argc_with_this);
-      asm_->mov(r8, rsp);
-      asm_->mov(qword[rsp], r13);
-      asm_->mov(r9, core::BitCast<uint64_t>(instr));
+      asm_->mov(r8, core::BitCast<uint64_t>(instr));
+      asm_->mov(r9, r13);
       asm_->Call(&stub::EVAL);
-      asm_->mov(rcx, qword[rsp]);
-      asm_->cmp(rcx, r13);
-      asm_->je(".CALL_EXIT");
+      asm_->test(rdx, rdx);
+      asm_->jz(".CALL_EXIT");
 
       // move to new Frame
-      asm_->mov(r13, rcx);
+      asm_->mov(r13, rdx);
       asm_->call(rax);
 
       // unwind Frame
@@ -2422,7 +2414,7 @@ class Compiler {
       asm_->jge(".CALL_UNWIND_OLD");
       asm_->mov(rcx, r10);
 
-      // rcx is new stack pointer
+      // rdx is new stack pointer
       asm_->L(".CALL_UNWIND_OLD");
       asm_->mov(ptr[r12 + (railgun::Context::VMOffset() + railgun::VM::StackOffset() + railgun::Stack::StackPointerOffset())], rcx);
       asm_->mov(ptr[r12 + (railgun::Context::VMOffset() + railgun::VM::StackOffset() + railgun::Stack::CurrentFrameOffset())], r13);
