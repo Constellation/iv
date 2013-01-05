@@ -13,11 +13,6 @@
 namespace iv {
 namespace lv5 {
 namespace breaker {
-
-inline Rep Extract(JSVal val) {
-  return val.Layout().bytes_;
-}
-
 namespace stub {
 
 #define IV_LV5_BREAKER_RAISE()\

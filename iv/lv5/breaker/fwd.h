@@ -106,8 +106,25 @@ struct Frame {
 
 // Representation of JSVal, it is uint64_t in 64bit system
 typedef uint64_t Rep;
+IV_ALWAYS_INLINE Rep Extract(JSVal val) {
+  return val.Layout().bytes_;
+}
 
-Rep Extract(JSVal val);
+// Representation of paired return value
+struct ReturnPair {
+  uint64_t rax;
+  uint64_t second;
+};
+
+template<typename T, typename U>
+IV_ALWAYS_INLINE ReturnPair Extract(T first, U second) {
+  const ReturnPair pair = {
+    core::BitCast<uint64_t>(first),
+    core::BitCast<uint64_t>(second)
+  };
+  return pair;
+}
+
 void* SearchExceptionHandler(void* pc, void** rsp,
                              Frame* stack, railgun::Frame* frame);
 JSVal breaker_prologue(Context* ctx,
