@@ -114,6 +114,10 @@ class Arguments : private core::Noncopyable<> {
     }
   }
 
+  bool IsDefined(size_type n) const {
+    return n < size_;
+  }
+
   Context* ctx() const { return ctx_; }
 
   inline JSVal this_binding() const {

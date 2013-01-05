@@ -369,5 +369,21 @@ inline JSVal MathCbrt(const Arguments& args, Error* e) {
   return JSNaN;
 }
 
+inline JSVal MathImul(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Math.imul", args, e);
+  uint32_t first = 0;
+  uint32_t second = 0;
+  if (args.IsDefined(0)) {
+    first = args[0].ToUInt32(args.ctx(), IV_LV5_ERROR(e));
+  }
+  if (args.IsDefined(1)) {
+    second = args[1].ToUInt32(args.ctx(), IV_LV5_ERROR(e));
+  }
+  const uint32_t product = first * second;
+  const int32_t result =
+      product > INT32_MAX ? INT32_MIN + (product - INT32_MAX - 1) : product;
+  return JSVal::Int32(result);
+}
+
 } } }  // namespace iv::lv5::runtime
 #endif  // IV_LV5_RUNTIME_MATH_H_
