@@ -38,12 +38,12 @@ namespace lv5 {
 namespace railgun {
 
 
-Context* VM::ctx() const {
+inline Context* VM::ctx() const {
   return static_cast<Context*>(Operation::ctx());
 }
 
 // Global
-JSVal VM::Run(Code* code, Error* e) {
+inline JSVal VM::Run(Code* code, Error* e) {
   return RunEval(code,
                  ctx()->global_env(),
                  ctx()->global_env(),
@@ -51,11 +51,11 @@ JSVal VM::Run(Code* code, Error* e) {
 }
 
 // Eval
-JSVal VM::RunEval(Code* code,
-                  JSEnv* variable_env,
-                  JSEnv* lexical_env,
-                  JSVal this_binding,
-                  Error* e) {
+inline JSVal VM::RunEval(Code* code,
+                         JSEnv* variable_env,
+                         JSEnv* lexical_env,
+                         JSVal this_binding,
+                         Error* e) {
   ScopedArguments args(ctx(), 0, IV_LV5_ERROR(e));
   args.set_this_binding(this_binding);
   Frame* frame = stack_.NewEvalFrame(
@@ -81,7 +81,7 @@ JSVal VM::RunEval(Code* code,
   return res;
 }
 
-JSVal VM::Execute(Arguments* args, JSVMFunction* func, Error* e) {
+inline JSVal VM::Execute(Arguments* args, JSVMFunction* func, Error* e) {
   Frame* frame = stack_.NewCodeFrame(
       ctx(),
       args->ExtractBase(),
@@ -107,7 +107,7 @@ JSVal VM::Execute(Arguments* args, JSVMFunction* func, Error* e) {
   return res;
 }
 
-JSVal VM::Execute(Frame* start, Error* e) {
+inline JSVal VM::Execute(Frame* start, Error* e) {
 #if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
   if (!start) {
     // if start frame is NULL, this pass is getting labels table for

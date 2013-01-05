@@ -22,13 +22,13 @@ class VM : private Operation {
   static const int32_t kJumpFromReturn = 1;
   static const int32_t kJumpFromFinally = 2;
 
-  inline JSVal Run(Code* code, Error* e);
+  JSVal Run(Code* code, Error* e);
 
-  inline JSVal RunEval(Code* code,
-                       JSEnv* variable_env, JSEnv* lexical_env,
-                       JSVal this_binding, Error* e);
+  JSVal RunEval(Code* code,
+                JSEnv* variable_env, JSEnv* lexical_env,
+                JSVal this_binding, Error* e);
 
-  inline JSVal Execute(Arguments* args, JSVMFunction* func, Error* e);
+  JSVal Execute(Arguments* args, JSVMFunction* func, Error* e);
 
   // normal pass
   explicit VM(lv5::Context* ctx)
@@ -108,7 +108,7 @@ class VM : private Operation {
  private:
   // internal Execute
   // VM main routine
-  inline JSVal Execute(Frame* frame, Error* e);
+  JSVal Execute(Frame* frame, Error* e);
 
   static void VerifyDynamicEnvironment(Frame* frame) {
     JSEnv* env = frame->lexical_env()->outer();
