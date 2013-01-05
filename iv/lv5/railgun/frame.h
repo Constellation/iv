@@ -62,7 +62,7 @@ struct Frame {
   typedef std::iterator_traits<iterator>::difference_type difference_type;
   typedef std::size_t size_type;
 
-  void MaterializeErrorStack(Context* ctx,
+  void MaterializeErrorStack(lv5::Context* ctx,
                              Error* e, const Instruction* instr) const {
     if (!e->RequireMaterialize(ctx)) {
       return;
@@ -82,7 +82,7 @@ struct Frame {
     e->set_stack(stack);
   }
 
-  void InitThisBinding(Context* ctx) {
+  void InitThisBinding(lv5::Context* ctx) {
     if (!code()->strict()) {
       const JSVal this_value = GetThis();
       if (this_value.IsNullOrUndefined()) {

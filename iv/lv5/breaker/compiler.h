@@ -2324,9 +2324,8 @@ class Compiler {
 
       // rcx is new stack pointer
       asm_->L(".CALL_UNWIND_OLD");
-      asm_->mov(r10, ptr[r12 + IV_OFFSETOF(Context, vm_)]);
-      asm_->mov(ptr[r10 + (railgun::VM::StackOffset() + railgun::Stack::StackPointerOffset())], rcx);
-      asm_->mov(ptr[r10 + (railgun::VM::StackOffset() + railgun::Stack::CurrentFrameOffset())], r13);
+      asm_->mov(ptr[r12 + (railgun::Context::VMOffset() + railgun::VM::StackOffset() + railgun::Stack::StackPointerOffset())], rcx);
+      asm_->mov(ptr[r12 + (railgun::Context::VMOffset() + railgun::VM::StackOffset() + railgun::Stack::CurrentFrameOffset())], r13);
 
       asm_->L(".CALL_EXIT");
     }
@@ -2368,9 +2367,8 @@ class Compiler {
 
       // rcx is new stack pointer
       asm_->L(".CALL_UNWIND_OLD");
-      asm_->mov(r10, ptr[r12 + IV_OFFSETOF(Context, vm_)]);
-      asm_->mov(ptr[r10 + (railgun::VM::StackOffset() + railgun::Stack::StackPointerOffset())], rcx);
-      asm_->mov(ptr[r10 + (railgun::VM::StackOffset() + railgun::Stack::CurrentFrameOffset())], r13);
+      asm_->mov(ptr[r12 + (railgun::Context::VMOffset() + railgun::VM::StackOffset() + railgun::Stack::StackPointerOffset())], rcx);
+      asm_->mov(ptr[r12 + (railgun::Context::VMOffset() + railgun::VM::StackOffset() + railgun::Stack::CurrentFrameOffset())], r13);
 
       // after call of JS Function
       // rax is result value
@@ -2426,9 +2424,8 @@ class Compiler {
 
       // rcx is new stack pointer
       asm_->L(".CALL_UNWIND_OLD");
-      asm_->mov(r10, ptr[r12 + IV_OFFSETOF(Context, vm_)]);
-      asm_->mov(ptr[r10 + (railgun::VM::StackOffset() + railgun::Stack::StackPointerOffset())], rcx);
-      asm_->mov(ptr[r10 + (railgun::VM::StackOffset() + railgun::Stack::CurrentFrameOffset())], r13);
+      asm_->mov(ptr[r12 + (railgun::Context::VMOffset() + railgun::VM::StackOffset() + railgun::Stack::StackPointerOffset())], rcx);
+      asm_->mov(ptr[r12 + (railgun::Context::VMOffset() + railgun::VM::StackOffset() + railgun::Stack::CurrentFrameOffset())], r13);
 
       asm_->L(".CALL_EXIT");
     }

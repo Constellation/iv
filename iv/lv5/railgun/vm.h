@@ -30,11 +30,17 @@
 #include <iv/lv5/railgun/stack.h>
 #include <iv/lv5/railgun/exception.h>
 #include <iv/lv5/railgun/direct_threading.h>
+#include <iv/lv5/railgun/context_fwd.h>
 #include <iv/lv5/radio/radio.h>
 
 namespace iv {
 namespace lv5 {
 namespace railgun {
+
+
+Context* VM::ctx() const {
+  return static_cast<Context*>(Operation::ctx());
+}
 
 // Global
 JSVal VM::Run(Code* code, Error* e) {

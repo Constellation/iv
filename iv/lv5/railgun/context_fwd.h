@@ -3,6 +3,7 @@
 #include <gc/gc_cpp.h>
 #include <iv/lv5/railgun/fwd.h>
 #include <iv/lv5/railgun/lru_code_map.h>
+#include <iv/lv5/railgun/vm_fwd.h>
 #include <iv/lv5/factory.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/breaker/fwd.h>
@@ -24,9 +25,7 @@ class Context : public lv5::Context {
 
   ~Context();
 
-  VM* vm() {
-    return vm_;
-  }
+  VM* vm() { return &vm_; }
 
   LRUCodeMap* direct_eval_map() {
     return &direct_eval_map_;
@@ -46,11 +45,13 @@ class Context : public lv5::Context {
 
   void Validate();  // for debug only
 
+  static std::size_t VMOffset() { return IV_OFFSETOF(Context, vm_); }
+
  private:
   void Init();
 
   NativeIterator* GainNativeIterator();
-  VM* vm_;
+  VM vm_;
   JSVal RAX_;
   LRUCodeMap direct_eval_map_;
   std::vector<NativeIterator*> iterator_cache_;

@@ -13,6 +13,8 @@ namespace iv {
 namespace lv5 {
 namespace railgun {
 
+class Context;
+
 class VM : private Operation {
  public:
   friend class breaker::Compiler;
@@ -29,7 +31,7 @@ class VM : private Operation {
   inline JSVal Execute(Arguments* args, JSVMFunction* func, Error* e);
 
   // normal pass
-  explicit VM(Context* ctx)
+  explicit VM(lv5::Context* ctx)
     : Operation(ctx),
       stack_(),
       direct_threading_dispatch_table_(NULL),
@@ -100,6 +102,8 @@ class VM : private Operation {
     return DispatchTable()[op];
   }
 #endif
+
+  Context* ctx() const;
 
  private:
   // internal Execute

@@ -6,6 +6,7 @@
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/chain.h>
 #include <iv/lv5/railgun/fwd.h>
+#include <iv/lv5/railgun/instruction_fwd.h>
 namespace iv {
 namespace lv5 {
 namespace railgun {
@@ -26,7 +27,7 @@ inline bool IsIncrementOverflowSafe<1>(int32_t val) {
 
 class VMArguments : public lv5::Arguments {
  public:
-  VMArguments(Context* ctx, pointer ptr, std::size_t n)
+  VMArguments(lv5::Context* ctx, pointer ptr, std::size_t n)
     : lv5::Arguments(ctx, ptr, n) {
   }
 };
@@ -35,7 +36,7 @@ class VMArguments : public lv5::Arguments {
 
 class Operation {
  public:
-  explicit Operation(Context* ctx) : ctx_(ctx) { }
+  explicit Operation(lv5::Context* ctx) : ctx_(ctx) { }
 
   JSVal Invoke(JSFunction* func, JSVal* arg, int argc_with_this, Error* e) {
     detail::VMArguments args(ctx_,
@@ -609,10 +610,11 @@ class Operation {
 
 #undef CHECK
 
-  inline Context* ctx() const { return ctx_; }
+  inline lv5::Context* ctx() const { return ctx_; }
  private:
-  Context* ctx_;
+  lv5::Context* ctx_;
 };
+
 
 } } }  // namespace iv::lv5::railgun
 #endif  // IV_LV5_RAILGUN_OPERATION_H_

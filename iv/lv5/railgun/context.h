@@ -12,7 +12,7 @@ namespace railgun {
 
 inline Context::Context()
   : lv5::Context(&FunctionConstructor, &GlobalEval),
-    vm_(),
+    vm_(this),
     RAX_(),
     direct_eval_map_(10),
     iterator_cache_(),
@@ -22,7 +22,7 @@ inline Context::Context()
 
 inline Context::Context(JSAPI function_constructor, JSAPI global_eval)
   : lv5::Context(function_constructor, global_eval),
-    vm_(),
+    vm_(this),
     RAX_(),
     direct_eval_map_(10),
     iterator_cache_(),
@@ -31,8 +31,7 @@ inline Context::Context(JSAPI function_constructor, JSAPI global_eval)
 }
 
 inline void Context::Init() {
-  vm_ = new(GC_MALLOC_UNCOLLECTABLE(sizeof(VM)))VM(this);
-  RegisterStack(vm_->stack());
+  RegisterStack(vm_.stack());
   global_map_cache_ = new(GC)MapCache();
   {
     const MapCacheKey key(reinterpret_cast<Map*>(NULL), symbol::kDummySymbol);
@@ -92,8 +91,6 @@ inline JSFunction* Context::NewFunction(Code* code, JSEnv* env) {
 }
 
 inline Context::~Context() {
-  vm_->~VM();
-  GC_FREE(vm_);
   std::for_each(iterator_cache_.begin(),
                 iterator_cache_.end(),
                 core::Deleter<NativeIterator>());
