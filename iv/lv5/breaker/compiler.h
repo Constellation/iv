@@ -2310,17 +2310,12 @@ class Compiler {
       asm_->call(rax);
 
       // unwind Frame
-      asm_->mov(rcx, r13);  // old frame
       asm_->mov(r13, ptr[r13 + offsetof(railgun::Frame, prev_)]);  // current frame
       const register_t frame_end_offset = Reg(code_->registers());
       assert(!IsConstantID(frame_end_offset));
-      asm_->lea(r10, ptr[r13 + frame_end_offset * kJSValSize]);
-      asm_->cmp(rcx, r10);
-      asm_->jge(".CALL_UNWIND_OLD");
-      asm_->mov(rcx, r10);
+      asm_->lea(rcx, ptr[r13 + frame_end_offset * kJSValSize]);
 
       // rcx is new stack pointer
-      asm_->L(".CALL_UNWIND_OLD");
       asm_->mov(ptr[r12 + (railgun::Context::VMOffset() + railgun::VM::StackOffset() + railgun::Stack::StackPointerOffset())], rcx);
       asm_->mov(ptr[r12 + (railgun::Context::VMOffset() + railgun::VM::StackOffset() + railgun::Stack::CurrentFrameOffset())], r13);
 
@@ -2350,17 +2345,12 @@ class Compiler {
       asm_->call(rax);
 
       // unwind Frame
-      asm_->mov(rcx, r13);  // old frame
       asm_->mov(rdx, ptr[r13 + kJSValSize * Reg(railgun::FrameConstant<>::kThisOffset)]);  // NOLINT
       asm_->mov(r13, ptr[r13 + offsetof(railgun::Frame, prev_)]);  // current frame
       const register_t frame_end_offset = Reg(code_->registers());
-      asm_->lea(r10, ptr[r13 + frame_end_offset * kJSValSize]);
-      asm_->cmp(rcx, r10);
-      asm_->jge(".CALL_UNWIND_OLD");
-      asm_->mov(rcx, r10);
+      asm_->lea(rcx, ptr[r13 + frame_end_offset * kJSValSize]);
 
       // rcx is new stack pointer
-      asm_->L(".CALL_UNWIND_OLD");
       asm_->mov(ptr[r12 + (railgun::Context::VMOffset() + railgun::VM::StackOffset() + railgun::Stack::StackPointerOffset())], rcx);
       asm_->mov(ptr[r12 + (railgun::Context::VMOffset() + railgun::VM::StackOffset() + railgun::Stack::CurrentFrameOffset())], r13);
 
@@ -2405,17 +2395,12 @@ class Compiler {
       asm_->call(rax);
 
       // unwind Frame
-      asm_->mov(rcx, r13);  // old frame
       asm_->mov(r13, ptr[r13 + offsetof(railgun::Frame, prev_)]);  // current frame
       const register_t frame_end_offset = Reg(code_->registers());
       assert(!IsConstantID(frame_end_offset));
-      asm_->lea(r10, ptr[r13 + frame_end_offset * kJSValSize]);
-      asm_->cmp(rcx, r10);
-      asm_->jge(".CALL_UNWIND_OLD");
-      asm_->mov(rcx, r10);
+      asm_->lea(rcx, ptr[r13 + frame_end_offset * kJSValSize]);
 
       // rdx is new stack pointer
-      asm_->L(".CALL_UNWIND_OLD");
       asm_->mov(ptr[r12 + (railgun::Context::VMOffset() + railgun::VM::StackOffset() + railgun::Stack::StackPointerOffset())], rcx);
       asm_->mov(ptr[r12 + (railgun::Context::VMOffset() + railgun::VM::StackOffset() + railgun::Stack::CurrentFrameOffset())], r13);
 
