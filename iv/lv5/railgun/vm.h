@@ -1918,7 +1918,7 @@ inline JSVal VM::Execute(Frame* start, Error* e) {
         // opcode | (obj | item) | (index | type)
         assert(REG(instr[1].i16[0]).IsObject());
         JSObject* const obj = REG(instr[1].i16[0]).object();
-        const JSVal item = REG(instr[1].i16[0]);
+        const JSVal item = REG(instr[1].i16[1]);
         const uint32_t index = instr[2].u32[0];
         const uint32_t type = instr[2].u32[1];
         Slot slot;
