@@ -167,14 +167,14 @@ struct FNVSeed;
 
 template<>
 struct FNVSeed<4> {
-  static const std::size_t kBasis = 2166136261UL;
-  static const std::size_t kPrime = 16777619UL;
+  static const uint32_t kBasis = 2166136261UL;
+  static const uint32_t kPrime = 16777619UL;
 };
 
 template<>
 struct FNVSeed<8> {
-  static const std::size_t kBasis = 14695981039346656037UL;
-  static const std::size_t kPrime = 1099511628211UL;
+  static const uint64_t kBasis = UINT64_C(14695981039346656037);
+  static const uint64_t kPrime = UINT64_C(1099511628211);
 };
 
 struct FNVHash {
