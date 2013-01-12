@@ -167,6 +167,9 @@ def Build():
       "__STDC_LIMIT_MACROS",
       "__STDC_CONSTANT_MACROS"],
     LIBPATH=["/usr/lib", "/usr/local/lib"])
+
+  env.Append(LIBS="gc")
+
   env['ENV']['GTEST_COLOR'] = os.environ.get('GTEST_COLOR')
   env['ENV']['HOME'] = os.environ.get('HOME')
   env.Replace(YACC='bison', YACCFLAGS='--name-prefix=yy_loaddict_')
