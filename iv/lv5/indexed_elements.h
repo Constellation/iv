@@ -57,7 +57,7 @@ class IndexedElements {
         sparse->Lookup(index, true)->second = StoredSlot(*it, ATTR::Object::Data());
       }
     }
-    std::fill(vector.begin(), vector.end(), JSEmpty);
+    std::fill<DenseArrayVector::iterator, JSVal>(vector.begin(), vector.end(), JSVal(JSEmpty));
   }
 
   void MakeDense() {
