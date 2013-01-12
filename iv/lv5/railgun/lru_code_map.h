@@ -2,6 +2,7 @@
 #define IV_LV5_RAILGUN_LRU_CODE_MAP_H_
 #include <list>
 #include <utility>
+#include <iv/qhashmap.h>
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/railgun/fwd.h>
 #include <iv/lv5/jsstring_fwd.h>
@@ -14,10 +15,19 @@ class LRUCodeMap {
   typedef std::list<JSString*> HistoryList;
   typedef std::pair<Code*, HistoryList::iterator> Entry;
 
-  typedef GCHashMap<
-      JSString*,
-      Entry,
-      JSString::Hasher, JSString::Equaler>::type CodeMap;
+  // JSString key traits for QHashMap
+  struct KeyTraits {
+    static unsigned hash(JSString* val) {
+      return JSString::Hasher()(val);
+    }
+    static bool equals(JSString* lhs, JSString* rhs) {
+      return *lhs == *rhs;
+    }
+    // because of Array index
+    static JSString* null() { return NULL; }
+  };
+
+  typedef core::QHashMap<JSString*, Entry, KeyTraits, GCAlloc> CodeMap;
 
   explicit LRUCodeMap(std::size_t max)
     : max_(max),
