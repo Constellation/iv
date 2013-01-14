@@ -179,8 +179,10 @@ class BitVector {
     const size_type cap = Capacity(n);
     if (cap > capacity()) {
       pointer new_data = alloc_.allocate(capacity());
-      std::copy(data(), data() + Capacity(size()), new_data);
-      alloc_.deallocate(data(), capacity());
+      if (data()) {
+        std::copy(data(), data() + Capacity(size()), new_data);
+        alloc_.deallocate(data(), capacity());
+      }
       data_ = new_data;
       capacity_ = cap;
     }
