@@ -362,7 +362,7 @@ class JSString: public JSCell {
       }
     }
 
-    if (static_cast<size_type>(size()) * count > kMaxSize) {
+    if (static_cast<uint64_t>(size()) * count > kMaxSize) {
       e->Report(Error::Type, "too long string is prohibited");
       return NULL;
     }
