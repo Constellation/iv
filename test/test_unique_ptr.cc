@@ -38,12 +38,12 @@ TEST(unique_ptrCase, unique_ptrTest) {
 TEST(unique_ptrCase, unique_ptrBoolTest) {
   {
     iv::core::unique_ptr<int> ptr(new int(10));
-    EXPECT_TRUE(ptr);
+    EXPECT_TRUE(!!ptr);
   }
   {
     iv::core::unique_ptr<Checker> ptr;
     EXPECT_TRUE(NULL == ptr.get());
-    EXPECT_FALSE(ptr);
+    EXPECT_FALSE(!!ptr);
   }
 }
 
