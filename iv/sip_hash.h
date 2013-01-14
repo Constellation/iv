@@ -155,7 +155,7 @@ class SipHash {
     }
   }
 
-  static inline uint64_t Hash24(key_type key, uint8_t *data, size_t len) {
+  static inline uint64_t Hash24(key_type key, uint8_t *data, uint64_t len) {
     uint64_t k0, k1;
     uint64_t v0, v1, v2, v3;
     uint64_t m, last;
