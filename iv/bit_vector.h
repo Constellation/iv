@@ -5,32 +5,36 @@
 namespace iv {
 namespace core {
 
-template<typename Alloc = std::allocator<uint64_t> >
+template<typename Alloc = std::allocator<std::size_t> >
 class BitVector {
  public:
   typedef Alloc allocator_type;
   typedef std::size_t size_type;
-  typedef uint64_t value_type;
+  typedef typename allocator_type::value_type value_type;
   typedef value_type* pointer;
   typedef const value_type* const_pointer;
 
   typedef value_type word_type;
   typedef BitVector<Alloc> this_type;
 
-  static const size_type kWordSize = 64;
+  static const size_type kWordSize = sizeof(value_type) * 8;
 
  private:
   struct UnaryBitNot {
-    uint64_t operator()(uint64_t val) {
+    value_type operator()(value_type val) {
       return ~val;
     }
   };
 
   struct UnaryTrue {
-    bool operator()(uint64_t val) {
+    bool operator()(value_type val) {
       return val;
     }
   };
+
+  static value_type max_value() {
+    return std::numeric_limits<value_type>::max();
+  }
 
  public:
   explicit BitVector(const Alloc& alloc = Alloc())
@@ -90,7 +94,7 @@ class BitVector {
   }
 
   this_type& set() {
-    std::fill(data_, data_ + num_words(), UINT64_MAX);
+    std::fill(data_, data_ + num_words(), max_value());
     return *this;
   }
 
@@ -146,7 +150,7 @@ class BitVector {
     const size_type old_num_words = num_words();
     if (old_num_words) {
       const size_type d = size() % kWordSize;
-      const word_type mask = UINT64_MAX << d;
+      const word_type mask = max_value() << d;
       if (val) {
         data()[old_num_words - 1] |= mask;
       } else {
@@ -160,7 +164,7 @@ class BitVector {
       if (full) {
         if (val) {
           std::fill(data() + old_num_words,
-                    data() + old_num_words + full, UINT64_MAX);
+                    data() + old_num_words + full, max_value());
         } else {
           std::fill(data() + old_num_words,
                     data() + old_num_words + full, 0);
@@ -168,7 +172,7 @@ class BitVector {
       }
       // the last one
       if (val) {
-        data()[old_num_words + full] = UINT64_MAX;
+        data()[old_num_words + full] = max_value();
       } else {
         data()[old_num_words + full] = 0;
       }
@@ -243,7 +247,7 @@ class BitVector {
       }
     }
     // the last one
-    const word_type mask = UINT64_MAX >> (kWordSize - d);
+    const word_type mask = max_value() >> (kWordSize - d);
     return !((lhs.data()[n - 1] ^ rhs.data()[n - 1]) & mask);
   }
 
@@ -265,7 +269,7 @@ class BitVector {
       }
     }
     // the last one
-    const word_type mask = UINT64_MAX >> (kWordSize - d);
+    const word_type mask = max_value() >> (kWordSize - d);
     return data()[n - 1] & mask;
   }
 
