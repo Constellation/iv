@@ -7,6 +7,8 @@
 #include <string>
 #include <iterator>
 #include <limits>
+#include <iv/debug.h>
+#include <iv/utils.h>
 namespace iv {
 namespace core {
 namespace detail {
@@ -360,7 +362,7 @@ class BasicStringPiece {
       return npos;
     }
     const size_type dis = std::distance(it, last);
-    const const_pointer result = std::search(
+    const const_pointer result = Search<const CharT*, Iter>(
         ptr_ + pos, ptr_ + length_, it, last);
     const size_type xpos = result - ptr_;
     return xpos + dis <= length_ ? xpos : npos;
@@ -371,8 +373,9 @@ class BasicStringPiece {
       return npos;
     }
 
-    const const_pointer result = std::search(ptr_ + pos, ptr_ + length_,
-                                             s.ptr_, s.ptr_ + s.length_);
+    const const_pointer result = Search<const CharT*, const CharT*>(
+        ptr_ + pos, ptr_ + length_,
+        s.ptr_, s.ptr_ + s.length_);
     const size_type xpos = result - ptr_;
     return xpos + s.length_ <= length_ ? xpos : npos;
   }

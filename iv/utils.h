@@ -8,6 +8,9 @@
 #include <iv/arith.h>
 #include <iv/platform.h>
 #include <iv/detail/cstdint.h>
+#if defined(IV_ENABLE_JIT)
+#include <iv/third_party/mie/string.hpp>
+#endif
 namespace iv {
 namespace core {
 
@@ -166,6 +169,21 @@ inline void ShrinkToFit(Vector& vec) {  // NOLINT
   Vector(vec).swap(vec);
 #endif
 }
+
+template<typename Iter, typename Iter2>
+inline Iter Search(Iter i, Iter iz, Iter2 j, Iter2 jz) {
+  return std::search(i, iz, j, jz);
+}
+
+#if defined(IV_ENABLE_JIT)
+template<>
+inline const char* Search<const char*, const char*>(
+    const char* i, const char* iz,
+    const char* j, const char* jz) {
+	static const bool enabled = Xbyak::util::Cpu().has(Xbyak::util::Cpu::tSSE42);
+  return enabled ? mie::findStr(i, iz, j, jz - j) : std::search(i, iz, j, jz);
+}
+#endif
 
 } }  // namespace iv::core
 #endif  // IV_UTILS_H_

@@ -41,6 +41,9 @@
 	#include <sys/mman.h>
 	#include <stdlib.h>
 #endif
+#if !defined(_MSC_VER) || (_MSC_VER >= 1600)
+	#include <stdint.h>
+#endif
 
 #if defined(__x86_64__) && !defined(__MINGW64__)
 		#define XBYAK64_GCC
@@ -69,7 +72,7 @@ namespace Xbyak {
 
 enum {
 	DEFAULT_MAX_CODE_SIZE = 4096,
-	VERSION = 0x3730 /* 0xABCD = A.BC(D) */
+	VERSION = 0x3750 /* 0xABCD = A.BC(D) */
 };
 
 #ifndef MIE_INTEGER_TYPE_DEFINED
@@ -78,8 +81,8 @@ enum {
 	typedef unsigned __int64 uint64;
 	typedef __int64 sint64;
 #else
-	typedef unsigned long long uint64;
-	typedef long long sint64;
+	typedef uint64_t uint64;
+	typedef int64_t sint64;
 #endif
 typedef unsigned int uint32;
 typedef unsigned short uint16;
@@ -183,13 +186,19 @@ inline void AlignedFree(void *p)
 	free(p);
 #endif
 }
+
+template<class To, class From>
+inline const To CastTo(From p) throw()
+{
+	return (const To)(size_t)(p);
+}
 namespace inner {
 
 enum { debug = 1 };
 static const size_t ALIGN_PAGE_SIZE = 4096;
 
 inline bool IsInDisp8(uint32 x) { return 0xFFFFFF80 <= x || x <= 0x7F; }
-inline bool IsInInt32(uint64 x) { return 0xFFFFFFFF80000000ULL <= x || x <= 0x7FFFFFFFU; }
+inline bool IsInInt32(uint64 x) { return ~uint64(0x7fffffffu) <= x || x <= 0x7FFFFFFFU; }
 
 inline uint32 VerifyInInt32(uint64 x)
 {
@@ -208,6 +217,8 @@ struct Allocator {
 	virtual uint8 *alloc(size_t size) { return reinterpret_cast<uint8*>(AlignedMalloc(size, inner::ALIGN_PAGE_SIZE)); }
 	virtual void free(uint8 *p) { AlignedFree(p); }
 	virtual ~Allocator() {}
+	/* override to return false if you call protect() manually */
+	virtual bool useProtect() const { return true; }
 };
 
 
@@ -509,7 +520,7 @@ protected:
 			uint32 disp = inner::VerifyInInt32(i->isRelative_ ? i->val_ : i->val_ - size_t(top_));
 			rewrite(i->offset_, disp, i->size_);
 		}
-		if (!protect(top_, size_, true)) throw ERR_CANT_PROTECT;
+		if (alloc_->useProtect() && !protect(top_, size_, true)) throw ERR_CANT_PROTECT;
 	}
 public:
 	CodeArray(size_t maxSize = MAX_FIXED_BUF_SIZE, void *userPtr = 0, Allocator *allocator = 0)
@@ -520,7 +531,7 @@ public:
 		, size_(0)
 	{
 		if (maxSize_ > 0 && top_ == 0) throw ERR_CANT_ALLOC;
-		if (type_ == ALLOC_BUF && !protect(top_, maxSize, true)) {
+		if ((type_ == ALLOC_BUF && alloc_->useProtect()) && !protect(top_, maxSize, true)) {
 			alloc_->free(top_);
 			throw ERR_CANT_PROTECT;
 		}
@@ -528,7 +539,7 @@ public:
 	virtual ~CodeArray()
 	{
 		if (isAllocType()) {
-			protect(top_, maxSize_, false);
+			if (alloc_->useProtect()) protect(top_, maxSize_, false);
 			alloc_->free(top_);
 		}
 	}
@@ -541,6 +552,11 @@ public:
 	{
 		if (type_ != FIXED_BUF) throw ERR_CODE_ISNOT_COPYABLE;
 		for (size_t i = 0; i < size_; i++) top_[i] = rhs.top_[i];
+	}
+	void resetSize()
+	{
+		size_ = 0;
+		addrInfoList_.clear();
 	}
 	void db(int code)
 	{
@@ -565,8 +581,17 @@ public:
 	void dw(uint32 code) { db(code, 2); }
 	void dd(uint32 code) { db(code, 4); }
 	const uint8 *getCode() const { return top_; }
+	template<class F>
+	const F getCode() const { return CastTo<F>(top_); }
 	const uint8 *getCurr() const { return &top_[size_]; }
+	template<class F>
+	const F getCurr() const { return CastTo<F>(&top_[size_]); }
 	size_t getSize() const { return size_; }
+	void setSize(size_t size)
+	{
+		if (size >= maxSize_) throw ERR_OFFSET_IS_TOO_BIG;
+		size_ = size;
+	}
 	void dump() const
 	{
 		const uint8 *p = getCode();
@@ -794,6 +819,16 @@ public:
 		, usedCount_(0)
 		, localCount_(0)
 	{
+	}
+	void reset()
+	{
+		base_ = 0;
+		anonymousCount_ = 0;
+		stackPos_ = 1;
+		usedCount_ = 0;
+		localCount_ = 0;
+		definedList_.clear();
+		undefinedList_.clear();
 	}
 	void enterLocal()
 	{
@@ -1601,6 +1636,12 @@ public:
 		, rip()
 #endif
 	{
+		label_.set(this);
+	}
+	void reset()
+	{
+		resetSize();
+		label_.reset();
 		label_.set(this);
 	}
 	bool hasUndefinedLabel() const { return label_.hasUndefinedLabel(); }
