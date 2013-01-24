@@ -427,6 +427,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
     function_literal_to_code_map_.clear();
     continuation_status_.Clear();
     code->set_start(data_->size());
+    Emit<OP::ENTER>();
   }
 
   void CodeContextEpilogue(Code* code) {

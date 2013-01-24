@@ -295,6 +295,11 @@ inline JSVal VM::Execute(Frame* start, Error* e) {
         DISPATCH(NOP);
       }
 
+      DEFINE_OPCODE(ENTER) {
+        // opcode
+        DISPATCH(ENTER);
+      }
+
       DEFINE_OPCODE(MV) {
         // opcode | (dst | src)
         REG(instr[1].i16[0]) = REG(instr[1].i16[1]);

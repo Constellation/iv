@@ -242,6 +242,9 @@ class Compiler {
         case r::OP::NOP:
           EmitNOP(instr);
           break;
+        case r::OP::ENTER:
+          EmitENTER(instr);
+          break;
         case r::OP::MV:
           EmitMV(instr);
           break;
@@ -728,6 +731,10 @@ class Compiler {
   void EmitNOP(const Instruction* instr) {
     // save previous register because NOP does nothing
     set_last_used_candidate(last_used());
+  }
+
+  // opcode
+  void EmitENTER(const Instruction* instr) {
   }
 
   // opcode | (dst | src)

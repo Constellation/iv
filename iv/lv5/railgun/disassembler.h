@@ -88,6 +88,7 @@ class DisAssembler : private core::Noncopyable<> {
     switch (static_cast<OP::Type>(opcode)) {
       case OP::POP_ENV:
       case OP::DEBUGGER:
+      case OP::ENTER:
       case OP::NOP: {
         len = snprintf(buf, sizeof(buf) - 1, "%s", op);
         break;
