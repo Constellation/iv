@@ -55,8 +55,8 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
   void Import(const core::StringPiece& name, JSObject* obj) {
     Error::Dummy e;
     const Symbol sym = Intern(name);
-    global_env_->CreateMutableBinding(this, sym, false, IV_LV5_ERROR_VOID(&e));
-    global_env_->SetMutableBinding(this, sym, obj, false, &e);
+    global_env_->CreateMutableBinding(this, sym, true, IV_LV5_ERROR_VOID(&e));
+    global_env_->SetMutableBinding(this, sym, obj, true, &e);
   }
 
   template<typename Func>
