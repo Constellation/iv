@@ -40,22 +40,55 @@ class TickTimer : private core::Noncopyable<TickTimer> {
 };
 
 inline JSVal Run(const Arguments& args, Error* e) {
-  if (!args.empty()) {
-    const JSVal val = args[0];
-    if (val.IsString()) {
-      const JSString* const f = val.string();
-      std::vector<char> buffer;
-      const std::string filename(f->GetUTF8());
-      if (core::ReadFile(filename, &buffer)) {
-        TickTimer timer;
-        detail::Execute(
-            core::StringPiece(buffer.data(), buffer.size()),
-            filename, IV_LV5_ERROR(e));
-        return timer.GetTime();
-      }
-    }
+  if (args.empty()) {
+    return JSUndefined;
   }
-  return JSUndefined;
+
+  const JSVal val = args[0];
+  if (!val.IsString()) {
+    return JSUndefined;
+  }
+
+  const JSString* const f = val.string();
+  std::vector<char> buffer;
+  const std::string filename(f->GetUTF8());
+  if (!core::ReadFile(filename, &buffer)) {
+    return JSUndefined;
+  }
+
+  TickTimer timer;
+  detail::Execute(
+      core::StringPiece(buffer.data(), buffer.size()),
+      filename, IV_LV5_ERROR(e));
+  return timer.GetTime();
+}
+
+inline JSVal Load(const Arguments& args, Error* e) {
+  if (args.empty()) {
+    return JSUndefined;
+  }
+
+  const JSVal val = args[0];
+  if (!val.IsString()) {
+    return JSUndefined;
+  }
+
+  const JSString* const f = val.string();
+  std::vector<char> buffer;
+  const std::string filename(f->GetUTF8());
+  if (!core::ReadFile(filename, &buffer)) {
+    return JSUndefined;
+  }
+
+  TickTimer timer;
+  std::shared_ptr<core::FileSource> src(
+      new core::FileSource(
+          core::StringPiece(buffer.data(), buffer.size()),
+          filename)
+      );
+  breaker::ExecuteInGlobal(
+      static_cast<Context*>(args.ctx()), src, IV_LV5_ERROR(e));
+  return timer.GetTime();
 }
 
 } } }  // namespace iv::lv5::breaker

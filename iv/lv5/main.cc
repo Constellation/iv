@@ -36,7 +36,8 @@ int BreakerExecute(const iv::core::StringPiece& data,
   iv::lv5::Error::Standard e;
   iv::lv5::breaker::Context ctx;
   InitContext(&ctx);
-  ctx.DefineFunction<&iv::lv5::breaker::Run, 0>("run");
+  ctx.DefineFunction<&iv::lv5::breaker::Run, 1>("run");
+  ctx.DefineFunction<&iv::lv5::breaker::Load, 1>("load");
   std::shared_ptr<iv::core::FileSource>
       src(new iv::core::FileSource(data, filename));
   iv::lv5::breaker::ExecuteInGlobal(&ctx, src, &e);
@@ -52,7 +53,8 @@ int BreakerExecuteFiles(const std::vector<std::string>& filenames) {
   iv::lv5::Error::Standard e;
   iv::lv5::breaker::Context ctx;
   InitContext(&ctx);
-  ctx.DefineFunction<&iv::lv5::breaker::Run, 0>("run");
+  ctx.DefineFunction<&iv::lv5::breaker::Run, 1>("run");
+  ctx.DefineFunction<&iv::lv5::breaker::Load, 1>("load");
 
   std::vector<char> res;
   for (std::vector<std::string>::const_iterator it = filenames.begin(),
