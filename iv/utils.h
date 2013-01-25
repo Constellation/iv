@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <vector>
 #include <string>
+#include <algorithm>
 #include <iv/debug.h>
 #include <iv/arith.h>
 #include <iv/platform.h>
