@@ -20,6 +20,7 @@ class Slot : public StoredSlot {
   static const uint32_t FLAG_USED = 1;
   static const uint32_t FLAG_CACHEABLE = 2;
   static const uint32_t FLAG_PUT_CACHEABLE = 4;
+  static const uint32_t FLAG_FORCE_PUT_UNCACHEABLE = 8;
   static const uint32_t FLAG_INIT = FLAG_CACHEABLE;
 
   class PutUnCacheable : private core::Noncopyable<PutUnCacheable> {
@@ -90,14 +91,16 @@ class Slot : public StoredSlot {
 
   inline void MakeUnCacheable() {
     flags_ &= (~FLAG_CACHEABLE);
+    assert(!IsCacheable());
   }
 
   inline void MakePutUnCacheable() {
-    flags_ &= (~FLAG_PUT_CACHEABLE);
+    flags_ |= FLAG_FORCE_PUT_UNCACHEABLE;
+    assert(!IsPutCacheable());
   }
 
   bool IsPutCacheable() const {
-    return flags_ & FLAG_PUT_CACHEABLE;
+    return flags_ & FLAG_PUT_CACHEABLE && !IsPutForceUnCacheable();
   }
 
   inline void MakeUsed() {
@@ -129,6 +132,10 @@ class Slot : public StoredSlot {
  private:
   bool IsCacheable() const {
     return flags_ & FLAG_CACHEABLE;
+  }
+
+  bool IsPutForceUnCacheable() const {
+    return flags_ & FLAG_FORCE_PUT_UNCACHEABLE;
   }
 
   void set_put_result_type(PutResultType type) {

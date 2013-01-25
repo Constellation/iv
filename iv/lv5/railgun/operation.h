@@ -255,39 +255,44 @@ class Operation {
   void StoreProp(JSVal base,
                  Instruction* instr,
                  OP::Type generic,
-                 Symbol s, JSVal stored, bool strict, Error* e) {
+                 Symbol name, JSVal src, bool strict, Error* e) {
     // opcode | (base | src | index) | nop | nop
     base.CheckObjectCoercible(CHECK);
     if (base.IsPrimitive()) {
-      StorePropPrimitive(base, s, stored, strict, e);
-    } else {
-      // cache patten
-      JSObject* obj = base.object();
-      if (instr[2].map == obj->map()) {
-        // map is cached, so use previous index code
-        obj->Direct(instr[3].u32[0]) = stored;
-        return;
-      } else {
-        Slot slot;
-        if (obj->GetOwnPropertySlot(ctx_, s, &slot)) {
-          // only data property
-          if (slot.IsStoreCacheable() && !symbol::IsArrayIndexSymbol(s)) {
-            instr[2].map = obj->map();
-            instr[3].u32[0] = slot.offset();
-            obj->Direct(slot.offset()) = stored;
-          } else {
-            // dispatch generic path
-            obj->Put(ctx_, s, stored, strict, e);
-            instr[0] = Instruction::GetOPInstruction(generic);
-          }
-          return;
-        } else {
-          instr[2].map = NULL;
-          obj->Put(ctx_, s, stored, strict, e);
-          return;
-        }
+      StorePropPrimitive(base, name, src, strict, e);
+      return;
+    }
+
+    // cache patten
+    JSObject* obj = base.object();
+    if (instr[2].map == obj->map()) {
+      // map is cached, so use previous index code
+      obj->Direct(instr[3].u32[0]) = src;
+      return;
+    }
+
+    Map* previous = obj->map();
+    Slot slot;
+    obj->PutSlot(ctx(), name, src, &slot, strict, CHECK);
+    const Slot::PutResultType put_result_type = slot.put_result_type();
+    const bool unique = previous->IsUnique() || obj->map()->IsUnique();
+
+    // uncacheable pattern
+    if (!slot.IsPutCacheable() || !symbol::IsArrayIndexSymbol(name)) {
+      return;
+    }
+
+    assert(put_result_type != Slot::PUT_NONE);
+
+    // TODO(Constellation) VM only store replace pattern.
+    if (put_result_type == Slot::PUT_REPLACE) {
+      if (previous == obj->map()) {
+        instr[2].map = obj->map();
+        instr[3].u32[0] = slot.offset();
       }
     }
+
+    return;
   }
 
   void StorePropImpl(JSVal base, Symbol s,
