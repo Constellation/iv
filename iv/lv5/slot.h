@@ -23,22 +23,15 @@ class Slot : public StoredSlot {
   static const uint32_t FLAG_FORCE_PUT_UNCACHEABLE = 8;
   static const uint32_t FLAG_INIT = FLAG_CACHEABLE;
 
-  class PutUnCacheable : private core::Noncopyable<PutUnCacheable> {
-   public:
-    explicit PutUnCacheable(Slot* slot) : slot_(slot) { }
-    ~PutUnCacheable() { slot_->MakePutUnCacheable(); }
-   private:
-    Slot* slot_;
-  };
-
   enum PutResultType {
     PUT_NONE = 0,
     PUT_REPLACE = 1,
     PUT_NEW = 2,
     PUT_INDEXED_OPTIMIZED = 3
   };
+  // Because max flag value is 8 (FLAG_FORCE_PUT_UNCACHEABLE)
+  static const uint32_t PUT_SHIFT = 4;
   static const uint32_t PUT_MASK = 3;
-  static const uint32_t PUT_SHIFT = 3;
 
   Slot()
     : StoredSlot(JSEmpty, Attributes::Safe::NotFound()),
