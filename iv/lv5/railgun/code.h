@@ -28,6 +28,7 @@ class Code : public radio::HeapObject<radio::POINTER> {
     EVAL
   };
   friend class Compiler;
+  friend class ConstantPool;
   friend class breaker::Compiler;
   typedef GCVector<Symbol>::type Names;
   typedef CoreData::Data Data;

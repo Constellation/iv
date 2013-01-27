@@ -19,6 +19,7 @@ class WithScope;
 class CatchScope;
 
 class Compiler;
+class ConstantPool;
 class Context;
 class NativeIterator;
 
