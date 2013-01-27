@@ -62,7 +62,7 @@ def Build():
     BoolVariable('clang', '', 0),
     BoolVariable('cxx0x', '', 0),
     EnumVariable('sse', 'sse option', 'no',
-                 allowed_values=('no', 'sse', 'sse2', 'sse3', 'sse4'),
+                 allowed_values=('no', 'sse', 'sse2', 'sse3', 'sse4', 'sse4.1', 'sse4.2'),
                  map={}, ignorecase=2),
     BoolVariable('disable_jit', '', 0),
     BoolVariable('cxx11', '', 0),
