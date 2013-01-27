@@ -9,6 +9,11 @@ namespace lv5 {
 namespace breaker {
 namespace helper {
 
+inline const Xbyak::util::Cpu* CPU() {
+  static const Xbyak::util::Cpu cpu;
+  return &cpu;
+}
+
 // helper functions for code generation
 inline std::size_t Generate64Mov(Xbyak::CodeGenerator* as,
                                  const Xbyak::Reg64& reg = rax) {

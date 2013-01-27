@@ -297,6 +297,8 @@ inline JSVal VM::Execute(Frame* start, Error* e) {
 
       DEFINE_OPCODE(ENTER) {
         // opcode
+        std::fill_n<JSVal*, std::size_t, JSVal>(
+            frame->RegisterFile(), frame->code()->registers(), JSUndefined);
         DISPATCH(ENTER);
       }
 

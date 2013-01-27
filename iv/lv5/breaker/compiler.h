@@ -735,6 +735,13 @@ class Compiler {
 
   // opcode
   void EmitENTER(const Instruction* instr) {
+    uint32_t i = 0;
+    const uint32_t iz = code_->registers();
+    const uint64_t undefined = Extract(JSUndefined);
+    for (; i < iz; ++i) {
+      const register_t dst = Reg(i);
+      asm_->mov(qword[r13 + dst * kJSValSize], undefined);
+    }
   }
 
   // opcode | (dst | src)
