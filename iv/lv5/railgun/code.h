@@ -222,6 +222,8 @@ class Code : public radio::HeapObject<radio::POINTER> {
 
   void set_stack_size(uint32_t size) { stack_size_ = size; }
 
+  void set_frame_size(uint32_t size) { frame_size_ = size; }
+
   void set_temporary_registers(uint32_t size) { temporary_registers_ = size; }
 
   void set_empty(bool val) { empty_ = val; }
@@ -238,6 +240,7 @@ class Code : public radio::HeapObject<radio::POINTER> {
   uint32_t heap_size_;   // heaps
   uint32_t stack_size_;  // locals
   uint32_t temporary_registers_;  // number of temporary registers
+  uint32_t frame_size_;  // frame total size includes next frame header
   Symbol name_;
   JSScript* script_;
   std::size_t block_begin_position_;

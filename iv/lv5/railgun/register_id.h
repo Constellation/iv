@@ -64,6 +64,7 @@ class Registers {
     : heap_(),
       stack_(),
       variable_registers_(),
+      frame_size_(),
       temporary_registers_(),
       lives_() {
   }
@@ -84,15 +85,8 @@ class Registers {
   ID LocalID(int32_t id);
 
   // implemented in frame.h
-
   ID This();
-
-  // implemented in frame.h
-
   ID Callee();
-
-  // implemented in frame.h
-
   ID Constant(uint32_t offset);
 
   int32_t AcquireSequence(int size);
@@ -112,24 +106,12 @@ class Registers {
   }
 
   // implemented in frame.h
-
   bool IsConstantID(int32_t reg);
-
-  // implemented in frame.h
-
   bool IsTemporaryID(int32_t reg);
-
-  // implemented in frame.h
-
   static bool IsThisID(int32_t reg);
-
-  // implemented in frame.h
-
   static bool IsCalleeID(int32_t reg);
-
-  // implemented in frame.h
-
   static bool IsArgumentID(int32_t reg);
+  void AllocateFrame(int32_t reg);
 
   int Type(uint32_t reg) {
     if (IsHeapID(reg)) {
@@ -161,6 +143,10 @@ class Registers {
 
   int32_t heap_size() const { return heap_; }
 
+  int32_t FrameSize() const {
+    return (std::max<int32_t>)(size(), frame_size_);
+  }
+
  private:
   void Release(int32_t reg) {
     if (IsTemporaryID(reg)) {
@@ -178,6 +164,7 @@ class Registers {
   int32_t heap_;
   int32_t stack_;
   int32_t variable_registers_;
+  int32_t frame_size_;
   Pool temporary_registers_;
   std::vector<bool> lives_;
 };

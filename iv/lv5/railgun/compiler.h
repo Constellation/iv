@@ -116,7 +116,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   class JumpSite {
    public:
     explicit JumpSite(std::size_t from) : from_(from) { }
-    JumpSite() : from_(std::numeric_limits<std::size_t>::max()) { }
+    JumpSite() : from_((std::numeric_limits<std::size_t>::max)()) { }
 
     void JumpTo(Compiler* compiler, std::size_t to) const {
       compiler->EmitJump(to, from_);
@@ -433,6 +433,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   void CodeContextEpilogue(Code* code) {
     code->set_end(data_->size());
     code->set_temporary_registers(registers_.size());
+    code->set_frame_size(registers_.FrameSize());
   }
 
   // Statement

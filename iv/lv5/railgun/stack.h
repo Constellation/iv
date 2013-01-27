@@ -133,7 +133,7 @@ class Stack : public lv5::Stack {
     current_ = frame->prev_;
     if (current_) {
       // because of ScopedArguments
-      Restore(std::max(current_->GetFrameEnd(), frame->GetFrameBase()));
+      Restore((std::max)(current_->GetFrameEnd(), frame->GetFrameBase()));
     } else {
       // previous of Global Frame is NULL
       Restore();

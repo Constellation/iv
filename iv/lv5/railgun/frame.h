@@ -266,7 +266,6 @@ inline bool Registers::IsTemporaryID(int32_t reg) {
   return variable_registers_ <= reg && reg < FrameConstant<>::kConstantOffset;
 }
 
-// TODO(Constellation) refactoring
 inline bool Registers::IsThisID(int32_t reg) {
   return reg == FrameConstant<>::kThisOffset;
 }
@@ -292,6 +291,10 @@ inline RegisterID Registers::Callee() {
 inline RegisterID Registers::Constant(uint32_t offset) {
   return RegisterID(
       new RegisterIDImpl(FrameConstant<>::kConstantOffset + offset, this), false);
+}
+
+inline void Registers::AllocateFrame(int32_t top) {
+  frame_size_ = (std::max<int32_t>)(top + sizeof(Frame), frame_size_);
 }
 
 } } }  // namespace iv::lv5::railgun
