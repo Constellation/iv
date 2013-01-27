@@ -95,7 +95,7 @@ class Registers {
 
   ID Constant(uint32_t offset);
 
-  int32_t AcquireCallBase(int size);
+  int32_t AcquireSequence(int size);
 
   void Reserve(int32_t reg);
 
@@ -206,7 +206,7 @@ inline RegisterID Registers::Acquire(int32_t reg) {
   return RegisterID(new RegisterIDImpl(reg, this), false);
 }
 
-inline int32_t Registers::AcquireCallBase(int size) {
+inline int32_t Registers::AcquireSequence(int size) {
   if (temporary_registers_.empty()) {
     const int32_t reg = lives_.size() + variable_registers_;
     lives_.resize(lives_.size() + size, true);

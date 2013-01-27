@@ -419,7 +419,7 @@ inline RegisterID Compiler::EmitConcat(const BinaryOperation* start,
   expressions.push_back(first);
   std::vector<RegisterID> pool(expressions.size() + ((lhs) ? 1 : 0));
   assert(!pool.empty());
-  const int16_t base = registers_.AcquireCallBase(pool.size());
+  const int16_t base = registers_.AcquireSequence(pool.size());
 
   int n = 0;
   if (lhs) {
@@ -927,7 +927,7 @@ class Compiler::ArraySite {
     while (it != last) {
       const int32_t dis =
           static_cast<int32_t>(std::min<uint32_t>(rest, ArraySite::kOnce));
-      int32_t register_start = registers_->AcquireCallBase(dis);
+      int32_t register_start = registers_->AcquireSequence(dis);
       elements_.resize(dis, RegisterID());
       uint32_t i = 0;
       for (Items::const_iterator c = it + dis; it != c; ++it, ++i) {
@@ -1143,7 +1143,7 @@ class Compiler::CallSite {
     if (call.SideEffect()) {
       thunkpool->ForceSpill();
     }
-    start_ = registers->AcquireCallBase(argc_with_this());
+    start_ = registers->AcquireSequence(argc_with_this());
   }
 
   int argc_with_this() const { return call_.args().size() + 1; }
