@@ -14,6 +14,7 @@
 #include <iv/lv5/jsbooleanobject.h>
 #include <iv/lv5/jsnumberobject.h>
 #include <iv/lv5/jsstringobject.h>
+#include <iv/lv5/jsprivate_symbol.h>
 namespace iv {
 namespace lv5 {
 
@@ -695,38 +696,53 @@ inline Symbol JSLayout::ToSymbol(Context* ctx, Error* e) const {
   uint32_t index;
   if (GetUInt32(&index)) {
     return symbol::MakeSymbolFromIndex(index);
-  } else {
-    if (IsString()) {
-      return ctx->Intern(string());
-    } else if (IsNumber()) {
-      // int32 short cut
-      if (IsInt32()) {
-        std::array<char, 15> buffer;
-        char* end = core::Int32ToString(int32(), buffer.data());
-        return ctx->Intern(
-            core::StringPiece(buffer.data(),
-                              std::distance(buffer.data(), end)));
-      } else {
-        std::array<char, 80> buffer;
-        const char* const str =
-            core::DoubleToCString(number(), buffer.data(), buffer.size());
-        return ctx->Intern(str);
-      }
-    } else if (IsBoolean()) {
-      return ctx->Intern((boolean() ? "true" : "false"));
-    } else if (IsNull()) {
-      return symbol::null();
-    } else if (IsUndefined()) {
-      return symbol::undefined();
+  }
+
+  if (IsString()) {
+    return ctx->Intern(string());
+  }
+
+  if (IsNumber()) {
+    // int32 short cut
+    if (IsInt32()) {
+      std::array<char, 15> buffer;
+      char* end = core::Int32ToString(int32(), buffer.data());
+      return ctx->Intern(
+          core::StringPiece(buffer.data(),
+                            std::distance(buffer.data(), end)));
     } else {
-      assert(IsObject());
-      const JSLayout prim =
-          object()->DefaultValue(
-              ctx, Hint::STRING,
-              IV_LV5_ERROR_WITH(e, symbol::kDummySymbol));
-      return prim.ToSymbol(ctx, e);
+      std::array<char, 80> buffer;
+      const char* const str =
+          core::DoubleToCString(number(), buffer.data(), buffer.size());
+      return ctx->Intern(str);
     }
   }
+
+  if (IsBoolean()) {
+    return ctx->Intern((boolean() ? "true" : "false"));
+  }
+
+  if (IsNull()) {
+    return symbol::null();
+  }
+
+  if (IsUndefined()) {
+    return symbol::undefined();
+  }
+
+  assert(IsObject());
+  JSObject* obj = object();
+
+  if (obj->IsClass<Class::PrivateSymbol>()) {
+    const JSPrivateSymbol* name = static_cast<const JSPrivateSymbol*>(obj);
+    return name->symbol();
+  }
+
+  const JSLayout prim =
+      object()->DefaultValue(
+          ctx, Hint::STRING,
+          IV_LV5_ERROR_WITH(e, symbol::kDummySymbol));
+  return prim.ToSymbol(ctx, e);
 }
 
 inline core::UString JSLayout::ToUString(Context* ctx, Error* e) const {
@@ -833,7 +849,8 @@ inline bool JSLayout::ToBoolean() const {
   }
 }
 
-inline JSVal JSVal::ToPrimitive(Context* ctx, Hint::Object hint, Error* e) const {
+inline JSVal JSVal::ToPrimitive(Context* ctx,
+                                Hint::Object hint, Error* e) const {
   if (IsObject()) {
     return object()->DefaultValue(ctx, hint, e);
   } else {

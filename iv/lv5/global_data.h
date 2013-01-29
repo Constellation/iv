@@ -79,6 +79,7 @@ class GlobalData {
       strict_arguments_map_(NULL),
       number_format_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
       date_time_format_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
+      private_symbol_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
       gc_hook_(this) {
     {
       Error::Dummy e;
@@ -243,6 +244,7 @@ class GlobalData {
   Map* strict_arguments_map() const { return strict_arguments_map_; }
   Map* number_format_map() const { return number_format_map_; }
   Map* date_time_format_map() const { return date_time_format_map_; }
+  Map* private_symbol_map() const { return private_symbol_map_; }
 
   void InitArgumentsMap() {
     JSObject* proto = object_prototype();
@@ -295,6 +297,7 @@ class GlobalData {
   JSObject* typed_array_prototype(TypedCode::Code code) const { return typed_array_prototypes_[code]; }
   JSObject* number_format_prototype() const { return number_format_prototype_; }
   JSObject* date_time_format_prototype() const { return date_time_format_prototype_; }
+  JSObject* private_symbol_prototype() const { return private_symbol_prototype_; }
 
  private:
   // prototypes setter
@@ -321,6 +324,7 @@ class GlobalData {
   void set_typed_array_prototype(TypedCode::Code code, JSObject* proto) { typed_array_prototypes_[code] = proto; }
   void set_number_format_prototype(JSObject* proto) { number_format_prototype_ = proto; }
   void set_date_time_format_prototype(JSObject* proto) { date_time_format_prototype_ = proto; }
+  void set_private_symbol_prototype(JSObject* proto) { private_symbol_prototype_ = proto; }
 
 
   Context* ctx_;
@@ -370,6 +374,7 @@ class GlobalData {
   TypedArrayPrototypes typed_array_prototypes_;
   JSObject* number_format_prototype_;
   JSObject* date_time_format_prototype_;
+  JSObject* private_symbol_prototype_;
 
   // builtin maps
   Map* primitive_string_map_;
@@ -398,6 +403,7 @@ class GlobalData {
   Map* strict_arguments_map_;
   Map* number_format_map_;
   Map* date_time_format_map_;
+  Map* private_symbol_map_;
 
   GCHook<GlobalData> gc_hook_;
 };

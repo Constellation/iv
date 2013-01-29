@@ -24,5 +24,6 @@
 #include <iv/lv5/runtime_data_view.h>
 #include <iv/lv5/runtime_typed_array.h>
 #include <iv/lv5/runtime_reflect.h>
+#include <iv/lv5/runtime_private_symbol.h>
 
 #endif  // IV_LV5_RUNTIME_H_

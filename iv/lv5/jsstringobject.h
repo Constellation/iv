@@ -56,7 +56,7 @@ class JSStringObject : public JSObject {
 
   static JSStringObject* New(Context* ctx, JSString* str) {
     JSStringObject* const obj = new JSStringObject(ctx, ctx->global_data()->string_map(), str);
-    obj->set_cls(JSStringObject::GetClass());
+    obj->set_cls(GetClass());
     return obj;
   }
 
