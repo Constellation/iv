@@ -1144,6 +1144,7 @@ class Compiler::CallSite {
       thunkpool->ForceSpill();
     }
     start_ = registers->AcquireSequence(argc_with_this());
+    registers->AllocateFrame(start_ + argc_with_this());
   }
 
   int argc_with_this() const { return call_.args().size() + 1; }

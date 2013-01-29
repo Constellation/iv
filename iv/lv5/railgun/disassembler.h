@@ -46,7 +46,8 @@ class DisAssembler : private core::Noncopyable<> {
       ss << "[code]"
          << " local: " << code.stack_size()
          << " heap: " << code.heap_size()
-         << " registers: " << code.registers();
+         << " registers: " << code.registers()
+         << " frame size: " << code.FrameSize();
       OutputLine(ss.str());
     }
     const Code::Codes& codes = code.codes();

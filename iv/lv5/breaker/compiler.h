@@ -735,6 +735,9 @@ class Compiler {
 
   // opcode
   void EmitENTER(const Instruction* instr) {
+    // check stack overflow
+
+    // initialize registers with JSUndefined
     uint32_t i = 0;
     const uint32_t iz = code_->registers();
     const uint64_t undefined = Extract(JSUndefined);
@@ -2325,7 +2328,7 @@ class Compiler {
 
       // unwind Frame
       asm_->mov(r13, ptr[r13 + offsetof(railgun::Frame, prev_)]);  // current frame
-      const register_t frame_end_offset = Reg(code_->registers());
+      const register_t frame_end_offset = Reg(code_->FrameSize());
       assert(!IsConstantID(frame_end_offset));
       asm_->lea(rcx, ptr[r13 + frame_end_offset * kJSValSize]);
 
@@ -2361,7 +2364,7 @@ class Compiler {
       // unwind Frame
       asm_->mov(rdx, ptr[r13 + kJSValSize * Reg(railgun::FrameConstant<>::kThisOffset)]);  // NOLINT
       asm_->mov(r13, ptr[r13 + offsetof(railgun::Frame, prev_)]);  // current frame
-      const register_t frame_end_offset = Reg(code_->registers());
+      const register_t frame_end_offset = Reg(code_->FrameSize());
       asm_->lea(rcx, ptr[r13 + frame_end_offset * kJSValSize]);
 
       // rcx is new stack pointer
@@ -2410,7 +2413,7 @@ class Compiler {
 
       // unwind Frame
       asm_->mov(r13, ptr[r13 + offsetof(railgun::Frame, prev_)]);  // current frame
-      const register_t frame_end_offset = Reg(code_->registers());
+      const register_t frame_end_offset = Reg(code_->FrameSize());
       assert(!IsConstantID(frame_end_offset));
       asm_->lea(rcx, ptr[r13 + frame_end_offset * kJSValSize]);
 

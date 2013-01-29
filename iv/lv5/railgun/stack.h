@@ -197,7 +197,7 @@ class Stack : public lv5::Stack {
   Frame* GainFrame(JSVal* arg, int argc_with_this, Code* code) {
     const int diff =
         static_cast<int>(code->params().size()) - (argc_with_this - 1);
-    const std::size_t capacity = Frame::GetFrameSize(code->registers());
+    const std::size_t capacity = Frame::GetFrameSize(code->FrameSize());
     JSVal* top = arg + argc_with_this;
     if (diff <= 0) {
       return reinterpret_cast<Frame*>(Gain(top, capacity));

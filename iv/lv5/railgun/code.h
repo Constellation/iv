@@ -174,28 +174,16 @@ class Code : public radio::HeapObject<radio::POINTER> {
 
   bool empty() const { return empty_; }
 
-  const Data* GetData() const {
-    return core_->data();
-  }
+  const Data* GetData() const { return core_->data(); }
 
-  Data* GetData() {
-    return core_->data();
-  }
-
-  void MarkChildren(radio::Core* core) {
-    core->MarkCell(script_);
-    core_->MarkChildren(core);
-    std::for_each(codes_.begin(), codes_.end(), radio::Core::Marker(core));
-    std::for_each(constants_.begin(),
-                  constants_.end(), radio::Core::Marker(core));
-    std::for_each(maps_.begin(), maps_.end(), radio::Core::Marker(core));
-    core->MarkCell(construct_map_);
-  }
+  Data* GetData() { return core_->data(); }
 
   uint32_t registers() const {
     return stack_size() + temporary_registers();
     // return stack_size() + heap_size() + temporary_registers();
   }
+
+  uint32_t FrameSize() const { return frame_size_; }
 
   bool needs_declarative_environment() const {
     return needs_declarative_environment_;
@@ -209,8 +197,16 @@ class Code : public radio::HeapObject<radio::POINTER> {
 
   void* executable() const { return executable_; }
 
-  void RegisterMap(Map* map) {
-    maps_.push_back(map);
+  void RegisterMap(Map* map) { maps_.push_back(map); }
+
+  void MarkChildren(radio::Core* core) {
+    core->MarkCell(script_);
+    core_->MarkChildren(core);
+    std::for_each(codes_.begin(), codes_.end(), radio::Core::Marker(core));
+    std::for_each(constants_.begin(),
+                  constants_.end(), radio::Core::Marker(core));
+    std::for_each(maps_.begin(), maps_.end(), radio::Core::Marker(core));
+    core->MarkCell(construct_map_);
   }
 
  private:
@@ -223,14 +219,16 @@ class Code : public radio::HeapObject<radio::POINTER> {
 
   void set_stack_size(uint32_t size) { stack_size_ = size; }
 
-  void set_frame_size(uint32_t size) { frame_size_ = size; }
-
   void set_temporary_registers(uint32_t size) { temporary_registers_ = size; }
 
   void set_empty(bool val) { empty_ = val; }
 
   void set_needs_declarative_environment(bool val) {
     needs_declarative_environment_ = val;
+  }
+
+  void CalculateFrameSize(uint32_t frame_size) {
+    frame_size_ = std::max<uint32_t>(frame_size, registers());
   }
 
   CodeType code_type_;

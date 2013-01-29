@@ -273,7 +273,8 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   void CodeContextEpilogue(Code* code) {
     code->set_end(data_->size());
     code->set_temporary_registers(registers_.size());
-    code->set_frame_size(registers_.FrameSize());
+    code->CalculateFrameSize(registers_.FrameSize());
+    assert(code->FrameSize() >= code->registers());
   }
 
   // Statement

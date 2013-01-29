@@ -95,7 +95,7 @@ struct Frame {
   }
 
   JSVal* GetFrameEnd() {
-    return RegisterFile() + code()->registers();
+    return RegisterFile() + code()->FrameSize();
   }
 
   JSVal* RegisterFile();
@@ -294,7 +294,7 @@ inline RegisterID Registers::Constant(uint32_t offset) {
 }
 
 inline void Registers::AllocateFrame(int32_t top) {
-  frame_size_ = (std::max<int32_t>)(top + sizeof(Frame), frame_size_);
+  frame_size_ = (std::max<int32_t>)(top + FrameConstant<>::kFrameSize, frame_size_);
 }
 
 } } }  // namespace iv::lv5::railgun
