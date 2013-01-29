@@ -17,5 +17,17 @@ inline JSVal PrivateSymbolConstructor(const Arguments& args, Error* e) {
   return JSPrivateSymbol::New(args.ctx());
 }
 
+inline JSVal PrivateSymbolIsPrivateSymbol(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("PrivateSymbol.isPrivateSymbol", args, e);
+  if (args.empty()) {
+    return JSFalse;
+  }
+  const JSVal val = args.front();
+  if (!val.IsObject()) {
+    return JSFalse;
+  }
+  return JSVal::Bool(val.object()->IsClass<Class::PrivateSymbol>());
+}
+
 } } }  // namespace iv::lv5::runtime
 #endif  // IV_LV5_RUNTIME_PRIVATE_SYMBOL_H_
