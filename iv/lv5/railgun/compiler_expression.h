@@ -838,6 +838,7 @@ inline void Compiler::Visit(const ThisLiteral* lit) {
   }
   assert(registers_.This()->IsConstant());
   dst_ = EmitMV(dst_, registers_.This());
+  code_->set_this_materialized(true);
 }
 
 inline void Compiler::Visit(const NullLiteral* lit) {

@@ -45,6 +45,7 @@ class Code : public radio::HeapObject<radio::POINTER> {
       empty_(false),
       has_name_(func.name()),
       needs_declarative_environment_(false),
+      this_materialized_(func.scope().direct_call_to_eval()),
       heap_size_(0),
       stack_size_(0),
       temporary_registers_(0),
@@ -189,6 +190,8 @@ class Code : public radio::HeapObject<radio::POINTER> {
     return needs_declarative_environment_;
   }
 
+  bool IsThisMaterialized() const { return this_materialized_; }
+
   void set_executable(void* executable) {
     executable_ = executable;
   }
@@ -223,6 +226,8 @@ class Code : public radio::HeapObject<radio::POINTER> {
 
   void set_empty(bool val) { empty_ = val; }
 
+  void set_this_materialized(bool val) { this_materialized_ = val; }
+
   void set_needs_declarative_environment(bool val) {
     needs_declarative_environment_ = val;
   }
@@ -236,6 +241,7 @@ class Code : public radio::HeapObject<radio::POINTER> {
   bool empty_;
   bool has_name_;
   bool needs_declarative_environment_;
+  bool this_materialized_;
   uint32_t heap_size_;   // heaps
   uint32_t stack_size_;  // locals
   uint32_t temporary_registers_;  // number of temporary registers

@@ -267,6 +267,10 @@ inline Rep BINARY_BIT_OR(Frame* stack, JSVal lhs, JSVal rhs) {
   return Extract(JSVal::Int32(left | right));
 }
 
+inline Rep TO_OBJECT(Frame* stack, JSVal src) {
+  return Extract(src.ToObject(stack->ctx));
+}
+
 inline Rep TO_NUMBER(Frame* stack, JSVal src) {
   const double x = src.ToNumber(stack->ctx, IV_LV5_BREAKER_ERR);
   return Extract(x);
@@ -481,7 +485,6 @@ inline RepPair CALL(Frame* stack,
       stack->error->Report(Error::Range, "maximum call stack size exceeded");
       IV_LV5_BREAKER_RAISE_PAIR();
     }
-    new_frame->InitThisBinding(ctx);
     return Extract(code->executable(), new_frame);
   }
 
@@ -527,7 +530,6 @@ inline RepPair EVAL(Frame* stack,
       stack->error->Report(Error::Range, "maximum call stack size exceeded");
       IV_LV5_BREAKER_RAISE_PAIR();
     }
-    new_frame->InitThisBinding(ctx);
     return Extract(code->executable(), new_frame);
   }
 
@@ -579,7 +581,6 @@ inline RepPair CONSTRUCT(Frame* stack,
     Map* map = func->construct_map(ctx, IV_LV5_BREAKER_ERR_PAIR);
     JSObject* const obj = JSObject::New(ctx, map);
     new_frame->set_this_binding(obj);
-    new_frame->InitThisBinding(ctx);
     return Extract(code->executable(), new_frame);
   }
 

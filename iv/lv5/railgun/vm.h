@@ -68,7 +68,6 @@ inline JSVal VM::RunEval(Code* code,
     e->Report(Error::Range, "maximum call stack size exceeded");
     return JSEmpty;
   }
-  frame->InitThisBinding(ctx());
   const JSVal res = Execute(frame, e);
 #ifdef DEBUG
   if (code->needs_declarative_environment()) {
@@ -94,7 +93,6 @@ inline JSVal VM::Execute(Arguments* args, JSVMFunction* func, Error* e) {
     e->Report(Error::Range, "maximum call stack size exceeded");
     return JSEmpty;
   }
-  frame->InitThisBinding(ctx());
   const JSVal res = Execute(frame, e);
 #ifdef DEBUG
   if (func->code()->needs_declarative_environment()) {
@@ -297,8 +295,21 @@ inline JSVal VM::Execute(Frame* start, Error* e) {
 
       DEFINE_OPCODE(ENTER) {
         // opcode
+        Code* code = frame->code();
+
         std::fill_n<JSVal*, std::size_t, JSVal>(
-            frame->RegisterFile(), frame->code()->registers(), JSUndefined);
+            frame->RegisterFile(), code->registers(), JSUndefined);
+
+        // initialize this binding
+        if (code->IsThisMaterialized() && !code->strict()) {
+          const JSVal this_value = frame->GetThis();
+          if (this_value.IsNullOrUndefined()) {
+            frame->set_this_binding(ctx()->global_obj());
+          } else if (!this_value.IsObject()) {
+            assert(!this_value.IsNullOrUndefined());
+            frame->set_this_binding(this_value.ToObject(ctx()));
+          }
+        }
         DISPATCH(ENTER);
       }
 
@@ -2030,7 +2041,6 @@ inline JSVal VM::Execute(Frame* start, Error* e) {
           frame = new_frame;
           instr = frame->data();
           strict = frame->code()->strict();
-          frame->InitThisBinding(ctx());
           DISPATCH_WITH_NO_INCREMENT();
         }
         // Native Function, so use Invoke
@@ -2071,7 +2081,6 @@ inline JSVal VM::Execute(Frame* start, Error* e) {
           Map* map = func->construct_map(ctx(), ERR);
           JSObject* const obj = JSObject::New(ctx(), map);
           frame->set_this_binding(obj);
-          frame->InitThisBinding(ctx());
           DISPATCH_WITH_NO_INCREMENT();
         }
 
@@ -2115,7 +2124,6 @@ inline JSVal VM::Execute(Frame* start, Error* e) {
           frame = new_frame;
           instr = frame->data();
           strict = frame->code()->strict();
-          frame->InitThisBinding(ctx());
           DISPATCH_WITH_NO_INCREMENT();
         }
 

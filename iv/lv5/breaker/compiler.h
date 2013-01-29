@@ -745,6 +745,42 @@ class Compiler {
       const register_t dst = Reg(i);
       asm_->mov(qword[r13 + dst * kJSValSize], undefined);
     }
+
+    // initialize this value
+    if (code_->IsThisMaterialized() && !code_->strict()) {
+      const Assembler::LocalLabelScope scope(asm_);
+      asm_->mov(rsi, ptr[r13 + kJSValSize * Reg(railgun::FrameConstant<>::kThisOffset)]);  // NOLINT
+
+      asm_->mov(rdi, detail::jsval64::kValueMask);
+      asm_->and(rdi, rsi);
+      asm_->jnz(".not_cell", Xbyak::CodeGenerator::T_NEAR);
+
+      // object or string
+      const std::ptrdiff_t offset =
+          IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
+      asm_->mov(rdi, qword[rsi + offset]);
+      asm_->test(rdi, rdi);  // class is NULL => String...
+      asm_->jnz(".end", Xbyak::CodeGenerator::T_NEAR);  // object
+      // string fall-through
+
+      // object materialization
+      asm_->L(".object_initialization"); {
+        asm_->mov(rdi, r14);
+        asm_->Call(&stub::TO_OBJECT);
+        asm_->mov(qword[r13 + kJSValSize * Reg(railgun::FrameConstant<>::kThisOffset)], rax);  // NOLINT
+        asm_->jmp(".end", Xbyak::CodeGenerator::T_NEAR);
+      }
+
+      asm_->L(".not_cell"); {
+        asm_->and(rdi, -9);
+        asm_->cmp(rdi, detail::jsval64::kNull);
+        asm_->jne(".object_initialization");
+        // null or undefined
+        asm_->mov(rax, core::BitCast<uintptr_t>(ctx_->global_obj()));
+        asm_->mov(qword[r13 + kJSValSize * Reg(railgun::FrameConstant<>::kThisOffset)], rax);  // NOLINT
+      }
+      asm_->L(".end");
+    }
   }
 
   // opcode | (dst | src)
@@ -3023,7 +3059,7 @@ class Compiler {
       asm_->jnz(label, type);
     }
 
-    // target is guaranteed as object
+    // target is guaranteed as cell
     // load Class tag from object and check it is Array
     if (!type_entry.type().IsArray()) {
       const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();

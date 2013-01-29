@@ -82,18 +82,6 @@ struct Frame {
     e->set_stack(stack);
   }
 
-  void InitThisBinding(lv5::Context* ctx) {
-    if (!code()->strict()) {
-      const JSVal this_value = GetThis();
-      if (this_value.IsNullOrUndefined()) {
-        set_this_binding(ctx->global_obj());
-      } else if (!this_value.IsObject()) {
-        assert(!this_value.IsNullOrUndefined());
-        set_this_binding(this_value.ToObject(ctx));
-      }
-    }
-  }
-
   JSVal* GetFrameEnd() {
     return RegisterFile() + code()->FrameSize();
   }
