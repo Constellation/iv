@@ -59,7 +59,6 @@ class Stack : public lv5::Stack {
   Stack()
     : lv5::Stack(),
       resource_(NULL),
-      base_(NULL),
       current_(NULL) {
     resource_ = new Resource(this);
   }
@@ -211,7 +210,6 @@ class Stack : public lv5::Stack {
   }
 
   Resource* resource_;
-  Frame* base_;
   Frame* current_;
 };
 

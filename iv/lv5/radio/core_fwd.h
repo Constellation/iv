@@ -154,6 +154,9 @@ class Core : private core::Noncopyable<Core> {
     return &controls_[(N + 1) / kBlockControlStep];
   }
 
+  // WeakMaps are chained
+  Cell* weak_maps() const { return weak_maps_; }
+
   Arena* working_;
   Block* free_blocks_;
   Cell* weak_maps_;

@@ -34,7 +34,6 @@ class VM : private Operation {
   explicit VM(lv5::Context* ctx)
     : Operation(ctx),
       stack_(),
-      direct_threading_dispatch_table_(NULL),
       statistics_() {
   }
 
@@ -121,8 +120,11 @@ class VM : private Operation {
   }
 
   Stack stack_;
-  const DirectThreadingDispatchTable* direct_threading_dispatch_table_;
   Statistics statistics_;
+
+#if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
+  const DirectThreadingDispatchTable* direct_threading_dispatch_table_;
+#endif
 };
 
 } } }  // namespace iv::lv5::railgun

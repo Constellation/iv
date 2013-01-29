@@ -40,6 +40,8 @@ class JSError : public JSObject {
     }
   }
 
+  Error::Code code() const { return code_; }
+
  private:
   Error::Code code_;
 };

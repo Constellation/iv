@@ -72,6 +72,8 @@ class IC {
     return packed;
   }
 
+  Type type() const { return type_; }
+
  private:
   Type type_;
 };

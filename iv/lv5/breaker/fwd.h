@@ -46,10 +46,10 @@ using namespace Xbyak::util;  // NOLINT
 
 #define IV_LV5_BREAKER_ASM_HEADER(s)\
     ".text""\n"\
-    ".globl "IV_LV5_BREAKER_SYMBOL(s)"\n"\
-    IV_LV5_BREAKER_WEAK(s)"\n"\
-    ".align 4""\n"\
-    IV_LV5_BREAKER_SYMBOL(s)":"
+    ".globl " IV_LV5_BREAKER_SYMBOL(s) "\n"\
+    IV_LV5_BREAKER_WEAK(s) "\n"\
+    ".align 4" "\n"\
+    IV_LV5_BREAKER_SYMBOL(s) ":"
 
 #define IV_LV5_BREAKER_ASM_DEFINE(ret, name, args)\
     extern "C" ret name args;\

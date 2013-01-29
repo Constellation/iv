@@ -7,11 +7,12 @@ namespace lv5 {
 class MapBuilder {
  public:
   explicit MapBuilder(Context* ctx, JSObject* prototype)
-    : ctx_(ctx),
-      table_(new(GC)Map::TargetTable()),
+    : table_(new(GC)Map::TargetTable()),
       prototype_(prototype) { }
 
-  Map* Build(bool unique = false, bool indexed = false) { return new Map(table_, prototype_, unique, indexed); }
+  Map* Build(bool unique = false, bool indexed = false) {
+    return new Map(table_, prototype_, unique, indexed);
+  }
 
   void Add(Symbol symbol, std::size_t index, Attributes::Safe attributes) {
     assert(Find(symbol).IsNotFound());
@@ -39,7 +40,6 @@ class MapBuilder {
     }
   }
  private:
-  Context* ctx_;
   Map::TargetTable* table_;
   JSObject* prototype_;
 };

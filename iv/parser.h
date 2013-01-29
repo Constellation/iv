@@ -23,7 +23,7 @@
 #include <iv/environment.h>
 #include <iv/symbol_table.h>
 
-#define IS(token)\
+#define IV_IS(token)\
   do {\
     if (token_ != token) {\
       *res = false;\
@@ -32,65 +32,52 @@
     }\
   } while (0)
 
-#define EXPECT(token)\
+#define IV_EXPECT(token)\
   do {\
-    if (token_ != token) {\
-      *res = false;\
-      ReportUnexpectedToken(token);\
-      return NULL;\
-    }\
+    IV_IS(token);\
     Next();\
   } while (0)
 
-#define UNEXPECT(token)\
+#define IV_UNEXPECT_WITH(token, value)\
   do {\
     *res = false;\
     ReportUnexpectedToken(token);\
-    return NULL;\
+    return value;\
   } while (0)
 
-#define RAISE_WITH(str, val)\
-  do {\
-    *res = false;\
-    error_state_ |= kNotRecoverable;\
-    SetErrorHeader(lexer_.line_number());\
-    error_.append(str);\
-    return val;\
-  } while (0)
+#define IV_UNEXPECT(token) IV_UNEXPECT_WITH(token, NULL)
 
-#define RAISE(str)\
-  do {\
-    *res = false;\
-    error_state_ |= kNotRecoverable;\
-    SetErrorHeader(lexer_.line_number());\
-    error_.append(str);\
-    return NULL;\
-  } while (0)
-
-#define RAISE_RECOVERVABLE(str)\
-  do {\
-    *res = false;\
-    SetErrorHeader(lexer_.line_number());\
-    error_.append(str);\
-    return NULL;\
-  } while (0)
-
-#define RAISE_WITH_NUMBER(str, line)\
+#define IV_RAISE_IMPL(str, line, value)\
   do {\
     *res = false;\
     error_state_ |= kNotRecoverable;\
     SetErrorHeader(line);\
     error_.append(str);\
+    return value;\
+  } while (0)
+
+#define IV_RAISE_WITH(str, v) IV_RAISE_IMPL(str, lexer_.line_number(), v)
+#define IV_RAISE_NUMBER(str, line) IV_RAISE_IMPL(str, line, NULL)
+#define IV_RAISE(str) IV_RAISE_WITH(str, NULL)
+
+#define IV_RAISE_RECOVERABLE(str)\
+  do {\
+    *res = false;\
+    SetErrorHeader(lexer_.line_number());\
+    error_.append(str);\
     return NULL;\
   } while (0)
 
-#define CHECK  res);\
+
+#define IV_CHECK_WITH(value)  res);\
   if (!*res) {\
-    return NULL;\
+    return value;\
   }\
   ((void)0
-#define DUMMY )  // to make indentation work
-#undef DUMMY
+#define IV_DUMMY )  // to make indentation work
+#undef IV_DUMMY
+
+#define IV_CHECK IV_CHECK_WITH(NULL)
 
 namespace iv {
 namespace core {
@@ -226,7 +213,7 @@ class Parser : private Noncopyable<> {
     bool *res = &error_flag;
     const ScopeSwitcher scope_switcher(this, scope);
     Next();
-    const bool strict = ParseSourceElements(Token::TK_EOS, body, CHECK);
+    const bool strict = ParseSourceElements(Token::TK_EOS, body, IV_CHECK);
     const std::size_t end_position = lexer_.end_position();
     scope->set_strict(strict);
     environment.Resolve(NULL);
@@ -269,7 +256,7 @@ class Parser : private Noncopyable<> {
             octal_escaped_directive_found = true;
             line = lexer_.line_number();
         }
-        Statement* stmt = ParseStatement(CHECK);
+        Statement* stmt = ParseStatement(IV_CHECK_WITH(false));
         body->push_back(stmt);
         if (stmt->AsExpressionStatement() &&
             stmt->AsExpressionStatement()->expr()->AsStringLiteral()) {
@@ -289,9 +276,10 @@ class Parser : private Noncopyable<> {
               // }
               // found octal string literal and raise error.
               if (octal_escaped_directive_found) {
-                RAISE_WITH_NUMBER(
+                IV_RAISE_IMPL(
                     "octal escape sequence not allowed in strict code",
-                    line);
+                    line,
+                    false);
               }
 
               // and one token lexed is not in strict
@@ -317,9 +305,9 @@ class Parser : private Noncopyable<> {
       Statement* stmt;
       if (token_ == Token::TK_FUNCTION) {
         // FunctionDeclaration
-        stmt = ParseFunctionDeclaration(CHECK);
+        stmt = ParseFunctionDeclaration(IV_CHECK_WITH(false));
       } else {
-        stmt = ParseStatement(CHECK);
+        stmt = ParseStatement(IV_CHECK_WITH(false));
       }
       body->push_back(stmt);
     }
@@ -347,15 +335,15 @@ class Parser : private Noncopyable<> {
     switch (token_) {
       case Token::TK_LBRACE:
         // Block
-        return ParseBlock(CHECK);
+        return ParseBlock(IV_CHECK);
 
       case Token::TK_CONST:
         if (strict_) {
-          RAISE("\"const\" not allowed in strict code");
+          IV_RAISE("\"const\" not allowed in strict code");
         }
       case Token::TK_VAR:
         // VariableStatement
-        return ParseVariableStatement(CHECK);
+        return ParseVariableStatement(IV_CHECK);
 
       case Token::TK_SEMICOLON:
         // EmptyStatement
@@ -363,71 +351,71 @@ class Parser : private Noncopyable<> {
 
       case Token::TK_IF:
         // IfStatement
-        return ParseIfStatement(CHECK);
+        return ParseIfStatement(IV_CHECK);
 
       case Token::TK_DO:
         // IterationStatement
         // do while
-        return ParseDoWhileStatement(CHECK);
+        return ParseDoWhileStatement(IV_CHECK);
 
       case Token::TK_WHILE:
         // IterationStatement
         // while
-        return ParseWhileStatement(CHECK);
+        return ParseWhileStatement(IV_CHECK);
 
       case Token::TK_FOR:
         // IterationStatement
         // for
-        return ParseForStatement(CHECK);
+        return ParseForStatement(IV_CHECK);
 
       case Token::TK_CONTINUE:
         // ContinueStatement
-        return ParseContinueStatement(CHECK);
+        return ParseContinueStatement(IV_CHECK);
 
       case Token::TK_BREAK:
         // BreakStatement
-        return ParseBreakStatement(CHECK);
+        return ParseBreakStatement(IV_CHECK);
 
       case Token::TK_RETURN:
         // ReturnStatement
-        return ParseReturnStatement(CHECK);
+        return ParseReturnStatement(IV_CHECK);
 
       case Token::TK_WITH:
         // WithStatement
-        return ParseWithStatement(CHECK);
+        return ParseWithStatement(IV_CHECK);
 
       case Token::TK_SWITCH:
         // SwitchStatement
-        return ParseSwitchStatement(CHECK);
+        return ParseSwitchStatement(IV_CHECK);
 
       case Token::TK_THROW:
         // ThrowStatement
-        return ParseThrowStatement(CHECK);
+        return ParseThrowStatement(IV_CHECK);
 
       case Token::TK_TRY:
         // TryStatement
-        return ParseTryStatement(CHECK);
+        return ParseTryStatement(IV_CHECK);
 
       case Token::TK_DEBUGGER:
         // DebuggerStatement
-        return ParseDebuggerStatement(CHECK);
+        return ParseDebuggerStatement(IV_CHECK);
 
       case Token::TK_FUNCTION:
         // FunctionStatement (not in ECMA-262 5th)
         // FunctionExpression
-        return ParseFunctionStatement<UseFunctionStatement>(CHECK);
+        return ParseFunctionStatement<UseFunctionStatement>(IV_CHECK);
 
       case Token::TK_IDENTIFIER:
         // LabelledStatement or ExpressionStatement
-        return ParseExpressionOrLabelledStatement(CHECK);
+        return ParseExpressionOrLabelledStatement(IV_CHECK);
 
       case Token::TK_ILLEGAL:
-        UNEXPECT(token_);
+        IV_UNEXPECT(token_);
         break;
 
       default:
         // ExpressionStatement or ILLEGAL
-        return ParseExpressionStatement(CHECK);
+        return ParseExpressionStatement(IV_CHECK);
     }
   }
 
@@ -447,7 +435,7 @@ class Parser : private Noncopyable<> {
     assert(token_ == Token::TK_FUNCTION);
     FunctionLiteral* const expr = ParseFunctionLiteral(
         FunctionLiteral::DECLARATION,
-        FunctionLiteral::GENERAL, CHECK);
+        FunctionLiteral::GENERAL, IV_CHECK);
     // define named function as FunctionDeclaration
     scope_->AddFunctionDeclaration(expr);
     assert(expr);
@@ -470,7 +458,7 @@ class Parser : private Noncopyable<> {
 
     Next();
     while (token_ != Token::TK_RBRACE) {
-      Statement* const stmt = ParseStatement(CHECK);
+      Statement* const stmt = ParseStatement(IV_CHECK);
       body->push_back(stmt);
     }
     Next();
@@ -492,8 +480,8 @@ class Parser : private Noncopyable<> {
     const std::size_t begin = lexer_.begin_position();
     const std::size_t line_number = lexer_.line_number();
     Declarations* const decls = factory_->template NewVector<Declaration*>();
-    ParseVariableDeclarations(decls, token_ == Token::TK_CONST, true, CHECK);
-    ExpectSemicolon(CHECK);
+    ParseVariableDeclarations(decls, token_ == Token::TK_CONST, true, IV_CHECK);
+    ExpectSemicolon(IV_CHECK);
     assert(decls);
     return factory_->NewVariableStatement(op,
                                           decls,
@@ -521,15 +509,15 @@ class Parser : private Noncopyable<> {
                                           bool *res) {
     do {
       Next();
-      IS(Token::TK_IDENTIFIER);
+      IV_IS(Token::TK_IDENTIFIER);
       const ast::SymbolHolder sym = ParseSymbol();
       // section 12.2.1
       // within the strict code, Identifier must not be "eval" or "arguments"
       if (strict_) {
         if (sym == symbol::eval()) {
-          RAISE("assignment to \"eval\" not allowed in strict code");
+          IV_RAISE("assignment to \"eval\" not allowed in strict code");
         } else if (sym == symbol::arguments()) {
-          RAISE("assignment to \"arguments\" not allowed in strict code");
+          IV_RAISE("assignment to \"arguments\" not allowed in strict code");
         }
       }
 
@@ -538,7 +526,7 @@ class Parser : private Noncopyable<> {
       if (token_ == Token::TK_ASSIGN) {
         Next();
         // AssignmentExpression
-        Expression* expr = ParseAssignmentExpression(contains_in, CHECK);
+        Expression* expr = ParseAssignmentExpression(contains_in, IV_CHECK);
         decl = factory_->NewDeclaration(name, expr);
       } else {
         // Undefined Expression
@@ -571,16 +559,16 @@ class Parser : private Noncopyable<> {
     Statement* else_statement = NULL;
     Next();
 
-    EXPECT(Token::TK_LPAREN);
+    IV_EXPECT(Token::TK_LPAREN);
 
-    Expression* const expr = ParseExpression(true, CHECK);
+    Expression* const expr = ParseExpression(true, IV_CHECK);
 
-    EXPECT(Token::TK_RPAREN);
+    IV_EXPECT(Token::TK_RPAREN);
 
-    Statement* const then_statement = ParseStatement(CHECK);
+    Statement* const then_statement = ParseStatement(IV_CHECK);
     if (token_ == Token::TK_ELSE) {
       Next();
-      else_statement = ParseStatement(CHECK);
+      else_statement = ParseStatement(IV_CHECK);
     }
     assert(expr && then_statement);
     return factory_->NewIfStatement(expr,
@@ -609,15 +597,15 @@ class Parser : private Noncopyable<> {
     Target target(this, Target::kIterationStatement);
     Next();
 
-    Statement* const stmt = ParseStatement(CHECK);
+    Statement* const stmt = ParseStatement(IV_CHECK);
 
-    EXPECT(Token::TK_WHILE);
+    IV_EXPECT(Token::TK_WHILE);
 
-    EXPECT(Token::TK_LPAREN);
+    IV_EXPECT(Token::TK_LPAREN);
 
-    Expression* const expr = ParseExpression(true, CHECK);
+    Expression* const expr = ParseExpression(true, IV_CHECK);
 
-    EXPECT(Token::TK_RPAREN);
+    IV_EXPECT(Token::TK_RPAREN);
 
     // ex:
     //   do {
@@ -646,14 +634,14 @@ class Parser : private Noncopyable<> {
     const std::size_t line_number = lexer_.line_number();
     Next();
 
-    EXPECT(Token::TK_LPAREN);
+    IV_EXPECT(Token::TK_LPAREN);
 
-    Expression* const expr = ParseExpression(true, CHECK);
+    Expression* const expr = ParseExpression(true, IV_CHECK);
     Target target(this, Target::kIterationStatement);
 
-    EXPECT(Token::TK_RPAREN);
+    IV_EXPECT(Token::TK_RPAREN);
 
-    Statement* const stmt = ParseStatement(CHECK);
+    Statement* const stmt = ParseStatement(IV_CHECK);
     assert(stmt);
     WhileStatement* const whilestmt =
         factory_->NewWhileStatement(stmt, expr, begin, line_number);
@@ -676,7 +664,7 @@ class Parser : private Noncopyable<> {
     const std::size_t for_stmt_line_number = lexer_.line_number();
     Next();
 
-    EXPECT(Token::TK_LPAREN);
+    IV_EXPECT(Token::TK_LPAREN);
 
     Statement *init = NULL;
 
@@ -688,7 +676,7 @@ class Parser : private Noncopyable<> {
         Declarations* const decls =
             factory_->template NewVector<Declaration*>();
         ParseVariableDeclarations(decls,
-                                  token_ == Token::TK_CONST, false, CHECK);
+                                  token_ == Token::TK_CONST, false, IV_CHECK);
         if (token_ == Token::TK_IN) {
           assert(decls);
           VariableStatement* const var =
@@ -704,12 +692,12 @@ class Parser : private Noncopyable<> {
           if (decls.size() != 1) {
             // ForInStatement requests VaraibleDeclarationNoIn (not List),
             // so check declarations' size is 1.
-            RAISE("invalid for-in left-hand-side");
+            IV_RAISE("invalid for-in left-hand-side");
           }
-          Expression* const enumerable = ParseExpression(true, CHECK);
-          EXPECT(Token::TK_RPAREN);
+          Expression* const enumerable = ParseExpression(true, IV_CHECK);
+          IV_EXPECT(Token::TK_RPAREN);
           Target target(this, Target::kIterationStatement);
-          Statement* const body = ParseStatement(CHECK);
+          Statement* const body = ParseStatement(IV_CHECK);
           assert(body && init && enumerable);
           ForInStatement* const forstmt =
               factory_->NewForInStatement(body,
@@ -727,7 +715,7 @@ class Parser : private Noncopyable<> {
                                                 line_number);
         }
       } else {
-        Expression* const init_expr = ParseExpression(false, CHECK);
+        Expression* const init_expr = ParseExpression(false, IV_CHECK);
         if (token_ == Token::TK_IN) {
           // for in loop
           assert(init_expr);
@@ -736,13 +724,13 @@ class Parser : private Noncopyable<> {
           // LHS Guard
           if (!init_expr->IsLeftHandSide()) {
             reference_error_ = true;
-            RAISE("invalid for-in left-hand-side");
+            IV_RAISE("invalid for-in left-hand-side");
           }
           Next();
-          Expression* const enumerable = ParseExpression(true, CHECK);
-          EXPECT(Token::TK_RPAREN);
+          Expression* const enumerable = ParseExpression(true, IV_CHECK);
+          IV_EXPECT(Token::TK_RPAREN);
           Target target(this, Target::kIterationStatement);
-          Statement* const body = ParseStatement(CHECK);
+          Statement* const body = ParseStatement(IV_CHECK);
           assert(body && init && enumerable);
           ForInStatement* const forstmt =
               factory_->NewForInStatement(body, init, enumerable,
@@ -758,28 +746,28 @@ class Parser : private Noncopyable<> {
     }
 
     // ordinary for loop
-    EXPECT(Token::TK_SEMICOLON);
+    IV_EXPECT(Token::TK_SEMICOLON);
 
     Expression* cond = NULL;
     if (token_ == Token::TK_SEMICOLON) {
       // no cond expr
       Next();
     } else {
-      cond = ParseExpression(true, CHECK);
-      EXPECT(Token::TK_SEMICOLON);
+      cond = ParseExpression(true, IV_CHECK);
+      IV_EXPECT(Token::TK_SEMICOLON);
     }
 
     Expression* next = NULL;
     if (token_ == Token::TK_RPAREN) {
       Next();
     } else {
-      next = ParseExpression(true, CHECK);
+      next = ParseExpression(true, IV_CHECK);
       assert(next);
-      EXPECT(Token::TK_RPAREN);
+      IV_EXPECT(Token::TK_RPAREN);
     }
 
     Target target(this, Target::kIterationStatement);
-    Statement* const body = ParseStatement(CHECK);
+    Statement* const body = ParseStatement(IV_CHECK);
     assert(body);
     ForStatement* const forstmt = factory_->NewForStatement(
         body,
@@ -804,15 +792,15 @@ class Parser : private Noncopyable<> {
       label = ParseSymbol();
       target = LookupContinuableTarget(label);
       if (!target) {
-        RAISE("label not found");
+        IV_RAISE("label not found");
       }
     } else {
       target = LookupContinuableTarget();
       if (!target) {
-        RAISE("label not found");
+        IV_RAISE("label not found");
       }
     }
-    ExpectSemicolon(CHECK);
+    ExpectSemicolon(IV_CHECK);
     return factory_->NewContinueStatement(label, target,
                                           begin,
                                           lexer_.previous_end_position(),
@@ -831,7 +819,7 @@ class Parser : private Noncopyable<> {
     if (token_ == Token::TK_IDENTIFIER &&
         !lexer_.has_line_terminator_before_next()) {
       // label
-      IS(Token::TK_IDENTIFIER);
+      IV_IS(Token::TK_IDENTIFIER);
       label = ParseSymbol();
       if (ContainsLabel(labels_, label)) {
         // example
@@ -846,16 +834,16 @@ class Parser : private Noncopyable<> {
       } else {
         target = LookupBreakableTarget(label);
         if (!target) {
-          RAISE("label not found");
+          IV_RAISE("label not found");
         }
       }
     } else {
       target = LookupBreakableTarget();
       if (!target) {
-        RAISE("label not found");
+        IV_RAISE("label not found");
       }
     }
-    ExpectSemicolon(CHECK);
+    ExpectSemicolon(IV_CHECK);
     return factory_->NewBreakStatement(label,
                                        target,
                                        begin,
@@ -874,14 +862,14 @@ class Parser : private Noncopyable<> {
     if (scope_->IsGlobal()) {
       // return statement found in global
       // SyntaxError
-      RAISE("\"return\" not in function");
+      IV_RAISE("\"return\" not in function");
     }
 
     Expression* expr = NULL;
     if (!IsAutomaticSemicolonInserted()) {
-      expr = ParseExpression(true, CHECK);
+      expr = ParseExpression(true, IV_CHECK);
     }
-    ExpectSemicolon(CHECK);
+    ExpectSemicolon(IV_CHECK);
     return factory_->NewReturnStatement(expr,
                                         begin,
                                         lexer_.previous_end_position(),
@@ -899,19 +887,19 @@ class Parser : private Noncopyable<> {
     // section 12.10.1
     // when in strict mode code, WithStatement is not allowed.
     if (strict_) {
-      RAISE("with statement not allowed in strict code");
+      IV_RAISE("with statement not allowed in strict code");
     }
 
-    EXPECT(Token::TK_LPAREN);
+    IV_EXPECT(Token::TK_LPAREN);
 
-    Expression* expr = ParseExpression(true, CHECK);
+    Expression* expr = ParseExpression(true, IV_CHECK);
 
-    EXPECT(Token::TK_RPAREN);
+    IV_EXPECT(Token::TK_RPAREN);
 
     Statement* stmt = NULL;
     {
       WithEnvironment environment(environment_, &environment_);
-      stmt = ParseStatement(CHECK);
+      stmt = ParseStatement(IV_CHECK);
     }
     assert(expr && stmt);
     return factory_->NewWithStatement(expr, stmt, begin, line_number);
@@ -930,27 +918,27 @@ class Parser : private Noncopyable<> {
     CaseClause* case_clause;
     Next();
 
-    EXPECT(Token::TK_LPAREN);
+    IV_EXPECT(Token::TK_LPAREN);
 
-    Expression* expr = ParseExpression(true, CHECK);
+    Expression* expr = ParseExpression(true, IV_CHECK);
     CaseClauses* clauses = factory_->template NewVector<CaseClause*>();
     Target target(this, Target::kSwitchStatement);
 
-    EXPECT(Token::TK_RPAREN);
+    IV_EXPECT(Token::TK_RPAREN);
 
-    EXPECT(Token::TK_LBRACE);
+    IV_EXPECT(Token::TK_LBRACE);
 
     bool default_found = false;
     while (token_ != Token::TK_RBRACE) {
       if (token_ == Token::TK_CASE ||
           token_ == Token::TK_DEFAULT) {
-        case_clause = ParseCaseClause(CHECK);
+        case_clause = ParseCaseClause(IV_CHECK);
       } else {
-        UNEXPECT(token_);
+        IV_UNEXPECT(token_);
       }
       if (case_clause->IsDefault()) {
         if (default_found) {
-          RAISE("duplicate default clause in switch");
+          IV_RAISE("duplicate default clause in switch");
         } else {
           default_found = true;
         }
@@ -987,17 +975,17 @@ class Parser : private Noncopyable<> {
 
     if (token_ == Token::TK_CASE) {
       Next();
-      expr = ParseExpression(true, CHECK);
+      expr = ParseExpression(true, IV_CHECK);
     } else  {
-      EXPECT(Token::TK_DEFAULT);
+      IV_EXPECT(Token::TK_DEFAULT);
     }
 
-    EXPECT(Token::TK_COLON);
+    IV_EXPECT(Token::TK_COLON);
 
     while (token_ != Token::TK_RBRACE &&
            token_ != Token::TK_CASE   &&
            token_ != Token::TK_DEFAULT) {
-      Statement* const stmt = ParseStatement(CHECK);
+      Statement* const stmt = ParseStatement(IV_CHECK);
       body->push_back(stmt);
     }
 
@@ -1019,10 +1007,10 @@ class Parser : private Noncopyable<> {
     Next();
     // Throw requires Expression and no LineTerminator is allowed between them.
     if (lexer_.has_line_terminator_before_next()) {
-      RAISE("missing expression between throw and newline");
+      IV_RAISE("missing expression between throw and newline");
     }
-    Expression* const expr = ParseExpression(true, CHECK);
-    ExpectSemicolon(CHECK);
+    Expression* const expr = ParseExpression(true, IV_CHECK);
+    ExpectSemicolon(IV_CHECK);
     assert(expr);
     return factory_->NewThrowStatement(
         expr,
@@ -1052,31 +1040,33 @@ class Parser : private Noncopyable<> {
 
     Next();
 
-    IS(Token::TK_LBRACE);
-    Block* const try_block = ParseBlock(CHECK);
+    IV_IS(Token::TK_LBRACE);
+    Block* const try_block = ParseBlock(IV_CHECK);
 
     if (token_ == Token::TK_CATCH) {
       // Catch
       has_catch_or_finally = true;
       Next();
-      EXPECT(Token::TK_LPAREN);
-      IS(Token::TK_IDENTIFIER);
+      IV_EXPECT(Token::TK_LPAREN);
+      IV_IS(Token::TK_IDENTIFIER);
       const ast::SymbolHolder sym = ParseSymbol();
       // section 12.14.1
       // within the strict code, Identifier must not be "eval" or "arguments"
       if (strict_) {
         if (sym == symbol::eval()) {
-          RAISE("catch placeholder \"eval\" not allowed in strict code");
+          IV_RAISE(
+              "catch placeholder \"eval\" not allowed in strict code");
         } else if (sym == symbol::arguments()) {
-          RAISE("catch placeholder \"arguments\" not allowed in strict code");
+          IV_RAISE(
+              "catch placeholder \"arguments\" not allowed in strict code");
         }
       }
-      EXPECT(Token::TK_RPAREN);
-      IS(Token::TK_LBRACE);
+      IV_EXPECT(Token::TK_RPAREN);
+      IV_IS(Token::TK_LBRACE);
       name = factory_->NewAssigned(sym, false);
       {
         CatchEnvironment environment(environment_, &environment_, sym);
-        catch_block = ParseBlock(CHECK);
+        catch_block = ParseBlock(IV_CHECK);
       }
     }
 
@@ -1084,12 +1074,12 @@ class Parser : private Noncopyable<> {
       // Finally
       has_catch_or_finally= true;
       Next();
-      IS(Token::TK_LBRACE);
-      finally_block = ParseBlock(CHECK);
+      IV_IS(Token::TK_LBRACE);
+      finally_block = ParseBlock(IV_CHECK);
     }
 
     if (!has_catch_or_finally) {
-      RAISE_RECOVERVABLE("missing catch or finally after try statement");
+      IV_RAISE_RECOVERABLE("missing catch or finally after try statement");
     }
 
     assert(try_block);
@@ -1108,15 +1098,15 @@ class Parser : private Noncopyable<> {
     const std::size_t begin = lexer_.begin_position();
     const std::size_t line_number = lexer_.line_number();
     Next();
-    ExpectSemicolon(CHECK);
+    ExpectSemicolon(IV_CHECK);
     return factory_->NewDebuggerStatement(begin,
                                           lexer_.previous_end_position(),
                                           line_number);
   }
 
   Statement* ParseExpressionStatement(bool *res) {
-    Expression* const expr = ParseExpression(true, CHECK);
-    ExpectSemicolon(CHECK);
+    Expression* const expr = ParseExpression(true, IV_CHECK);
+    ExpectSemicolon(IV_CHECK);
     assert(expr);
     return factory_->NewExpressionStatement(expr,
                                             lexer_.previous_end_position());
@@ -1136,16 +1126,16 @@ class Parser : private Noncopyable<> {
       Next();
       if (IsDuplicateLabel(label)) {
         // duplicate label
-        RAISE("duplicate label");
+        IV_RAISE("duplicate label");
       }
       const LabelSwitcher label_switcher(this, labels_, label);
 
-      Statement* const stmt = ParseStatement(CHECK);
+      Statement* const stmt = ParseStatement(IV_CHECK);
       assert(stmt);
       return factory_->NewLabelledStatement(label, stmt);
     }
-    Expression* const expr = ParseExpression(true, CHECK);
-    ExpectSemicolon(CHECK);
+    Expression* const expr = ParseExpression(true, IV_CHECK);
+    ExpectSemicolon(IV_CHECK);
     assert(expr);
     return factory_->NewExpressionStatement(expr,
                                             lexer_.previous_end_position());
@@ -1156,12 +1146,12 @@ class Parser : private Noncopyable<> {
                                     typename enable_if_c<Use>::type* = 0) {
     assert(token_ == Token::TK_FUNCTION);
     if (strict_) {
-      RAISE("function statement not allowed in strict code");
+      IV_RAISE("function statement not allowed in strict code");
     }
     FunctionLiteral* const expr = ParseFunctionLiteral(
         FunctionLiteral::STATEMENT,
         FunctionLiteral::GENERAL,
-        CHECK);
+        IV_CHECK);
     // define named function as variable declaration
     assert(expr);
     assert(expr->name());
@@ -1181,7 +1171,7 @@ class Parser : private Noncopyable<> {
     // FunctionStatement is not Standard
     // so, if template parameter UseFunctionStatement is false,
     // this parser reject FunctionStatement
-    RAISE("function statement is not Standard");
+    IV_RAISE("function statement is not Standard");
   }
 
 //  Expression
@@ -1189,10 +1179,10 @@ class Parser : private Noncopyable<> {
 //    | Expression ',' AssignmentExpression
   Expression* ParseExpression(bool contains_in, bool *res) {
     Expression* right;
-    Expression* result = ParseAssignmentExpression(contains_in, CHECK);
+    Expression* result = ParseAssignmentExpression(contains_in, IV_CHECK);
     while (token_ == Token::TK_COMMA) {
       Next();
-      right = ParseAssignmentExpression(contains_in, CHECK);
+      right = ParseAssignmentExpression(contains_in, IV_CHECK);
       assert(result && right);
       result = factory_->NewBinaryOperation(Token::TK_COMMA, result, right);
     }
@@ -1203,7 +1193,8 @@ class Parser : private Noncopyable<> {
 //    : ConditionalExpression
 //    | LeftHandSideExpression AssignmentOperator AssignmentExpression
   Expression* ParseAssignmentExpression(bool contains_in, bool *res) {
-    Expression* const result = ParseConditionalExpression(contains_in, CHECK);
+    Expression* const result =
+        ParseConditionalExpression(contains_in, IV_CHECK);
     if (!Token::IsAssignOp(token_)) {
       return result;
     }
@@ -1211,21 +1202,21 @@ class Parser : private Noncopyable<> {
     // LHS Guard
     if (!result->IsLeftHandSide()) {
       reference_error_ = true;
-      RAISE("assign to invalid left-hand-side");
+      IV_RAISE("assign to invalid left-hand-side");
     }
 
     // section 11.13.1 throwing SyntaxError
     if (strict_ && result->AsIdentifier()) {
       const Symbol sym = result->AsIdentifier()->symbol();
       if (sym == symbol::eval()) {
-        RAISE("assignment to \"eval\" not allowed in strict code");
+        IV_RAISE("assignment to \"eval\" not allowed in strict code");
       } else if (sym == symbol::arguments()) {
-        RAISE("assignment to \"arguments\" not allowed in strict code");
+        IV_RAISE("assignment to \"arguments\" not allowed in strict code");
       }
     }
     const Token::Type op = token_;
     Next();
-    Expression* const right = ParseAssignmentExpression(contains_in, CHECK);
+    Expression* const right = ParseAssignmentExpression(contains_in, IV_CHECK);
     assert(result && right);
     return factory_->NewAssignment(op, result, right);
   }
@@ -1234,13 +1225,15 @@ class Parser : private Noncopyable<> {
 //    : LogicalOrExpression
 //    | LogicalOrExpression '?' AssignmentExpression ':' AssignmentExpression
   Expression* ParseConditionalExpression(bool contains_in, bool *res) {
-    Expression* result = ParseBinaryExpression(contains_in, 9, CHECK);
+    Expression* result = ParseBinaryExpression(contains_in, 9, IV_CHECK);
     if (token_ == Token::TK_CONDITIONAL) {
       Next();
       // see ECMA-262 section 11.12
-      Expression* const left = ParseAssignmentExpression(true, CHECK);
-      EXPECT(Token::TK_COLON);
-      Expression* const right = ParseAssignmentExpression(contains_in, CHECK);
+      Expression* const left =
+          ParseAssignmentExpression(true, IV_CHECK);
+      IV_EXPECT(Token::TK_COLON);
+      Expression* const right =
+          ParseAssignmentExpression(contains_in, IV_CHECK);
       assert(result && left && right);
       result = factory_->NewConditionalExpression(result, left, right);
     }
@@ -1302,14 +1295,14 @@ class Parser : private Noncopyable<> {
   Expression* ParseBinaryExpression(bool contains_in, int prec, bool *res) {
     Expression *left, *right;
     Token::Type op;
-    left = ParseUnaryExpression(CHECK);
+    left = ParseUnaryExpression(IV_CHECK);
     // MultiplicativeExpression
     while (token_ == Token::TK_MUL ||
            token_ == Token::TK_DIV ||
            token_ == Token::TK_MOD) {
       op = token_;
       Next();
-      right = ParseUnaryExpression(CHECK);
+      right = ParseUnaryExpression(IV_CHECK);
       left = ReduceBinaryOperation<ReduceExpressions>(op, left, right);
     }
     if (prec < 1) return left;
@@ -1319,7 +1312,7 @@ class Parser : private Noncopyable<> {
            token_ == Token::TK_SUB) {
       op = token_;
       Next();
-      right = ParseBinaryExpression(contains_in, 0, CHECK);
+      right = ParseBinaryExpression(contains_in, 0, IV_CHECK);
       left = ReduceBinaryOperation<ReduceExpressions>(op, left, right);
     }
     if (prec < 2) return left;
@@ -1330,7 +1323,7 @@ class Parser : private Noncopyable<> {
            token_ == Token::TK_SHR) {
       op = token_;
       Next();
-      right = ParseBinaryExpression(contains_in, 1, CHECK);
+      right = ParseBinaryExpression(contains_in, 1, IV_CHECK);
       left = ReduceBinaryOperation<ReduceExpressions>(op, left, right);
     }
     if (prec < 3) return left;
@@ -1341,7 +1334,7 @@ class Parser : private Noncopyable<> {
            (contains_in && token_ == Token::TK_IN)) {
       op = token_;
       Next();
-      right = ParseBinaryExpression(contains_in, 2, CHECK);
+      right = ParseBinaryExpression(contains_in, 2, IV_CHECK);
       assert(left && right);
       left = factory_->NewBinaryOperation(op, left, right);
     }
@@ -1354,7 +1347,7 @@ class Parser : private Noncopyable<> {
            token_ == Token::TK_NE) {
       op = token_;
       Next();
-      right = ParseBinaryExpression(contains_in, 3, CHECK);
+      right = ParseBinaryExpression(contains_in, 3, IV_CHECK);
       assert(left && right);
       left = factory_->NewBinaryOperation(op, left, right);
     }
@@ -1364,7 +1357,7 @@ class Parser : private Noncopyable<> {
     while (token_ == Token::TK_BIT_AND) {
       op = token_;
       Next();
-      right = ParseBinaryExpression(contains_in, 4, CHECK);
+      right = ParseBinaryExpression(contains_in, 4, IV_CHECK);
       left = ReduceBinaryOperation<ReduceExpressions>(op, left, right);
     }
     if (prec < 6) return left;
@@ -1373,7 +1366,7 @@ class Parser : private Noncopyable<> {
     while (token_ == Token::TK_BIT_XOR) {
       op = token_;
       Next();
-      right = ParseBinaryExpression(contains_in, 5, CHECK);
+      right = ParseBinaryExpression(contains_in, 5, IV_CHECK);
       left = ReduceBinaryOperation<ReduceExpressions>(op, left, right);
     }
     if (prec < 7) return left;
@@ -1382,7 +1375,7 @@ class Parser : private Noncopyable<> {
     while (token_ == Token::TK_BIT_OR) {
       op = token_;
       Next();
-      right = ParseBinaryExpression(contains_in, 6, CHECK);
+      right = ParseBinaryExpression(contains_in, 6, IV_CHECK);
       left = ReduceBinaryOperation<ReduceExpressions>(op, left, right);
     }
     if (prec < 8) return left;
@@ -1391,7 +1384,7 @@ class Parser : private Noncopyable<> {
     while (token_ == Token::TK_LOGICAL_AND) {
       op = token_;
       Next();
-      right = ParseBinaryExpression(contains_in, 7, CHECK);
+      right = ParseBinaryExpression(contains_in, 7, IV_CHECK);
       assert(left && right);
       left = factory_->NewBinaryOperation(op, left, right);
     }
@@ -1401,7 +1394,7 @@ class Parser : private Noncopyable<> {
     while (token_ == Token::TK_LOGICAL_OR) {
       op = token_;
       Next();
-      right = ParseBinaryExpression(contains_in, 8, CHECK);
+      right = ParseBinaryExpression(contains_in, 8, IV_CHECK);
       assert(left && right);
       left = factory_->NewBinaryOperation(op, left, right);
     }
@@ -1520,7 +1513,7 @@ class Parser : private Noncopyable<> {
       case Token::TK_NOT:
       case Token::TK_TYPEOF:
         Next();
-        expr = ParseUnaryExpression(CHECK);
+        expr = ParseUnaryExpression(IV_CHECK);
         assert(expr);
         result = factory_->NewUnaryOperation(op, expr, begin, line_number);
         break;
@@ -1530,9 +1523,9 @@ class Parser : private Noncopyable<> {
         // raise SyntaxError when target is direct reference to a variable,
         // function argument, or function name
         Next();
-        expr = ParseUnaryExpression(CHECK);
+        expr = ParseUnaryExpression(IV_CHECK);
         if (strict_ && expr->AsIdentifier()) {
-          RAISE("delete to direct identifier not allowed in strict code");
+          IV_RAISE("delete to direct identifier not allowed in strict code");
         }
         assert(expr);
         result = factory_->NewUnaryOperation(op, expr, begin, line_number);
@@ -1540,7 +1533,7 @@ class Parser : private Noncopyable<> {
 
       case Token::TK_BIT_NOT:
         Next();
-        expr = ParseUnaryExpression(CHECK);
+        expr = ParseUnaryExpression(IV_CHECK);
         if (ReduceExpressions && expr->AsNumberLiteral()) {
           result = factory_->NewReducedNumberLiteral(
               ~DoubleToInt32(expr->AsNumberLiteral()->value()),
@@ -1554,7 +1547,7 @@ class Parser : private Noncopyable<> {
 
       case Token::TK_ADD:
         Next();
-        expr = ParseUnaryExpression(CHECK);
+        expr = ParseUnaryExpression(IV_CHECK);
         if (expr->AsNumberLiteral()) {
           result = expr;
         } else {
@@ -1565,7 +1558,7 @@ class Parser : private Noncopyable<> {
 
       case Token::TK_SUB:
         Next();
-        expr = ParseUnaryExpression(CHECK);
+        expr = ParseUnaryExpression(IV_CHECK);
         if (ReduceExpressions && expr->AsNumberLiteral()) {
           result = factory_->NewReducedNumberLiteral(
               -(expr->AsNumberLiteral()->value()), expr, expr);
@@ -1578,28 +1571,28 @@ class Parser : private Noncopyable<> {
       case Token::TK_INC:
       case Token::TK_DEC:
         Next();
-        expr = ParseUnaryExpression(CHECK);
+        expr = ParseUnaryExpression(IV_CHECK);
         // section 11.4.4, 11.4.5 throwing SyntaxError
         if (strict_ && expr->AsIdentifier()) {
           const Symbol sym = expr->AsIdentifier()->symbol();
           if (sym == symbol::eval()) {
-            RAISE("prefix expression to \"eval\" "
+            IV_RAISE("prefix expression to \"eval\" "
                   "not allowed in strict code");
           } else if (sym == symbol::arguments()) {
-            RAISE("prefix expression to \"arguments\" "
+            IV_RAISE("prefix expression to \"arguments\" "
                   "not allowed in strict code");
           }
         }
         if (!expr->IsLeftHandSide()) {
           reference_error_ = true;
-          RAISE("assign to invalid left-hand-side");
+          IV_RAISE("assign to invalid left-hand-side");
         }
         assert(expr);
         result = factory_->NewUnaryOperation(op, expr, begin, line_number);
         break;
 
       default:
-        result = ParsePostfixExpression(CHECK);
+        result = ParsePostfixExpression(IV_CHECK);
         break;
     }
     return result;
@@ -1610,22 +1603,22 @@ class Parser : private Noncopyable<> {
 //    | LeftHandSideExpression INCREMENT
 //    | LeftHandSideExpression DECREMENT
   Expression* ParsePostfixExpression(bool *res) {
-    Expression* expr = ParseMemberExpression(true, CHECK);
+    Expression* expr = ParseMemberExpression(true, IV_CHECK);
     if (!lexer_.has_line_terminator_before_next() &&
         (token_ == Token::TK_INC || token_ == Token::TK_DEC)) {
       // section 11.3.1, 11.3.2 throwing SyntaxError
       if (strict_ && expr->AsIdentifier()) {
         const Symbol sym = expr->AsIdentifier()->symbol();
         if (sym == symbol::eval()) {
-          RAISE("postfix expression to \"eval\" not allowed in strict code");
+          IV_RAISE("postfix expression to \"eval\" not allowed in strict code");
         } else if (sym == symbol::arguments()) {
-          RAISE("postfix expression to \"arguments\" "
+          IV_RAISE("postfix expression to \"arguments\" "
                 "not allowed in strict code");
         }
       }
       if (!expr->IsLeftHandSide()) {
         reference_error_ = true;
-        RAISE("assign to invalid left-hand-side");
+        IV_RAISE("assign to invalid left-hand-side");
       }
       assert(expr);
       expr = factory_->NewPostfixExpression(token_, expr,
@@ -1650,13 +1643,13 @@ class Parser : private Noncopyable<> {
   Expression* ParseMemberExpression(bool allow_call, bool *res) {
     Expression* expr;
     if (token_ != Token::TK_NEW) {
-      expr = ParsePrimaryExpression(CHECK);
+      expr = ParsePrimaryExpression(IV_CHECK);
     } else {
       Next();
-      Expression* const target = ParseMemberExpression(false, CHECK);
+      Expression* const target = ParseMemberExpression(false, IV_CHECK);
       Expressions* const args = factory_->template NewVector<Expression*>();
       if (token_ == Token::TK_LPAREN) {
-        ParseArguments(args, CHECK);
+        ParseArguments(args, IV_CHECK);
       }
       assert(target && args);
       expr = factory_->NewConstructorCall(
@@ -1666,16 +1659,16 @@ class Parser : private Noncopyable<> {
       switch (token_) {
         case Token::TK_LBRACK: {
           Next();
-          Expression* const index = ParseExpression(true, CHECK);
+          Expression* const index = ParseExpression(true, IV_CHECK);
           assert(expr && index);
           expr = factory_->NewIndexAccess(expr, index);
-          EXPECT(Token::TK_RBRACK);
+          IV_EXPECT(Token::TK_RBRACK);
           break;
         }
 
         case Token::TK_PERIOD: {
           Next<IgnoreReservedWords>();  // IDENTIFIERNAME
-          IS(Token::TK_IDENTIFIER);
+          IV_IS(Token::TK_IDENTIFIER);
           const ast::SymbolHolder name = ParseSymbol();
           assert(expr);
           expr = factory_->NewIdentifierAccess(expr, name);
@@ -1686,7 +1679,7 @@ class Parser : private Noncopyable<> {
           if (allow_call) {
             Expressions* const args =
                 factory_->template NewVector<Expression*>();
-            ParseArguments(args, CHECK);
+            ParseArguments(args, IV_CHECK);
             assert(expr && args);
             // record eval call
             if (expr->AsIdentifier() &&
@@ -1729,7 +1722,7 @@ class Parser : private Noncopyable<> {
     switch (token_) {
       case Token::TK_FUNCTION:
         result = ParseFunctionLiteral(FunctionLiteral::EXPRESSION,
-                                      FunctionLiteral::GENERAL, CHECK);
+                                      FunctionLiteral::GENERAL, IV_CHECK);
         break;
 
       case Token::TK_THIS:
@@ -1769,7 +1762,7 @@ class Parser : private Noncopyable<> {
         // section 7.8.3
         // strict mode forbids Octal Digits Literal
         if (strict_ && lexer_.NumericType() == lexer_type::OCTAL) {
-          RAISE("octal integer literal not allowed in strict code");
+          IV_RAISE("octal integer literal not allowed in strict code");
         }
         result = factory_->NewNumberLiteral(lexer_.Numeric(),
                                             lexer_.begin_position(),
@@ -1781,7 +1774,7 @@ class Parser : private Noncopyable<> {
       case Token::TK_STRING: {
         const typename lexer_type::State state = lexer_.StringEscapeType();
         if (strict_ && state == lexer_type::OCTAL) {
-          RAISE("octal escape sequence not allowed in strict code");
+          IV_RAISE("octal escape sequence not allowed in strict code");
         }
         result = factory_->NewStringLiteral(lexer_.Buffer(),
                                             lexer_.begin_position(),
@@ -1793,25 +1786,25 @@ class Parser : private Noncopyable<> {
 
       case Token::TK_DIV:
       case Token::TK_ASSIGN_DIV:
-        result = ParseRegExpLiteral(token_ == Token::TK_ASSIGN_DIV, CHECK);
+        result = ParseRegExpLiteral(token_ == Token::TK_ASSIGN_DIV, IV_CHECK);
         break;
 
       case Token::TK_LBRACK:
-        result = ParseArrayLiteral(CHECK);
+        result = ParseArrayLiteral(IV_CHECK);
         break;
 
       case Token::TK_LBRACE:
-        result = ParseObjectLiteral(CHECK);
+        result = ParseObjectLiteral(IV_CHECK);
         break;
 
       case Token::TK_LPAREN:
         Next();
-        last_parenthesized_ = result = ParseExpression(true, CHECK);
-        EXPECT(Token::TK_RPAREN);
+        last_parenthesized_ = result = ParseExpression(true, IV_CHECK);
+        IV_EXPECT(Token::TK_RPAREN);
         break;
 
       default:
-        UNEXPECT(token_);
+        IV_UNEXPECT(token_);
         break;
     }
     return result;
@@ -1829,15 +1822,15 @@ class Parser : private Noncopyable<> {
     assert(token_ == Token::TK_LPAREN);
     Next();
     if (token_ != Token::TK_RPAREN) {
-      Expression* const first = ParseAssignmentExpression(true, CHECK);
+      Expression* const first = ParseAssignmentExpression(true, IV_CHECK);
       container->push_back(first);
       while (token_ == Token::TK_COMMA) {
         Next();
-        Expression* const expr = ParseAssignmentExpression(true, CHECK);
+        Expression* const expr = ParseAssignmentExpression(true, IV_CHECK);
         container->push_back(expr);
       }
     }
-    EXPECT(Token::TK_RPAREN);
+    IV_EXPECT(Token::TK_RPAREN);
     return container;
   }
 
@@ -1846,7 +1839,7 @@ class Parser : private Noncopyable<> {
     if (lexer_.ScanRegExpLiteral(contains_eq)) {
       const std::vector<uint16_t> content(lexer_.Buffer());
       if (!lexer_.ScanRegExpFlags()) {
-        RAISE("invalid regular expression flag");
+        IV_RAISE("invalid regular expression flag");
       }
       RegExpLiteral* const expr = factory_->NewRegExpLiteral(
           content,
@@ -1855,12 +1848,12 @@ class Parser : private Noncopyable<> {
           lexer_.end_position(),
           lexer_.line_number());
       if (!expr) {
-        RAISE("invalid regular expression");
+        IV_RAISE("invalid regular expression");
       }
       Next();
       return expr;
     } else {
-      RAISE("invalid regular expression");
+      IV_RAISE("invalid regular expression");
     }
   }
 
@@ -1890,7 +1883,7 @@ class Parser : private Noncopyable<> {
         items->push_back(NULL);
         is_primitive_constant_array = false;
       } else {
-        Expression* const expr = ParseAssignmentExpression(true, CHECK);
+        Expression* const expr = ParseAssignmentExpression(true, IV_CHECK);
         if (is_primitive_constant_array) {
           if (!(expr->AsStringLiteral() || expr->AsNumberLiteral() ||
                expr->AsTrueLiteral() || expr->AsFalseLiteral() ||
@@ -1902,7 +1895,7 @@ class Parser : private Noncopyable<> {
         items->push_back(expr);
       }
       if (token_ != Token::TK_RBRACK) {
-        EXPECT(Token::TK_COMMA);
+        IV_EXPECT(Token::TK_COMMA);
       }
     }
     Next();
@@ -1964,18 +1957,18 @@ class Parser : private Noncopyable<> {
               lexer_.previous_end_position(),
               lexer_.previous_line_number());
           Next();
-          Expression* expr = ParseAssignmentExpression(true, CHECK);
+          Expression* expr = ParseAssignmentExpression(true, IV_CHECK);
           ObjectLiteral::AddDataProperty(prop, ident, expr);
           typename ObjectMap::iterator it = map.find(ident);
           if (it == map.end()) {
             map.insert(std::make_pair(ident, ObjectLiteral::DATA));
           } else {
             if (it->second != ObjectLiteral::DATA) {
-              RAISE("accessor property and data property "
+              IV_RAISE("accessor property and data property "
                     "exist with the same name");
             } else {
               if (strict_) {
-                RAISE("multiple data property assignments "
+                IV_RAISE("multiple data property assignments "
                       "with the same name not allowed in strict code");
               }
             }
@@ -1983,57 +1976,57 @@ class Parser : private Noncopyable<> {
         } else {
           // getter or setter
           if (Token::IsPropertyName(token_)) {
-            const ast::SymbolHolder ident = ParsePropertyName(CHECK);
+            const ast::SymbolHolder ident = ParsePropertyName(IV_CHECK);
             typename ObjectLiteral::PropertyDescriptorType type =
                 (is_get) ? ObjectLiteral::GET : ObjectLiteral::SET;
             Expression* expr = ParseFunctionLiteral(
                 FunctionLiteral::EXPRESSION,
                 (is_get) ? FunctionLiteral::GETTER : FunctionLiteral::SETTER,
-                CHECK);
+                IV_CHECK);
             ObjectLiteral::AddAccessor(prop, type, ident, expr);
             typename ObjectMap::iterator it = map.find(ident);
             if (it == map.end()) {
               map.insert(std::make_pair(ident, type));
             } else if (it->second & (ObjectLiteral::DATA | type)) {
               if (it->second & ObjectLiteral::DATA) {
-                RAISE("data property and accessor property "
+                IV_RAISE("data property and accessor property "
                       "exist with the same name");
               } else {
-                RAISE("multiple same accessor properties "
+                IV_RAISE("multiple same accessor properties "
                       "exist with the same name");
               }
             } else {
               it->second |= type;
             }
           } else {
-            RAISE_RECOVERVABLE("invalid property name");
+            IV_RAISE_RECOVERABLE("invalid property name");
           }
         }
       } else if (Token::IsPropertyName(token_)) {
-        const ast::SymbolHolder ident = ParsePropertyName(CHECK);
-        EXPECT(Token::TK_COLON);
-        Expression* expr = ParseAssignmentExpression(true, CHECK);
+        const ast::SymbolHolder ident = ParsePropertyName(IV_CHECK);
+        IV_EXPECT(Token::TK_COLON);
+        Expression* expr = ParseAssignmentExpression(true, IV_CHECK);
         ObjectLiteral::AddDataProperty(prop, ident, expr);
         typename ObjectMap::iterator it = map.find(ident);
         if (it == map.end()) {
           map.insert(std::make_pair(ident, ObjectLiteral::DATA));
         } else {
           if (it->second != ObjectLiteral::DATA) {
-            RAISE("accessor property and data property "
+            IV_RAISE("accessor property and data property "
                   "exist with the same name");
           } else {
             if (strict_) {
-              RAISE("multiple data property assignments "
+              IV_RAISE("multiple data property assignments "
                     "with the same name not allowed in strict code");
             }
           }
         }
       } else {
-        RAISE_RECOVERVABLE("invalid property name");
+        IV_RAISE_RECOVERABLE("invalid property name");
       }
 
       if (token_ != Token::TK_RBRACE) {
-        IS(Token::TK_COMMA);
+        IV_IS(Token::TK_COMMA);
         // IDENTIFIERNAME
         Next<IgnoreReservedWordsAndIdentifyGetterOrSetter>();
       }
@@ -2091,25 +2084,25 @@ class Parser : private Noncopyable<> {
              decl_type == FunctionLiteral::EXPRESSION));
       } else if (decl_type == FunctionLiteral::DECLARATION ||
                  decl_type == FunctionLiteral::STATEMENT) {
-        IS(Token::TK_IDENTIFIER);
+        IV_IS(Token::TK_IDENTIFIER);
       }
     }
 
     const std::size_t begin_block_position = lexer_.begin_position();
 
     //  '(' FormalParameterList_opt ')'
-    IS(Token::TK_LPAREN);
+    IV_IS(Token::TK_LPAREN);
     Next(true);  // preparing for strict directive
 
     if (arg_type == FunctionLiteral::GETTER) {
       // if getter, parameter count is 0
-      EXPECT(Token::TK_RPAREN);
+      IV_EXPECT(Token::TK_RPAREN);
     } else if (arg_type == FunctionLiteral::SETTER) {
       // if setter, parameter count is 1
       const Token::Type current = token_;
       if (current != Token::TK_IDENTIFIER &&
           !Token::IsAddedFutureReservedWordInStrictCode(current)) {
-        IS(Token::TK_IDENTIFIER);
+        IV_IS(Token::TK_IDENTIFIER);
       }
       const ast::SymbolHolder sym = ParseSymbol();
       if (!throw_error_if_strict_code) {
@@ -2127,7 +2120,7 @@ class Parser : private Noncopyable<> {
         }
       }
       params->push_back(factory_->NewAssigned(sym, false));
-      EXPECT(Token::TK_RPAREN);
+      IV_EXPECT(Token::TK_RPAREN);
     } else {
       if (token_ != Token::TK_RPAREN) {
         SymbolSet param_set;
@@ -2135,7 +2128,7 @@ class Parser : private Noncopyable<> {
           const Token::Type current = token_;
           if (current != Token::TK_IDENTIFIER &&
               !Token::IsAddedFutureReservedWordInStrictCode(current)) {
-            IS(Token::TK_IDENTIFIER);
+            IV_IS(Token::TK_IDENTIFIER);
           }
           const ast::SymbolHolder sym = ParseSymbol();
           if (!throw_error_if_strict_code) {
@@ -2166,7 +2159,7 @@ class Parser : private Noncopyable<> {
           }
         } while (true);
       }
-      EXPECT(Token::TK_RPAREN);
+      IV_EXPECT(Token::TK_RPAREN);
     }
 
     //  '{' FunctionBody '}'
@@ -2174,7 +2167,7 @@ class Parser : private Noncopyable<> {
     //  FunctionBody
     //    :
     //    | SourceElements
-    EXPECT(Token::TK_LBRACE);
+    IV_EXPECT(Token::TK_LBRACE);
 
     Statements* const body = factory_->template NewVector<Statement*>();
     Scope* const scope = factory_->NewScope(decl_type, params);
@@ -2182,7 +2175,7 @@ class Parser : private Noncopyable<> {
     const ScopeSwitcher scope_switcher(this, scope);
     const TargetSwitcher target_switcher(this);
     const bool function_is_strict =
-        ParseSourceElements(Token::TK_RBRACE, body, CHECK);
+        ParseSourceElements(Token::TK_RBRACE, body, IV_CHECK);
     if (strict_ || function_is_strict) {
       // section 13.1
       // Strict Mode Restrictions
@@ -2190,32 +2183,32 @@ class Parser : private Noncopyable<> {
         case kDetectNone:
           break;
         case kDetectEvalName:
-          RAISE_WITH_NUMBER(
+          IV_RAISE_NUMBER(
               "function name \"eval\" not allowed in strict code",
               throw_error_if_strict_code_line);
           break;
         case kDetectArgumentsName:
-          RAISE_WITH_NUMBER(
+          IV_RAISE_NUMBER(
               "function name \"arguments\" not allowed in strict code",
               throw_error_if_strict_code_line);
           break;
         case kDetectEvalParameter:
-          RAISE_WITH_NUMBER(
+          IV_RAISE_NUMBER(
               "parameter \"eval\" not allowed in strict code",
               throw_error_if_strict_code_line);
           break;
         case kDetectArgumentsParameter:
-          RAISE_WITH_NUMBER(
+          IV_RAISE_NUMBER(
               "parameter \"arguments\" not allowed in strict code",
               throw_error_if_strict_code_line);
           break;
         case kDetectDuplicateParameter:
-          RAISE_WITH_NUMBER(
+          IV_RAISE_NUMBER(
               "duplicate parameter not allowed in strict code",
               throw_error_if_strict_code_line);
           break;
         case kDetectFutureReservedWords:
-          RAISE_WITH_NUMBER(
+          IV_RAISE_NUMBER(
               "FutureReservedWords is found in strict code",
               throw_error_if_strict_code_line);
           break;
@@ -2243,7 +2236,7 @@ class Parser : private Noncopyable<> {
     assert(Token::IsPropertyName(token_));
     if (token_ == Token::TK_NUMBER) {
       if (strict_ && lexer_.NumericType() == lexer_type::OCTAL) {
-        RAISE_WITH(
+        IV_RAISE_WITH(
             "octal integer literal not allowed in strict code",
             ast::SymbolHolder());
       }
@@ -2259,7 +2252,7 @@ class Parser : private Noncopyable<> {
           lexer_.previous_line_number());
     } else if (token_ == Token::TK_STRING) {
       if (strict_ && lexer_.StringEscapeType() == lexer_type::OCTAL) {
-        RAISE_WITH(
+        IV_RAISE_WITH(
             "octal escape sequence not allowed in strict code",
             ast::SymbolHolder());
       }
@@ -2420,7 +2413,7 @@ class Parser : private Noncopyable<> {
     if (token_ == Token::TK_RBRACE || token_ == Token::TK_EOS) {
       return true;
     }
-    UNEXPECT(token_);
+    IV_UNEXPECT_WITH(token_, false);
   }
 
   template<typename LexType>
@@ -2556,13 +2549,16 @@ class Parser : private Noncopyable<> {
   SymbolTable* table_;
   Expression* last_parenthesized_;
 };
-#undef IS
-#undef EXPECT
-#undef UNEXPECT
-#undef RAISE
-#undef RAISE_WITH
-#undef RAISE_WITH_NUMBER
-#undef RAISE_RECOVERVABLE
-#undef CHECK
+#undef IV_IS
+#undef IV_EXPECT
+#undef IV_UNEXPECT
+#undef IV_UNEXPECT_WITH
+#undef IV_RAISE
+#undef IV_RAISE_NUMBER
+#undef IV_RAISE_WITH
+#undef IV_RAISE_IMPL
+#undef IV_RAISE_RECOVERABLE
+#undef IV_CHECK
+#undef IV_CHECK_WITH
 } }  // namespace iv::core
 #endif  // IV_PARSER_H_

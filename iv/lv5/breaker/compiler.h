@@ -734,7 +734,8 @@ class Compiler {
 
   // opcode
   void EmitENTER(const Instruction* instr) {
-    // check stack overflow
+    // check arity and stack overflow
+
 
     // initialize registers with JSUndefined
     uint32_t i = 0;

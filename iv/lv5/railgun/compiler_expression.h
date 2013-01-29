@@ -1,5 +1,6 @@
 #ifndef IV_LV5_RAILGUN_COMPILER_EXPRESSION_H_
 #define IV_LV5_RAILGUN_COMPILER_EXPRESSION_H_
+#include <iv/debug.h>
 #include <iv/lv5/jsglobal.h>
 #include <iv/lv5/railgun/compiler.h>
 #include <iv/lv5/map_builder.h>
@@ -10,14 +11,19 @@ namespace railgun {
 class Compiler::DestGuard {
  public:
   explicit DestGuard(Compiler* compiler)
-    : compiler_(compiler) {
+#ifdef DEBUG
+    : compiler_(compiler)
+#endif
+  {
     assert(!compiler_->dst() || !compiler_->dst()->IsConstant());
   }
   ~DestGuard() {
     assert(compiler_->ignore_result() || compiler_->dst());
   }
  private:
+#ifdef DEBUG
   Compiler* compiler_;
+#endif
 };
 
 inline RegisterID Compiler::EmitOptimizedLookup(OP::Type op,
