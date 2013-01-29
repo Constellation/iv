@@ -217,7 +217,6 @@ class Compiler {
     // We can access this space by qword[rsp + k64Size * 0] a.k.a. qword[rsp]
     asm_->push(r12);
     asm_->sub(qword[r14 + offsetof(Frame, ret)], k64Size * kStackPayload);
-    asm_->mov(rcx, qword[r14 + offsetof(Frame, ret)]);
 
     const Instruction* total_first_instr = code_->core_data()->data()->data();
     const Instruction* previous = NULL;
