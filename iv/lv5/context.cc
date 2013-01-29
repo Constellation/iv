@@ -1432,7 +1432,8 @@ void Context::InitPrivateSymbol(const ClassSlot& func_cls,
   global_binder->def("PrivateSymbol", constructor, ATTR::W | ATTR::C);
 
   bind::Object(this, constructor)
-      .def(symbol::prototype(), proto, ATTR::NONE);
+      .def(symbol::prototype(), proto, ATTR::NONE)
+      .def<&runtime::PrivateSymbolIsPrivateSymbol, 1>("isPrivateSymbol");
 
   bind::Object(this, proto)
       .cls(cls.cls)
