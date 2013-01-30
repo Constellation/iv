@@ -3,6 +3,7 @@
 #define IV_BREAKER_MONO_IC_H_
 #include <iv/lv5/breaker/assembler.h>
 #include <iv/lv5/breaker/ic.h>
+#include <iv/lv5/breaker/jsfunction.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {
@@ -106,6 +107,49 @@ class GlobalIC : public MonoIC {
   std::size_t offset_position_;
   Map* map_;
   bool strict_;
+};
+
+class CallIC : public MonoIC {
+ public:
+  CallIC()
+    : function_(NULL),
+      function_offset_(),
+      executable_offset_() {
+  }
+
+  void Compile(Assembler* as, JSJITFunction* func) {
+    function_ = func;
+    as->rewrite(function_offset(), core::BitCast<uint64_t>(func), k64Size);  // NOLINT
+    as->rewrite(executable_offset(), core::BitCast<uint64_t>(func->code()->executable()), k64Size);  // NOLINT
+  }
+
+  std::size_t function_offset() const { return function_offset_; }
+  void set_function_offset(std::size_t offset) {
+    function_offset_ = offset;
+  }
+
+  std::size_t executable_offset() const { return executable_offset_; }
+  void set_executable_offset(std::size_t offset) {
+    executable_offset_ = offset;
+  }
+
+  virtual void MarkChildren(radio::Core* core) {
+    core->MarkCell(function_);
+  }
+
+  virtual GC_ms_entry* MarkChildren(GC_word* top,
+                                    GC_ms_entry* entry,
+                                    GC_ms_entry* mark_sp_limit,
+                                    GC_word env) {
+    return GC_MARK_AND_PUSH(
+        function_, entry, mark_sp_limit, reinterpret_cast<void**>(this));
+  }
+
+
+ private:
+  JSJITFunction* function_;
+  std::size_t function_offset_;
+  std::size_t executable_offset_;
 };
 
 } } }  // namespace iv::lv5::breaker
