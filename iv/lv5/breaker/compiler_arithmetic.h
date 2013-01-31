@@ -211,7 +211,7 @@ inline void Compiler::EmitBINARY_MODULO(const Instruction* instr) {
     const int32_t lhs_value = lhs_type_entry.constant().int32();
     LoadVR(rcx, rhs);
     Int32Guard(rhs, rcx, ".ARITHMETIC_GENERIC");
-    asm_->cmp(ecx, 0);
+    asm_->test(ecx, ecx);
     asm_->jle(".ARITHMETIC_GENERIC");
     asm_->xor(edx, edx);
     asm_->mov(eax, lhs_value);
@@ -220,17 +220,17 @@ inline void Compiler::EmitBINARY_MODULO(const Instruction* instr) {
     const int32_t rhs_value = rhs_type_entry.constant().int32();
     LoadVR(rax, lhs);
     Int32Guard(lhs, rax, ".ARITHMETIC_GENERIC");
-    asm_->cmp(eax, 0);
-    asm_->jl(".ARITHMETIC_GENERIC");
+    asm_->test(eax, eax);
+    asm_->js(".ARITHMETIC_GENERIC");
     asm_->xor(edx, edx);
     asm_->mov(ecx, rhs_value);
   } else {
     LoadVRs(rax, lhs, rcx, rhs);
     Int32Guard(lhs, rax, ".ARITHMETIC_GENERIC");
     Int32Guard(rhs, rcx, ".ARITHMETIC_GENERIC");
-    asm_->cmp(eax, 0);
-    asm_->jl(".ARITHMETIC_GENERIC");
-    asm_->cmp(ecx, 0);
+    asm_->test(eax, eax);
+    asm_->js(".ARITHMETIC_GENERIC");
+    asm_->test(ecx, ecx);
     asm_->jle(".ARITHMETIC_GENERIC");
     asm_->xor(edx, edx);
   }
@@ -416,8 +416,9 @@ inline void Compiler::EmitBINARY_RSHIFT_LOGICAL(const Instruction* instr) {
     Int32Guard(rhs, rcx, ".ARITHMETIC_GENERIC");
     asm_->shr(eax, cl);
   }
-  asm_->cmp(eax, 0);
-  asm_->jl(".ARITHMETIC_DOUBLE");  // uint32_t
+  // eax MSB is 1 => jump
+  asm_->test(eax, eax);
+  asm_->js(".ARITHMETIC_DOUBLE");  // uint32_t
 
   // boxing
   asm_->or(rax, r15);
