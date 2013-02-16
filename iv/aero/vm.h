@@ -41,6 +41,7 @@ class VM : private core::Noncopyable<VM> {
       state_pointer_for_jit_(
           reinterpret_cast<int*>(std::malloc(kInitialStateSize * sizeof(int)))),
       stack_size_(kInitialStackSize),
+      state_size_(kInitialStateSize),
       stack_(kInitialStackSize)
 #if !defined(IV_ENABLE_JIT)
       ,
@@ -130,6 +131,8 @@ class VM : private core::Noncopyable<VM> {
   }
 #endif
 
+  uint64_t state_size() const { return state_size_; }
+
  private:
   int* NewState(std::size_t offset) {
     do {
@@ -147,6 +150,7 @@ class VM : private core::Noncopyable<VM> {
   int* stack_base_pointer_for_jit_;
   int* state_pointer_for_jit_;
   uint64_t stack_size_;
+  uint64_t state_size_;
   std::vector<int> stack_;
 #if !defined(IV_ENABLE_JIT)
   std::vector<int> state_;
