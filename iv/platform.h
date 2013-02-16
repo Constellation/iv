@@ -56,9 +56,12 @@
     #endif
   #endif
 #elif defined(_MSC_VER)
+  // http://msdn.microsoft.com/ja-jp/library/vstudio/b0084kay.aspx
   #ifndef IV_COMPILER_MSVC
-    #define IV_COMPILER_MSVC _MSC_VER
-    #define IV_COMPILER_MSVC_10 (_MSC_VER >= 1600)
+    #define IV_COMPILER_MSVC\
+      IV_MAKE_VERSION(_MSC_VER / 100, _MSC_VER % 100, 0)
+    #define IV_COMPILER_MSVC_10\
+      (IV_COMPILER_MSVC >= IV_MAKE_VERSION(16, 0, 0))
   #endif
 #elif defined(__GNUC__)
   #ifndef IV_COMPILER_GCC
