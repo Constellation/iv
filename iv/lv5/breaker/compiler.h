@@ -752,7 +752,7 @@ class Compiler {
       asm_->mov(rsi, ptr[r13 + kJSValSize * Reg(railgun::FrameConstant<>::kThisOffset)]);  // NOLINT
 
       asm_->mov(rdi, detail::jsval64::kValueMask);
-      asm_->and(rdi, rsi);
+      asm_->test(rdi, rsi);
       asm_->jnz(".not_cell", Xbyak::CodeGenerator::T_NEAR);
 
       // object or string
@@ -772,6 +772,7 @@ class Compiler {
       }
 
       asm_->L(".not_cell"); {
+        asm_->mov(rdi, rsi);
         asm_->and(rdi, -9);
         asm_->cmp(rdi, detail::jsval64::kNull);
         asm_->jne(".object_initialization");
