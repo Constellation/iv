@@ -1,6 +1,7 @@
 #ifndef IV_LV5_JSDATE_H_
 #define IV_LV5_JSDATE_H_
 #include <iv/lv5/jsobject_fwd.h>
+#include <iv/lv5/jsval_fwd.h>
 namespace iv {
 namespace lv5 {
 
@@ -22,22 +23,34 @@ class JSDate : public JSObject {
     return new JSDate(ctx, map, val);
   }
 
-  double value() const { return value_; }
+  double value() const { return utc_.value(); }
 
-  void set_value(double val) { value_ = val; }
+  double timezone() const { return timezone_; }
+
+  void set_value(double utc) {
+    utc_.SetValue(utc);
+    const double local = core::date::LocalTime(utc);
+    local_.SetValue(local);
+    timezone_ = (utc - local) / core::date::kMsPerMinute;
+  }
+
+  const core::date::DateInstance& local() const { return local_; }
+  const core::date::DateInstance& utc() const { return utc_; }
 
  private:
   JSDate(Context* ctx, double val)
-    : JSObject(ctx->global_data()->date_map()),
-      value_(val) {
+    : JSObject(ctx->global_data()->date_map()) {
+    set_value(val);
   }
 
   JSDate(Context* ctx, Map* map, double val)
-    : JSObject(map),
-      value_(val) {
+    : JSObject(map) {
+    set_value(val);
   }
 
-  double value_;
+  core::date::DateInstance local_;
+  core::date::DateInstance utc_;
+  double timezone_;
 };
 
 } }  // namespace iv::lv5

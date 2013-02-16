@@ -107,38 +107,34 @@ inline JSVal DateConstructor(const Arguments& args, Error* e) {
                 core::date::MakeDate(
                     core::date::MakeDay(y, m, dt),
                     core::date::MakeTime(h, min, s, milli)))));
-  } else {
-    const double t = core::date::TimeClip(core::date::CurrentTime());
-    const double dst = core::date::DaylightSavingTA(t);
-    double offset = core::date::LocalTZA() + dst;
-    const double time = t + offset;
-    char sign = '+';
-    if (offset < 0) {
-      sign = '-';
-      offset = -(core::date::LocalTZA() + dst);
-    }
-
-    // calc tz info
-    int tz_min = static_cast<int>(offset / core::date::kMsPerMinute);
-    const int tz_hour = tz_min / 60;
-    tz_min %= 60;
-
-    char buf[40];
-    const int num = snprintf(
-        buf, sizeof(buf) - 1,
-        "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d",
-        core::date::WeekDayToString(time),
-        core::date::MonthToString(time),
-        core::date::DateFromTime(time),
-        core::date::YearFromTime(time),
-        core::date::HourFromTime(time),
-        core::date::MinFromTime(time),
-        core::date::SecFromTime(time),
-        sign,
-        tz_hour,
-        tz_min);
-    return JSString::NewAsciiString(args.ctx(), core::StringPiece(buf, num), e);
   }
+
+  const double utc = core::date::TimeClip(core::date::CurrentTime());
+  const double local = core::date::LocalTime(utc);
+  const int timezone = -((utc - local) / core::date::kMsPerMinute);
+
+  const char sign = (timezone < 0) ? '-' : '+';
+  const int offset = (timezone < 0) ? -timezone : timezone;
+  const int tz_min = offset % 60;
+  const int tz_hour = offset / 60;
+
+  char buf[40];
+  const core::date::DateInstance instance(local);
+  const int num = snprintf(
+      buf, sizeof(buf) - 1,
+      "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d",
+      instance.WeekDayString(),
+      instance.MonthString(),
+      instance.date(),
+      instance.year(),
+      instance.hour(),
+      instance.min(),
+      instance.sec(),
+      sign,
+      tz_hour,
+      tz_min);
+  return JSString::NewAsciiString(
+      args.ctx(), core::StringPiece(buf, num), e);
 }
 
 
@@ -232,574 +228,568 @@ inline JSVal DateNow(const Arguments& args, Error* e) {
 inline JSVal DateToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.toString", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double t = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(t)) {
-      return JSString::NewAsciiString(args.ctx(), "Invalid Date", e);
-    } else {
-      const double dst = core::date::DaylightSavingTA(t);
-      double offset = core::date::LocalTZA() + dst;
-      const double time = t + offset;
-      char sign = '+';
-      if (offset < 0) {
-        sign = '-';
-        offset = -(core::date::LocalTZA() + dst);
-      }
-
-      // calc tz info
-      int tz_min = static_cast<int>(offset / core::date::kMsPerMinute);
-      const int tz_hour = tz_min / 60;
-      tz_min %= 60;
-
-      char buf[40];
-      const int num = snprintf(
-          buf, sizeof(buf) - 1,
-          "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d",
-          core::date::WeekDayToString(time),
-          core::date::MonthToString(time),
-          core::date::DateFromTime(time),
-          core::date::YearFromTime(time),
-          core::date::HourFromTime(time),
-          core::date::MinFromTime(time),
-          core::date::SecFromTime(time),
-          sign,
-          tz_hour,
-          tz_min);
-      return JSString::NewAsciiString(
-          args.ctx(), core::StringPiece(buf, num), e);
-    }
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.toString is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.toString is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->local().IsValid()) {
+    return JSString::NewAsciiString(args.ctx(), "Invalid Date", e);
+  }
+
+  const int timezone = -date->timezone();
+  const char sign = (timezone < 0) ? '-' : '+';
+  const int offset = (timezone < 0) ? -timezone : timezone;
+  const int tz_min = offset % 60;
+  const int tz_hour = offset / 60;
+
+  char buf[40];
+  const core::date::DateInstance& instance = date->local();
+  const int num = snprintf(
+      buf, sizeof(buf) - 1,
+      "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d",
+      instance.WeekDayString(),
+      instance.MonthString(),
+      instance.date(),
+      instance.year(),
+      instance.hour(),
+      instance.min(),
+      instance.sec(),
+      sign,
+      tz_hour,
+      tz_min);
+  return JSString::NewAsciiString(
+      args.ctx(), core::StringPiece(buf, num), e);
 }
 
 // section 15.9.5.3 Date.prototype.toDateString()
 inline JSVal DateToDateString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.toDateString", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double t = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(t)) {
-      e->Report(Error::Range, "Invalid Date");
-      return JSEmpty;
-    } else {
-      const double time = core::date::LocalTime(t);
-      char buf[20];
-      const int num = snprintf(
-          buf, sizeof(buf) - 1,
-          "%3s %3s %02d %4d",
-          core::date::WeekDayToString(time),
-          core::date::MonthToString(time),
-          core::date::DateFromTime(time),
-          core::date::YearFromTime(time));
-      return JSString::NewAsciiString(
-          args.ctx(), core::StringPiece(buf, num), e);
-    }
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.toDateString is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.toDateString is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->local().IsValid()) {
+    e->Report(Error::Range, "Invalid Date");
+    return JSEmpty;
+  }
+
+  char buf[20];
+  const core::date::DateInstance& instance = date->local();
+  const int num = snprintf(
+      buf, sizeof(buf) - 1,
+      "%3s %3s %02d %4d",
+      instance.WeekDayString(),
+      instance.MonthString(),
+      instance.date(),
+      instance.year());
+  return JSString::NewAsciiString(
+      args.ctx(), core::StringPiece(buf, num), e);
 }
 
 // section 15.9.5.4 Date.prototype.toTimeString()
 inline JSVal DateToTimeString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.toTimeString", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double t = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(t)) {
-      e->Report(Error::Range, "Invalid Date");
-      return JSEmpty;
-    } else {
-      const double dst = core::date::DaylightSavingTA(t);
-      double offset = core::date::LocalTZA() + dst;
-      const double time = t + offset;
-      char sign = '+';
-      if (offset < 0) {
-        sign = '-';
-        offset = -(core::date::LocalTZA() + dst);
-      }
-
-      // calc tz info
-      int tz_min = static_cast<int>(offset / core::date::kMsPerMinute);
-      const int tz_hour = tz_min / 60;
-      tz_min %= 60;
-
-      char buf[20];
-      const int num = snprintf(
-          buf, sizeof(buf) - 1,
-          "%02d:%02d:%02d GMT%c%02d%02d",
-          core::date::HourFromTime(time),
-          core::date::MinFromTime(time),
-          core::date::SecFromTime(time),
-          sign,
-          tz_hour,
-          tz_min);
-      return JSString::NewAsciiString(
-          args.ctx(), core::StringPiece(buf, num), e);
-    }
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.toTimeString is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.toTimeString is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->local().IsValid()) {
+    e->Report(Error::Range, "Invalid Date");
+    return JSEmpty;
+  }
+
+  const int timezone = -date->timezone();
+  const char sign = (timezone < 0) ? '-' : '+';
+  const int offset = (timezone < 0) ? -timezone : timezone;
+  const int tz_min = offset % 60;
+  const int tz_hour = offset / 60;
+
+  char buf[20];
+  const core::date::DateInstance& instance = date->local();
+  const int num = snprintf(
+      buf, sizeof(buf) - 1,
+      "%02d:%02d:%02d GMT%c%02d%02d",
+      instance.hour(),
+      instance.min(),
+      instance.sec(),
+      sign,
+      tz_hour,
+      tz_min);
+  return JSString::NewAsciiString(
+      args.ctx(), core::StringPiece(buf, num), e);
 }
 
 // section 15.9.5.5 Date.prototype.toLocaleString()
 inline JSVal DateToLocaleString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.toLocaleString", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double t = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(t)) {
-      e->Report(Error::Range, "Invalid Date");
-      return JSEmpty;
-    } else {
-      const double dst = core::date::DaylightSavingTA(t);
-      double offset = core::date::LocalTZA() + dst;
-      const double time = t + offset;
-      char sign = '+';
-      if (offset < 0) {
-        sign = '-';
-        offset = -(core::date::LocalTZA() + dst);
-      }
-
-      // calc tz info
-      int tz_min = static_cast<int>(offset / core::date::kMsPerMinute);
-      const int tz_hour = tz_min / 60;
-      tz_min %= 60;
-
-      char buf[40];
-      const int num = snprintf(
-          buf, sizeof(buf) - 1,
-          "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d",
-          core::date::WeekDayToString(time),
-          core::date::MonthToString(time),
-          core::date::DateFromTime(time),
-          core::date::YearFromTime(time),
-          core::date::HourFromTime(time),
-          core::date::MinFromTime(time),
-          core::date::SecFromTime(time),
-          sign,
-          tz_hour,
-          tz_min);
-      return JSString::NewAsciiString(
-          args.ctx(), core::StringPiece(buf, num), e);
-    }
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.toLocaleString is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.toLocaleString is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->local().IsValid()) {
+    return JSString::NewAsciiString(args.ctx(), "Invalid Date", e);
+  }
+
+  const int timezone = -date->timezone();
+  const char sign = (timezone < 0) ? '-' : '+';
+  const int offset = (timezone < 0) ? -timezone : timezone;
+  const int tz_min = offset % 60;
+  const int tz_hour = offset / 60;
+
+  char buf[40];
+  const core::date::DateInstance& instance = date->local();
+  const int num = snprintf(
+      buf, sizeof(buf) - 1,
+      "%3s %3s %02d %4d %02d:%02d:%02d GMT%c%02d%02d",
+      instance.WeekDayString(),
+      instance.MonthString(),
+      instance.date(),
+      instance.year(),
+      instance.hour(),
+      instance.min(),
+      instance.sec(),
+      sign,
+      tz_hour,
+      tz_min);
+  return JSString::NewAsciiString(
+      args.ctx(), core::StringPiece(buf, num), e);
 }
 
 // section 15.9.5.6 Date.prototype.toLocaleDateString()
 inline JSVal DateToLocaleDateString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.toLocaleDateString", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double t = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(t)) {
-      e->Report(Error::Range, "Invalid Date");
-      return JSEmpty;
-    } else {
-      const double time = core::date::LocalTime(t);
-      char buf[20];
-      const int num = snprintf(
-          buf, sizeof(buf) - 1,
-          "%3s %3s %02d %4d",
-          core::date::WeekDayToString(time),
-          core::date::MonthToString(time),
-          core::date::DateFromTime(time),
-          core::date::YearFromTime(time));
-      return JSString::NewAsciiString(
-          args.ctx(), core::StringPiece(buf, num), e);
-    }
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.toLocaleDateString is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.toLocaleDateString is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->local().IsValid()) {
+    e->Report(Error::Range, "Invalid Date");
+    return JSEmpty;
+  }
+
+  const core::date::DateInstance& instance = date->local();
+  char buf[20];
+  const int num = snprintf(
+      buf, sizeof(buf) - 1,
+      "%3s %3s %02d %4d",
+      instance.WeekDayString(),
+      instance.MonthString(),
+      instance.date(),
+      instance.year());
+  return JSString::NewAsciiString(
+      args.ctx(), core::StringPiece(buf, num), e);
 }
 
 // section 15.9.5.7 Date.prototype.toLocaleTimeString()
 inline JSVal DateToLocaleTimeString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.toLocaleTimeString", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double t = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(t)) {
-      e->Report(Error::Range, "Invalid Date");
-      return JSEmpty;
-    } else {
-      const double dst = core::date::DaylightSavingTA(t);
-      double offset = core::date::LocalTZA() + dst;
-      const double time = t + offset;
-      char sign = '+';
-      if (offset < 0) {
-        sign = '-';
-        offset = -(core::date::LocalTZA() + dst);
-      }
-
-      // calc tz info
-      int tz_min = static_cast<int>(offset / core::date::kMsPerMinute);
-      const int tz_hour = tz_min / 60;
-      tz_min %= 60;
-
-      char buf[20];
-      const int num = snprintf(
-          buf, sizeof(buf) - 1,
-          "%02d:%02d:%02d GMT%c%02d%02d",
-          core::date::HourFromTime(time),
-          core::date::MinFromTime(time),
-          core::date::SecFromTime(time),
-          sign,
-          tz_hour,
-          tz_min);
-      return JSString::NewAsciiString(
-          args.ctx(), core::StringPiece(buf, num), e);
-    }
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.toLocaleTimeString is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.toLocaleTimeString is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->local().IsValid()) {
+    e->Report(Error::Range, "Invalid Date");
+    return JSEmpty;
+  }
+
+  const int timezone = -date->timezone();
+  const char sign = (timezone < 0) ? '-' : '+';
+  const int offset = (timezone < 0) ? -timezone : timezone;
+  const int tz_min = offset % 60;
+  const int tz_hour = offset / 60;
+
+  char buf[20];
+  const core::date::DateInstance& instance = date->local();
+  const int num = snprintf(
+      buf, sizeof(buf) - 1,
+      "%02d:%02d:%02d GMT%c%02d%02d",
+      instance.hour(),
+      instance.min(),
+      instance.sec(),
+      sign,
+      tz_hour,
+      tz_min);
+  return JSString::NewAsciiString(
+      args.ctx(), core::StringPiece(buf, num), e);
 }
 
 // section 15.9.5.8 Date.prototype.valueOf()
 inline JSVal DateValueOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.valueOf", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    return static_cast<JSDate*>(obj.object())->value();
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.valueOf is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.valueOf is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  return static_cast<JSDate*>(obj.object())->value();
 }
 
 // section 15.9.5.9 Date.prototype.getTime()
 inline JSVal DateGetTime(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getTime", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    return static_cast<JSDate*>(obj.object())->value();
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.getTime is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.getTime is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  return static_cast<JSDate*>(obj.object())->value();
 }
 
 // section 15.9.5.10 Date.prototype.getFullYear()
 inline JSVal DateGetFullYear(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getFullYear", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double time = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(time)) {
-      return core::kNaN;
-    }
-    return core::date::YearFromTime(core::date::LocalTime(time));
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.getFullYear is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.getFullYear is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->local().IsValid()) {
+    return core::kNaN;
+  }
+  return JSVal::Int32(date->local().year());
 }
 
 // section 15.9.5.11 Date.prototype.getUTCFullYear()
 inline JSVal DateGetUTCFullYear(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getUTCFullYear", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double time = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(time)) {
-      return core::kNaN;
-    }
-    return core::date::YearFromTime(time);
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.getUTCFullYear is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.getUTCFullYear is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->utc().IsValid()) {
+    return core::kNaN;
+  }
+  return JSVal::Int32(date->utc().year());
 }
 
 // section 15.9.5.12 Date.prototype.getMonth()
 inline JSVal DateGetMonth(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getMonth", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double time = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(time)) {
-      return core::kNaN;
-    }
-    return core::date::MonthFromTime(core::date::LocalTime(time));
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.getMonth is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.getMonth is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->local().IsValid()) {
+    return core::kNaN;
+  }
+  return JSVal::Int32(date->local().month());
 }
 
 // section 15.9.5.13 Date.prototype.getUTCMonth()
 inline JSVal DateGetUTCMonth(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getUTCMonth", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double time = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(time)) {
-      return core::kNaN;
-    }
-    return core::date::MonthFromTime(time);
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.getUTCMonth is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.getUTCMonth is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->utc().IsValid()) {
+    return core::kNaN;
+  }
+  return JSVal::Int32(date->utc().month());
 }
 
 // section 15.9.5.14 Date.prototype.getDate()
 inline JSVal DateGetDate(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getDate", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double time = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(time)) {
-      return core::kNaN;
-    }
-    return core::date::DateFromTime(core::date::LocalTime(time));
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.getDate is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.getDate is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->local().IsValid()) {
+    return core::kNaN;
+  }
+  return JSVal::Int32(date->local().date());
 }
 
 // section 15.9.5.15 Date.prototype.getUTCDate()
 inline JSVal DateGetUTCDate(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getUTCDate", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double time = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(time)) {
-      return core::kNaN;
-    }
-    return core::date::DateFromTime(time);
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.getUTCDate is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.getUTCDate is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->utc().IsValid()) {
+    return core::kNaN;
+  }
+  return JSVal::Int32(date->utc().date());
 }
 
 // section 15.9.5.16 Date.prototype.getDay()
 inline JSVal DateGetDay(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getDay", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double time = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(time)) {
-      return core::kNaN;
-    }
-    return core::date::WeekDay(core::date::LocalTime(time));
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.getDay is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.getDay is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->local().IsValid()) {
+    return core::kNaN;
+  }
+  return JSVal::Int32(date->local().weekday());
 }
 
 // section 15.9.5.17 Date.prototype.getUTCDay()
 inline JSVal DateGetUTCDay(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getUTCDay", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double time = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(time)) {
-      return core::kNaN;
-    }
-    return core::date::WeekDay(time);
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.getUTCDay is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.getUTCDay is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->utc().IsValid()) {
+    return core::kNaN;
+  }
+  return JSVal::Int32(date->utc().weekday());
 }
 
 // section 15.9.5.18 Date.prototype.getHours()
 inline JSVal DateGetHours(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getHours", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double time = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(time)) {
-      return core::kNaN;
-    }
-    return core::date::HourFromTime(core::date::LocalTime(time));
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.getHours is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.getHours is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->local().IsValid()) {
+    return core::kNaN;
+  }
+  return JSVal::Int32(date->local().hour());
 }
 
 // section 15.9.5.19 Date.prototype.getUTCHours()
 inline JSVal DateGetUTCHours(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getUTCHours", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double time = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(time)) {
-      return core::kNaN;
-    }
-    return core::date::HourFromTime(time);
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.getUTCHours is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.getUTCHours is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->utc().IsValid()) {
+    return core::kNaN;
+  }
+  return JSVal::Int32(date->utc().hour());
 }
 
 // section 15.9.5.20 Date.prototype.getMinutes()
 inline JSVal DateGetMinutes(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getMinutes", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double time = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(time)) {
-      return core::kNaN;
-    }
-    return core::date::MinFromTime(core::date::LocalTime(time));
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.getMinutes is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.getMinutes is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->local().IsValid()) {
+    return core::kNaN;
+  }
+  return JSVal::Int32(date->local().min());
 }
 
 // section 15.9.5.21 Date.prototype.getUTCMinutes()
 inline JSVal DateGetUTCMinutes(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getUTCMinutes", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double time = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(time)) {
-      return core::kNaN;
-    }
-    return core::date::MinFromTime(time);
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.getUTCMinutes is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.getUTCMinutes is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->utc().IsValid()) {
+    return core::kNaN;
+  }
+  return JSVal::Int32(date->utc().min());
 }
 
 // section 15.9.5.22 Date.prototype.getSeconds()
 inline JSVal DateGetSeconds(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getSeconds", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double time = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(time)) {
-      return core::kNaN;
-    }
-    return core::date::SecFromTime(core::date::LocalTime(time));
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.getSeconds is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.getSeconds is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->local().IsValid()) {
+    return core::kNaN;
+  }
+  return JSVal::Int32(date->local().sec());
 }
 
 // section 15.9.5.23 Date.prototype.getUTCSeconds()
 inline JSVal DateGetUTCSeconds(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getUTCSeconds", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double time = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(time)) {
-      return core::kNaN;
-    }
-    return core::date::SecFromTime(time);
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.getUTCSeconds is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.getUTCSeconds is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->utc().IsValid()) {
+    return core::kNaN;
+  }
+  return JSVal::Int32(date->utc().sec());
 }
 
 // section 15.9.5.24 Date.prototype.getMilliseconds()
 inline JSVal DateGetMilliseconds(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getMilliseconds", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double time = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(time)) {
-      return core::kNaN;
-    }
-    return core::date::MsFromTime(core::date::LocalTime(time));
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.getMilliseconds is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.getMilliseconds is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->local().IsValid()) {
+    return core::kNaN;
+  }
+  return JSVal::Int32(date->local().ms());
 }
 
 // section 15.9.5.25 Date.prototype.getUTCMilliseconds()
 inline JSVal DateGetUTCMilliseconds(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getUTCMilliseconds", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double time = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(time)) {
-      return core::kNaN;
-    }
-    return core::date::MsFromTime(time);
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.getUTCMilliseconds is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.getUTCMilliseconds is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->utc().IsValid()) {
+    return core::kNaN;
+  }
+  return JSVal::Int32(date->utc().ms());
 }
 
 // section 15.9.5.26 Date.prototype.getTimezoneOffset()
 inline JSVal DateGetTimezoneOffset(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getTimezoneOffset", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double time = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(time)) {
-      return core::kNaN;
-    }
-    return (time - core::date::LocalTime(time)) / core::date::kMsPerMinute;
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.getTimezoneOffset is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.getTimezoneOffset is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  return static_cast<JSDate*>(obj.object())->timezone();
 }
 
 // section 15.9.5.27 Date.prototype.setTime(time)
 inline JSVal DateSetTime(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.setTime", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    double v = core::kNaN;
-    if (!args.empty()) {
-      const double val = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(e));
-      v = core::date::TimeClip(val);
-    }
-    static_cast<JSDate*>(obj.object())->set_value(v);
-    return v;
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.setTime is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.setTime is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  double v = core::kNaN;
+  if (!args.empty()) {
+    const double val = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(e));
+    v = core::date::TimeClip(val);
+  }
+  static_cast<JSDate*>(obj.object())->set_value(v);
+  return v;
 }
 
 // section 15.9.5.28 Date.prototype.setMilliseconds(ms)
@@ -1293,105 +1283,110 @@ inline JSVal DateSetFullYear(const Arguments& args, Error* e) {
 inline JSVal DateSetUTCFullYear(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.setUTCFullYear", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    double t = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(t)) {
-      t = +0.0;
-    }
-    const std::size_t args_size = args.size();
-    double y;
-    double m;
-    double dt;
-    if (args_size > 0) {
-      y = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(e));
-      if (args_size > 1) {
-        m = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(e));
-        if (args_size > 2) {
-          dt = args[2].ToNumber(args.ctx(), IV_LV5_ERROR(e));
-        } else {
-          dt = core::date::DateFromTime(t);
-        }
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.setUTCFullYear is not generic function");
+    return JSUndefined;
+  }
+
+  double t = static_cast<JSDate*>(obj.object())->value();
+  if (core::math::IsNaN(t)) {
+    t = +0.0;
+  }
+  const std::size_t args_size = args.size();
+  double y;
+  double m;
+  double dt;
+  if (args_size > 0) {
+    y = args[0].ToNumber(args.ctx(), IV_LV5_ERROR(e));
+    if (args_size > 1) {
+      m = args[1].ToNumber(args.ctx(), IV_LV5_ERROR(e));
+      if (args_size > 2) {
+        dt = args[2].ToNumber(args.ctx(), IV_LV5_ERROR(e));
       } else {
-        m = core::date::MonthFromTime(t);
         dt = core::date::DateFromTime(t);
       }
     } else {
-      y = core::kNaN;
       m = core::date::MonthFromTime(t);
       dt = core::date::DateFromTime(t);
     }
-    const double v = core::date::TimeClip(
-        core::date::MakeDate(
-            core::date::MakeDay(y, m, dt),
-            core::date::TimeWithinDay(t)));
-    static_cast<JSDate*>(obj.object())->set_value(v);
-    return v;
+  } else {
+    y = core::kNaN;
+    m = core::date::MonthFromTime(t);
+    dt = core::date::DateFromTime(t);
   }
-  e->Report(Error::Type,
-            "Date.prototype.setUTCFullYear is not generic function");
-  return JSUndefined;
+  const double v = core::date::TimeClip(
+      core::date::MakeDate(
+          core::date::MakeDay(y, m, dt),
+          core::date::TimeWithinDay(t)));
+  static_cast<JSDate*>(obj.object())->set_value(v);
+  return v;
 }
 
 // section 15.9.5.42 Date.prototype.toUTCString()
 inline JSVal DateToUTCString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.toUTCString", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double time = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(time)) {
-      e->Report(Error::Range, "Invalid Date");
-      return JSEmpty;
-    } else {
-      char buf[40];
-      const int num = snprintf(
-          buf, sizeof(buf) - 1,
-          "%3s, %02d %3s %4d %02d:%02d:%02d GMT",
-          core::date::WeekDayToString(time),
-          core::date::DateFromTime(time),
-          core::date::MonthToString(time),
-          core::date::YearFromTime(time),
-          core::date::HourFromTime(time),
-          core::date::MinFromTime(time),
-          core::date::SecFromTime(time));
-      return JSString::NewAsciiString(
-          args.ctx(), core::StringPiece(buf, num), e);
-    }
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.toUTCString is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.toUTCString is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->utc().IsValid()) {
+    e->Report(Error::Range, "Invalid Date");
+    return JSEmpty;
+  }
+
+  char buf[40];
+  const core::date::DateInstance& instance = date->utc();
+  const int num = snprintf(
+      buf, sizeof(buf) - 1,
+      "%3s, %02d %3s %4d %02d:%02d:%02d GMT",
+      instance.WeekDayString(),
+      instance.date(),
+      instance.MonthString(),
+      instance.year(),
+      instance.hour(),
+      instance.min(),
+      instance.sec());
+  return JSString::NewAsciiString(
+      args.ctx(), core::StringPiece(buf, num), e);
 }
 
 // section 15.9.5.43 Date.prototype.toISOString()
 inline JSVal DateToISOString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.toISOString", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double time = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(time)) {
-      e->Report(Error::Range, "Invalid Date");
-      return JSEmpty;
-    } else {
-      char buf[30];
-      const int num = snprintf(
-          buf, sizeof(buf) - 1,
-          "%4d-%02d-%02dT%02d:%02d:%02d.%03dZ",
-          core::date::YearFromTime(time),
-          core::date::MonthFromTime(time)+1,
-          core::date::DateFromTime(time),
-          core::date::HourFromTime(time),
-          core::date::MinFromTime(time),
-          core::date::SecFromTime(time),
-          core::date::MsFromTime(time));
-      return JSString::NewAsciiString(
-          args.ctx(), core::StringPiece(buf, num), e);
-    }
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.toISOString is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.toISOString is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->utc().IsValid()) {
+    e->Report(Error::Range, "Invalid Date");
+    return JSEmpty;
+  }
+
+  char buf[30];
+  const core::date::DateInstance& instance = date->utc();
+  const int num = snprintf(
+      buf, sizeof(buf) - 1,
+      "%4d-%02d-%02dT%02d:%02d:%02d.%03dZ",
+      instance.year(),
+      instance.month() + 1,
+      instance.date(),
+      instance.hour(),
+      instance.min(),
+      instance.sec(),
+      instance.ms());
+  return JSString::NewAsciiString(
+      args.ctx(), core::StringPiece(buf, num), e);
 }
 
 // section 15.9.5.44 Date.prototype.toJSON()
@@ -1424,17 +1419,18 @@ inline JSVal DateToJSON(const Arguments& args, Error* e) {
 inline JSVal DateGetYear(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.getYear", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    // this is date object
-    const double time = static_cast<JSDate*>(obj.object())->value();
-    if (core::math::IsNaN(time)) {
-      return core::kNaN;
-    }
-    return core::date::YearFromTime(core::date::LocalTime(time)) - 1900;
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.getYear is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.getYear is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* date = static_cast<JSDate*>(obj.object());
+  if (!date->local().IsValid()) {
+    return core::kNaN;
+  }
+  return date->local().year() - 1900;
 }
 
 // section B.2.5 Date.prototype.setYear(year)
@@ -1442,37 +1438,39 @@ inline JSVal DateGetYear(const Arguments& args, Error* e) {
 inline JSVal DateSetYear(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Date.prototype.setYear", args, e);
   const JSVal obj = args.this_binding();
-  if (obj.IsObject() && obj.object()->IsClass<Class::Date>()) {
-    JSDate* d = static_cast<JSDate*>(obj.object());
-    double t = core::date::LocalTime(d->value());
-    if (core::math::IsNaN(t)) {
-      t = +0.0;
-    }
-    double y = core::kNaN;
-    if (!args.empty()) {
-      y = args.front().ToNumber(args.ctx(), IV_LV5_ERROR(e));
-    }
-    if (core::math::IsNaN(y)) {
-      d->set_value(y);
-      return y;
-    }
-    double year = core::DoubleToInteger(y);
-    if (0.0 <= year && year <= 99.0) {
-      year += 1900;
-    }
-    const double v = core::date::TimeClip(
-        core::date::UTC(
-            core::date::MakeDate(
-                core::date::MakeDay(year,
-                                    core::date::MonthFromTime(t),
-                                    core::date::DateFromTime(t)),
-                core::date::TimeWithinDay(t))));
-    d->set_value(v);
-    return v;
+  if (!obj.IsObject() || !obj.object()->IsClass<Class::Date>()) {
+    e->Report(Error::Type,
+              "Date.prototype.setYear is not generic function");
+    return JSUndefined;
   }
-  e->Report(Error::Type,
-            "Date.prototype.setYear is not generic function");
-  return JSUndefined;
+
+  // this is date object
+  JSDate* d = static_cast<JSDate*>(obj.object());
+  double t = core::date::LocalTime(d->value());
+  if (core::math::IsNaN(t)) {
+    t = +0.0;
+  }
+  double y = core::kNaN;
+  if (!args.empty()) {
+    y = args.front().ToNumber(args.ctx(), IV_LV5_ERROR(e));
+  }
+  if (core::math::IsNaN(y)) {
+    d->set_value(y);
+    return y;
+  }
+  double year = core::DoubleToInteger(y);
+  if (0.0 <= year && year <= 99.0) {
+    year += 1900;
+  }
+  const double v = core::date::TimeClip(
+      core::date::UTC(
+          core::date::MakeDate(
+              core::date::MakeDay(year,
+                                  core::date::MonthFromTime(t),
+                                  core::date::DateFromTime(t)),
+              core::date::TimeWithinDay(t))));
+  d->set_value(v);
+  return v;
 }
 
 } } }  // namespace iv::lv5::runtime

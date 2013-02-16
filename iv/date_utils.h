@@ -32,6 +32,13 @@ inline double Day(double t) {
   return std::floor(t / kMsPerDay);
 }
 
+inline int64_t Int64Day(int64_t time) {
+  if (time < 0) {
+    time -= (kMsPerDay - 1);
+  }
+  return time / kMsPerDay;
+}
+
 inline double TimeWithinDay(double t) {
   const double res = core::math::Modulo(t, kMsPerDay);
   if (res < 0) {
@@ -143,6 +150,14 @@ inline int MonthToDaysInYear(int month, int is_leap) {
 static const std::array<const char*, 7> kWeekDays = { {
   "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
 } };
+
+inline int32_t WeekDayFromDay(int64_t day) {
+  const int32_t res = (day + 4) % 7;
+  if (res < 0) {
+    return res + 7;
+  }
+  return res;
+}
 
 inline int WeekDay(double t) {
   const int res = static_cast<int>(core::math::Modulo((Day(t) + 4), 7));
@@ -321,6 +336,135 @@ inline double TimeClip(double time) {
   }
   return core::DoubleToInteger(time);
 }
+
+inline void YMDFromTime(int64_t time, int32_t* year, int32_t* month, int32_t* date) {
+  const int32_t about_year = static_cast<int32_t>(
+      std::floor(time / (kMsPerDay * 365.2425)) + 1970);
+  const double expected = TimeFromYear(about_year);
+
+  const int32_t y =
+      (expected > time) ? about_year - 1 :
+      (TimeFromYear(about_year + 1) <= time) ? about_year + 1 :
+      about_year;
+  *year = y;
+
+  int64_t day = Day(time) - DaysFromYear(y);
+  const bool leap = DaysInYear(y) == 366;
+  for (int i = 0; i < 12; ++i) {
+    day -= kDaysMap[leap][i];
+    if (day < 0) {
+      *month = i;
+      *date = day + kDaysMap[leap][i] + 1;
+      return;
+    }
+  }
+
+  UNREACHABLE();
+}
+
+class DateInstance {
+ public:
+  static const int32_t kOK = 0;
+  static const int32_t kNG = 1;
+  static const int32_t kInvalidated = 2;
+
+  DateInstance() {
+    SetValue(core::kNaN);
+  }
+
+  explicit DateInstance(double value) {
+    SetValue(value);
+  }
+
+  void SetValue(double value) {
+    value_ = value;
+    invalidate_ = (std::isnan(value)) ? kNG : kInvalidated;
+  }
+
+  bool IsValid() const { return invalidate_ != kNG; }
+
+  double value() const {
+    return value_;
+  }
+
+  int32_t year() const {
+    CalcucateCache();
+    return year_;
+  }
+
+  int32_t month() const {
+    CalcucateCache();
+    return month_;
+  }
+
+  int32_t date() const {
+    CalcucateCache();
+    return date_;
+  }
+
+  int32_t weekday() const {
+    CalcucateCache();
+    return weekday_;
+  }
+
+  int32_t hour() const {
+    CalcucateCache();
+    return hour_;
+  }
+
+  int32_t min() const {
+    CalcucateCache();
+    return min_;
+  }
+
+  int32_t sec() const {
+    CalcucateCache();
+    return sec_;
+  }
+
+  int32_t ms() const {
+    CalcucateCache();
+    return ms_;
+  }
+
+  const char* WeekDayString() const {
+    return kWeekDays[weekday()];
+  }
+
+  const char* MonthString() const {
+    return kMonths[month()];
+  }
+
+ private:
+  void CalcucateCache() const {
+    if (invalidate_ != kInvalidated) {
+      return;
+    }
+
+    const int64_t time = static_cast<int64_t>(value_);
+    const int64_t day = Int64Day(time);
+    YMDFromTime(value(), &year_, &month_, &date_);
+    weekday_ = WeekDayFromDay(day);
+
+    const int64_t time_in_day = time - kMsPerDay * day;
+    hour_ = time_in_day / kMsPerHour;
+    min_ = (time_in_day / kMsPerMinute) % kMinutesPerHour;
+    sec_ = (time_in_day / kMsPerSecond) % kSecondsPerMinute;
+    ms_ = time_in_day % kMsPerSecond;
+    invalidate_ = kOK;
+  }
+
+  double value_;
+  mutable int32_t year_;
+  mutable int32_t month_;
+  mutable int32_t date_;
+  mutable int32_t weekday_;
+  mutable int32_t hour_;
+  mutable int32_t min_;
+  mutable int32_t sec_;
+  mutable int32_t ms_;
+  mutable int32_t invalidate_;
+};
 
 } } }  // namespace iv::core::date
 #if defined(IV_OS_WIN)
