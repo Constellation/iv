@@ -398,10 +398,6 @@ class Lexer: private Noncopyable<> {
     return buffer16_;
   }
 
-  inline const std::vector<char>& Buffer8() const {
-    return buffer8_;
-  }
-
   inline const double& Numeric() const {
     return numeric_;
   }
@@ -930,8 +926,8 @@ class Lexer: private Noncopyable<> {
 
 
     if (type == DECIMAL) {
-      const std::string buf(buffer8_.begin(), buffer8_.end());
-      numeric_ = std::atof(buf.c_str());
+      Record8('\0');
+      numeric_ = std::atof(buffer8_.data());
     } else if (type == HEX) {
       assert(buffer8_.size() > 2);  // first 0x
       numeric_ = ParseIntegerOverflow(buffer8_.data() + 2,
