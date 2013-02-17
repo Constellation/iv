@@ -1029,11 +1029,7 @@ inline JSVal StringSubstring(const Arguments& args, Error* e) {
   } else {
     const double pos = arg0.ToInteger(ctx, IV_LV5_ERROR(e));
     if (pos > 0.0) {
-      if (pos > len) {
-        start = len;
-      } else {
-        start = static_cast<uint32_t>(pos);
-      }
+      start = (std::min<uint32_t>)(len, pos);
     }
   }
 
@@ -1046,16 +1042,12 @@ inline JSVal StringSubstring(const Arguments& args, Error* e) {
   } else {
     const double pos = arg1.ToInteger(ctx, IV_LV5_ERROR(e));
     if (pos > 0.0) {
-      if (pos > len) {
-        end = len;
-      } else {
-        end = static_cast<uint32_t>(pos);
-      }
+      end = (std::min<uint32_t>)(len, pos);
     }
   }
 
-  const uint32_t from = std::min<uint32_t>(start, end);
-  const uint32_t to = std::max<uint32_t>(start, end);
+  const uint32_t from = (std::min<uint32_t>)(start, end);
+  const uint32_t to = (std::max<uint32_t>)(start, end);
 
   return str->Substring(ctx, from, to);
 }
