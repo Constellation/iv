@@ -14,7 +14,7 @@
 #include <iv/lv5/jsbooleanobject.h>
 #include <iv/lv5/jsnumberobject.h>
 #include <iv/lv5/jsstringobject.h>
-#include <iv/lv5/jsprivate_symbol.h>
+#include <iv/lv5/jssymbol.h>
 namespace iv {
 namespace lv5 {
 
@@ -733,8 +733,8 @@ inline Symbol JSLayout::ToSymbol(Context* ctx, Error* e) const {
   assert(IsObject());
   JSObject* obj = object();
 
-  if (obj->IsClass<Class::PrivateSymbol>()) {
-    const JSPrivateSymbol* name = static_cast<const JSPrivateSymbol*>(obj);
+  if (obj->IsClass<Class::Symbol>()) {
+    const JSSymbol* name = static_cast<const JSSymbol*>(obj);
     return name->symbol();
   }
 

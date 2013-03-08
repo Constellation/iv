@@ -17,7 +17,7 @@
 #include <iv/lv5/jsnumberobject.h>
 #include <iv/lv5/jsbooleanobject.h>
 #include <iv/lv5/jsreflect.h>
-#include <iv/lv5/jsprivate_symbol.h>
+#include <iv/lv5/jssymbol.h>
 #include <iv/lv5/jsi18n.h>
 #include <iv/lv5/arguments.h>
 #include <iv/lv5/context.h>
@@ -199,7 +199,7 @@ void Context::Initialize() {
   InitSet(func_cls, obj_proto, &global_binder);
   InitBinaryBlocks(func_cls, obj_proto, &global_binder);
   InitReflect(func_cls, obj_proto, &global_binder);
-  InitPrivateSymbol(func_cls, obj_proto, &global_binder);
+  InitSymbol(func_cls, obj_proto, &global_binder);
 
   {
     // Arguments
@@ -1411,25 +1411,25 @@ void Context::InitReflect(const ClassSlot& func_cls,
       .def<&runtime::ReflectInstanceOf, 2>("instanceOf");
 }
 
-void Context::InitPrivateSymbol(const ClassSlot& func_cls,
-                                JSObject* obj_proto, bind::Object* global_binder) {
-  // ES.next PrivateSymbol
+void Context::InitSymbol(const ClassSlot& func_cls,
+                         JSObject* obj_proto, bind::Object* global_binder) {
+  // ES.next Symbol
   Error::Dummy dummy;
   JSObject* const proto =
-      JSPrivateSymbol::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false));
+      JSSymbol::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false));
   global_data()->private_symbol_map()->ChangePrototypeWithNoTransition(proto);
   JSFunction* const constructor =
-      JSInlinedFunction<&runtime::PrivateSymbolConstructor, 0>::New(this, Intern("PrivateSymbol"));
+      JSInlinedFunction<&runtime::SymbolConstructor, 0>::New(this, Intern("Symbol"));
 
   struct ClassSlot cls = {
-    JSPrivateSymbol::GetClass(),
-    Intern("PrivateSymbol"),
-    JSString::NewAsciiString(this, "PrivateSymbol", &dummy),
+    JSSymbol::GetClass(),
+    Intern("Symbol"),
+    JSString::NewAsciiString(this, "Symbol", &dummy),
     constructor,
     proto
   };
-  global_data_.RegisterClass<Class::PrivateSymbol>(cls);
-  global_binder->def("PrivateSymbol", constructor, ATTR::W | ATTR::C);
+  global_data_.RegisterClass<Class::Symbol>(cls);
+  global_binder->def("Symbol", constructor, ATTR::W | ATTR::C);
 
   bind::Object(this, constructor)
       .def(symbol::prototype(), proto, ATTR::NONE)
