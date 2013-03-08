@@ -17,8 +17,8 @@ inline JSVal SymbolConstructor(const Arguments& args, Error* e) {
   return JSSymbol::New(args.ctx());
 }
 
-inline JSVal PrivateSymbolIsPrivateSymbol(const Arguments& args, Error* e) {
-  IV_LV5_CONSTRUCTOR_CHECK("PrivateSymbol.isPrivateSymbol", args, e);
+inline JSVal SymbolIsSymbol(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Symbol.isSymbol", args, e);
   if (args.empty()) {
     return JSFalse;
   }
@@ -26,7 +26,7 @@ inline JSVal PrivateSymbolIsPrivateSymbol(const Arguments& args, Error* e) {
   if (!val.IsObject()) {
     return JSFalse;
   }
-  return JSVal::Bool(val.object()->IsClass<Class::PrivateSymbol>());
+  return JSVal::Bool(val.object()->IsClass<Class::Symbol>());
 }
 
 } } }  // namespace iv::lv5::runtime

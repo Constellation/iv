@@ -1433,7 +1433,7 @@ void Context::InitSymbol(const ClassSlot& func_cls,
 
   bind::Object(this, constructor)
       .def(symbol::prototype(), proto, ATTR::NONE)
-      .def<&runtime::PrivateSymbolIsPrivateSymbol, 1>("isPrivateSymbol");
+      .def<&runtime::SymbolIsSymbol, 1>("isSymbol");
 
   bind::Object(this, proto)
       .cls(cls.cls)
