@@ -521,8 +521,8 @@ void Context::InitNumber(const ClassSlot& func_cls,
       .def<&runtime::NumberIsFinite, 1>("isFinite")
       // section 15.7.3.13 Number.isInteger(number)
       .def<&runtime::NumberIsInteger, 1>("isInteger")
-      // section 15.7.3.14 Number.toInt(number)
-      .def<&runtime::NumberToInt, 1>("toInt");
+      // section 15.7.3.14 Number.toInteger(number)
+      .def<&runtime::NumberToInt, 1>("toInteger");
 
   bind::Object(this, proto)
       .cls(cls.cls)

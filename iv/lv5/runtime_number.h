@@ -77,9 +77,9 @@ inline JSVal NumberIsInteger(const Arguments& args, Error* e) {
   return JSVal::Bool(core::DoubleToInteger(n) == n);
 }
 
-// section 15.7.3.10 Number.toInt(number)
+// section 15.7.3.10 Number.toInteger(number)
 inline JSVal NumberToInt(const Arguments& args, Error* e) {
-  IV_LV5_CONSTRUCTOR_CHECK("Number.toInt", args, e);
+  IV_LV5_CONSTRUCTOR_CHECK("Number.toInteger", args, e);
   const JSVal num = args.At(0);
   if (num.IsInt32()) {
     return num;
