@@ -162,11 +162,11 @@ def Build():
       "-Wno-unused-parameter", "-Wwrite-strings", "-Wreturn-type", "-Wpointer-arith",
       "-Wno-unused-variable",
       "-Wwrite-strings", "-Wno-long-long", "-Wno-missing-field-initializers"],
-    CPPPATH=[root_dir, "/usr/local/include"],
+    CPPPATH=[root_dir, "/usr/local/include", "/opt/local/include"],
     CPPDEFINES=[
       "__STDC_LIMIT_MACROS",
       "__STDC_CONSTANT_MACROS"],
-    LIBPATH=["/usr/lib", "/usr/local/lib"])
+    LIBPATH=["/usr/lib", "/usr/local/lib", "/opt/local/lib"])
   env['ENV']['GTEST_COLOR'] = os.environ.get('GTEST_COLOR')
   env['ENV']['HOME'] = os.environ.get('HOME')
   env.Replace(YACC='bison', YACCFLAGS='--name-prefix=yy_loaddict_')
