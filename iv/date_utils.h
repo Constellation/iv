@@ -364,9 +364,11 @@ inline void YMDFromTime(int64_t time, int32_t* year, int32_t* month, int32_t* da
 
 class DateInstance {
  public:
-  static const int32_t kOK = 0;
-  static const int32_t kNG = 1;
-  static const int32_t kInvalidated = 2;
+  enum {
+    OK = 0,
+    NG = 1,
+    INVALIDATED = 2
+  };
 
   DateInstance() {
     SetValue(core::kNaN);
@@ -378,10 +380,10 @@ class DateInstance {
 
   void SetValue(double value) {
     value_ = value;
-    invalidate_ = (std::isnan(value)) ? kNG : kInvalidated;
+    invalidate_ = (std::isnan(value)) ? NG : INVALIDATED;
   }
 
-  bool IsValid() const { return invalidate_ != kNG; }
+  bool IsValid() const { return invalidate_ != NG; }
 
   double value() const {
     return value_;
@@ -437,7 +439,7 @@ class DateInstance {
 
  private:
   void CalcucateCache() const {
-    if (invalidate_ != kInvalidated) {
+    if (invalidate_ != INVALIDATED) {
       return;
     }
 
@@ -451,7 +453,7 @@ class DateInstance {
     min_ = (time_in_day / kMsPerMinute) % kMinutesPerHour;
     sec_ = (time_in_day / kMsPerSecond) % kSecondsPerMinute;
     ms_ = time_in_day % kMsPerSecond;
-    invalidate_ = kOK;
+    invalidate_ = OK;
   }
 
   double value_;
