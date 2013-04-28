@@ -118,6 +118,15 @@ class JSRegExpImpl : public gc_cleanup {
     return ctx->regexp_vm()->Execute(code_, subject, offset_vector, offset);
   }
 
+  template<typename T>
+  int ExecuteMatchOnly(Context* ctx,
+                       const T& subject,
+                       int offset,
+                       int* offset_vector) const {
+    assert(IsValid());
+    return ctx->regexp_vm()->ExecuteMatchOnly(code_, subject, offset_vector, offset);
+  }
+
  private:
   template<typename Source>
   void Initialize(core::Space* allocator, const Source& value) {

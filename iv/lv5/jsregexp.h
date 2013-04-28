@@ -221,7 +221,7 @@ class JSRegExp : public JSObject {
     const int size = fiber->size();
     do {
       const int res =
-          impl_->Execute(ctx, *fiber, previous_index, offset_vector.data());
+          impl_->ExecuteMatchOnly(ctx, *fiber, previous_index, offset_vector.data());
       if (res != aero::AERO_SUCCESS) {
         break;
       }

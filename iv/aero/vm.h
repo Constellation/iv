@@ -61,14 +61,16 @@ class VM : private core::Noncopyable<VM> {
   }
 
 #if defined(IV_ENABLE_JIT)
-  int Execute(Code* code, const core::UStringPiece& subject,
+  template<typename T>
+  int Execute(Code* code, const T& subject,
               int* captures, int offset) {
     return code->jit()->Execute(this, code, subject, captures, offset);
   }
 
-  int Execute(Code* code, const core::StringPiece& subject,
-              int* captures, int offset) {
-    return code->jit()->Execute(this, code, subject, captures, offset);
+  template<typename T>
+  int ExecuteMatchOnly(Code* code, const T& subject,
+                       int* captures, int offset) {
+    return code->jit()->ExecuteMatchOnly(this, code, subject, captures, offset);
   }
 #else
   int Execute(Code* code, const core::UStringPiece& subject,

@@ -157,16 +157,15 @@ class Replacer : private core::Noncopyable<> {
       builder->AppendJSString(*str_, not_matched_index, vec_[0]);
 
       int last_index = vec_[1];
-      if (vec_[0] == vec_[1]) {
+      if (vec_[0] == last_index) {
         ++last_index;
       }
 
-      const int this_index = last_index;
       not_matched_index = vec_[1];
-      if (previous_index == this_index) {
+      if (previous_index == last_index) {
         ++previous_index;
       } else {
-        previous_index = this_index;
+        previous_index = last_index;
       }
       static_cast<T*>(this)->DoReplace(builder, IV_LV5_ERROR_VOID(e));
       if (previous_index > size || previous_index < 0) {

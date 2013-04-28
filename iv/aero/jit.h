@@ -91,9 +91,10 @@ class JIT : public Xbyak::CodeGenerator {
 
   static const int kASCII = kCharSize == 1;
 
-  explicit JIT(const Code& code)
+  explicit JIT(const Code& code, bool match_only = false)
     : Xbyak::CodeGenerator(4096, Xbyak::AutoGrow),
       code_(code),
+      match_only_(match_only),
       first_instr_(code.bytes().data()),
       targets_(),
       backtracks_(),
@@ -315,7 +316,8 @@ class JIT : public Xbyak::CodeGenerator {
       }
       const BackTrackMap::const_iterator it = backtracks_.find(offset);
       if (it != backtracks_.end()) {
-          tracked_[it->second] = core::BitCast<uintptr_t>(getSize()); // offset from getCode
+        tracked_[it->second] =
+            core::BitCast<uintptr_t>(getSize());  // offset from getCode
       }
 
       // basic block optimization pass
@@ -460,34 +462,36 @@ IV_AERO_OPCODES(V)
 
   void EmitEpilogue() {
     // generate success path
-    L(jit_detail::kSuccessLabel);
-    {
+    L(jit_detail::kSuccessLabel); {
       inLocalLabel();
-      mov(dword[captures_ + kIntSize], cpd_);
-      // copy to result
       LoadResult(r10);
-      mov(r11, code_.captures() * 2);
-      mov(rax, captures_);
+      if (match_only()) {
+        mov(ecx, dword[captures_]);
+        mov(dword[r10], ecx);
+        mov(dword[r10 + kIntSize], cpd_);
+      } else {
+        mov(dword[captures_ + kIntSize], cpd_);
+        mov(r11, code_.captures() * 2);
 
-      test(r11, r11);
-      jz(".LOOP_END");
+        test(r11, r11);
+        jz(".LOOP_END");
 
-      L(".LOOP_START");
-      mov(ecx, dword[rax]);
-      add(rax, kIntSize);
-      mov(dword[r10], ecx);
-      add(r10, kIntSize);
-      sub(r11, 1);
-      jnz(".LOOP_START");
-      L(".LOOP_END");
+        L(".LOOP_START");
+        mov(ecx, dword[captures_]);
+        add(captures_, kIntSize);
+        mov(dword[r10], ecx);
+        add(r10, kIntSize);
+        sub(r11, 1);
+        jnz(".LOOP_START");
+        L(".LOOP_END");
+      }
       mov(rax, AERO_SUCCESS);
       outLocalLabel();
       // fall through
     }
 
     // generate last return path
-    L(jit_detail::kReturnLabel);
-    {
+    L(jit_detail::kReturnLabel); {
       mov(subject_, qword[rsp + k64Size * 4]);
       mov(captures_, qword[rsp + k64Size * 5]);
       mov(size_, qword[rsp + k64Size * 6]);
@@ -500,8 +504,7 @@ IV_AERO_OPCODES(V)
     }
 
     // generate last failure path
-    L(jit_detail::kFailureLabel);
-    {
+    L(jit_detail::kFailureLabel); {
       mov(rax, AERO_FAILURE);
       jmp(jit_detail::kReturnLabel);
     }
@@ -945,7 +948,7 @@ IV_AERO_OPCODES(V)
     outLocalLabel();
   }
 
-  void EmitCHECK_1BYTE_CHAR(const uint8_t* instr, uint32_t len, int offset = -1) {
+  void EmitCHECK_1BYTE_CHAR(const uint8_t* instr, uint32_t len, int offset = -1) {  // NOLINT
     const CharT ch = Load1Bytes(instr + 1);
     if (offset < 0) {
       EmitSizeGuard();
@@ -958,7 +961,7 @@ IV_AERO_OPCODES(V)
     }
   }
 
-  void EmitCHECK_2BYTE_CHAR(const uint8_t* instr, uint32_t len, int offset = -1) {
+  void EmitCHECK_2BYTE_CHAR(const uint8_t* instr, uint32_t len, int offset = -1) {  // NOLINT
     if (kASCII) {
       jmp(jit_detail::kBackTrackLabel, T_NEAR);
       return;
@@ -1076,7 +1079,7 @@ IV_AERO_OPCODES(V)
     outLocalLabel();
   }
 
-  void EmitCHECK_RANGE_INVERTED(const uint8_t* instr, uint32_t len, int offset = -1) {
+  void EmitCHECK_RANGE_INVERTED(const uint8_t* instr, uint32_t len, int offset = -1) {  // NOLINT
     inLocalLabel();
     if (offset < 0) {
       EmitSizeGuard();
@@ -1134,7 +1137,8 @@ IV_AERO_OPCODES(V)
     jmp(jit_detail::kSuccessLabel, T_NEAR);
   }
 
-  static std::string MakeLabel(uint32_t num, const std::string& prefix = "AERO_") {
+  static std::string MakeLabel(uint32_t num,
+                               const std::string& prefix = "AERO_") {
     std::string str(prefix);
     core::UInt32ToString(num, std::back_inserter(str));
     return str;
@@ -1148,7 +1152,10 @@ IV_AERO_OPCODES(V)
     jmp(JIT::MakeLabel(num).c_str(), T_NEAR);
   }
 
+  bool match_only() const { return match_only_; }
+
   const Code& code_;
+  bool match_only_;
   const const_pointer first_instr_;
   core::SortedVector<uint32_t> targets_;
   BackTrackMap backtracks_;

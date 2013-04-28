@@ -29,6 +29,28 @@ inline JITExecutable<uint16_t>::Executable JITCode::Compile16(const Code* code) 
   return exec16_;
 }
 
+inline JITExecutable<char>::Executable JITCode::Compile8MatchOnly(const Code* code) {
+  if (jit8_match_only_) {
+    return exec8_match_only_;
+  }
+  JIT<char>* jit = new JIT<char>(*code, true);
+  jit->Compile();
+  jit8_match_only_ = jit;
+  exec8_match_only_ = jit->Get();
+  return exec8_match_only_;
+}
+
+inline JITExecutable<uint16_t>::Executable JITCode::Compile16MatchOnly(const Code* code) {
+  if (jit16_match_only_) {
+    return exec16_match_only_;
+  }
+  JIT<uint16_t>* jit = new JIT<uint16_t>(*code, true);
+  jit->Compile();
+  jit16_match_only_ = jit;
+  exec16_match_only_ = jit->Get();
+  return exec16_match_only_;
+}
+
 inline int JITCode::Execute(VM* vm, Code* code, const core::StringPiece& subject,
                             int* captures, std::size_t current_position) {
   JITExecutable<char>::Executable exec = Compile8(code);
@@ -38,6 +60,18 @@ inline int JITCode::Execute(VM* vm, Code* code, const core::StringPiece& subject
 inline int JITCode::Execute(VM* vm, Code* code, const core::UStringPiece& subject,
                             int* captures, std::size_t current_position) {
   JITExecutable<uint16_t>::Executable exec = Compile16(code);
+  return exec(vm, subject.data(), subject.size(), captures, current_position);
+}
+
+inline int JITCode::ExecuteMatchOnly(VM* vm, Code* code, const core::StringPiece& subject,
+                                     int* captures, std::size_t current_position) {
+  JITExecutable<char>::Executable exec = Compile8MatchOnly(code);
+  return exec(vm, subject.data(), subject.size(), captures, current_position);
+}
+
+inline int JITCode::ExecuteMatchOnly(VM* vm, Code* code, const core::UStringPiece& subject,
+                                     int* captures, std::size_t current_position) {
+  JITExecutable<uint16_t>::Executable exec = Compile16MatchOnly(code);
   return exec(vm, subject.data(), subject.size(), captures, current_position);
 }
 
