@@ -729,27 +729,23 @@ inline JSVal StringMatch(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   Context* const ctx = args.ctx();
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
-  const uint32_t args_count = args.size();
-  JSRegExp* regexp;
-  if (args_count == 0 ||
-      !args[0].IsObject() ||
-      !args[0].object()->IsClass<Class::RegExp>()) {
+
+  const JSVal a0 = args.At(0);
+  JSRegExp* regexp = NULL;
+  if (a0.IsObject()  && a0.object()->IsClass<Class::RegExp>()) {
+    regexp = static_cast<JSRegExp*>(a0.object());
+  } else {
     ScopedArguments a(ctx, 1, IV_LV5_ERROR(e));
-    if (args_count == 0) {
-      a[0] = JSUndefined;
-    } else {
-      a[0] = args[0];
-    }
+    a[0] = a0;
     const JSVal res = RegExpConstructor(a, IV_LV5_ERROR(e));
     assert(res.IsObject());
     regexp = static_cast<JSRegExp*>(res.object());
-  } else {
-    regexp = static_cast<JSRegExp*>(args[0].object());
   }
-  const bool global = regexp->global();
-  if (!global) {
+
+  if (!regexp->global()) {
     return regexp->Exec(ctx, str, e);
   }
+
   // step 8
   return regexp->ExecGlobal(ctx, str, e);
 }

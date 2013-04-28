@@ -227,20 +227,19 @@ class JSRegExp : public JSObject {
       }
 
       int last_index = offset_vector[1];
-      if (offset_vector[0] == offset_vector[1]) {
+      if (offset_vector[0] == last_index) {
         ++last_index;
       }
 
-      const int this_index = last_index;
-      if (previous_index == this_index) {
+      if (previous_index == last_index) {
         ++previous_index;
       } else {
-        previous_index = this_index;
+        previous_index = last_index;
       }
       if (previous_index > size) {
         break;
       }
-      vec->push_back(JSString::NewWithFiber(ctx, fiber, offset_vector[0], offset_vector[1]));
+      vec->push_back(str->Substring(ctx, offset_vector[0], offset_vector[1]));
     } while (true);
 
     if (vec->empty()) {
