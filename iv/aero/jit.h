@@ -440,8 +440,7 @@ IV_AERO_OPCODES(V)
     // generate quick check path
     EmitQuickCheck();
 
-    L(jit_detail::kStartLabel);
-    {
+    L(jit_detail::kStartLabel); {
       inLocalLabel();
       mov(qword[rsp + k64Size * OFFSET_CP], cp_);
       // initialize sp_ to 0
@@ -551,11 +550,11 @@ IV_AERO_OPCODES(V)
     }
 
     // generate error path
-    L(jit_detail::kErrorLabel);
-    {
+    L(jit_detail::kErrorLabel); {
       mov(rax, AERO_ERROR);
       jmp(jit_detail::kReturnLabel);
     }
+
     // finish generating code and determine code address
     ready();
     {
