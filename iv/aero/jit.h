@@ -265,17 +265,17 @@ class JIT : public Xbyak::CodeGenerator {
     }
     int offset = 0;
     while (instr != current) {
+      const uint8_t opcode = *instr;
+      if (opcode == OP::CHECK_1BYTE_CHAR ||
+          opcode == OP::CHECK_1BYTE_CHAR_ASCII_ALPHA_IGNORE_CASE ||
+          opcode == OP::CHECK_2BYTE_CHAR) {
+        // special optimized case
+        instr = EmitOptimizedFixedCharacters(instr, current, &offset);
+        continue;
+      }
+
       const uint32_t length = OP::GetLength(instr);
-      switch (*instr) {
-        case OP::CHECK_1BYTE_CHAR:
-          EmitCHECK_1BYTE_CHAR(instr, length, offset);
-          break;
-        case OP::CHECK_1BYTE_CHAR_ASCII_ALPHA_IGNORE_CASE:
-          EmitCHECK_1BYTE_CHAR_ASCII_ALPHA_IGNORE_CASE(instr, length, offset);  // NOLINT
-          break;
-        case OP::CHECK_2BYTE_CHAR:
-          EmitCHECK_2BYTE_CHAR(instr, length, offset);
-          break;
+      switch (opcode) {
         case OP::CHECK_2CHAR_OR:
           EmitCHECK_2CHAR_OR(instr, length, offset);
           break;
@@ -298,11 +298,122 @@ class JIT : public Xbyak::CodeGenerator {
           UNREACHABLE();
         }
       }
-      offset += JIT::GuardedSize(*instr);
+      offset += JIT::GuardedSize(opcode);
       std::advance(instr, length);
     }
     *result = current;
     return true;
+  }
+
+  void EmitOptimizedFixedCharactersFallback(const uint8_t* instr, int offset) {
+      const uint32_t length = OP::GetLength(instr);
+      const uint8_t opcode = *instr;
+      if (opcode == OP::CHECK_1BYTE_CHAR) {
+        EmitCHECK_1BYTE_CHAR(instr, length, offset);
+      } else if (opcode == OP::CHECK_1BYTE_CHAR_ASCII_ALPHA_IGNORE_CASE) {
+        EmitCHECK_1BYTE_CHAR_ASCII_ALPHA_IGNORE_CASE(instr, length, offset);
+      } else {  // opcode == OP::CHECK_2BYTE_CHAR
+        EmitCHECK_2BYTE_CHAR(instr, length, offset);
+      }
+  }
+
+  const uint8_t* EmitOptimizedFixedCharacters(const uint8_t* initial_instr, const uint8_t* last, int* offset) {  // NOLINT
+    const int max_count =  (kASCII) ? 4 : 2;  // NOLINT
+    const int initial_offset = *offset;
+
+    int count = 0;
+    uint32_t pattern = 0;
+    uint32_t ignore_mask = 0;
+    const uint8_t* instr = initial_instr;
+    while (instr != last && count != max_count) {
+      const uint32_t length = OP::GetLength(instr);
+      const uint8_t opcode = *instr;
+      if (opcode != OP::CHECK_1BYTE_CHAR &&
+          opcode != OP::CHECK_1BYTE_CHAR_ASCII_ALPHA_IGNORE_CASE &&
+          opcode != OP::CHECK_2BYTE_CHAR) {
+        // bailout
+        break;
+      }
+      count += 1;
+
+      const uint32_t shift = kCharSize * 8 * (count - 1);
+      switch (opcode) {
+        case OP::CHECK_1BYTE_CHAR: {
+            const CharT ch = Load1Bytes(instr + 1);
+            pattern |= (ch << shift);
+          }
+          break;
+
+        case OP::CHECK_1BYTE_CHAR_ASCII_ALPHA_IGNORE_CASE: {
+            const uint8_t ch = Load1Bytes(instr + 1);
+            pattern |= (ch << shift);
+            ignore_mask |= (0x20 << shift);
+          }
+          break;
+
+        case OP::CHECK_2BYTE_CHAR: {
+            const uint16_t ch = Load2Bytes(instr + 1);
+            pattern |= (ch << shift);
+          }
+          break;
+
+        default:
+          UNREACHABLE();
+      }
+
+      *offset += GuardedSize(*instr);
+      std::advance(instr, length);
+    }
+
+    if (kASCII) {
+      switch (count) {
+        case 1:
+          EmitOptimizedFixedCharactersFallback(initial_instr, initial_offset);
+          return instr;
+
+        case 2:
+          // unaligned load
+          movzx(r10d, word[subject_ + initial_offset * kCharSize]);
+          break;
+
+        case 3:
+          EmitOptimizedFixedCharactersFallback(initial_instr, initial_offset);
+          // unaligned load
+          movzx(r10d, word[rbp + (initial_offset + 1) * kCharSize]);
+          pattern >>= kCharSize * 8;
+          ignore_mask >>= kCharSize * 8;
+          break;
+
+        case 4:
+          // unaligned load
+          mov(r10d, dword[rbp + initial_offset * kCharSize]);
+          break;
+
+        default:
+          UNREACHABLE();
+      }
+    } else {
+      switch (count) {
+        case 1:
+          EmitOptimizedFixedCharactersFallback(initial_instr, initial_offset);
+          return instr;
+        case 2:
+          // unaligned load
+          mov(r10d, dword[rbp + initial_offset * kCharSize]);
+          break;
+        default:
+          UNREACHABLE();
+      }
+    }
+
+    if (ignore_mask) {
+      or(r10d, ignore_mask);
+    }
+
+    cmp(r10d, pattern);
+    jne(jit_detail::kBackTrackLabel, T_NEAR);
+
+    return instr;
   }
 
   void Main() {
