@@ -192,6 +192,12 @@ class Compiler : private Visitor {
 
   void EmitCharacter(uint16_t ch) {
     if (IsIgnoreCase()) {
+      if (core::character::IsASCIIAlpha(ch)) {
+        Emit<OP::CHECK_1BYTE_CHAR_ASCII_ALPHA_IGNORE_CASE>();
+        Emit1(ch | 0x20);
+        return;
+      }
+
       const uint16_t uu = core::character::ToUpperCase(ch);
       const uint16_t lu = core::character::ToLowerCase(ch);
       if (!(uu == lu && uu == ch)) {

@@ -39,7 +39,7 @@ class VM : private core::Noncopyable<VM> {
   VM()
     : stack_base_pointer_for_jit_(NULL),
       state_pointer_for_jit_(
-          reinterpret_cast<int*>(std::malloc(kInitialStateSize * sizeof(int)))),
+          reinterpret_cast<int*>(std::malloc(kInitialStateSize * sizeof(int)))),  // NOLINT
       stack_size_(kInitialStackSize),
       state_size_(kInitialStateSize),
       stack_(kInitialStackSize)
@@ -47,7 +47,7 @@ class VM : private core::Noncopyable<VM> {
       ,
       state_()
 #endif
-      {
+      {  // NOLINT
     stack_base_pointer_for_jit_ = stack_.data();
   }
 
@@ -318,6 +318,17 @@ inline int VM::Main(Code* code, const Piece& subject,
             subject[current_position] == Load1Bytes(instr + 1)) {
           ++current_position;
           DISPATCH_NEXT(CHECK_1BYTE_CHAR);
+        }
+        BACKTRACK();
+      }
+
+      DEFINE_OPCODE(CHECK_1BYTE_CHAR_ASCII_ALPHA_IGNORE_CASE) {
+        if (current_position < subject.size()) {
+          const char ch = Load1Bytes(instr + 1);
+          if ((subject[current_position] | 0x20) == ch) {
+            ++current_position;
+            DISPATCH_NEXT(CHECK_1BYTE_CHAR_ASCII_ALPHA_IGNORE_CASE);
+          }
         }
         BACKTRACK();
       }

@@ -270,6 +270,9 @@ class JIT : public Xbyak::CodeGenerator {
         case OP::CHECK_1BYTE_CHAR:
           EmitCHECK_1BYTE_CHAR(instr, length, offset);
           break;
+        case OP::CHECK_1BYTE_CHAR_ASCII_ALPHA_IGNORE_CASE:
+          EmitCHECK_1BYTE_CHAR_ASCII_ALPHA_IGNORE_CASE(instr, length, offset);  // NOLINT
+          break;
         case OP::CHECK_2BYTE_CHAR:
           EmitCHECK_2BYTE_CHAR(instr, length, offset);
           break;
@@ -958,6 +961,26 @@ IV_AERO_OPCODES(V)
     } else {
       cmp(character[rbp + offset * kCharSize], ch);
       jne(jit_detail::kBackTrackLabel, T_NEAR);
+    }
+  }
+
+  void EmitCHECK_1BYTE_CHAR_ASCII_ALPHA_IGNORE_CASE(const uint8_t* instr, uint32_t len, int offset = -1) {  // NOLINT
+    assert(sizeof(CharT) == sizeof(char));  // NOLINT
+    const char ch = Load1Bytes(instr + 1);
+
+    if (offset < 0) {
+      EmitSizeGuard();
+      mov(ch10_, character[subject_ + cp_ * kCharSize]);
+    } else {
+      mov(ch10_, character[subject_ + offset * kCharSize]);
+    }
+
+    or(ch10_, 0x20);
+    cmp(ch10_, ch);
+
+    jne(jit_detail::kBackTrackLabel, T_NEAR);
+    if (offset < 0) {
+      inc(cp_);
     }
   }
 
