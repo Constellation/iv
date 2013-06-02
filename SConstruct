@@ -162,7 +162,7 @@ def Build():
       "-Wno-unused-parameter", "-Wwrite-strings", "-Wreturn-type", "-Wpointer-arith",
       "-Wno-unused-variable",
       "-Wwrite-strings", "-Wno-long-long", "-Wno-missing-field-initializers"],
-    CPPPATH=[root_dir, "/usr/local/include", "/opt/local/include"],
+    CPPPATH=[root_dir, join(root_dir, "iv", "third_party"), "/usr/local/include", "/opt/local/include"],
     CPPDEFINES=[
       "__STDC_LIMIT_MACROS",
       "__STDC_CONSTANT_MACROS"],

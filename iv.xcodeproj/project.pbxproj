@@ -1553,6 +1553,7 @@
 					/opt/local/include,
 					/usr/local/include,
 					"$(SRCROOT)",
+					"$(SRCROOT)/iv/third_party",
 				);
 				LIBRARY_SEARCH_PATHS = (
 					/opt/local/lib,
@@ -1571,6 +1572,7 @@
 					/opt/local/include,
 					/usr/local/include,
 					"$(SRCROOT)",
+					"$(SRCROOT)/iv/third_party",
 				);
 				LIBRARY_SEARCH_PATHS = (
 					/opt/local/lib,
