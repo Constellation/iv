@@ -100,6 +100,9 @@ def Build():
     env.Append(
         CXXFLAGS=["-ansi"])
 
+  if env["CXXVERSION"] >= "4.8.0":
+    env.Append(CCFLAGS=["-Wno-unused-local-typedefs"])
+
   if options.get('cache'):
     env.CacheDir('cache')
 
