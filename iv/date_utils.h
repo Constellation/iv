@@ -380,7 +380,7 @@ class DateInstance {
 
   void SetValue(double value) {
     value_ = value;
-    invalidate_ = (std::isnan(value)) ? NG : INVALIDATED;
+    invalidate_ = (core::math::IsNaN(value)) ? NG : INVALIDATED;
   }
 
   bool IsValid() const { return invalidate_ != NG; }
