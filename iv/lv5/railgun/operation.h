@@ -275,7 +275,6 @@ class Operation {
     Slot slot;
     obj->PutSlot(ctx(), name, src, &slot, strict, CHECK);
     const Slot::PutResultType put_result_type = slot.put_result_type();
-    const bool unique = previous->IsUnique() || obj->map()->IsUnique();
 
     // uncacheable pattern
     if (!slot.IsPutCacheable() || !symbol::IsArrayIndexSymbol(name)) {
