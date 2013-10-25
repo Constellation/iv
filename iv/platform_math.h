@@ -75,7 +75,7 @@ inline double Modulo(double x, double y) {
 
 #endif
 
-#if defined(IV_OS_WIN) || defined(IV_OS_BSD) || defined(IV_OS_SOLARIS)
+// #if defined(IV_OS_WIN) || defined(IV_OS_BSD) || defined(IV_OS_SOLARIS)
 
 inline double Log2(double x) {
   // log2(n) = log(n) / log(2)
@@ -121,7 +121,7 @@ inline double Atanh(double x) {
   return std::log((1 + x) / (1 - x)) / 2;
 }
 
-#else
+#if 0
 
 inline double Log2(double x) {
   return std::log2(x);
