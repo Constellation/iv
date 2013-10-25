@@ -9,7 +9,7 @@
 */
 #include "xbyak/xbyak.h"
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 	#if (_MSC_VER < 1400) && defined(XBYAK32)
 		static inline __declspec(naked) void __cpuid(int[4], int)
 		{
@@ -98,7 +98,7 @@ public:
 	int displayModel; // model + extModel
 	static inline void getCpuid(unsigned int eaxIn, unsigned int data[4])
 	{
-#ifdef _WIN32
+#ifdef _MSC_VER
 		__cpuid(reinterpret_cast<int*>(data), eaxIn);
 #else
 		__cpuid(eaxIn, data[0], data[1], data[2], data[3]);
@@ -106,7 +106,7 @@ public:
 	}
 	static inline void getCpuidEx(unsigned int eaxIn, unsigned int ecxIn, unsigned int data[4])
 	{
-#ifdef _WIN32
+#ifdef _MSC_VER
 		__cpuidex(reinterpret_cast<int*>(data), eaxIn, ecxIn);
 #else
 		__cpuid_count(eaxIn, ecxIn, data[0], data[1], data[2], data[3]);
@@ -148,9 +148,12 @@ public:
 		tSSE4a = 1 << 18,
 		tRDTSCP = 1 << 19,
 		tAVX2 = 1 << 20,
-		tGPR1 = 1 << 21, // andn, bextr, blsi, blsmk, blsr, tzcnt
-		tGPR2 = 1 << 22, // bzhi, mulx, pdep, pext, rorx, sarx, shlx, shrx
+		tBMI1 = 1 << 21, // andn, bextr, blsi, blsmsk, blsr, tzcnt
+		tBMI2 = 1 << 22, // bzhi, mulx, pdep, pext, rorx, sarx, shlx, shrx
+		tGPR1 = tBMI1, // backward compatibility
+		tGPR2 = tBMI2, // backward compatibility
 		tLZCNT = 1 << 23,
+		tENHANCED_REP = 1 << 26, // enhanced rep movsb/stosb
 
 		tINTEL = 1 << 24,
 		tAMD = 1 << 25
@@ -202,8 +205,9 @@ public:
 		}
 		getCpuidEx(7, 0, data);
 		if (type_ & tAVX && data[1] & 0x20) type_ |= tAVX2;
-		if (data[1] & (1U << 3)) type_ |= tGPR1;
-		if (data[1] & (1U << 8)) type_ |= tGPR2;
+		if (data[1] & (1U << 3)) type_ |= tBMI1;
+		if (data[1] & (1U << 8)) type_ |= tBMI2;
+		if (data[1] & (1U << 9)) type_ |= tENHANCED_REP;
 		setFamily();
 	}
 	void putFamily()
@@ -292,7 +296,7 @@ public:
 	{
 		if (n_ == 10) {
 			fprintf(stderr, "ERR Pack::can't append\n");
-			throw ERR_BAD_PARAMETER;
+			throw Error(ERR_BAD_PARAMETER);
 		}
 		tbl_[n_++] = &t;
 		return *this;
@@ -301,7 +305,7 @@ public:
 	{
 		if (n > maxTblNum) {
 			fprintf(stderr, "ERR Pack::init bad n=%d\n", (int)n);
-			throw ERR_BAD_PARAMETER;
+			throw Error(ERR_BAD_PARAMETER);
 		}
 		n_ = n;
 		for (size_t i = 0; i < n; i++) {
@@ -312,7 +316,7 @@ public:
 	{
 		if (n >= n_) {
 			fprintf(stderr, "ERR Pack bad n=%d\n", (int)n);
-			throw ERR_BAD_PARAMETER;
+			throw Error(ERR_BAD_PARAMETER);
 		}
 		return *tbl_[n];
 	}
@@ -325,7 +329,7 @@ public:
 		if (num == size_t(-1)) num = n_ - pos;
 		if (pos + num > n_) {
 			fprintf(stderr, "ERR Pack::sub bad pos=%d, num=%d\n", (int)pos, (int)num);
-			throw ERR_BAD_PARAMETER;
+			throw Error(ERR_BAD_PARAMETER);
 		}
 		Pack pack;
 		pack.n_ = num;
@@ -333,6 +337,13 @@ public:
 			pack.tbl_[i] = tbl_[pos + i];
 		}
 		return pack;
+	}
+	void put() const
+	{
+		for (size_t i = 0; i < n_; i++) {
+			printf("%s ", tbl_[i]->toString());
+		}
+		printf("\n");
 	}
 };
 
@@ -392,9 +403,9 @@ public:
 		, t(t_)
 	{
 		using namespace Xbyak;
-		if (pNum < 0 || pNum > 4) throw ERR_BAD_PNUM;
+		if (pNum < 0 || pNum > 4) throw Error(ERR_BAD_PNUM);
 		const int allRegNum = pNum + tNum_ + (useRcx_ ? 1 : 0) + (useRdx_ ? 1 : 0);
-		if (allRegNum < pNum || allRegNum > 14) throw ERR_BAD_TNUM;
+		if (allRegNum < pNum || allRegNum > 14) throw Error(ERR_BAD_TNUM);
 		const Reg64& rsp = code->rsp;
 		const AddressFrame& ptr = code->ptr;
 		saveNum_ = (std::max)(0, allRegNum - noSaveNum);
@@ -458,8 +469,8 @@ public:
 		if (!makeEpilog_) return;
 		try {
 			close();
-		} catch (Xbyak::Error e) {
-			printf("ERR:StackFrame %s\n", ConvertErrorToString(e));
+		} catch (std::exception& e) {
+			printf("ERR:StackFrame %s\n", e.what());
 			exit(1);
 		} catch (...) {
 			printf("ERR:StackFrame otherwise\n");

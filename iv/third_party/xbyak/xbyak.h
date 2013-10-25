@@ -72,7 +72,7 @@ namespace Xbyak {
 
 enum {
 	DEFAULT_MAX_CODE_SIZE = 4096,
-	VERSION = 0x4000 /* 0xABCD = A.BC(D) */
+	VERSION = 0x4210 /* 0xABCD = A.BC(D) */
 };
 
 #ifndef MIE_INTEGER_TYPE_DEFINED
@@ -100,7 +100,7 @@ typedef unsigned char uint8;
 	#define MIE_PACK(x, y, z, w) ((x) * 64 + (y) * 16 + (z) * 4 + (w))
 #endif
 
-enum Error {
+enum {
 	ERR_NONE = 0,
 	ERR_BAD_ADDRESSING,
 	ERR_CODE_IS_TOO_BIG,
@@ -132,41 +132,58 @@ enum Error {
 	ERR_INTERNAL
 };
 
+class Error : public std::exception {
+	int err_;
+public:
+	explicit Error(int err) : err_(err)
+	{
+		if (err_ < 0 || err_ > ERR_INTERNAL) {
+			fprintf(stderr, "bad err=%d in Xbyak::Error\n", err_);
+			exit(1);
+		}
+	}
+	operator int() const { return err_; }
+	const char *what() const throw()
+	{
+		static const char errTbl[][40] = {
+			"none",
+			"bad addressing",
+			"code is too big",
+			"bad scale",
+			"esp can't be index",
+			"bad combination",
+			"bad size of register",
+			"imm is too big",
+			"bad align",
+			"label is redefined",
+			"label is too far",
+			"label is not found",
+			"code is not copyable",
+			"bad parameter",
+			"can't protect",
+			"can't use 64bit disp(use (void*))",
+			"offset is too big",
+			"MEM size is not specified",
+			"bad mem size",
+			"bad st combination",
+			"over local label",
+			"under local label",
+			"can't alloc",
+			"T_SHORT is not supported in AutoGrow",
+			"bad protect mode",
+			"bad pNum",
+			"bad tNum",
+			"bad vsib addressing",
+			"internal error",
+		};
+		assert((size_t)err_ < sizeof(errTbl) / sizeof(*errTbl));
+		return errTbl[err_];
+	}
+};
+
 inline const char *ConvertErrorToString(Error err)
 {
-	static const char errTbl[][40] = {
-		"none",
-		"bad addressing",
-		"code is too big",
-		"bad scale",
-		"esp can't be index",
-		"bad combination",
-		"bad size of register",
-		"imm is too big",
-		"bad align",
-		"label is redefined",
-		"label is too far",
-		"label is not found",
-		"code is not copyable",
-		"bad parameter",
-		"can't protect",
-		"can't use 64bit disp(use (void*))",
-		"offset is too big",
-		"MEM size is not specified",
-		"bad mem size",
-		"bad st combination",
-		"over local label",
-		"under local label",
-		"can't alloc",
-		"T_SHORT is not supported in AutoGrow",
-		"bad protect mode",
-		"bad pNum",
-		"bad tNum",
-		"bad vsib addressing",
-		"internal error",
-	};
-	if (err < 0 || err > ERR_INTERNAL) return 0;
-	return errTbl[err];
+	return err.what();
 }
 
 inline void *AlignedMalloc(size_t size, size_t alignment)
@@ -209,7 +226,7 @@ inline bool IsInInt32(uint64 x) { return ~uint64(0x7fffffffu) <= x || x <= 0x7FF
 inline uint32 VerifyInInt32(uint64 x)
 {
 #ifdef XBYAK64
-	if (!IsInInt32(x)) throw ERR_OFFSET_IS_TOO_BIG;
+	if (!IsInInt32(x)) throw Error(ERR_OFFSET_IS_TOO_BIG);
 #endif
 	return static_cast<uint32>(x);
 }
@@ -314,7 +331,7 @@ public:
 			static const char tbl[8][4] = { "st0", "st1", "st2", "st3", "st4", "st5", "st6", "st7" };
 			return tbl[idx];
 		}
-		throw ERR_INTERNAL;
+		throw Error(ERR_INTERNAL);
 	}
 	bool operator==(const Operand& rhs) const { return idx_ == rhs.idx_ && kind_ == rhs.kind_ && bit_ == rhs.bit_; }
 	bool operator!=(const Operand& rhs) const { return !operator==(rhs); }
@@ -357,87 +374,9 @@ struct Fpu : public Reg {
 	explicit Fpu(int idx = 0) : Reg(idx, Operand::FPU, 32) { }
 };
 
-// register for addressing(32bit or 64bit)
-class Reg32e : public Reg {
-public:
-	// [base_(this) + index_ * scale_ + disp_]
-	Reg index_;
-	int scale_; // 0(index is none), 1, 2, 4, 8
-	uint32 disp_;
-private:
-	friend class Address;
-	friend Reg32e operator+(const Reg32e& a, const Reg32e& b)
-	{
-		if (a.scale_ == 0) {
-			if (b.scale_ == 0) { // base + base
-				if (b.getIdx() == Operand::ESP) { // [reg + esp] => [esp + reg]
-					return Reg32e(b, a, 1, a.disp_ + b.disp_);
-				} else {
-					return Reg32e(a, b, 1, a.disp_ + b.disp_);
-				}
-			} else if (b.isNone()) { // base + index
-				return Reg32e(a, b.index_, b.scale_, a.disp_ + b.disp_);
-			}
-		}
-		throw ERR_BAD_ADDRESSING;
-	}
-	friend Reg32e operator*(const Reg32e& r, int scale)
-	{
-		if (r.scale_ == 0) {
-			if (scale == 1) {
-				return r;
-			} else if (scale == 2 || scale == 4 || scale == 8) {
-				return Reg32e(Reg(), r, scale, r.disp_);
-			}
-		}
-		throw ERR_BAD_SCALE;
-	}
-	friend Reg32e operator+(const Reg32e& r, unsigned int disp)
-	{
-		return Reg32e(r, r.index_, r.scale_, r.disp_ + disp);
-	}
-	friend Reg32e operator+(unsigned int disp, const Reg32e& r)
-	{
-		return operator+(r, disp);
-	}
-	friend Reg32e operator-(const Reg32e& r, unsigned int disp)
-	{
-		return operator+(r, -static_cast<int>(disp));
-	}
-public:
-	explicit Reg32e(int idx, int bit)
-		: Reg(idx, REG, bit)
-		, index_()
-		, scale_(0)
-		, disp_(0)
-	{
-	}
-	Reg32e(const Reg& base, const Reg& index, int scale, unsigned int disp, bool allowUseEspIndex = false)
-		: Reg(base)
-		, index_(index)
-		, scale_(scale)
-		, disp_(disp)
-	{
-		if (scale != 0 && scale != 1 && scale != 2 && scale != 4 && scale != 8) throw ERR_BAD_SCALE;
-		if (!base.isNone() && !index.isNone() && base.getBit() != index.getBit()) throw ERR_BAD_COMBINATION;
-		if (!allowUseEspIndex && index.getIdx() == Operand::ESP) throw ERR_ESP_CANT_BE_INDEX;
-	}
-	Reg32e optimize() const // select smaller size
-	{
-		// [reg * 2] => [reg + reg]
-		if (isNone() && !index_.isNone() && scale_ == 2) {
-			const Reg index(index_.getIdx(), Operand::REG, index_.getBit());
-			return Reg32e(index, index, 1, disp_);
-		}
-		return *this;
-	}
-	bool operator==(const Reg32e& rhs) const
-	{
-		if (getIdx() == rhs.getIdx() && index_.getIdx() == rhs.getIdx() && scale_ == rhs.scale_ && disp_ == rhs.disp_) return true;
-		return false;
-	}
+struct Reg32e : public Reg {
+	explicit Reg32e(int idx, int bit) : Reg(idx, Operand::REG, bit) {}
 };
-
 struct Reg32 : public Reg32e {
 	explicit Reg32(int idx = 0) : Reg32e(idx, 32) {}
 };
@@ -447,7 +386,7 @@ struct Reg64 : public Reg32e {
 };
 struct RegRip {
 	uint32 disp_;
-	RegRip(unsigned int disp = 0) : disp_(disp) {}
+	explicit RegRip(unsigned int disp = 0) : disp_(disp) {}
 	friend const RegRip operator+(const RegRip& r, unsigned int disp) {
 		return RegRip(r.disp_ + disp);
 	}
@@ -457,92 +396,113 @@ struct RegRip {
 };
 #endif
 
-// QQQ:need to refactor
-struct Vsib {
-	// [index_ * scale_ + base_ + disp_]
-	uint8 indexIdx_; // xmm reg idx
-	uint8 scale_; // 0(none), 1, 2, 4, 8
-	uint8 baseIdx_; // base reg idx
-	uint8 baseBit_; // 0(none), 32, 64
-	uint32 disp_;
-	bool isYMM_; // idx is YMM
+class RegExp {
 public:
-	static inline void verifyScale(int scale)
+	struct SReg {
+		uint16 bit:9; // 32/64/128/256 none if 0
+		uint16 idx:7;
+		SReg() : bit(0), idx(0) { }
+		void set(const Reg& r) { this->bit = uint16(r.getBit()); this->idx = uint16(r.getIdx()); }
+		bool operator==(const SReg& rhs) const { return bit == rhs.bit && idx == rhs.idx; }
+	};
+	RegExp(size_t disp = 0) : disp_(disp), scale_(0) { }
+	RegExp(const Reg& r, int scale = 1)
+		: disp_(0)
+		, scale_(scale)
 	{
-		if (scale != 1 && scale != 2 && scale != 4 && scale != 8) throw ERR_BAD_SCALE;
+		if (!r.is(Reg::REG, 32|64) && !r.is(Reg::XMM|Reg::YMM)) throw Error(ERR_BAD_SIZE_OF_REGISTER);
+		if (scale != 1 && scale != 2 && scale != 4 && scale != 8) throw Error(ERR_BAD_SCALE);
+		if (r.getBit() >= 128 || scale != 1) { // xmm/ymm is always index
+			index_.set(r);
+		} else {
+			base_.set(r);
+		}
 	}
-	int getIndexIdx() const { return indexIdx_; }
+	bool isVsib() const { return index_.bit >= 128; }
+	bool isYMM() const { return index_.bit >= 256; }
+	RegExp optimize() const // select smaller size
+	{
+		// [reg * 2] => [reg + reg]
+		if (!isVsib() && !base_.bit && index_.bit && scale_ == 2) {
+			RegExp ret = *this;
+			ret.base_ = index_;
+			ret.scale_ = 1;
+			return ret;
+		}
+		return *this;
+	}
+	bool operator==(const RegExp& rhs) const
+	{
+		return base_ == rhs.base_ && index_ == rhs.index_ && disp_ == rhs.disp_;
+	}
+	const SReg& getBase() const { return base_; }
+	const SReg& getIndex() const { return index_; }
 	int getScale() const { return scale_; }
-	int getBaseIdx() const { return baseIdx_; }
-	int getBaseBit() const { return baseBit_; }
-	bool isYMM() const { return isYMM_; }
-	uint32 getDisp() const { return disp_; }
-	Vsib(int indexIdx, int scale, bool isYMM, int baseIdx = 0, int baseBit = 0, uint32 disp = 0)
-		: indexIdx_((uint8)indexIdx)
-		, scale_((uint8)scale)
-		, baseIdx_((uint8)baseIdx)
-		, baseBit_((uint8)baseBit)
-		, disp_(disp)
-		, isYMM_(isYMM)
+	uint32 getDisp() const { return uint32(disp_); }
+	void verify() const
 	{
+		if (base_.bit >= 128) throw Error(ERR_BAD_SIZE_OF_REGISTER);
+		if (index_.bit && index_.bit <= 64) {
+			if (index_.idx == Operand::ESP) throw Error(ERR_ESP_CANT_BE_INDEX);
+			if (base_.bit && base_.bit != index_.bit) throw Error(ERR_BAD_SIZE_OF_REGISTER);
+		}
 	}
+private:
+	friend RegExp operator+(const RegExp& a, const RegExp& b);
+	friend RegExp operator-(const RegExp& e, size_t disp);
+	/*
+		[base_ + index_ * scale_ + disp_]
+		base : Reg32e, index : Reg32e(w/o esp), Xmm, Ymm
+	*/
+	size_t disp_;
+	int scale_;
+	SReg base_;
+	SReg index_;
 };
-inline Vsib operator*(const Xmm& x, int scale)
+
+inline RegExp operator+(const RegExp& a, const RegExp& b)
 {
-	Vsib::verifyScale(scale);
-	return Vsib(x.getIdx(), scale, x.isYMM());
-}
-inline Vsib operator+(const Xmm& x, uint32 disp)
-{
-	return Vsib(x.getIdx(), 1, x.isYMM(), 0, 0, disp);
-}
-inline Vsib operator+(const Xmm& x, const Reg32e& r)
-{
-	if (!r.index_.isNone()) throw ERR_BAD_COMBINATION;
-	return Vsib(x.getIdx(), 1, x.isYMM(), r.getIdx(), r.getBit(), r.disp_);
-}
-inline Vsib operator+(const Vsib& vs, uint32 disp)
-{
-	Vsib ret(vs);
-	ret.disp_ += disp;
+	if (a.index_.bit && b.index_.bit) throw Error(ERR_BAD_ADDRESSING);
+	RegExp ret = a;
+	if (!ret.index_.bit) { ret.index_ = b.index_; ret.scale_ = b.scale_; }
+	if (b.base_.bit) {
+		if (ret.base_.bit) {
+			if (ret.index_.bit) throw Error(ERR_BAD_ADDRESSING);
+			// base + base => base + index * 1
+			ret.index_ = b.base_;
+			// [reg + esp] => [esp + reg]
+			if (ret.index_.idx == Operand::ESP) std::swap(ret.base_, ret.index_);
+			ret.scale_ = 1;
+		} else {
+			ret.base_ = b.base_;
+		}
+	}
+	ret.disp_ += b.disp_;
 	return ret;
 }
-inline Vsib operator+(const Vsib& vs, const Reg32e& r)
+inline RegExp operator*(const Reg& r, int scale)
 {
-	if (vs.getBaseBit() || !r.index_.isNone()) throw ERR_BAD_COMBINATION;
-	Vsib ret(vs);
-	ret.baseIdx_ = (uint8)r.getIdx();
-	ret.baseBit_ = (uint8)r.getBit();
-	ret.disp_ += r.disp_;
+	return RegExp(r, scale);
+}
+inline RegExp operator-(const RegExp& e, size_t disp)
+{
+	RegExp ret = e;
+	ret.disp_ -= disp;
 	return ret;
 }
-inline Vsib operator+(uint32 disp, const Xmm& x) { return x + disp; }
-inline Vsib operator+(uint32 disp, const Vsib& vs) { return vs + disp; }
-inline Vsib operator+(const Reg32e& r, const Xmm& x) { return x + r; }
-inline Vsib operator+(const Reg32e& r, const Vsib& vs) { return vs + r; }
 
 // 2nd parameter for constructor of CodeArray(maxSize, userPtr, alloc)
 void *const AutoGrow = (void*)1;
 
 class CodeArray {
-	enum {
-		MAX_FIXED_BUF_SIZE = 8
-	};
 	enum Type {
-		FIXED_BUF, // use buf_(non alignment, non protect)
-		USER_BUF, // use userPtr(non alignment, non protect)
+		USER_BUF = 1, // use userPtr(non alignment, non protect)
 		ALLOC_BUF, // use new(alignment, protect)
 		AUTO_GROW // automatically move and grow memory if necessary
 	};
+	CodeArray(const CodeArray& rhs);
 	void operator=(const CodeArray&);
 	bool isAllocType() const { return type_ == ALLOC_BUF || type_ == AUTO_GROW; }
-	Type getType(size_t maxSize, void *userPtr) const
-	{
-		if (userPtr == AutoGrow) return AUTO_GROW;
-		if (userPtr) return USER_BUF;
-		if (maxSize <= MAX_FIXED_BUF_SIZE) return FIXED_BUF;
-		return ALLOC_BUF;
-	}
 	struct AddrInfo {
 		size_t codeOffset; // position to write
 		size_t jmpAddr; // value to write
@@ -562,7 +522,6 @@ class CodeArray {
 	const Type type_;
 	Allocator defaultAllocator_;
 	Allocator *alloc_;
-	uint8 buf_[MAX_FIXED_BUF_SIZE]; // for FIXED_BUF
 protected:
 	size_t maxSize_;
 	uint8 *top_;
@@ -575,7 +534,7 @@ protected:
 	{
 		const size_t newSize = (std::max<size_t>)(DEFAULT_MAX_CODE_SIZE, maxSize_ * 2);
 		uint8 *newTop = alloc_->alloc(newSize);
-		if (newTop == 0) throw ERR_CANT_ALLOC;
+		if (newTop == 0) throw Error(ERR_CANT_ALLOC);
 		for (size_t i = 0; i < size_; i++) newTop[i] = top_[i];
 		alloc_->free(top_);
 		top_ = newTop;
@@ -590,20 +549,20 @@ protected:
 			uint64 disp = i->getVal(top_);
 			rewrite(i->codeOffset, disp, i->jmpSize);
 		}
-		if (alloc_->useProtect() && !protect(top_, size_, true)) throw ERR_CANT_PROTECT;
+		if (alloc_->useProtect() && !protect(top_, size_, true)) throw Error(ERR_CANT_PROTECT);
 	}
 public:
-	CodeArray(size_t maxSize = MAX_FIXED_BUF_SIZE, void *userPtr = 0, Allocator *allocator = 0)
-		: type_(getType(maxSize, userPtr))
+	explicit CodeArray(size_t maxSize, void *userPtr = 0, Allocator *allocator = 0)
+		: type_(userPtr == AutoGrow ? AUTO_GROW : userPtr ? USER_BUF : ALLOC_BUF)
 		, alloc_(allocator ? allocator : &defaultAllocator_)
 		, maxSize_(maxSize)
-		, top_(isAllocType() ? alloc_->alloc((std::max<size_t>)(maxSize, 1)) : type_ == USER_BUF ? reinterpret_cast<uint8*>(userPtr) : buf_)
+		, top_(type_ == USER_BUF ? reinterpret_cast<uint8*>(userPtr) : alloc_->alloc((std::max<size_t>)(maxSize, 1)))
 		, size_(0)
 	{
-		if (maxSize_ > 0 && top_ == 0) throw ERR_CANT_ALLOC;
+		if (maxSize_ > 0 && top_ == 0) throw Error(ERR_CANT_ALLOC);
 		if ((type_ == ALLOC_BUF && alloc_->useProtect()) && !protect(top_, maxSize, true)) {
 			alloc_->free(top_);
-			throw ERR_CANT_PROTECT;
+			throw Error(ERR_CANT_PROTECT);
 		}
 	}
 	virtual ~CodeArray()
@@ -612,16 +571,6 @@ public:
 			if (alloc_->useProtect()) protect(top_, maxSize_, false);
 			alloc_->free(top_);
 		}
-	}
-	CodeArray(const CodeArray& rhs)
-		: type_(rhs.type_)
-		, defaultAllocator_(rhs.defaultAllocator_)
-		, maxSize_(rhs.maxSize_)
-		, top_(buf_)
-		, size_(rhs.size_)
-	{
-		if (type_ != FIXED_BUF) throw ERR_CODE_ISNOT_COPYABLE;
-		for (size_t i = 0; i < size_; i++) top_[i] = rhs.top_[i];
 	}
 	void resetSize()
 	{
@@ -634,7 +583,7 @@ public:
 			if (type_ == AUTO_GROW) {
 				growMemory();
 			} else {
-				throw ERR_CODE_IS_TOO_BIG;
+				throw Error(ERR_CODE_IS_TOO_BIG);
 			}
 		}
 		top_[size_++] = static_cast<uint8>(code);
@@ -645,7 +594,7 @@ public:
 	}
 	void db(uint64 code, int codeSize)
 	{
-		if (codeSize > 8) throw ERR_BAD_PARAMETER;
+		if (codeSize > 8) throw Error(ERR_BAD_PARAMETER);
 		for (int i = 0; i < codeSize; i++) db(static_cast<uint8>(code >> (i * 8)));
 	}
 	void dw(uint32 code) { db(code, 2); }
@@ -659,7 +608,7 @@ public:
 	size_t getSize() const { return size_; }
 	void setSize(size_t size)
 	{
-		if (size >= maxSize_) throw ERR_OFFSET_IS_TOO_BIG;
+		if (size >= maxSize_) throw Error(ERR_OFFSET_IS_TOO_BIG);
 		size_ = size;
 	}
 	void dump() const
@@ -692,7 +641,7 @@ public:
 	void rewrite(size_t offset, uint64 disp, size_t size)
 	{
 		assert(offset < maxSize_);
-		if (size != 1 && size != 2 && size != 4 && size != 8) throw ERR_BAD_PARAMETER;
+		if (size != 1 && size != 2 && size != 4 && size != 8) throw Error(ERR_BAD_PARAMETER);
 		uint8 *const data = top_ + offset;
 		for (size_t i = 0; i < size; i++) {
 			data[i] = static_cast<uint8>(disp >> (i * 8));
@@ -703,10 +652,6 @@ public:
 		addrInfoList_.push_back(AddrInfo(offset, val, size, mode));
 	}
 	bool isAutoGrow() const { return type_ == AUTO_GROW; }
-	void updateRegField(uint8 regIdx) const
-	{
-		*top_ = (*top_ & B11000111) | ((regIdx << 3) & B00111000);
-	}
 	/**
 		change exec permission of memory
 		@param addr [in] buffer address
@@ -741,28 +686,41 @@ public:
 	}
 };
 
-class Address : public Operand, public CodeArray {
-	void operator=(const Address&);
-	uint64 disp_;
+class Address : public Operand {
+	mutable uint8 top_[6]; // 6 = 1(ModRM) + 1(SIB) + 4(disp)
+	uint8 size_;
 	uint8 rex_;
+	uint64 disp_;
 	bool isOnlyDisp_;
 	bool is64bitDisp_;
+	bool is32bit_;
 	mutable bool isVsib_;
 	bool isYMM_;
-	void verify() const { if (isVsib_) throw ERR_BAD_VSIB_ADDRESSING; }
-	const bool is32bit_;
+	void verify() const { if (isVsib_) throw Error(ERR_BAD_VSIB_ADDRESSING); }
 public:
 	Address(uint32 sizeBit, bool isOnlyDisp, uint64 disp, bool is32bit, bool is64bitDisp = false, bool isVsib = false, bool isYMM = false)
 		: Operand(0, MEM, sizeBit)
-		, CodeArray(6) // 6 = 1(ModRM) + 1(SIB) + 4(disp)
-		, disp_(disp)
+		, size_(0)
 		, rex_(0)
+		, disp_(disp)
 		, isOnlyDisp_(isOnlyDisp)
 		, is64bitDisp_(is64bitDisp)
+		, is32bit_(is32bit)
 		, isVsib_(isVsib)
 		, isYMM_(isYMM)
-		, is32bit_(is32bit)
 	{
+	}
+	void db(int code)
+	{
+		if (size_ >= sizeof(top_)) throw Error(ERR_CODE_IS_TOO_BIG);
+		top_[size_++] = static_cast<uint8>(code);
+	}
+	void dd(uint32 code) { for (int i = 0; i < 4; i++) db(code >> (i * 8)); }
+	const uint8 *getCode() const { return top_; }
+	size_t getSize() const { return size_; }
+	void updateRegField(uint8 regIdx) const
+	{
+		*top_ = (*top_ & B11000111) | ((regIdx << 3) & B00111000);
 	}
 	void setVsib(bool isVsib) const { isVsib_ = isVsib; }
 	bool isVsib() const { return isVsib_; }
@@ -778,42 +736,50 @@ public:
 class AddressFrame {
 private:
 	void operator=(const AddressFrame&);
-	Address makeAddress(const Reg32e& r, bool isVsib, bool isYMM) const
+	Address makeAddress(const RegExp& e) const
 	{
-		Address frame(bit_, (r.isNone() && r.index_.isNone()), r.disp_, r.isBit(32) || r.index_.isBit(32), false, isVsib, isYMM);
+		e.verify();
+		const bool isVsib = e.isVsib();
+		const bool isYMM = e.isYMM();
+		const RegExp::SReg& base = e.getBase();
+		const RegExp::SReg& index = e.getIndex();
+		const uint32 disp = e.getDisp();
+		Address frame(bit_, (!base.bit && !index.bit), disp, base.bit == 32 || index.bit == 32, false, isVsib, isYMM);
 		enum {
 			mod00 = 0, mod01 = 1, mod10 = 2
 		};
 		int mod;
-		if (r.isNone() || ((r.getIdx() & 7) != Operand::EBP && r.disp_ == 0)) {
+		if (!base.bit || ((base.idx & 7) != Operand::EBP && disp == 0)) {
 			mod = mod00;
-		} else if (inner::IsInDisp8(r.disp_)) {
+		} else if (inner::IsInDisp8(disp)) {
 			mod = mod01;
 		} else {
 			mod = mod10;
 		}
-		const int base = r.isNone() ? Operand::EBP : (r.getIdx() & 7);
+		const int baseIdx = base.bit ? (base.idx & 7) : Operand::EBP;
 		/* ModR/M = [2:3:3] = [Mod:reg/code:R/M] */
-		bool hasSIB = !r.index_.isNone() || (r.getIdx() & 7) == Operand::ESP;
+		bool hasSIB = index.bit || (base.idx & 7) == Operand::ESP;
 #ifdef XBYAK64
-		if (r.isNone() && r.index_.isNone()) hasSIB = true;
+		if (!base.bit && !index.bit) hasSIB = true;
 #endif
-		if (!hasSIB) {
-			frame.db((mod << 6) | base);
-		} else {
+		if (hasSIB) {
 			frame.db((mod << 6) | Operand::ESP);
 			/* SIB = [2:3:3] = [SS:index:base(=rm)] */
-			int index = r.index_.isNone() ? Operand::ESP : (r.index_.getIdx() & 7);
-			int ss = (r.scale_ == 8) ? 3 : (r.scale_ == 4) ? 2 : (r.scale_ == 2) ? 1 : 0;
-			frame.db((ss << 6) | (index << 3) | base);
+			const int indexIdx = index.bit ? (index.idx & 7) : Operand::ESP;
+			const int scale = e.getScale();
+			const int ss = (scale == 8) ? 3 : (scale == 4) ? 2 : (scale == 2) ? 1 : 0;
+			frame.db((ss << 6) | (indexIdx << 3) | baseIdx);
+		} else {
+			frame.db((mod << 6) | baseIdx);
 		}
 		if (mod == mod01) {
-			frame.db(r.disp_);
-		} else if (mod == mod10 || (mod == mod00 && r.isNone())) {
-			frame.dd(r.disp_);
+			frame.db(disp);
+		} else if (mod == mod10 || (mod == mod00 && !base.bit)) {
+			frame.dd(disp);
 		}
-		uint8 rex = ((r.getIdx() | r.index_.getIdx()) < 8) ? 0 : uint8(0x40 | ((r.index_.getIdx() >> 3) << 1) | (r.getIdx() >> 3));
-		frame.setRex(rex);
+		int rex = ((index.idx >> 3) << 1) | (base.idx >> 3);
+		if (rex) rex |= 0x40;
+		frame.setRex(uint8(rex));
 		return frame;
 	}
 public:
@@ -823,10 +789,10 @@ public:
 	{
 		size_t adr = reinterpret_cast<size_t>(disp);
 #ifdef XBYAK64
-		if (adr > 0xFFFFFFFFU) throw ERR_OFFSET_IS_TOO_BIG;
+		if (adr > 0xFFFFFFFFU) throw Error(ERR_OFFSET_IS_TOO_BIG);
 #endif
-		Reg32e r(Reg(), Reg(), 0, static_cast<uint32>(adr));
-		return operator[](r);
+		RegExp e(static_cast<uint32>(adr));
+		return operator[](e);
 	}
 #ifdef XBYAK64
 	Address operator[](uint64 disp) const
@@ -841,28 +807,9 @@ public:
 		return frame;
 	}
 #endif
-	Address operator[](const Reg32e& in) const
+	Address operator[](const RegExp& e) const
 	{
-		return makeAddress(in.optimize(), false, false);
-	}
-	Address operator[](const Vsib& vs) const
-	{
-		if (vs.getBaseBit() == 0) {
-#ifdef XBYAK64
-			const int bit = 64;
-#else
-			const int bit = 32;
-#endif
-			const Reg32e r(Reg(), Reg32e(vs.getIndexIdx(), bit), vs.getScale(), vs.getDisp(), true);
-			return makeAddress(r, true, vs.isYMM());
-		} else {
-			const Reg32e r(Reg32e(vs.getBaseIdx(), vs.getBaseBit()), Reg32e(vs.getIndexIdx(), vs.getBaseBit()), vs.getScale(), vs.getDisp(), true);
-			return makeAddress(r, true, vs.isYMM());
-		}
-	}
-	Address operator[](const Xmm& x) const
-	{
-		return operator[](x + 0);
+		return makeAddress(e.optimize());
 	}
 };
 
@@ -903,14 +850,14 @@ private:
 		@f --> @@.<num + 1>
 		.*** -> .***.<num>
 	*/
-	std::string convertLabel(const char *label) const
+	std::string convertLabel(const std::string& label) const
 	{
 		std::string newLabel(label);
 		if (newLabel == "@f" || newLabel == "@F") {
 			newLabel = std::string("@@") + toStr(anonymousCount_ + 1);
 		} else if (newLabel == "@b" || newLabel == "@B") {
 			newLabel = std::string("@@") + toStr(anonymousCount_);
-		} else if (*label == '.') {
+		} else if (*label.c_str() == '.') {
 			newLabel += toStr(localCount_);
 		}
 		return newLabel;
@@ -936,28 +883,27 @@ public:
 	}
 	void enterLocal()
 	{
-		if (stackPos_ == maxStack) throw ERR_OVER_LOCAL_LABEL;
+		if (stackPos_ == maxStack) throw Error(ERR_OVER_LOCAL_LABEL);
 		localCount_ = stack_[stackPos_++] = ++usedCount_;
 	}
 	void leaveLocal()
 	{
-		if (stackPos_ == 1) throw ERR_UNDER_LOCAL_LABEL;
+		if (stackPos_ == 1) throw Error(ERR_UNDER_LOCAL_LABEL);
 		localCount_ = stack_[--stackPos_ - 1];
 	}
 	void set(CodeArray *base) { base_ = base; }
-	void define(const char *label, size_t addrOffset, const uint8 *addr)
+	void define(const std::string& _label, size_t addrOffset, const uint8 *addr)
 	{
-		std::string newLabel(label);
-		if (newLabel == "@@") {
-			newLabel += toStr(++anonymousCount_);
-		} else if (*label == '.') {
-			newLabel += toStr(localCount_);
+		std::string label(_label);
+		if (label == "@@") {
+			label += toStr(++anonymousCount_);
+		} else if (*label.c_str() == '.') {
+			label += toStr(localCount_);
 		}
-		label = newLabel.c_str();
 		// add label
 		DefinedList::value_type item(label, addrOffset);
 		std::pair<DefinedList::iterator, bool> ret = definedList_.insert(item);
-		if (!ret.second) throw ERR_LABEL_IS_REDEFINED;
+		if (!ret.second) throw Error(ERR_LABEL_IS_REDEFINED);
 		// search undefined label
 		for (;;) {
 			UndefinedList::iterator itr = undefinedList_.find(label);
@@ -972,7 +918,7 @@ public:
 			} else {
 				disp = addrOffset - jmp->endOfJmp;
 				if (jmp->jmpSize <= 4) disp = inner::VerifyInInt32(disp);
-				if (jmp->jmpSize == 1 && !inner::IsInDisp8((uint32)disp)) throw ERR_LABEL_IS_TOO_FAR;
+				if (jmp->jmpSize == 1 && !inner::IsInDisp8((uint32)disp)) throw Error(ERR_LABEL_IS_TOO_FAR);
 			}
 			if (base_->isAutoGrow()) {
 				base_->save(offset, disp, jmp->jmpSize, jmp->mode);
@@ -982,7 +928,7 @@ public:
 			undefinedList_.erase(itr);
 		}
 	}
-	bool getOffset(size_t *offset, const char *label) const
+	bool getOffset(size_t *offset, const std::string& label) const
 	{
 		std::string newLabel = convertLabel(label);
 		DefinedList::const_iterator itr = definedList_.find(newLabel);
@@ -993,7 +939,7 @@ public:
 			return false;
 		}
 	}
-	void addUndefinedLabel(const char *label, const JmpLabel& jmp)
+	void addUndefinedLabel(const std::string& label, const JmpLabel& jmp)
 	{
 		std::string newLabel = convertLabel(label);
 		undefinedList_.insert(UndefinedList::value_type(newLabel, jmp));
@@ -1069,7 +1015,7 @@ private:
 		uint8 rex = 0;
 		const Operand *p1 = &op1, *p2 = &op2;
 		if (p1->isMEM()) std::swap(p1, p2);
-		if (p1->isMEM()) throw ERR_BAD_COMBINATION;
+		if (p1->isMEM()) throw Error(ERR_BAD_COMBINATION);
 		if (p2->isMEM()) {
 			const Address& addr = static_cast<const Address&>(*p2);
 			if (BIT == 64 && addr.is32bit()) db(0x67);
@@ -1114,7 +1060,7 @@ private:
 	}
 	void opModM(const Address& addr, const Reg& reg, int code0, int code1 = NONE, int code2 = NONE)
 	{
-		if (addr.is64bitDisp()) throw ERR_CANT_USE_64BIT_DISP;
+		if (addr.is64bitDisp()) throw Error(ERR_CANT_USE_64BIT_DISP);
 		rex(addr, reg);
 		db(code0 | (reg.isBit(8) ? 0 : 1)); if (code1 != NONE) db(code1); if (code2 != NONE) db(code2);
 		addr.updateRegField(static_cast<uint8>(reg.getIdx()));
@@ -1128,12 +1074,12 @@ private:
 		if (type != T_NEAR && inner::IsInDisp8(disp - shortJmpSize)) {
 			db(shortCode); db(disp - shortJmpSize);
 		} else {
-			if (type == T_SHORT) throw ERR_LABEL_IS_TOO_FAR;
+			if (type == T_SHORT) throw Error(ERR_LABEL_IS_TOO_FAR);
 			if (longPref) db(longPref);
 			db(longCode); dd(disp - longJmpSize);
 		}
 	}
-	void opJmp(const char *label, LabelType type, uint8 shortCode, uint8 longCode, uint8 longPref)
+	void opJmp(const std::string& label, LabelType type, uint8 shortCode, uint8 longCode, uint8 longPref)
 	{
 		if (isAutoGrow() && size_ + 16 >= maxSize_) growMemory(); /* avoid splitting code of jmp */
 		size_t offset = 0;
@@ -1157,7 +1103,7 @@ private:
 	void opJmpAbs(const void *addr, LabelType type, uint8 shortCode, uint8 longCode)
 	{
 		if (isAutoGrow()) {
-			if (type != T_NEAR) throw ERR_ONLY_T_NEAR_IS_SUPPORTED_IN_AUTO_GROW;
+			if (type != T_NEAR) throw Error(ERR_ONLY_T_NEAR_IS_SUPPORTED_IN_AUTO_GROW);
 			if (size_ + 16 >= maxSize_) growMemory();
 			db(longCode);
 			dd(0);
@@ -1170,7 +1116,7 @@ private:
 	/* preCode is for SSSE3/SSE4 */
 	void opGen(const Operand& reg, const Operand& op, int code, int pref, bool isValid(const Operand&, const Operand&), int imm8 = NONE, int preCode = NONE)
 	{
-		if (isValid && !isValid(reg, op)) throw ERR_BAD_COMBINATION;
+		if (isValid && !isValid(reg, op)) throw Error(ERR_BAD_COMBINATION);
 		if (pref != NONE) db(pref);
 		if (op.isMEM()) {
 			opModM(static_cast<const Address&>(op), static_cast<const Reg&>(reg), 0x0F, preCode, code);
@@ -1197,7 +1143,7 @@ private:
 		} else if (op1.isMEM() && op2.isXMM()) {
 			opModM(static_cast<const Address&>(op1), static_cast<const Reg&>(op2), 0x0F, code | 1);
 		} else {
-			throw ERR_BAD_COMBINATION;
+			throw Error(ERR_BAD_COMBINATION);
 		}
 	}
 	void opExt(const Operand& op, const Mmx& mmx, int code, int imm, bool hasMMX2 = false)
@@ -1218,7 +1164,7 @@ private:
 		} else if (op.isMEM()) {
 			opModM(static_cast<const Address&>(op), Reg(ext, Operand::REG, opBit), code0, code1, code2);
 		} else {
-			throw ERR_BAD_COMBINATION;
+			throw Error(ERR_BAD_COMBINATION);
 		}
 	}
 	void opShift(const Operand& op, int imm, int ext)
@@ -1229,7 +1175,7 @@ private:
 	}
 	void opShift(const Operand& op, const Reg8& cl, int ext)
 	{
-		if (cl.getIdx() != Operand::CL) throw ERR_BAD_COMBINATION;
+		if (cl.getIdx() != Operand::CL) throw Error(ERR_BAD_COMBINATION);
 		opR_ModM(op, 0, ext, B11010010);
 	}
 	void opModRM(const Operand& op1, const Operand& op2, bool condR, bool condM, int code0, int code1 = NONE, int code2 = NONE)
@@ -1239,12 +1185,12 @@ private:
 		} else if (condM) {
 			opModM(static_cast<const Address&>(op2), static_cast<const Reg&>(op1), code0, code1, code2);
 		} else {
-			throw ERR_BAD_COMBINATION;
+			throw Error(ERR_BAD_COMBINATION);
 		}
 	}
 	void opShxd(const Operand& op, const Reg& reg, uint8 imm, int code, const Reg8 *cl = 0)
 	{
-		if (cl && cl->getIdx() != Operand::CL) throw ERR_BAD_COMBINATION;
+		if (cl && cl->getIdx() != Operand::CL) throw Error(ERR_BAD_COMBINATION);
 		opModRM(reg, op, (op.isREG(16 | i32e) && op.getBit() == reg.getBit()), op.isMEM() && (reg.isREG(16 | i32e)), 0x0F, code | (cl ? 1 : 0));
 		if (!cl) db(imm);
 	}
@@ -1263,7 +1209,7 @@ private:
 		verifyMemHasSize(op);
 		uint32 immBit = inner::IsInDisp8(imm) ? 8 : isInDisp16(imm) ? 16 : 32;
 		if (op.isBit(8)) immBit = 8;
-		if (op.getBit() < immBit) throw ERR_IMM_IS_TOO_BIG;
+		if (op.getBit() < immBit) throw Error(ERR_IMM_IS_TOO_BIG);
 		if (op.isBit(32|64) && immBit == 16) immBit = 32; /* don't use MEM16 if 32/64bit mode */
 		if (op.isREG() && op.getIdx() == 0 && (op.getBit() == immBit || (op.isBit(64) && immBit == 32))) { // rax, eax, ax, al
 			rex(op);
@@ -1299,25 +1245,25 @@ private:
 		} else if (op.isMEM()) {
 			opModM(static_cast<const Address&>(op), Reg(ext, Operand::REG, op.getBit()), code);
 		} else {
-			throw ERR_BAD_COMBINATION;
+			throw Error(ERR_BAD_COMBINATION);
 		}
 	}
 	void verifyMemHasSize(const Operand& op) const
 	{
-		if (op.isMEM() && op.getBit() == 0) throw ERR_MEM_SIZE_IS_NOT_SPECIFIED;
+		if (op.isMEM() && op.getBit() == 0) throw Error(ERR_MEM_SIZE_IS_NOT_SPECIFIED);
 	}
 	void opMovxx(const Reg& reg, const Operand& op, uint8 code)
 	{
-		if (op.isBit(32)) throw ERR_BAD_COMBINATION;
+		if (op.isBit(32)) throw Error(ERR_BAD_COMBINATION);
 		int w = op.isBit(16);
 		bool cond = reg.isREG() && (reg.getBit() > op.getBit());
 		opModRM(reg, op, cond && op.isREG(), cond && op.isMEM(), 0x0F, code | w);
 	}
 	void opFpuMem(const Address& addr, uint8 m16, uint8 m32, uint8 m64, uint8 ext, uint8 m64ext)
 	{
-		if (addr.is64bitDisp()) throw ERR_CANT_USE_64BIT_DISP;
+		if (addr.is64bitDisp()) throw Error(ERR_CANT_USE_64BIT_DISP);
 		uint8 code = addr.isBit(16) ? m16 : addr.isBit(32) ? m32 : addr.isBit(64) ? m64 : 0;
-		if (!code) throw ERR_BAD_MEM_SIZE;
+		if (!code) throw Error(ERR_BAD_MEM_SIZE);
 		if (m64ext && addr.isBit(64)) ext = m64ext;
 
 		rex(addr, st0);
@@ -1330,7 +1276,7 @@ private:
 	void opFpuFpu(const Fpu& reg1, const Fpu& reg2, uint32 code1, uint32 code2)
 	{
 		uint32 code = reg1.getIdx() == 0 ? code1 : reg2.getIdx() == 0 ? code2 : 0;
-		if (!code) throw ERR_BAD_ST_COMBINATION;
+		if (!code) throw Error(ERR_BAD_ST_COMBINATION);
 		db(uint8(code >> 8));
 		db(uint8(code | (reg1.getIdx() | reg2.getIdx())));
 	}
@@ -1371,7 +1317,7 @@ private:
 		const Operand *p2 = &op2;
 		if (!isR_R_RM) std::swap(p1, p2);
 		const unsigned int bit = r.getBit();
-		if (p1->getBit() != bit || (p2->isREG() && p2->getBit() != bit)) throw ERR_BAD_COMBINATION;
+		if (p1->getBit() != bit || (p2->isREG() && p2->getBit() != bit)) throw Error(ERR_BAD_COMBINATION);
 		int w = bit == 64;
 		opVex(r, p1, p2, type, code, w);
 	}
@@ -1383,12 +1329,12 @@ private:
 			x2 = &x1;
 			op = &op1;
 		} else {
-			if (!(op1.isXMM() || (supportYMM && op1.isYMM()))) throw ERR_BAD_COMBINATION;
+			if (!(op1.isXMM() || (supportYMM && op1.isYMM()))) throw Error(ERR_BAD_COMBINATION);
 			x2 = static_cast<const Xmm*>(&op1);
 			op = &op2;
 		}
 		// (x1, x2, op)
-		if (!((x1.isXMM() && x2->isXMM()) || (supportYMM && x1.isYMM() && x2->isYMM()))) throw ERR_BAD_COMBINATION;
+		if (!((x1.isXMM() && x2->isXMM()) || (supportYMM && x1.isYMM() && x2->isYMM()))) throw Error(ERR_BAD_COMBINATION);
 		opVex(x1, x2, op, type, code0, w);
 	}
 	// if cvt then return pointer to Xmm(idx) (or Ymm(idx)), otherwise return op
@@ -1405,15 +1351,15 @@ private:
 	// QQQ:need to refactor
 	void opSp1(const Reg& reg, const Operand& op, uint8 pref, uint8 code0, uint8 code1)
 	{
-		if (reg.isBit(8)) throw ERR_BAD_SIZE_OF_REGISTER;
+		if (reg.isBit(8)) throw Error(ERR_BAD_SIZE_OF_REGISTER);
 		bool is16bit = reg.isREG(16) && (op.isREG(16) || op.isMEM());
-		if (!is16bit && !(reg.isREG(i32e) && (op.isREG(reg.getBit()) || op.isMEM()))) throw ERR_BAD_COMBINATION;
+		if (!is16bit && !(reg.isREG(i32e) && (op.isREG(reg.getBit()) || op.isMEM()))) throw Error(ERR_BAD_COMBINATION);
 		if (is16bit) db(0x66);
 		db(pref); opModRM(reg.changeBit(i32e == 32 ? 32 : reg.getBit()), op, op.isREG(), true, code0, code1);
 	}
 	void opGather(const Xmm& x1, const Address& addr, const Xmm& x2, int type, uint8 code, int w, int mode)
 	{
-		if (!addr.isVsib()) throw ERR_BAD_VSIB_ADDRESSING;
+		if (!addr.isVsib()) throw Error(ERR_BAD_VSIB_ADDRESSING);
 		const int y_vx_y = 0;
 		const int y_vy_y = 1;
 //		const int x_vy_x = 2;
@@ -1427,7 +1373,7 @@ private:
 			} else { // x_vy_x
 				isOK = !x1.isYMM() && isAddrYMM && !x2.isYMM();
 			}
-			if (!isOK) throw ERR_BAD_VSIB_ADDRESSING;
+			if (!isOK) throw Error(ERR_BAD_VSIB_ADDRESSING);
 		}
 		addr.setVsib(false);
 		opAVX_X_X_XM(isAddrYMM ? Ymm(x1.getIdx()) : x1, isAddrYMM ? Ymm(x2.getIdx()) : x2, addr, type, code, true, w);
@@ -1458,16 +1404,17 @@ public:
 	const Ymm &ym8, &ym9, &ym10, &ym11, &ym12, &ym13, &ym14, &ym15;
 	const RegRip rip;
 #endif
-	void L(const char *label)
+	void L(const std::string& label)
 	{
 		label_.define(label, getSize(), getCurr());
 	}
 	void inLocalLabel() { label_.enterLocal(); }
 	void outLocalLabel() { label_.leaveLocal(); }
-	void jmp(const char *label, LabelType type = T_AUTO)
+	void jmp(const std::string& label, LabelType type = T_AUTO)
 	{
 		opJmp(label, type, B11101011, B11101001, 0);
 	}
+	void jmp(const char *label, LabelType type = T_AUTO) { jmp(std::string(label), type); }
 	void jmp(const void *addr, LabelType type = T_AUTO)
 	{
 		opJmpAbs(addr, type, B11101011, B11101001);
@@ -1570,7 +1517,7 @@ public:
 				db(reg1.isREG(8) ? 0xA0 : reg1.isREG() ? 0xA1 : reg2.isREG(8) ? 0xA2 : 0xA3);
 				db(addr->getDisp(), 8);
 			} else {
-				throw ERR_BAD_COMBINATION;
+				throw Error(ERR_BAD_COMBINATION);
 			}
 		} else
 #else
@@ -1615,9 +1562,10 @@ public:
 			int size = op.getBit() / 8; if (size > 4) size = 4;
 			db(static_cast<uint32>(imm), size);
 		} else {
-			throw ERR_BAD_COMBINATION;
+			throw Error(ERR_BAD_COMBINATION);
 		}
 	}
+	// QQQ : rewrite this function with putL
 	void mov(
 #ifdef XBYAK64
 		const Reg64& reg,
@@ -1654,6 +1602,31 @@ public:
 		jmp.mode = isAutoGrow() ? inner::LaddTop : inner::Labs;
 		label_.addUndefinedLabel(label, jmp);
 	}
+	/*
+		put address of label to buffer
+		@note the put size is 4(32-bit), 8(64-bit)
+	*/
+	void putL(const std::string& label)
+	{
+		const int jmpSize = (int)sizeof(size_t);
+		if (isAutoGrow() && size_ + 16 >= maxSize_) growMemory();
+		size_t offset = 0;
+		if (label_.getOffset(&offset, label)) {
+			if (isAutoGrow()) {
+				db(uint64(0), jmpSize);
+				save(size_ - jmpSize, offset, jmpSize, inner::LaddTop);
+			} else {
+				db(size_t(top_) + offset, jmpSize);
+			}
+			return;
+		}
+		db(uint64(0), jmpSize);
+		JmpLabel jmp;
+		jmp.endOfJmp = size_;
+		jmp.jmpSize = jmpSize;
+		jmp.mode = isAutoGrow() ? inner::LaddTop : inner::Labs;
+		label_.addUndefinedLabel(label, jmp);
+	}
 	void cmpxchg8b(const Address& addr) { opModM(addr, Reg32(1), 0x0F, B11000111); }
 #ifdef XBYAK64
 	void cmpxchg16b(const Address& addr) { opModM(addr, Reg64(1), 0x0F, B11000111); }
@@ -1668,7 +1641,7 @@ public:
 		if (p1->isMEM() || (p2->isREG(16 | i32e) && p2->getIdx() == 0)) {
 			p1 = &op2; p2 = &op1;
 		}
-		if (p1->isMEM()) throw ERR_BAD_COMBINATION;
+		if (p1->isMEM()) throw Error(ERR_BAD_COMBINATION);
 		if (p2->isREG() && (p1->isREG(16 | i32e) && p1->getIdx() == 0)
 #ifdef XBYAK64
 			&& (p2->getIdx() != 0 || !p1->isREG(32))
@@ -1679,10 +1652,11 @@ public:
 		}
 		opModRM(*p1, *p2, (p1->isREG() && p2->isREG() && (p1->getBit() == p2->getBit())), p2->isMEM(), B10000110 | (p1->isBit(8) ? 0 : 1));
 	}
-	void call(const char *label)
+	void call(const std::string& label)
 	{
 		opJmp(label, T_NEAR, 0, B11101000, 0);
 	}
+	void call(const char *label) { call(std::string(label)); }
 	void call(const void *addr)
 	{
 		opJmpAbs(addr, T_NEAR, 0, B11101000);
@@ -1739,17 +1713,17 @@ public:
 	}
 	void pextrq(const Operand& op, const Xmm& xmm, uint8 imm)
 	{
-		if (!op.isREG(64) && !op.isMEM()) throw ERR_BAD_COMBINATION;
+		if (!op.isREG(64) && !op.isMEM()) throw Error(ERR_BAD_COMBINATION);
 		opGen(Reg64(xmm.getIdx()), op, 0x16, 0x66, 0, imm, B00111010); // force to 64bit
 	}
 	void pinsrq(const Xmm& xmm, const Operand& op, uint8 imm)
 	{
-		if (!op.isREG(64) && !op.isMEM()) throw ERR_BAD_COMBINATION;
+		if (!op.isREG(64) && !op.isMEM()) throw Error(ERR_BAD_COMBINATION);
 		opGen(Reg64(xmm.getIdx()), op, 0x22, 0x66, 0, imm, B00111010); // force to 64bit
 	}
 	void movsxd(const Reg64& reg, const Operand& op)
 	{
-		if (!op.isBit(32)) throw ERR_BAD_COMBINATION;
+		if (!op.isBit(32)) throw Error(ERR_BAD_COMBINATION);
 		opModRM(reg, op, op.isREG(), op.isMEM(), 0x63);
 	}
 #endif
@@ -1761,7 +1735,7 @@ public:
 	void extractps(const Operand& op, const Xmm& xmm, uint8 imm) { opExt(op, xmm, 0x17, imm); }
 	void pinsrw(const Mmx& mmx, const Operand& op, int imm)
 	{
-		if (!op.isREG(32) && !op.isMEM()) throw ERR_BAD_COMBINATION;
+		if (!op.isREG(32) && !op.isMEM()) throw Error(ERR_BAD_COMBINATION);
 		opGen(mmx, op, B11000100, mmx.isXMM() ? 0x66 : NONE, 0, imm);
 	}
 	void insertps(const Xmm& xmm, const Operand& op, uint8 imm) { opGen(xmm, op, 0x21, 0x66, isXMM_XMMorMEM, imm, B00111010); }
@@ -1775,7 +1749,7 @@ public:
 	}
 	void maskmovq(const Mmx& reg1, const Mmx& reg2)
 	{
-		if (!reg1.isMMX() || !reg2.isMMX()) throw ERR_BAD_COMBINATION;
+		if (!reg1.isMMX() || !reg2.isMMX()) throw Error(ERR_BAD_COMBINATION);
 		opModR(reg1, reg2, 0x0F, B11110111);
 	}
 	void lea(const Reg32e& reg, const Address& addr) { opModM(addr, reg, B10001101); }
@@ -1788,7 +1762,7 @@ public:
 	void movnti(const Address& addr, const Reg32e& reg) { opModM(addr, reg, 0x0F, B11000011); }
 	void movntq(const Address& addr, const Mmx& mmx)
 	{
-		if (!mmx.isMMX()) throw ERR_BAD_COMBINATION;
+		if (!mmx.isMMX()) throw Error(ERR_BAD_COMBINATION);
 		opModM(addr, mmx, 0x0F, B11100111);
 	}
 	void crc32(const Reg32e& reg, const Operand& op)
@@ -1797,7 +1771,7 @@ public:
 		db(0xF2);
 		opModRM(reg, op, op.isREG(), op.isMEM(), 0x0F, 0x38, 0xF0 | (op.isBit(8) ? 0 : 1));
 	}
-	void rdrand(const Reg& r) { if (r.isBit(8)) throw ERR_BAD_SIZE_OF_REGISTER; opModR(Reg(6, Operand::REG, r.getBit()), r, 0x0f, 0xc7); }
+	void rdrand(const Reg& r) { if (r.isBit(8)) throw Error(ERR_BAD_SIZE_OF_REGISTER); opModR(Reg(6, Operand::REG, r.getBit()), r, 0x0f, 0xc7); }
 	void rorx(const Reg32e& r, const Operand& op, uint8 imm) { opGpr(r, op, Reg32e(0, r.getBit()), MM_0F3A | PP_F2, 0xF0, false); db(imm); }
 	enum { NONE = 256 };
 	CodeGenerator(size_t maxSize = DEFAULT_MAX_CODE_SIZE, void *userPtr = 0, Allocator *allocator = 0)
@@ -1839,7 +1813,7 @@ public:
 	*/
 	void ready()
 	{
-		if (hasUndefinedLabel()) throw ERR_LABEL_IS_NOT_FOUND;
+		if (hasUndefinedLabel()) throw Error(ERR_LABEL_IS_NOT_FOUND);
 		calcJmpAddress();
 	}
 #ifdef XBYAK_TEST
@@ -1855,7 +1829,7 @@ public:
 	void align(int x = 16)
 	{
 		if (x == 1) return;
-		if (x < 1 || (x & (x - 1))) throw ERR_BAD_ALIGN;
+		if (x < 1 || (x & (x - 1))) throw Error(ERR_BAD_ALIGN);
 		if (isAutoGrow() && x > (int)inner::ALIGN_PAGE_SIZE) fprintf(stderr, "warning:autoGrow mode does not support %d align\n", x);
 		while (size_t(getCurr()) % x) {
 			nop();
