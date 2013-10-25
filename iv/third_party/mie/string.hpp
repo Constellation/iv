@@ -10,8 +10,12 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 #include <stdlib.h>
-#include <iv/third_party/xbyak/xbyak.h>
-#include <iv/third_party/xbyak/xbyak_util.h>
+#include <xbyak/xbyak.h>
+#include <xbyak/xbyak_util.h>
+#ifdef _MSC_VER
+	#pragma warning(push)
+	#pragma warning(disable : 4127) // constant condition
+#endif
 
 namespace mie {
 
@@ -41,7 +45,11 @@ struct StringCode : Xbyak::CodeGenerator {
 			return;
 		}
 		/* this check is adhoc */
-		const bool isSandyBridge = cpu.has(Xbyak::util::Cpu::tAVX);
+		/*
+			0x2A, 0x3A, 0x2D for Core i3, i7, etc
+			0x2C for Xeon X5650
+		*/
+		const bool isSandyBridge = cpu.displayModel != 0x2C;
 
 		gen_strstr(isSandyBridge);
 
@@ -74,8 +82,8 @@ struct StringCode : Xbyak::CodeGenerator {
 
 		nextOffset(findCaseStrOffset);
 		gen_findStr(isSandyBridge, true);
-	} catch (Xbyak::Error err) {
-		printf("ERR:%s(%d)\n", Xbyak::ConvertErrorToString(err), err);
+	} catch (std::exception& e) {
+		printf("ERR:%s\n", e.what());
 		::exit(1);
 	}
 private:
@@ -227,7 +235,7 @@ private:
 		add(a, 1);
 		jmp(".lp");
 	L(".notFound");
-		xor(eax, eax);
+		xor_(eax, eax);
 	L(".found");
 #ifdef XBYAK32
 		mov(esi, ptr [esp + 0]);
@@ -289,7 +297,7 @@ private:
 		const Reg64& c = rcx;
 		const Reg64& a = rax;
 		if (mode == M_one) {
-			and(c1, 0xff);
+			and_(c1, 0xff);
 			movq(xm0, c1);
 		} else {
 			movdqu(xm0, ptr [c1]);
@@ -318,7 +326,7 @@ private:
 		add(a, c);
 		ret();
 	L(".notfound");
-		xor(a, a);
+		xor_(a, a);
 		ret();
 		outLocalLabel();
 	}
@@ -376,7 +384,7 @@ private:
 		}
 #endif
 		if (mode == M_one) {
-			xor(eax, eax);
+			xor_(eax, eax);
 			inc(eax); // eax = 1
 		}
 		/*
@@ -737,3 +745,6 @@ inline char *findCaseStr(char*begin, const char *end, const char *key, size_t ke
 
 } // mie
 
+#ifdef _MSC_VER
+	#pragma warning(pop)
+#endif
