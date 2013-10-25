@@ -102,9 +102,6 @@ def Build():
     conf.CheckLibWithHeader('m', 'cmath', 'cxx')
     env = conf.Finish()
 
-  if env["CXXVERSION"] >= "4.8.0":
-    env.Append(CCFLAGS=["-Wno-unused-local-typedefs"])
-
   if options.get('cache'):
     env.CacheDir('cache')
 
