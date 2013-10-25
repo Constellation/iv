@@ -2,8 +2,12 @@
 #define IV_DETAIL_TUPLE_H_
 #include <iv/platform.h>
 
-#if defined(IV_COMPILER_MSVC) || defined(__GXX_EXPERIMENTAL_CXX0X__)
+#if defined(IV_COMPILER_MSVC) || \
+    defined(__GXX_EXPERIMENTAL_CXX0X__) || \
+    (defined(IV_COMPILER_CLANG) && IV_COMPILER_CLANG >= 50000)
 #include <tuple>
+
+typedef std::tuple<char, char, char> char3;
 
 #if defined(IV_COMPILER_MSVC) && !defined(IV_COMPILER_MSVC_10)
 namespace std { using namespace tr1; }

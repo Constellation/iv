@@ -2,7 +2,9 @@
 #define IV_DETAIL_ARRAY_H_
 #include <iv/platform.h>
 
-#if defined(IV_COMPILER_MSVC) || defined(__GXX_EXPERIMENTAL_CXX0X__)
+#if defined(IV_COMPILER_MSVC) || \
+    defined(__GXX_EXPERIMENTAL_CXX0X__) || \
+    (defined(IV_COMPILER_CLANG) && IV_COMPILER_CLANG >= 50000)
 #include <array>
 
 #if defined(IV_COMPILER_MSVC) && !defined(IV_COMPILER_MSVC_10)

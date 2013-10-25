@@ -2,7 +2,9 @@
 #define IV_DETAIL_FUNCTIONAL_H_
 #include <iv/platform.h>
 
-#if defined(IV_COMPILER_MSVC) || defined(__GXX_EXPERIMENTAL_CXX0X__)
+#if defined(IV_COMPILER_MSVC) || \
+    defined(__GXX_EXPERIMENTAL_CXX0X__) || \
+    (defined(IV_COMPILER_CLANG) && IV_COMPILER_CLANG >= 50000)
 #include <functional>
 
 #if defined(IV_COMPILER_MSVC) && !defined(IV_COMPILER_MSVC_10)
@@ -16,7 +18,9 @@ namespace std { using namespace tr1; }
 namespace std { using namespace tr1; }
 #endif
 
-#if defined(IV_COMPILER_MSVC_10) || defined(__GXX_EXPERIMENTAL_CXX0X__)
+#if defined(IV_COMPILER_MSVC) || \
+    defined(__GXX_EXPERIMENTAL_CXX0X__) || \
+    (defined(IV_COMPILER_CLANG) && IV_COMPILER_CLANG >= 50000)
 #define IV_HASH_NAMESPACE_START std
 #define IV_HASH_NAMESPACE_END
 #else

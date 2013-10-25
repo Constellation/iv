@@ -51,6 +51,9 @@ def Lv5(context):
   )
   return lv5_task, lv5_objs, lv5_libs
 
+def IsOSX():
+    return platform.system() == 'Darwin'
+
 def Build():
   options = {}
   var = GetVariables()
@@ -81,11 +84,15 @@ def Build():
       duplicate=False,
       exports='root_dir env options')
 
-  if env['clang']:
+  if env['clang'] or IsOSX():
     env.Replace(CXX='clang++', CC='clang')
     if os.environ.get('CLANG_COLOR'):
       env.Append(CCFLAGS=["-fcolor-diagnostics"])
+    # use libc++
     env.Append(CPPFLAGS=['-ferror-limit=1000']);
+    env.Append(CXXFLAGS=["-std=c++11"])
+    env.Append(CXXFLAGS=["-stdlib=libc++"])
+    env.Append(LIBS=["c++"])
 
   if not env.GetOption('clean'):
     conf = Configure(env)
@@ -94,11 +101,6 @@ def Build():
 #      Exit(1)
     conf.CheckLibWithHeader('m', 'cmath', 'cxx')
     env = conf.Finish()
-
-  if env["CXXVERSION"] >= "4.4.3":
-    # MacOSX etc... tr1/cmath problem
-    env.Append(
-        CXXFLAGS=["-ansi"])
 
   if env["CXXVERSION"] >= "4.8.0":
     env.Append(CCFLAGS=["-Wno-unused-local-typedefs"])
@@ -122,13 +124,7 @@ def Build():
     )
 
   if env['cxx0x'] or env['cxx11']:
-    if env['CC'] == 'clang':
-      # use libc++
-      env.Append(CXXFLAGS=["-std=c++11"])
-      env.Append(CXXFLAGS=["-stdlib=libc++"])
-      env.Append(LIBS=["c++"])
-    else:
-      env.Append(CXXFLAGS=["-std=c++0x"])
+    env.Append(CXXFLAGS=["-std=c++0x"])
 
   if env['debug']:
     # -Werror is defined in debug mode only

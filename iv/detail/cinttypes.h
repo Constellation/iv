@@ -2,7 +2,9 @@
 #define IV_DETAIL_CINTTYPES_H_
 #include <iv/platform.h>
 
-#if defined(IV_COMPILER_MSVC) || defined(__GXX_EXPERIMENTAL_CXX0X__)
+#if defined(IV_COMPILER_MSVC) || \
+    defined(__GXX_EXPERIMENTAL_CXX0X__) || \
+    (defined(IV_COMPILER_CLANG) && IV_COMPILER_CLANG >= 50000)
 #ifdef IV_COMPILER_MSVC
 #include <stdint.h>
 #define PRIu32 "u"
