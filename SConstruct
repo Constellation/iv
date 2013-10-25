@@ -92,6 +92,7 @@ def Build():
     env.Append(CPPFLAGS=['-ferror-limit=1000']);
     env.Append(CXXFLAGS=["-std=c++11"])
     env.Append(CXXFLAGS=["-stdlib=libc++"])
+    env.Append(CCFLAGS=['-Wno-nested-anon-types'])
     env.Append(LIBS=["c++"])
 
   if not env.GetOption('clean'):
