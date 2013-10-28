@@ -21,10 +21,9 @@ add_definitions(
     "-D__STDC_FORMAT_MACROS"
     )
 
-add_executable(lv5
-    main.cc
-    context.cc
-    )
+set(LV5_SOURCES context.cc PARENT_SCOPE)
+
+add_executable(lv5 main.cc ${LV5_SOURCES})
 
 target_link_libraries(lv5
     netlib_dtoa

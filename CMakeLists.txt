@@ -9,8 +9,8 @@ if(COMMAND cmake_policy)
 endif(COMMAND cmake_policy)
 
 include_directories(
-    ${PROJECT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}/iv/third_party
+    .
+    iv/third_party
     /usr/local/include
     /opt/local/include
     )
@@ -81,3 +81,4 @@ else()
 endif()
 
 add_subdirectory(iv/lv5)
+add_subdirectory(test)

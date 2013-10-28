@@ -1,0 +1,84 @@
+# iv test
+
+# link local directories
+if(EXISTS "/usr/local/lib/")
+    link_directories(/usr/local/lib)
+endif()
+if(EXISTS "/opt/local/lib/")
+    link_directories(/opt/local/lib)
+endif()
+
+link_directories(gtest)
+
+include_directories(.)
+
+add_definitions(
+    "-Wno-variadic-macros"
+    "-fno-strict-aliasing"
+    )
+
+add_subdirectory(gtest)
+
+add_executable(iv_unit_tests
+    dtoa_fixed.cc
+    dtoa_precision.cc
+    dtoa_shortest.cc
+    main.cc
+    test_aero_compiler.cc
+    test_aero_exec.cc
+    test_aero_filter.cc
+    test_aero_incomplete.cc
+    test_aero_jit.cc
+    test_aero_parser.cc
+    test_aero_source_escape.cc
+    test_aero_vm.cc
+    test_any.cc
+    test_arith.cc
+    test_assoc_vector.cc
+    test_ast_pre_order_visitor.cc
+    test_bit_vector.cc
+    test_bloom_filter.cc
+    test_character.cc
+    test_cmdline.cc
+    test_conversions.cc
+    test_digit_iterator.cc
+    test_dtoa.cc
+    test_fixed_container.cc
+    test_fixed_string_builder.cc
+    test_i18n.cc
+    test_i18n_number_format.cc
+    test_intrusive_list.cc
+    test_intrusive_ptr.cc
+    test_math.cc
+    test_mt19937.cc
+    test_os_allocator.cc
+    test_parser.cc
+    test_ref_counted.cc
+    test_scoped_ptr.cc
+    test_segmented_vector.cc
+    test_singleton.cc
+    test_sip_hash.cc
+    test_sorted_vector.cc
+    test_space.cc
+    test_string_builder.cc
+    test_stringpiece.cc
+    test_thread.cc
+    test_thread_safe_ref_counted.cc
+    test_unicode.cc
+    test_unique_ptr.cc
+    )
+
+find_library(LIB_M m)
+target_link_libraries(iv_unit_tests ${LIB_M})
+
+find_library(LIB_PTHREAD pthread)
+target_link_libraries(iv_unit_tests ${LIB_PTHREAD})
+
+target_link_libraries(iv_unit_tests gtest)
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    find_library(LIB_CXX c++)
+    target_link_libraries(iv_unit_tests ${LIB_CXX})
+endif()
+
+add_subdirectory(lv5)
