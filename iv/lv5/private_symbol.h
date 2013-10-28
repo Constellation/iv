@@ -11,7 +11,7 @@ namespace symbol {
 
 template<typename T>
 inline void Delete(void* obj, void* data) {
-  delete reinterpret_cast<T*>(obj);
+  reinterpret_cast<T*>(obj)->~T();
 }
 
 inline core::Symbol MakeGCPrivateSymbol(Context* ctx) {
