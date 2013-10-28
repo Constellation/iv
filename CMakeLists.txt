@@ -32,7 +32,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     # using Visual Studio C++
 else()
     add_definitions("-pipe")
-    add_definitions("-fno-operator-names")
+    set(${CMAKE_CXX_FLAGS} "${CMAKE_CXX_FLAGS} -fno-operator-names")
     add_definitions(
         "-Wall"
         "-Wextra"

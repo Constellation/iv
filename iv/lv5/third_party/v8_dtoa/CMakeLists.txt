@@ -1,5 +1,7 @@
 # V8 dtoa static library
 
+link_directories(../third_party/netlib_dtoa)
+
 add_library(v8_dtoa STATIC
     checks.cc
     conversions.cc
@@ -9,3 +11,5 @@ add_library(v8_dtoa STATIC
     utils.cc
     v8-dtoa.cc
     )
+
+target_link_libraries(v8_dtoa netlib_dtoa)
