@@ -20,13 +20,12 @@ test/sputnik/sputniktests/
 ipch/
 Release/
 Debug/
-build/
+out/
 
 .DS_Store
 i*.swp
 *~.nib
 
-build/*
 *.pbxuser
 !default.pbxuser
 *.mode1v3
@@ -50,5 +49,7 @@ CMakeFiles
 Makefile
 cmake_install.cmake
 install_manifest.txt
-
-out
+.ninja_deps
+.ninja_log
+build.ninja
+rules.ninja
