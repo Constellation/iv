@@ -2,7 +2,6 @@ js
 gmon.out
 test.js
 cache
-obj
 .config
 src/config/config.h
 src/ucdata.h
@@ -44,3 +43,12 @@ profile
 
 .waf-*
 .lock-*
+
+# CMake
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+install_manifest.txt
+
+out
