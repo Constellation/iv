@@ -77,7 +77,6 @@ class SegmentedVector {
     }
 
     this_type& operator++() {
-      assert(index_ >= SegmentSize);
       ++index_;
       if (index() >= vector()->segments_[segment_index()]->size()) {
         const size_type total_index = (index() + segment_index() * SegmentSize);
