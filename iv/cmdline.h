@@ -706,10 +706,14 @@ class Parser {
   }
 
   bool Parse(const std::vector<std::string>& args) {
+    typedef std::vector<std::string> args_type;
     const std::size_t argc = args.size();
     std::vector<const char*> argv(argc);
-    std::transform(args.begin(), args.end(),
-                   argv.begin(), mem_fun_ref(&std::string::c_str));
+    std::vector<const char*>::iterator out = argv.begin();
+    for (args_type::const_iterator i = args.begin(), iz = args.end();
+         i != iz; ++i, ++out) {
+      *out = i->c_str();
+    }
     return Parse(static_cast<int>(argc), argv.data());
   }
 
