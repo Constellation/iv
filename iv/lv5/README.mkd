@@ -21,13 +21,16 @@ Aims at the most precise engine of The ECMA262 5th Specification.
 
 ## DEPS
 
-+ scons
++ cmake
 + libgc (Boehm GC)
 
 ## INSTALL
 
-at top directory of iv
+at top directory of iv (repository)
 
-    scons lv5
-    cp obj/lv5/lv5 lv5
+    mkdir out
+    cd out    # change directory to repository/out
+    cmake ..  # You can specify -G "Ninja" if it's available
+    make lv5
+    cp iv/lv5/lv5 lv5
 
