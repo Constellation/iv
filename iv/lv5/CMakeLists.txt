@@ -21,7 +21,8 @@ add_definitions(
     "-D__STDC_FORMAT_MACROS"
     )
 
-set(LV5_SOURCES context.cc PARENT_SCOPE)
+set(LV5_SOURCES context.cc)
+set(LV5_SOURCES ${LV5_SOURCES} PARENT_SCOPE)
 
 add_executable(lv5 main.cc ${LV5_SOURCES})
 
