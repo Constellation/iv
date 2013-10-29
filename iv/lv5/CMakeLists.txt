@@ -1,5 +1,6 @@
-# lv5 engine
+# liblv5 & lv5
 
+# prelude
 add_subdirectory(third_party/netlib_dtoa)
 add_subdirectory(third_party/v8_dtoa)
 
@@ -21,26 +22,60 @@ add_definitions(
     "-D__STDC_FORMAT_MACROS"
     )
 
-set(LV5_SOURCES context.cc)
-set(LV5_SOURCES ${LV5_SOURCES} PARENT_SCOPE)
+# liblv5
 
-add_executable(lv5 main.cc ${LV5_SOURCES})
+add_library(liblv5 STATIC
+    context.cc
+    runtime/array.cc
+    runtime/array_buffer.cc
+    runtime/boolean.cc
+    runtime/data_view.cc
+    runtime/date.cc
+    runtime/error.cc
+    runtime/function.cc
+    runtime/global.cc
+    runtime/i18n.cc
+    runtime/json.cc
+    runtime/map.cc
+    runtime/math.cc
+    runtime/number.cc
+    runtime/object.cc
+    runtime/reflect.cc
+    runtime/regexp.cc
+    runtime/set.cc
+    runtime/string.cc
+    runtime/symbol.cc
+    runtime/weak_map.cc
+    )
+
+set_target_properties(liblv5 PROPERTIES PREFIX "")
+
+# lv5 shell
+
+add_executable(lv5 main.cc)
 
 target_link_libraries(lv5
     netlib_dtoa
     v8_dtoa
+    liblv5
     )
+
+# link settings
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     find_library(LIB_CXX c++)
+    target_link_libraries(liblv5 ${LIB_CXX})
     target_link_libraries(lv5 ${LIB_CXX})
 endif()
 
 find_library(LIB_GC gc)
+target_link_libraries(liblv5 ${LIB_GC})
 target_link_libraries(lv5 ${LIB_GC})
 
 find_library(LIB_M m)
+target_link_libraries(liblv5 ${LIB_M})
 target_link_libraries(lv5 ${LIB_M})
 
 find_library(LIB_PTHREAD pthread)
+target_link_libraries(liblv5 ${LIB_PTHREAD})
 target_link_libraries(lv5 ${LIB_PTHREAD})

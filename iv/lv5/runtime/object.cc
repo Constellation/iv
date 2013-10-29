@@ -1,5 +1,3 @@
-#ifndef IV_LV5_RUNTIME_OBJECT_H_
-#define IV_LV5_RUNTIME_OBJECT_H_
 #include <cstddef>
 #include <vector>
 #include <utility>
@@ -11,20 +9,20 @@
 #include <iv/lv5/arguments.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/jsstring.h>
-#include <iv/lv5/jsobject_fwd.h>
+#include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsarray.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/internal.h>
-
+#include <iv/lv5/runtime/object.h>
 namespace iv {
 namespace lv5 {
 namespace runtime {
 namespace detail {
 
-void DefinePropertiesHelper(Context* ctx, JSObject* obj,
-                            JSObject* props, Error* e);
+inline void DefinePropertiesHelper(Context* ctx, JSObject* obj,
+                                   JSObject* props, Error* e);
 
 std::unordered_set<core::UString> CreateNativeBrandSet();
 const std::unordered_set<core::UString>& NativeBrandSet();
@@ -33,7 +31,7 @@ const std::unordered_set<core::UString>& NativeBrandSet();
 
 // section 15.2.1.1 Object([value])
 // section 15.2.2.1 new Object([value])
-inline JSVal ObjectConstructor(const Arguments& args, Error* e) {
+JSVal ObjectConstructor(const Arguments& args, Error* e) {
   if (args.IsConstructorCalled()) {
     const JSVal val = args.At(0);
     if (val.IsObject()) {
@@ -62,7 +60,7 @@ inline JSVal ObjectConstructor(const Arguments& args, Error* e) {
 }
 
 // section 15.2.3.2 Object.getPrototypeOf(O)
-inline JSVal ObjectGetPrototypeOf(const Arguments& args, Error* e) {
+JSVal ObjectGetPrototypeOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.getPrototypeOf", args, e);
   if (!args.empty()) {
     const JSVal first = args.front();
@@ -80,7 +78,7 @@ inline JSVal ObjectGetPrototypeOf(const Arguments& args, Error* e) {
 }
 
 // section 15.2.3.3 Object.getOwnPropertyDescriptor(O, P)
-inline JSVal ObjectGetOwnPropertyDescriptor(const Arguments& args,
+JSVal ObjectGetOwnPropertyDescriptor(const Arguments& args,
                                             Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.getOwnPropertyDescriptor", args, e);
   if (!args.empty()) {
@@ -98,7 +96,7 @@ inline JSVal ObjectGetOwnPropertyDescriptor(const Arguments& args,
 }
 
 // section 15.2.3.4 Object.getOwnPropertyNames(O)
-inline JSVal ObjectGetOwnPropertyNames(const Arguments& args, Error* e) {
+JSVal ObjectGetOwnPropertyNames(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.getOwnPropertyNames", args, e);
   if (!args.empty()) {
     const JSVal first = args.front();
@@ -122,7 +120,7 @@ inline JSVal ObjectGetOwnPropertyNames(const Arguments& args, Error* e) {
   return JSUndefined;
 }
 
-inline void detail::DefinePropertiesHelper(Context* ctx,
+void detail::DefinePropertiesHelper(Context* ctx,
                                            JSObject* obj,
                                            JSObject* props, Error* e) {
   typedef trace::Vector<PropertyDescriptor>::type Descriptors;
@@ -153,7 +151,7 @@ inline void detail::DefinePropertiesHelper(Context* ctx,
 }
 
 // section 15.2.3.5 Object.create(O[, Properties])
-inline JSVal ObjectCreate(const Arguments& args, Error* e) {
+JSVal ObjectCreate(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.create", args, e);
   if (!args.empty()) {
     const JSVal first = args.front();
@@ -176,7 +174,7 @@ inline JSVal ObjectCreate(const Arguments& args, Error* e) {
 }
 
 // section 15.2.3.6 Object.defineProperty(O, P, Attributes)
-inline JSVal ObjectDefineProperty(const Arguments& args, Error* e) {
+JSVal ObjectDefineProperty(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.defineProperty", args, e);
   if (!args.empty()) {
     const JSVal first = args.front();
@@ -195,7 +193,7 @@ inline JSVal ObjectDefineProperty(const Arguments& args, Error* e) {
 }
 
 // section 15.2.3.7 Object.defineProperties(O, Properties)
-inline JSVal ObjectDefineProperties(const Arguments& args, Error* e) {
+JSVal ObjectDefineProperties(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.defineProperties", args, e);
   if (!args.empty()) {
     const JSVal first = args.front();
@@ -211,7 +209,7 @@ inline JSVal ObjectDefineProperties(const Arguments& args, Error* e) {
 }
 
 // section 15.2.3.8 Object.seal(O)
-inline JSVal ObjectSeal(const Arguments& args, Error* e) {
+JSVal ObjectSeal(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.seal", args, e);
   Context* const ctx = args.ctx();
   if (!args.empty()) {
@@ -227,7 +225,7 @@ inline JSVal ObjectSeal(const Arguments& args, Error* e) {
 }
 
 // section 15.2.3.9 Object.freeze(O)
-inline JSVal ObjectFreeze(const Arguments& args, Error* e) {
+JSVal ObjectFreeze(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.freeze", args, e);
   Context* const ctx = args.ctx();
   if (!args.empty()) {
@@ -243,7 +241,7 @@ inline JSVal ObjectFreeze(const Arguments& args, Error* e) {
 }
 
 // section 15.2.3.10 Object.preventExtensions(O)
-inline JSVal ObjectPreventExtensions(const Arguments& args, Error* e) {
+JSVal ObjectPreventExtensions(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.preventExtensions", args, e);
   if (!args.empty()) {
     const JSVal first = args.front();
@@ -258,7 +256,7 @@ inline JSVal ObjectPreventExtensions(const Arguments& args, Error* e) {
 }
 
 // section 15.2.3.11 Object.isSealed(O)
-inline JSVal ObjectIsSealed(const Arguments& args, Error* e) {
+JSVal ObjectIsSealed(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.isSealed", args, e);
   Context* const ctx = args.ctx();
   if (!args.empty()) {
@@ -284,7 +282,7 @@ inline JSVal ObjectIsSealed(const Arguments& args, Error* e) {
 }
 
 // section 15.2.3.12 Object.isFrozen(O)
-inline JSVal ObjectIsFrozen(const Arguments& args, Error* e) {
+JSVal ObjectIsFrozen(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.isFrozen", args, e);
   Context* const ctx = args.ctx();
   if (!args.empty()) {
@@ -313,7 +311,7 @@ inline JSVal ObjectIsFrozen(const Arguments& args, Error* e) {
 }
 
 // section 15.2.3.13 Object.isExtensible(O)
-inline JSVal ObjectIsExtensible(const Arguments& args, Error* e) {
+JSVal ObjectIsExtensible(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.isExtensible", args, e);
   if (!args.empty()) {
     const JSVal first = args.front();
@@ -327,7 +325,7 @@ inline JSVal ObjectIsExtensible(const Arguments& args, Error* e) {
 }
 
 // section 15.2.3.14 Object.keys(O)
-inline JSVal ObjectKeys(const Arguments& args, Error* e) {
+JSVal ObjectKeys(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.keys", args, e);
   Context* const ctx = args.ctx();
   if (!args.empty()) {
@@ -353,12 +351,12 @@ inline JSVal ObjectKeys(const Arguments& args, Error* e) {
 
 // ES.next Object.is(x, y)
 // http://wiki.ecmascript.org/doku.php?id=harmony:egal
-inline JSVal ObjectIs(const Arguments& args, Error* e) {
+JSVal ObjectIs(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.is", args, e);
   return JSVal::Bool(JSVal::SameValue(args.At(0), args.At(1)));
 }
 
-inline std::unordered_set<core::UString> detail::CreateNativeBrandSet() {
+std::unordered_set<core::UString> detail::CreateNativeBrandSet() {
   std::unordered_set<core::UString> set;
   set.insert(core::ToUString("Arguments"));
   set.insert(core::ToUString("Array"));
@@ -375,14 +373,14 @@ inline std::unordered_set<core::UString> detail::CreateNativeBrandSet() {
   return set;
 }
 
-inline const std::unordered_set<core::UString>& detail::NativeBrandSet() {
+const std::unordered_set<core::UString>& detail::NativeBrandSet() {
   static const std::unordered_set<core::UString>
       set(detail::CreateNativeBrandSet());
   return set;
 }
 
 // section 15.2.4.2 Object.prototype.toString()
-inline JSVal ObjectToString(const Arguments& args, Error* e) {
+JSVal ObjectToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.toString", args, e);
   const JSVal this_binding = args.this_binding();
   if (this_binding.IsUndefined()) {
@@ -401,7 +399,7 @@ inline JSVal ObjectToString(const Arguments& args, Error* e) {
 }
 
 // section 15.2.4.3 Object.prototype.toLocaleString()
-inline JSVal ObjectToLocaleString(const Arguments& args, Error* e) {
+JSVal ObjectToLocaleString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.toLocaleString", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -415,7 +413,7 @@ inline JSVal ObjectToLocaleString(const Arguments& args, Error* e) {
 }
 
 // section 15.2.4.4 Object.prototype.valueOf()
-inline JSVal ObjectValueOf(const Arguments& args, Error* e) {
+JSVal ObjectValueOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.valueOf", args, e);
   JSObject* const obj =
       args.this_binding().ToObject(args.ctx(), IV_LV5_ERROR(e));
@@ -430,7 +428,7 @@ inline JSVal ObjectValueOf(const Arguments& args, Error* e) {
 }
 
 // section 15.2.4.5 Object.prototype.hasOwnProperty(V)
-inline JSVal ObjectHasOwnProperty(const Arguments& args, Error* e) {
+JSVal ObjectHasOwnProperty(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.hasOwnProperty", args, e);
   if (!args.empty()) {
     const JSVal val = args.front();
@@ -444,7 +442,7 @@ inline JSVal ObjectHasOwnProperty(const Arguments& args, Error* e) {
 }
 
 // section 15.2.4.6 Object.prototype.isPrototypeOf(V)
-inline JSVal ObjectIsPrototypeOf(const Arguments& args, Error* e) {
+JSVal ObjectIsPrototypeOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.isPrototypeOf", args, e);
   if (!args.empty()) {
     const JSVal first = args.front();
@@ -465,7 +463,7 @@ inline JSVal ObjectIsPrototypeOf(const Arguments& args, Error* e) {
 }
 
 // section 15.2.4.7 Object.prototype.propertyIsEnumerable(V)
-inline JSVal ObjectPropertyIsEnumerable(const Arguments& args, Error* e) {
+JSVal ObjectPropertyIsEnumerable(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.propertyIsEnumerable", args, e);
   Symbol name = args.At(0).ToSymbol(args.ctx(), IV_LV5_ERROR(e));
   JSObject* const obj =
@@ -475,4 +473,3 @@ inline JSVal ObjectPropertyIsEnumerable(const Arguments& args, Error* e) {
 }
 
 } } }  // namespace iv::lv5::runtime
-#endif  // IV_LV5_RUNTIME_OBJECT_H_

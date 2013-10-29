@@ -1,21 +1,20 @@
-#ifndef IV_LV5_RUNTIME_REFLECT_H_
-#define IV_LV5_RUNTIME_REFLECT_H_
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/constructor_check.h>
 #include <iv/lv5/arguments.h>
 #include <iv/lv5/internal.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/error.h>
-#include <iv/lv5/jsobject_fwd.h>
+#include <iv/lv5/jsobject.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/internal.h>
+#include <iv/lv5/runtime/reflect.h>
 
 namespace iv {
 namespace lv5 {
 namespace runtime {
 
 // 15.17.1.1 Reflect.getPrototypeOf(target)
-inline JSVal ReflectGetPrototypeOf(const Arguments& args, Error* e) {
+JSVal ReflectGetPrototypeOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Reflect.getPrototypeOf", args, e);
   const JSVal target = args.At(0);
   Context* ctx = args.ctx();
@@ -24,7 +23,7 @@ inline JSVal ReflectGetPrototypeOf(const Arguments& args, Error* e) {
 }
 
 // 15.17.1.2 Reflect.setPrototypeOf(target, proto)
-inline JSVal ReflectSetPrototypeOf(const Arguments& args, Error* e) {
+JSVal ReflectSetPrototypeOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Reflect.setPrototypeOf", args, e);
   const JSVal target = args.At(0);
   const JSVal proto = args.At(1);
@@ -42,7 +41,7 @@ inline JSVal ReflectSetPrototypeOf(const Arguments& args, Error* e) {
 }
 
 // 15.17.1.3 Reflect.isExtensible(target)
-inline JSVal ReflectIsExtensible(const Arguments& args, Error* e) {
+JSVal ReflectIsExtensible(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Reflect.isExtensible", args, e);
   const JSVal target = args.At(0);
   Context* ctx = args.ctx();
@@ -51,7 +50,7 @@ inline JSVal ReflectIsExtensible(const Arguments& args, Error* e) {
 }
 
 // 15.17.1.4 Reflect.preventExtensions(target)
-inline JSVal ReflectPreventExtensions(const Arguments& args, Error* e) {
+JSVal ReflectPreventExtensions(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Reflect.preventExtensions", args, e);
   const JSVal target = args.At(0);
   Context* ctx = args.ctx();
@@ -61,7 +60,7 @@ inline JSVal ReflectPreventExtensions(const Arguments& args, Error* e) {
 }
 
 // 15.17.1.5 Reflect.hasOwn(target, propertyKey)
-inline JSVal ReflectHasOwn(const Arguments& args, Error* e) {
+JSVal ReflectHasOwn(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Reflect.hasOwn", args, e);
   const JSVal target = args.At(0);
   const JSVal property = args.At(1);
@@ -72,7 +71,7 @@ inline JSVal ReflectHasOwn(const Arguments& args, Error* e) {
 }
 
 // 15.17.1.6 Reflect.getOwnPropertyDescriptor(target, propertyKey)
-inline JSVal ReflectGetOwnPropertyDescriptor(const Arguments& args, Error* e) {
+JSVal ReflectGetOwnPropertyDescriptor(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Reflect.getOwnPropertyDescriptor", args, e);
   const JSVal target = args.At(0);
   const JSVal property = args.At(1);
@@ -85,7 +84,7 @@ inline JSVal ReflectGetOwnPropertyDescriptor(const Arguments& args, Error* e) {
 
 // 15.17.1.7 Reflect.get(target, propertyKey, receiver=target)
 #if 0
-inline JSVal ReflectGet(const Arguments& args, Error* e) {
+JSVal ReflectGet(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Reflect.get", args, e);
   const JSVal target = args.At(0);
   const JSVal property = args.At(1);
@@ -105,7 +104,7 @@ inline JSVal ReflectGet(const Arguments& args, Error* e) {
 
 // 15.17.1.8 Reflect.set(target, propertyKey, V, receiver=target)
 #if 0
-inline JSVal ReflectSet(const Arguments& args, Error* e) {
+JSVal ReflectSet(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Reflect.set", args, e);
   const JSVal target = args.At(0);
   const JSVal property = args.At(1);
@@ -124,7 +123,7 @@ inline JSVal ReflectSet(const Arguments& args, Error* e) {
 #endif
 
 // 15.17.1.9 Reflect.deleteProperty(target, propertyKey)
-inline JSVal ReflectDeleteProperty(const Arguments& args, Error* e) {
+JSVal ReflectDeleteProperty(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Reflect.deleteProperty", args, e);
   const JSVal target = args.At(0);
   const JSVal property = args.At(1);
@@ -135,7 +134,7 @@ inline JSVal ReflectDeleteProperty(const Arguments& args, Error* e) {
 }
 
 // 15.17.1.10 Reflect.defineProperty(target, propertyKey, attributes)
-inline JSVal ReflectDefineProperty(const Arguments& args, Error* e) {
+JSVal ReflectDefineProperty(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Reflect.defineProperty", args, e);
   const JSVal target = args.At(0);
   const JSVal property = args.At(1);
@@ -151,7 +150,7 @@ inline JSVal ReflectDefineProperty(const Arguments& args, Error* e) {
 
 // 15.17.1.11 Reflect.enumerate(target)
 #if 0
-inline JSVal ReflectEnumerate(const Arguments& args, Error* e) {
+JSVal ReflectEnumerate(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Reflect.enumerate", args, e);
   const JSVal target = args.At(0);
   Context* ctx = args.ctx();
@@ -161,7 +160,7 @@ inline JSVal ReflectEnumerate(const Arguments& args, Error* e) {
 #endif
 
 // 15.17.1.12 Reflect.keys(target)
-inline JSVal ReflectKeys(const Arguments& args, Error* e) {
+JSVal ReflectKeys(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Reflect.keys", args, e);
   const JSVal target = args.At(0);
   Context* ctx = args.ctx();
@@ -180,7 +179,7 @@ inline JSVal ReflectKeys(const Arguments& args, Error* e) {
 }
 
 // 15.17.1.13 Reflect.getOwnPropertyNames(target)
-inline JSVal ReflectGetOwnPropertyNames(const Arguments& args, Error* e) {
+JSVal ReflectGetOwnPropertyNames(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Reflect.getOwnPropertyNames", args, e);
   const JSVal target = args.At(0);
   Context* ctx = args.ctx();
@@ -199,7 +198,7 @@ inline JSVal ReflectGetOwnPropertyNames(const Arguments& args, Error* e) {
 }
 
 // 15.17.1.14 Reflect.freeze(target)
-inline JSVal ReflectFreeze(const Arguments& args, Error* e) {
+JSVal ReflectFreeze(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Reflect.freeze", args, e);
   const JSVal target = args.At(0);
   Context* ctx = args.ctx();
@@ -209,7 +208,7 @@ inline JSVal ReflectFreeze(const Arguments& args, Error* e) {
 }
 
 // 15.17.1.14 Reflect.seal(target)
-inline JSVal ReflectSeal(const Arguments& args, Error* e) {
+JSVal ReflectSeal(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Reflect.seal", args, e);
   const JSVal target = args.At(0);
   Context* ctx = args.ctx();
@@ -219,7 +218,7 @@ inline JSVal ReflectSeal(const Arguments& args, Error* e) {
 }
 
 // 15.17.1.16 Reflect.isFrozen(target)
-inline JSVal ReflectIsFrozen(const Arguments& args, Error* e) {
+JSVal ReflectIsFrozen(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Reflect.isFrozen", args, e);
   const JSVal target = args.At(0);
   Context* ctx = args.ctx();
@@ -242,7 +241,7 @@ inline JSVal ReflectIsFrozen(const Arguments& args, Error* e) {
 }
 
 // 15.17.1.17 Reflect.isSealed(target)
-inline JSVal ReflectIsSealed(const Arguments& args, Error* e) {
+JSVal ReflectIsSealed(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Reflect.isSealed", args, e);
   const JSVal target = args.At(0);
   Context* ctx = args.ctx();
@@ -262,7 +261,7 @@ inline JSVal ReflectIsSealed(const Arguments& args, Error* e) {
 }
 
 // 15.17.1.18 Reflect.has(target, propertyKey)
-inline JSVal ReflectHas(const Arguments& args, Error* e) {
+JSVal ReflectHas(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Reflect.has", args, e);
   const JSVal target = args.At(0);
   const JSVal property = args.At(1);
@@ -273,7 +272,7 @@ inline JSVal ReflectHas(const Arguments& args, Error* e) {
 }
 
 // 15.17.2.2 Reflect.instanceOf(target, O)
-inline JSVal ReflectInstanceOf(const Arguments& args, Error* e) {
+JSVal ReflectInstanceOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Reflect.instanceOf", args, e);
   const JSVal target = args.At(0);
   const JSVal o = args.At(1);
@@ -291,4 +290,3 @@ inline JSVal ReflectInstanceOf(const Arguments& args, Error* e) {
 }
 
 } } }  // namespace iv::lv5::runtime
-#endif  // IV_LV5_RUNTIME_REFLECT_H_

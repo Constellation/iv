@@ -1,5 +1,3 @@
-#ifndef IV_LV5_RUNTIME_JSON_H_
-#define IV_LV5_RUNTIME_JSON_H_
 #include <vector>
 #include <iv/conversions.h>
 #include <iv/lv5/error_check.h>
@@ -14,14 +12,15 @@
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/eval_source.h>
 #include <iv/lv5/json.h>
-#include <iv/lv5/runtime/runtime_object.h>
+#include <iv/lv5/runtime/object.h>
+#include <iv/lv5/runtime/json.h>
 
 namespace iv {
 namespace lv5 {
 namespace runtime {
 namespace detail {
 
-inline JSVal JSONWalk(Context* ctx, JSObject* holder,
+JSVal JSONWalk(Context* ctx, JSObject* holder,
                       Symbol name, JSFunction* reviver, Error* e) {
   const JSVal val = holder->Get(ctx, name, IV_LV5_ERROR(e));
   if (val.IsObject()) {
@@ -83,7 +82,7 @@ class PropertyListEqual {
 }  // namespace detail
 
 // section 15.12.2 parse(text[, reviver])
-inline JSVal JSONParse(const Arguments& args, Error* e) {
+JSVal JSONParse(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("JSON.parse", args, e);
   Context* const ctx = args.ctx();
   JSString* const text = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
@@ -108,7 +107,7 @@ inline JSVal JSONParse(const Arguments& args, Error* e) {
 }
 
 // section 15.12.3 stringify(value[, replacer[, space]])
-inline JSVal JSONStringify(const Arguments& args, Error* e) {
+JSVal JSONStringify(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("JSON.stringify", args, e);
   Context* const ctx = args.ctx();
   trace::Vector<JSString*>::type property_list;
@@ -205,4 +204,3 @@ inline JSVal JSONStringify(const Arguments& args, Error* e) {
 }
 
 } } }  // namespace iv::lv5::runtime
-#endif  // IV_LV5_RUNTIME_JSON_H_

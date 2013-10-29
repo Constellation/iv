@@ -1,5 +1,3 @@
-#ifndef IV_LV5_RUNTIME_MAP_H_
-#define IV_LV5_RUNTIME_MAP_H_
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/constructor_check.h>
 #include <iv/lv5/arguments.h>
@@ -7,13 +5,14 @@
 #include <iv/lv5/context.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsmap.h>
+#include <iv/lv5/runtime/map.h>
 namespace iv {
 namespace lv5 {
 namespace runtime {
 
 // section 15.14.2.1 Map(iterable = [])
 // section 15.14.3.1 new Map (iterable = [])
-inline JSVal MapConstructor(const Arguments& args, Error* e) {
+JSVal MapConstructor(const Arguments& args, Error* e) {
   Context* ctx = args.ctx();
   const JSVal first = args.At(0);
   const JSVal this_binding = args.this_binding();
@@ -30,7 +29,7 @@ inline JSVal MapConstructor(const Arguments& args, Error* e) {
 }
 
 // section 15.14.5.2 Map.prototype.clear()
-inline JSVal MapClear(const Arguments& args, Error* e) {
+JSVal MapClear(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.clear", args, e);
   Context* ctx = args.ctx();
   JSObject* map = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -45,7 +44,7 @@ inline JSVal MapClear(const Arguments& args, Error* e) {
 }
 
 // section 15.14.5.3 Map.prototype.delete(key)
-inline JSVal MapDelete(const Arguments& args, Error* e) {
+JSVal MapDelete(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.delete", args, e);
   Context* ctx = args.ctx();
   JSObject* map = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -59,7 +58,7 @@ inline JSVal MapDelete(const Arguments& args, Error* e) {
 }
 
 // 15.14.5.4 Map.prototype.forEach(callbackfn, thisArg = undefined)
-inline JSVal MapForEach(const Arguments& args, Error* e) {
+JSVal MapForEach(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.forEach", args, e);
   Context* ctx = args.ctx();
   JSObject* map = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -88,7 +87,7 @@ inline JSVal MapForEach(const Arguments& args, Error* e) {
 }
 
 // section 15.14.5.5 Map.prototype.get(key)
-inline JSVal MapGet(const Arguments& args, Error* e) {
+JSVal MapGet(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.get", args, e);
   Context* ctx = args.ctx();
   JSObject* map = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -102,7 +101,7 @@ inline JSVal MapGet(const Arguments& args, Error* e) {
 }
 
 // section 15.14.5.6 Map.prototype.has(key)
-inline JSVal MapHas(const Arguments& args, Error* e) {
+JSVal MapHas(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.has", args, e);
   Context* ctx = args.ctx();
   JSObject* map = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -120,7 +119,7 @@ inline JSVal MapHas(const Arguments& args, Error* e) {
 // 15.14.5.8 Map.prototype.keys()
 
 // 15.14.5.9 Map.prototype.set(key, value)
-inline JSVal MapSet(const Arguments& args, Error* e) {
+JSVal MapSet(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.set", args, e);
   Context* ctx = args.ctx();
   JSObject* map = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -135,7 +134,7 @@ inline JSVal MapSet(const Arguments& args, Error* e) {
 }
 
 // 15.14.5.9 get Map.prototype.size
-inline JSVal MapSize(const Arguments& args, Error* e) {
+JSVal MapSize(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.size", args, e);
   Context* ctx = args.ctx();
   JSObject* map = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -153,4 +152,3 @@ inline JSVal MapSize(const Arguments& args, Error* e) {
 // 15.14.5.11 Map.prototype.@@iterator
 
 } } }  // namespace iv::lv5::runtime
-#endif  // IV_LV5_RUNTIME_MAP_H_

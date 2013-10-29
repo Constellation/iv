@@ -1,5 +1,3 @@
-#ifndef IV_LV5_RUNTIME_I18N_H_
-#define IV_LV5_RUNTIME_I18N_H_
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/constructor_check.h>
 #include <iv/lv5/arguments.h>
@@ -7,19 +5,20 @@
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsi18n.h>
 #include <iv/lv5/context.h>
-#include <iv/lv5/runtime/runtime_array.h>
+#include <iv/lv5/runtime/array.h>
+#include <iv/lv5/runtime/i18n.h>
 namespace iv {
 namespace lv5 {
 namespace runtime {
 
 #ifdef IV_ENABLE_I18N
-inline JSVal CollatorConstructor(const Arguments& args, Error* e) {
+JSVal CollatorConstructor(const Arguments& args, Error* e) {
   Context* ctx = args.ctx();
   JSCollator* obj = JSCollator::New(ctx);
   return JSCollator::Initialize(ctx, obj, args.At(0), args.At(1), e);
 }
 
-inline JSVal CollatorCompareGetter(const Arguments& args, Error* e) {
+JSVal CollatorCompareGetter(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Intl.Collator.compare", args, e);
   Context* ctx = args.ctx();
   JSObject* o = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -37,7 +36,7 @@ inline JSVal CollatorCompareGetter(const Arguments& args, Error* e) {
   return bound;
 }
 
-inline JSVal CollatorResolvedOptions(const Arguments& args, Error* e) {
+JSVal CollatorResolvedOptions(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Intl.Collator.prototype.resolvedOptions", args, e);
   Context* ctx = args.ctx();
   JSObject* o = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -75,7 +74,7 @@ inline JSVal CollatorResolvedOptions(const Arguments& args, Error* e) {
   return obj;
 }
 
-inline JSVal CollatorSupportedLocalesOf(const Arguments& args, Error* e) {
+JSVal CollatorSupportedLocalesOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Intl.Collator.supportedLocalesOf", args, e);
   Context* ctx = args.ctx();
   JSVector* requested =
@@ -88,7 +87,7 @@ inline JSVal CollatorSupportedLocalesOf(const Arguments& args, Error* e) {
 }
 #endif  // IV_ENABLE_I18N
 
-inline JSVal NumberFormatConstructor(const Arguments& args, Error* e) {
+JSVal NumberFormatConstructor(const Arguments& args, Error* e) {
   Context* ctx = args.ctx();
   JSObject* obj = NULL;
   const JSVal t = args.this_binding();
@@ -106,7 +105,7 @@ inline JSVal NumberFormatConstructor(const Arguments& args, Error* e) {
   return i18n::InitializeNumberFormat(ctx, obj, locales, options, e);
 }
 
-inline JSVal NumberFormatFormatGetter(const Arguments& args, Error* e) {
+JSVal NumberFormatFormatGetter(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Intl.NumberFormat.format", args, e);
   Context* ctx = args.ctx();
   JSObject* o = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -120,7 +119,7 @@ inline JSVal NumberFormatFormatGetter(const Arguments& args, Error* e) {
   return format->Bound(ctx, e);
 }
 
-inline JSVal NumberFormatFormat(const Arguments& args, Error* e) {
+JSVal NumberFormatFormat(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Intl.NumberFormat.prototype.format", args, e);
   Context* ctx = args.ctx();
   JSObject* o = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -136,7 +135,7 @@ inline JSVal NumberFormatFormat(const Arguments& args, Error* e) {
   return format->Format(ctx, value, e);
 }
 
-inline JSVal NumberFormatResolvedOptions(const Arguments& args, Error* e) {
+JSVal NumberFormatResolvedOptions(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Intl.NumberFormat.prototype.resolvedOptions", args, e);
   Context* ctx = args.ctx();
   JSObject* o = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -152,7 +151,7 @@ inline JSVal NumberFormatResolvedOptions(const Arguments& args, Error* e) {
   return format->ResolveOptions(ctx, e);
 }
 
-inline JSVal NumberFormatSupportedLocalesOf(const Arguments& args, Error* e) {
+JSVal NumberFormatSupportedLocalesOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Intl.NumberFormat.supportedLocalesOf", args, e);
   return i18n::NumberFormatSupportedLocalesOf(args.ctx(),
                                               args.At(0), args.At(1), e);
@@ -160,13 +159,13 @@ inline JSVal NumberFormatSupportedLocalesOf(const Arguments& args, Error* e) {
 
 #ifdef IV_ENABLE_I18N
 
-inline JSVal DateTimeFormatConstructor(const Arguments& args, Error* e) {
+JSVal DateTimeFormatConstructor(const Arguments& args, Error* e) {
   Context* ctx = args.ctx();
   JSDateTimeFormat* obj = JSDateTimeFormat::New(ctx);
   return JSDateTimeFormat::Initialize(ctx, obj, args.At(0), args.At(1), e);
 }
 
-inline JSVal DateTimeFormatFormat(const Arguments& args, Error* e) {
+JSVal DateTimeFormatFormat(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Intl.DateTimeFormat.prototype.format", args, e);
   Context* ctx = args.ctx();
   JSObject* o = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -184,7 +183,7 @@ inline JSVal DateTimeFormatFormat(const Arguments& args, Error* e) {
   return format->Format(ctx, value, e);
 }
 
-inline JSVal DateTimeFormatResolvedOptions(const Arguments& args, Error* e) {
+JSVal DateTimeFormatResolvedOptions(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Intl.DateTimeFormat.prototype.resolvedOptions", args, e);
   Context* ctx = args.ctx();
   JSObject* o = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -241,7 +240,7 @@ inline JSVal DateTimeFormatResolvedOptions(const Arguments& args, Error* e) {
   return obj;
 }
 
-inline JSVal DateTimeFormatSupportedLocalesOf(const Arguments& args, Error* e) {
+JSVal DateTimeFormatSupportedLocalesOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Intl.DateTimeFormat.supportedLocalesOf", args, e);
   int32_t num = 0;
   Context* ctx = args.ctx();
@@ -261,4 +260,3 @@ inline JSVal DateTimeFormatSupportedLocalesOf(const Arguments& args, Error* e) {
 #endif  // IV_ENABLE_I18N
 
 } } }  // namespace iv::lv5::runtime
-#endif  // IV_LV5_RUNTIME_I18N_H_

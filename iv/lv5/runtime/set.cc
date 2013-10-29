@@ -1,5 +1,3 @@
-#ifndef IV_LV5_RUNTIME_SET_H_
-#define IV_LV5_RUNTIME_SET_H_
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/constructor_check.h>
 #include <iv/lv5/arguments.h>
@@ -7,13 +5,14 @@
 #include <iv/lv5/context.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsset.h>
+#include <iv/lv5/runtime/set.h>
 namespace iv {
 namespace lv5 {
 namespace runtime {
 
 // section 15.16.2.1 Set(iterable = undefined)
 // section 15.16.3.1 new Set (iterable = undefined)
-inline JSVal SetConstructor(const Arguments& args, Error* e) {
+JSVal SetConstructor(const Arguments& args, Error* e) {
   Context* ctx = args.ctx();
   const JSVal first = args.At(0);
   const JSVal this_binding = args.this_binding();
@@ -30,7 +29,7 @@ inline JSVal SetConstructor(const Arguments& args, Error* e) {
 }
 
 // section 15.16.5.2 Set.prototype.add(value)
-inline JSVal SetAdd(const Arguments& args, Error* e) {
+JSVal SetAdd(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Set.prototype.add", args, e);
   Context* ctx = args.ctx();
   JSObject* set = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -45,7 +44,7 @@ inline JSVal SetAdd(const Arguments& args, Error* e) {
 }
 
 // section 15.16.5.3 Set.prototype.clear()
-inline JSVal SetClear(const Arguments& args, Error* e) {
+JSVal SetClear(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Set.prototype.clear", args, e);
   Context* ctx = args.ctx();
   JSObject* set = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -60,7 +59,7 @@ inline JSVal SetClear(const Arguments& args, Error* e) {
 }
 
 // section 15.16.5.4 Set.prototype.delete(value)
-inline JSVal SetDelete(const Arguments& args, Error* e) {
+JSVal SetDelete(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Set.prototype.delete", args, e);
   Context* ctx = args.ctx();
   JSObject* set = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -74,7 +73,7 @@ inline JSVal SetDelete(const Arguments& args, Error* e) {
 }
 
 // 15.16.5.5 Set.prototype.forEach(callbackfn, thisArg = undefined)
-inline JSVal SetForEach(const Arguments& args, Error* e) {
+JSVal SetForEach(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Set.prototype.forEach", args, e);
   Context* ctx = args.ctx();
   JSObject* set = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -102,7 +101,7 @@ inline JSVal SetForEach(const Arguments& args, Error* e) {
 }
 
 // section 15.16.5.6 Set.prototype.has(value)
-inline JSVal SetHas(const Arguments& args, Error* e) {
+JSVal SetHas(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Set.prototype.has", args, e);
   Context* ctx = args.ctx();
   JSObject* set = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -116,7 +115,7 @@ inline JSVal SetHas(const Arguments& args, Error* e) {
 }
 
 // 15.16.5.7 get Set.prototype.size
-inline JSVal SetSize(const Arguments& args, Error* e) {
+JSVal SetSize(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Set.prototype.size", args, e);
   Context* ctx = args.ctx();
   JSObject* set = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -134,4 +133,3 @@ inline JSVal SetSize(const Arguments& args, Error* e) {
 // 15.16.5.9 Set.prototype.@@iterator
 
 } } }  // namespace iv::lv5::runtime
-#endif  // IV_LV5_RUNTIME_SET_H_

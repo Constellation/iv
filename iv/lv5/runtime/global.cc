@@ -1,5 +1,3 @@
-#ifndef IV_LV5_RUNTIME_GLOBAL_H_
-#define IV_LV5_RUNTIME_GLOBAL_H_
 #include <cmath>
 #include <iv/detail/cstdint.h>
 #include <iv/noncopyable.h>
@@ -11,11 +9,11 @@
 #include <iv/lv5/constructor_check.h>
 #include <iv/lv5/arguments.h>
 #include <iv/lv5/jsval.h>
+#include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsstring.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/internal.h>
-
 namespace iv {
 namespace lv5 {
 namespace runtime {
@@ -251,7 +249,7 @@ JSVal UnescapeHelper(Context* ctx, const FiberType* fiber, Error* e);
 
 }  // namespace detail
 
-inline JSVal GlobalParseInt(const Arguments& args, Error* e) {
+JSVal GlobalParseInt(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("parseInt", args, e);
   if (args.size() > 0) {
     JSString* const str = args[0].ToString(args.ctx(), IV_LV5_ERROR(e));
@@ -284,7 +282,7 @@ inline JSVal GlobalParseInt(const Arguments& args, Error* e) {
 }
 
 // section 15.1.2.3 parseFloat(string)
-inline JSVal GlobalParseFloat(const Arguments& args, Error* e) {
+JSVal GlobalParseFloat(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("parseFloat", args, e);
   if (!args.empty()) {
     JSString* const str = args[0].ToString(args.ctx(), IV_LV5_ERROR(e));
@@ -298,7 +296,7 @@ inline JSVal GlobalParseFloat(const Arguments& args, Error* e) {
 }
 
 // section 15.1.2.4 isNaN(number)
-inline JSVal GlobalIsNaN(const Arguments& args, Error* e) {
+JSVal GlobalIsNaN(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("isNaN", args, e);
   if (!args.empty()) {
     if (args.front().IsInt32()) {  // int32_t short circuit
@@ -311,7 +309,7 @@ inline JSVal GlobalIsNaN(const Arguments& args, Error* e) {
 }
 
 // section 15.1.2.5 isFinite(number)
-inline JSVal GlobalIsFinite(const Arguments& args, Error* e) {
+JSVal GlobalIsFinite(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("isFinite", args, e);
   if (!args.empty()) {
     if (args.front().IsInt32()) {  // int32_t short circuit
@@ -325,7 +323,7 @@ inline JSVal GlobalIsFinite(const Arguments& args, Error* e) {
 
 // section 15.1.3 URI Handling Function Properties
 // section 15.1.3.1 decodeURI(encodedURI)
-inline JSVal GlobalDecodeURI(const Arguments& args, Error* e) {
+JSVal GlobalDecodeURI(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("decodeURI", args, e);
   JSString* str = args.At(0).ToString(args.ctx(), IV_LV5_ERROR(e));
   if (str->Is8Bit()) {
@@ -336,7 +334,7 @@ inline JSVal GlobalDecodeURI(const Arguments& args, Error* e) {
 }
 
 // section 15.1.3.2 decodeURIComponent(encodedURIComponent)
-inline JSVal GlobalDecodeURIComponent(const Arguments& args, Error* e) {
+JSVal GlobalDecodeURIComponent(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("decodeURIComponent", args, e);
   JSString* str = args.At(0).ToString(args.ctx(), IV_LV5_ERROR(e));
   if (str->Is8Bit()) {
@@ -347,7 +345,7 @@ inline JSVal GlobalDecodeURIComponent(const Arguments& args, Error* e) {
 }
 
 // section 15.1.3.3 encodeURI(uri)
-inline JSVal GlobalEncodeURI(const Arguments& args, Error* e) {
+JSVal GlobalEncodeURI(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("encodeURIComponent", args, e);
   JSString* str = args.At(0).ToString(args.ctx(), IV_LV5_ERROR(e));
   if (str->Is8Bit()) {
@@ -358,7 +356,7 @@ inline JSVal GlobalEncodeURI(const Arguments& args, Error* e) {
 }
 
 // section 15.1.3.4 encodeURIComponent(uriComponent)
-inline JSVal GlobalEncodeURIComponent(const Arguments& args, Error* e) {
+JSVal GlobalEncodeURIComponent(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("encodeURI", args, e);
   JSString* str = args.At(0).ToString(args.ctx(), IV_LV5_ERROR(e));
   if (str->Is8Bit()) {
@@ -368,7 +366,7 @@ inline JSVal GlobalEncodeURIComponent(const Arguments& args, Error* e) {
   }
 }
 
-inline JSVal ThrowTypeError(const Arguments& args, Error* e) {
+JSVal ThrowTypeError(const Arguments& args, Error* e) {
   e->Report(Error::Type, "[[ThrowTypeError]] called");
   return JSUndefined;
 }
@@ -401,7 +399,7 @@ inline JSVal detail::EscapeHelper(Context* ctx, const FiberType* fiber, Error* e
 
 // section B.2.1 escape(string)
 // this method is deprecated.
-inline JSVal GlobalEscape(const Arguments& args, Error* e) {
+JSVal GlobalEscape(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("escape", args, e);
   Context* const ctx = args.ctx();
   JSString* str = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
@@ -460,7 +458,7 @@ inline JSVal detail::UnescapeHelper(Context* ctx, const FiberType* fiber, Error*
 
 // section B.2.2 unescape(string)
 // this method is deprecated.
-inline JSVal GlobalUnescape(const Arguments& args, Error* e) {
+JSVal GlobalUnescape(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("unescape", args, e);
   Context* const ctx = args.ctx();
   JSString* str = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
@@ -475,4 +473,3 @@ inline JSVal GlobalUnescape(const Arguments& args, Error* e) {
 }
 
 } } }  // namespace iv::lv5::runtime
-#endif  // IV_LV5_RUNTIME_GLOBAL_H_

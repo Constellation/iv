@@ -4,6 +4,10 @@
 #include <iv/i18n_date_time_format.h>
 #include <iv/i18n_number_format.h>
 #include <iv/i18n.h>
+#include <iv/lv5/jsi18n.h>
+#include <iv/lv5/gc_template.h>
+#include <iv/lv5/jsvector.h>
+#include <iv/lv5/internal.h>
 namespace iv {
 namespace lv5 {
 namespace i18n {

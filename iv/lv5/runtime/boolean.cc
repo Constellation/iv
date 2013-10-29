@@ -1,19 +1,18 @@
-#ifndef IV_LV5_RUNTIME_BOOLEAN_H_
-#define IV_LV5_RUNTIME_BOOLEAN_H_
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/constructor_check.h>
 #include <iv/lv5/arguments.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/error.h>
-#include <iv/lv5/jsobject_fwd.h>
+#include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsstring.h>
+#include <iv/lv5/runtime/boolean.h>
 namespace iv {
 namespace lv5 {
 namespace runtime {
 
 // section 15.6.1.1 Boolean(value)
 // section 15.6.2.1 new Boolean(value)
-inline JSVal BooleanConstructor(const Arguments& args, Error* e) {
+JSVal BooleanConstructor(const Arguments& args, Error* e) {
   if (args.IsConstructorCalled()) {
     return JSBooleanObject::New(args.ctx(), args.At(0).ToBoolean());
   } else {
@@ -22,7 +21,7 @@ inline JSVal BooleanConstructor(const Arguments& args, Error* e) {
 }
 
 // section 15.6.4.2 Boolean.prototype.toString()
-inline JSVal BooleanToString(const Arguments& args, Error* e) {
+JSVal BooleanToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Boolean.prototype.toString", args, e);
   const JSVal obj = args.this_binding();
   bool b;
@@ -43,7 +42,7 @@ inline JSVal BooleanToString(const Arguments& args, Error* e) {
 }
 
 // section 15.6.4.3 Boolean.prototype.valueOf()
-inline JSVal BooleanValueOf(const Arguments& args, Error* e) {
+JSVal BooleanValueOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Boolean.prototype.valueOf", args, e);
   const JSVal obj = args.this_binding();
   if (obj.IsBoolean()) {
@@ -59,4 +58,3 @@ inline JSVal BooleanValueOf(const Arguments& args, Error* e) {
 }
 
 } } }  // namespace iv::lv5::runtime
-#endif  // IV_LV5_RUNTIME_BOOLEAN_H_

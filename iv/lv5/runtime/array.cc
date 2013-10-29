@@ -1,5 +1,3 @@
-#ifndef IV_LV5_RUNTIME_ARRAY_H_
-#define IV_LV5_RUNTIME_ARRAY_H_
 #include <iv/conversions.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/constructor_check.h>
@@ -11,8 +9,8 @@
 #include <iv/lv5/jsvector.h>
 #include <iv/lv5/jsstring.h>
 #include <iv/lv5/context.h>
-#include <iv/lv5/runtime/runtime_object.h>
-
+#include <iv/lv5/runtime/object.h>
+#include <iv/lv5/runtime/array.h>
 namespace iv {
 namespace lv5 {
 namespace runtime {
@@ -38,7 +36,7 @@ inline JSVal CompareFn(const Arguments& args, Error* e) {
 // section 15.4.1.1 Array([item0 [, item1 [, ...]]])
 // section 15.4.2.1 new Array([item0 [, item1 [, ...]]])
 // section 15.4.2.2 new Array(len)
-inline JSVal ArrayConstructor(const Arguments& args, Error* e) {
+JSVal ArrayConstructor(const Arguments& args, Error* e) {
   const std::size_t args_size = args.size();
   Context* ctx = args.ctx();
   if (args_size == 0) {
@@ -73,7 +71,7 @@ inline JSVal ArrayConstructor(const Arguments& args, Error* e) {
 }
 
 // section 15.4.3.2 Array.isArray(arg)
-inline JSVal ArrayIsArray(const Arguments& args, Error* e) {
+JSVal ArrayIsArray(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.isArray", args, e);
   if (args.empty()) {
     return JSFalse;
@@ -96,7 +94,7 @@ inline JSVal ArrayIsArray(const Arguments& args, Error* e) {
 // http://wiki.ecmascript.org/doku.php?id=strawman:array_extras
 
 // section 15.4.3.3 Array.of(...items)
-inline JSVal ArrayOf(const Arguments& args, Error* e) {
+JSVal ArrayOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.of", args, e);
   JSVector* vec = JSVector::New(args.ctx(), args.size());
   vec->assign(args.begin(), args.end());
@@ -104,7 +102,7 @@ inline JSVal ArrayOf(const Arguments& args, Error* e) {
 }
 
 // section 15.4.3.4 Array.from(arrayLike)
-inline JSVal ArrayFrom(const Arguments& args, Error* e) {
+JSVal ArrayFrom(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.from", args, e);
   const JSVal arg1 = args.At(0);
   Context* ctx = args.ctx();
@@ -147,7 +145,7 @@ inline JSVal ArrayFrom(const Arguments& args, Error* e) {
 }
 
 // section 15.4.4.2 Array.prototype.toString()
-inline JSVal ArrayToString(const Arguments& args, Error* e) {
+JSVal ArrayToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.toString", args, e);
   JSObject* const obj =
       args.this_binding().ToObject(args.ctx(), IV_LV5_ERROR(e));
@@ -163,7 +161,7 @@ inline JSVal ArrayToString(const Arguments& args, Error* e) {
 }
 
 // section 15.4.4.3 Array.prototype.toLocaleString()
-inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
+JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.toLocaleString", args, e);
   Context* const ctx = args.ctx();
   JSObject* const array = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -223,7 +221,7 @@ inline JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
 }
 
 // section 15.4.4.4 Array.prototype.concat([item1[, item2[, ...]]])
-inline JSVal ArrayConcat(const Arguments& args, Error* e) {
+JSVal ArrayConcat(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.concat", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -290,7 +288,7 @@ inline JSVal ArrayConcat(const Arguments& args, Error* e) {
 }
 
 // section 15.4.4.5 Array.prototype.join(separator)
-inline JSVal ArrayJoin(const Arguments& args, Error* e) {
+JSVal ArrayJoin(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.join", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -350,7 +348,7 @@ inline JSVal ArrayJoin(const Arguments& args, Error* e) {
 }
 
 // section 15.4.4.6 Array.prototype.pop()
-inline JSVal ArrayPop(const Arguments& args, Error* e) {
+JSVal ArrayPop(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.pop", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -370,7 +368,7 @@ inline JSVal ArrayPop(const Arguments& args, Error* e) {
 }
 
 // section 15.4.4.7 Array.prototype.push([item1[, item2[, ...]]])
-inline JSVal ArrayPush(const Arguments& args, Error* e) {
+JSVal ArrayPush(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.push", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -422,7 +420,7 @@ inline JSVal ArrayPush(const Arguments& args, Error* e) {
 }
 
 // section 15.4.4.8 Array.prototype.reverse()
-inline JSVal ArrayReverse(const Arguments& args, Error* e) {
+JSVal ArrayReverse(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.reverse", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -465,7 +463,7 @@ inline JSVal ArrayReverse(const Arguments& args, Error* e) {
 }
 
 // section 15.4.4.9 Array.prototype.shift()
-inline JSVal ArrayShift(const Arguments& args, Error* e) {
+JSVal ArrayShift(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.shift", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -497,7 +495,7 @@ inline JSVal ArrayShift(const Arguments& args, Error* e) {
 }
 
 // section 15.4.4.10 Array.prototype.slice(start, end)
-inline JSVal ArraySlice(const Arguments& args, Error* e) {
+JSVal ArraySlice(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.slice", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -558,7 +556,7 @@ inline JSVal ArraySlice(const Arguments& args, Error* e) {
 
 // section 15.4.4.11 Array.prototype.sort(comparefn)
 // non recursive quick sort
-inline JSVal ArraySort(const Arguments& args, Error* e) {
+JSVal ArraySort(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.sort", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -853,7 +851,7 @@ inline JSVal ArraySort(const Arguments& args, Error* e) {
 
 // section 15.4.4.12
 // Array.prototype.splice(start, deleteCount[, item1[, item2[, ...]]])
-inline JSVal ArraySplice(const Arguments& args, Error* e) {
+JSVal ArraySplice(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.splice", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -966,7 +964,7 @@ inline JSVal ArraySplice(const Arguments& args, Error* e) {
 }
 
 // section 15.4.4.13 Array.prototype.unshift([item1[, item2[, ...]]])
-inline JSVal ArrayUnshift(const Arguments& args, Error* e) {
+JSVal ArrayUnshift(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.unshift", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -1008,7 +1006,7 @@ inline JSVal ArrayUnshift(const Arguments& args, Error* e) {
 }
 
 // section 15.4.4.14 Array.prototype.indexOf(searchElement[, fromIndex])
-inline JSVal ArrayIndexOf(const Arguments& args, Error* e) {
+JSVal ArrayIndexOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.indexOf", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -1072,7 +1070,7 @@ inline JSVal ArrayIndexOf(const Arguments& args, Error* e) {
 }
 
 // section 15.4.4.15 Array.prototype.lastIndexOf(searchElement[, fromIndex])
-inline JSVal ArrayLastIndexOf(const Arguments& args, Error* e) {
+JSVal ArrayLastIndexOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.lastIndexOf", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -1143,7 +1141,7 @@ inline JSVal ArrayLastIndexOf(const Arguments& args, Error* e) {
 }
 
 // section 15.4.4.16 Array.prototype.every(callbackfn[, thisArg])
-inline JSVal ArrayEvery(const Arguments& args, Error* e) {
+JSVal ArrayEvery(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.every", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -1177,7 +1175,7 @@ inline JSVal ArrayEvery(const Arguments& args, Error* e) {
 }
 
 // section 15.4.4.17 Array.prototype.some(callbackfn[, thisArg])
-inline JSVal ArraySome(const Arguments& args, Error* e) {
+JSVal ArraySome(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.some", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -1211,7 +1209,7 @@ inline JSVal ArraySome(const Arguments& args, Error* e) {
 }
 
 // section 15.4.4.18 Array.prototype.forEach(callbackfn[, thisArg])
-inline JSVal ArrayForEach(const Arguments& args, Error* e) {
+JSVal ArrayForEach(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.forEach", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -1241,7 +1239,7 @@ inline JSVal ArrayForEach(const Arguments& args, Error* e) {
 }
 
 // section 15.4.4.19 Array.prototype.map(callbackfn[, thisArg])
-inline JSVal ArrayMap(const Arguments& args, Error* e) {
+JSVal ArrayMap(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.map", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -1294,7 +1292,7 @@ inline JSVal ArrayMap(const Arguments& args, Error* e) {
 }
 
 // section 15.4.4.20 Array.prototype.filter(callbackfn[, thisArg])
-inline JSVal ArrayFilter(const Arguments& args, Error* e) {
+JSVal ArrayFilter(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.filter", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -1330,7 +1328,7 @@ inline JSVal ArrayFilter(const Arguments& args, Error* e) {
 }
 
 // section 15.4.4.21 Array.prototype.reduce(callbackfn[, initialValue])
-inline JSVal ArrayReduce(const Arguments& args, Error* e) {
+JSVal ArrayReduce(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.reduce", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -1392,7 +1390,7 @@ inline JSVal ArrayReduce(const Arguments& args, Error* e) {
 }
 
 // section 15.4.4.22 Array.prototype.reduceRight(callbackfn[, initialValue])
-inline JSVal ArrayReduceRight(const Arguments& args, Error* e) {
+JSVal ArrayReduceRight(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.reduceRight", args, e);
   Context* const ctx = args.ctx();
   JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
@@ -1454,4 +1452,3 @@ inline JSVal ArrayReduceRight(const Arguments& args, Error* e) {
 }
 
 } } }  // namespace iv::lv5::runtime
-#endif  // IV_LV5_RUNTIME_ARRAY_H_

@@ -1,5 +1,3 @@
-#ifndef IV_LV5_RUNTIME_NUMBER_H_
-#define IV_LV5_RUNTIME_NUMBER_H_
 #include <cstdlib>
 #include <iv/detail/array.h>
 #include <iv/detail/cstdint.h>
@@ -11,17 +9,19 @@
 #include <iv/lv5/arguments.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/error.h>
-#include <iv/lv5/jsobject_fwd.h>
+#include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsnumberobject.h>
 #include <iv/lv5/jsstring.h>
 #include <iv/lv5/jsdtoa.h>
+#include <iv/lv5/i18n/i18n.h>
+#include <iv/lv5/runtime/number.h>
 namespace iv {
 namespace lv5 {
 namespace runtime {
 
 // section 15.7.1.1 Number([value])
 // section 15.7.2.1 new Number([value])
-inline JSVal NumberConstructor(const Arguments& args, Error* e) {
+JSVal NumberConstructor(const Arguments& args, Error* e) {
   if (args.IsConstructorCalled()) {
     double res = 0.0;
     if (!args.empty()) {
@@ -38,7 +38,7 @@ inline JSVal NumberConstructor(const Arguments& args, Error* e) {
 }
 
 // section 15.7.3.7 Number.isNaN(number)
-inline JSVal NumberIsNaN(const Arguments& args, Error* e) {
+JSVal NumberIsNaN(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Number.isNaN", args, e);
   const JSVal num = args.At(0);
   if (!num.IsNumber()) {
@@ -51,7 +51,7 @@ inline JSVal NumberIsNaN(const Arguments& args, Error* e) {
 }
 
 // section 15.7.3.8 Number.isFinite(number)
-inline JSVal NumberIsFinite(const Arguments& args, Error* e) {
+JSVal NumberIsFinite(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Number.isFinite", args, e);
   const JSVal num = args.At(0);
   if (!num.IsNumber()) {
@@ -64,7 +64,7 @@ inline JSVal NumberIsFinite(const Arguments& args, Error* e) {
 }
 
 // section 15.7.3.9 Number.isInteger(number)
-inline JSVal NumberIsInteger(const Arguments& args, Error* e) {
+JSVal NumberIsInteger(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Number.isInteger", args, e);
   const JSVal num = args.At(0);
   if (!num.IsNumber()) {
@@ -78,7 +78,7 @@ inline JSVal NumberIsInteger(const Arguments& args, Error* e) {
 }
 
 // section 15.7.3.10 Number.toInteger(number)
-inline JSVal NumberToInt(const Arguments& args, Error* e) {
+JSVal NumberToInt(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Number.toInteger", args, e);
   const JSVal num = args.At(0);
   if (num.IsInt32()) {
@@ -88,7 +88,7 @@ inline JSVal NumberToInt(const Arguments& args, Error* e) {
 }
 
 // section 15.7.4.2 Number.prototype.toString([radix])
-inline JSVal NumberToString(const Arguments& args, Error* e) {
+JSVal NumberToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.toString", args, e);
   const JSVal obj = args.this_binding();
   double num;
@@ -146,7 +146,7 @@ inline JSVal NumberToString(const Arguments& args, Error* e) {
 // section 15.7.4.2 Number.prototype.toLocaleString()
 // i18n patched version
 // section 13.2.1 Number.prototype.toLocaleString([locales [, options]])
-inline JSVal NumberToLocaleString(const Arguments& args, Error* e) {
+JSVal NumberToLocaleString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.toLocaleString", args, e);
   const JSVal obj = args.this_binding();
   Context* const ctx = args.ctx();
@@ -174,7 +174,7 @@ inline JSVal NumberToLocaleString(const Arguments& args, Error* e) {
 }
 
 // section 15.7.4.4 Number.prototype.valueOf()
-inline JSVal NumberValueOf(const Arguments& args, Error* e) {
+JSVal NumberValueOf(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.valueOf", args, e);
   const JSVal obj = args.this_binding();
   if (!obj.IsNumber()) {
@@ -191,7 +191,7 @@ inline JSVal NumberValueOf(const Arguments& args, Error* e) {
 }
 
 // section 15.7.4.5 Number.prototype.toFixed(fractionDigits)
-inline JSVal NumberToFixed(const Arguments& args, Error* e) {
+JSVal NumberToFixed(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.toFixed", args, e);
   Context* const ctx = args.ctx();
   double fd;
@@ -237,7 +237,7 @@ inline JSVal NumberToFixed(const Arguments& args, Error* e) {
 }
 
 // section 15.7.4.6 Number.prototype.toExponential(fractionDigits)
-inline JSVal NumberToExponential(const Arguments& args, Error* e) {
+JSVal NumberToExponential(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.toExponential", args, e);
   Context* const ctx = args.ctx();
 
@@ -300,7 +300,7 @@ inline JSVal NumberToExponential(const Arguments& args, Error* e) {
 }
 
 // section 15.7.4.7 Number.prototype.toPrecision(precision)
-inline JSVal NumberToPrecision(const Arguments& args, Error* e) {
+JSVal NumberToPrecision(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.toPrecision", args, e);
   Context* const ctx = args.ctx();
 
@@ -351,7 +351,7 @@ inline JSVal NumberToPrecision(const Arguments& args, Error* e) {
 }
 
 // section 15.7.4.8 Number.prototype.clz()
-inline JSVal NumberCLZ(const Arguments& args, Error* e) {
+JSVal NumberCLZ(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Number.prototype.clz", args, e);
 
   const JSVal obj = args.this_binding();
@@ -370,4 +370,3 @@ inline JSVal NumberCLZ(const Arguments& args, Error* e) {
 }
 
 } } }  // namespace iv::lv5::runtime
-#endif  // IV_LV5_RUNTIME_NUMBER_H_

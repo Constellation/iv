@@ -1,5 +1,3 @@
-#ifndef IV_LV5_RUNTIME_REGEXP_H_
-#define IV_LV5_RUNTIME_REGEXP_H_
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/constructor_check.h>
 #include <iv/lv5/arguments.h>
@@ -7,11 +5,12 @@
 #include <iv/lv5/context.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsregexp.h>
+#include <iv/lv5/runtime/regexp.h>
 namespace iv {
 namespace lv5 {
 namespace runtime {
 
-inline JSVal RegExpConstructor(const Arguments& args, Error* e) {
+JSVal RegExpConstructor(const Arguments& args, Error* e) {
   const uint32_t args_count = args.size();
   Context* const ctx = args.ctx();
   JSString* pattern = ctx->global_data()->string_empty();
@@ -50,7 +49,7 @@ inline JSVal RegExpConstructor(const Arguments& args, Error* e) {
 }
 
 // section 15.10.6.2 RegExp.prototype.exec(string)
-inline JSVal RegExpExec(const Arguments& args, Error* e) {
+JSVal RegExpExec(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("RegExp.prototype.exec", args, e);
   Context* const ctx = args.ctx();
   const JSVal obj = args.this_binding();
@@ -64,7 +63,7 @@ inline JSVal RegExpExec(const Arguments& args, Error* e) {
 }
 
 // section 15.10.6.3 RegExp.prototype.test(string)
-inline JSVal RegExpTest(const Arguments& args, Error* e) {
+JSVal RegExpTest(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("RegExp.prototype.test", args, e);
   Context* const ctx = args.ctx();
   const JSVal obj = args.this_binding();
@@ -79,7 +78,7 @@ inline JSVal RegExpTest(const Arguments& args, Error* e) {
 }
 
 // section 15.10.6.4 RegExp.prototype.toString()
-inline JSVal RegExpToString(const Arguments& args, Error* e) {
+JSVal RegExpToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("RegExp.prototype.toString", args, e);
   Context* const ctx = args.ctx();
   const JSVal obj = args.this_binding();
@@ -106,7 +105,7 @@ inline JSVal RegExpToString(const Arguments& args, Error* e) {
 
 // Not Standard RegExp.prototype.compile(pattern, flags)
 // this method is deprecated.
-inline JSVal RegExpCompile(const Arguments& args, Error* e) {
+JSVal RegExpCompile(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("RegExp.prototype.compile", args, e);
   const uint32_t args_count = args.size();
   Context* const ctx = args.ctx();
@@ -142,4 +141,3 @@ inline JSVal RegExpCompile(const Arguments& args, Error* e) {
 }
 
 } } }  // namespace iv::lv5::runtime
-#endif  // IV_LV5_RUNTIME_REGEXP_H_

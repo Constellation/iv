@@ -1,7 +1,9 @@
 #ifndef IV_LV5_JSDATE_H_
 #define IV_LV5_JSDATE_H_
+#include <iv/date_utils.h>
 #include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/jsval_fwd.h>
+#include <iv/lv5/context.h>
 namespace iv {
 namespace lv5 {
 

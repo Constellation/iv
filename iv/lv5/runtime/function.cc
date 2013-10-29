@@ -1,5 +1,3 @@
-#ifndef IV_LV5_RUNTIME_FUNCTION_H_
-#define IV_LV5_RUNTIME_FUNCTION_H_
 #include <algorithm>
 #include <iv/detail/type_traits.h>
 #include <iv/enable_if.h>
@@ -12,22 +10,21 @@
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/jsstring.h>
 #include <iv/lv5/error.h>
+#include <iv/lv5/internal.h>
+#include <iv/lv5/runtime/function.h>
 namespace iv {
 namespace lv5 {
 namespace runtime {
-namespace detail {
 
 static const std::string kFunctionPrefix("function ");
 
-}  // namespace detail
-
-inline JSVal FunctionPrototype(const Arguments& args, Error* e) {
+JSVal FunctionPrototype(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Function.prototype", args, e);
   return JSUndefined;
 }
 
 // section 15.3.4.2 Function.prototype.toString()
-inline JSVal FunctionToString(const Arguments& args, Error* e) {
+JSVal FunctionToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Function.prototype.toString", args, e);
   const JSVal obj = args.this_binding();
   if (obj.IsCallable()) {
@@ -35,7 +32,7 @@ inline JSVal FunctionToString(const Arguments& args, Error* e) {
         static_cast<JSFunction*>(obj.object());
     Context* const ctx = args.ctx();
     JSStringBuilder builder;
-    builder.Append(detail::kFunctionPrefix);
+    builder.Append(kFunctionPrefix);
     Slot slot;
     if (func->GetOwnPropertySlot(ctx, symbol::name(), &slot)) {
       const JSVal name = slot.Get(ctx, func, IV_LV5_ERROR(e));
@@ -56,7 +53,7 @@ inline JSVal FunctionToString(const Arguments& args, Error* e) {
 }
 
 // section 15.3.4.3 Function.prototype.apply(thisArg, argArray)
-inline JSVal FunctionApply(const Arguments& args, Error* e) {
+JSVal FunctionApply(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Function.prototype.apply", args, e);
   const JSVal obj = args.this_binding();
   if (obj.IsCallable()) {
@@ -91,7 +88,7 @@ inline JSVal FunctionApply(const Arguments& args, Error* e) {
 }
 
 // section 15.3.4.4 Function.prototype.call(thisArg[, arg1[, arg2, ...]])
-inline JSVal FunctionCall(const Arguments& args, Error* e) {
+JSVal FunctionCall(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Function.prototype.call", args, e);
   const JSVal obj = args.this_binding();
   if (obj.IsCallable()) {
@@ -111,7 +108,7 @@ inline JSVal FunctionCall(const Arguments& args, Error* e) {
 }
 
 // section 15.3.4.5 Function.prototype.bind(thisArg[, arg1[, arg2, ...]])
-inline JSVal FunctionBind(const Arguments& args, Error* e) {
+JSVal FunctionBind(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Function.prototype.bind", args, e);
   const JSVal obj = args.this_binding();
   if (obj.IsCallable()) {
@@ -124,4 +121,3 @@ inline JSVal FunctionBind(const Arguments& args, Error* e) {
 }
 
 } } }  // namespace iv::lv5::runtime
-#endif  // IV_LV5_RUNTIME_FUNCTION_H_

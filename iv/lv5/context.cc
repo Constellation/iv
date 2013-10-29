@@ -14,10 +14,12 @@
 #include <iv/lv5/jsglobal.h>
 #include <iv/lv5/jsfunction.h>
 #include <iv/lv5/jsarguments.h>
+#include <iv/lv5/jsdate.h>
 #include <iv/lv5/jsnumberobject.h>
 #include <iv/lv5/jsbooleanobject.h>
 #include <iv/lv5/jsreflect.h>
 #include <iv/lv5/jssymbol.h>
+#include <iv/lv5/jsregexp.h>
 #include <iv/lv5/jsi18n.h>
 #include <iv/lv5/arguments.h>
 #include <iv/lv5/context.h>

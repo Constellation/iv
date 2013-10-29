@@ -5,6 +5,7 @@
 //
 #ifndef IV_LV5_JSSET_H_
 #define IV_LV5_JSSET_H_
+#include <iv/all_static.h>
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/jsobject_fwd.h>
