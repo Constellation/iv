@@ -2,8 +2,9 @@
 #define IV_PLATFORM_MATH_H_
 #include <cmath>
 #include <cassert>
-#include <limits>
 #include <cfloat>
+#include <algorithm>
+#include <limits>
 #include <iv/platform.h>
 #include <iv/canonicalized_nan.h>
 #include <iv/detail/cmath.h>
