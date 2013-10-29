@@ -13,6 +13,7 @@
 #include <iv/lv5/arguments.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/error.h>
+#include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsstring.h>
 #include <iv/lv5/jsstringobject.h>
 #include <iv/lv5/jsregexp.h>

@@ -3,6 +3,7 @@
 #include <cassert>
 #include <algorithm>
 #include <iv/lv5/jsobject_fwd.h>
+#include <iv/lv5/jsobject_interface.h>
 #include <iv/lv5/property.h>
 #include <iv/lv5/jsfunction.h>
 #include <iv/lv5/jsval.h>

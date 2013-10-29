@@ -7,6 +7,7 @@
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsstring.h>
 #include <iv/lv5/jsstring_builder.h>
+#include <iv/lv5/jsobject.h>
 #include <iv/lv5/jserror.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/runtime/error.h>

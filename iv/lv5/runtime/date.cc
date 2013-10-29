@@ -13,6 +13,7 @@
 #include <iv/lv5/constructor_check.h>
 #include <iv/lv5/jsdate.h>
 #include <iv/lv5/jsstring.h>
+#include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/runtime/date.h>
 namespace iv {
