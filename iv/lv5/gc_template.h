@@ -3,11 +3,11 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <gc/gc_allocator.h>
 #include <gc/gc_cpp.h>
 #include <iv/detail/unordered_map.h>
 #include <iv/detail/unordered_set.h>
 #include <iv/detail/cstdint.h>
+#include <iv/lv5/gc_allocator.h>
 
 namespace iv {
 namespace lv5 {
@@ -44,13 +44,13 @@ struct HashSet {
 
 template<typename T>
 struct GCVector {
-  typedef std::vector<T, gc_allocator<T> > type;
+  typedef std::vector<T, GCAllocator<T> > type;
 };
 
 template<typename T1, typename T2, typename Less = std::less<T1> >
 struct GCMap {
   typedef std::map<T1, T2, Less,
-                   gc_allocator<std::pair<const T1, T2> > > type;
+                   GCAllocator<std::pair<const T1, T2> > > type;
 };
 
 template<typename T1, typename T2,
@@ -58,19 +58,19 @@ template<typename T1, typename T2,
          typename Equal = std::equal_to<T1> >
 struct GCHashMap {
   typedef std::unordered_map<T1, T2, Hash, Equal,
-                             gc_allocator<std::pair<const T1, T2> > > type;
+                             GCAllocator<std::pair<const T1, T2> > > type;
 };
 
 template<typename T,
          typename Hash = std::hash<T>,
          typename Equal = std::equal_to<T> >
 struct GCHashSet {
-  typedef std::unordered_set<T, Hash, Equal, gc_allocator<T> > type;
+  typedef std::unordered_set<T, Hash, Equal, GCAllocator<T> > type;
 };
 
 typedef std::basic_string<uint16_t,
                           std::char_traits<uint16_t>,
-                          gc_allocator<uint16_t> > GCUString;
+                          GCAllocator<uint16_t> > GCUString;
 
 struct GCAlloc {
   void* New(size_t sz) { return operator new(sz, GC); }
