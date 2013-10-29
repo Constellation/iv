@@ -1,7 +1,4 @@
-#ifndef IV_LV5_RUNTIME_ARRAY_BUFFER_H_
-#define IV_LV5_RUNTIME_ARRAY_BUFFER_H_
 #include <iv/lv5/error_check.h>
-#include <iv/lv5/constructor_check.h>
 #include <iv/lv5/arguments.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/error.h>
@@ -19,4 +16,3 @@ JSVal ArrayBufferConstructor(const Arguments& args, Error* e) {
 }
 
 } } }  // namespace iv::lv5::runtime
-#endif  // IV_LV5_RUNTIME_ARRAY_BUFFER_H_

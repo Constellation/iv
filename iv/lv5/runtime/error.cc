@@ -1,4 +1,3 @@
-#include <iv/conversions.h>
 #include <iv/ustring.h>
 #include <iv/ustringpiece.h>
 #include <iv/lv5/error_check.h>
@@ -7,6 +6,7 @@
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsstring.h>
+#include <iv/lv5/jsstring_builder.h>
 #include <iv/lv5/jserror.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/runtime/error.h>
