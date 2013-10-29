@@ -23,7 +23,7 @@
 #include <iv/lv5/context.h>
 #include <iv/lv5/property.h>
 #include <iv/lv5/class.h>
-#include <iv/lv5/runtime.h>
+#include <iv/lv5/runtime/runtime.h>
 #include <iv/lv5/jserror.h>
 #include <iv/lv5/bind.h>
 #include <iv/lv5/internal.h>

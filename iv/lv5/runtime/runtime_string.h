@@ -18,7 +18,7 @@
 #include <iv/lv5/jsstring.h>
 #include <iv/lv5/jsstringobject.h>
 #include <iv/lv5/jsregexp.h>
-#include <iv/lv5/runtime_regexp.h>
+#include <iv/lv5/runtime/runtime_regexp.h>
 
 namespace iv {
 namespace lv5 {

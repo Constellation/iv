@@ -12,7 +12,7 @@
 #include <iv/lv5/map.h>
 #include <iv/lv5/class.h>
 #include <iv/lv5/internal.h>
-#include <iv/lv5/runtime_fwd.h>
+#include <iv/lv5/runtime/runtime_fwd.h>
 #include <iv/lv5/jsvector.h>
 #include <iv/lv5/i18n/utility.h>
 namespace iv {

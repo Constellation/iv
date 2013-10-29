@@ -14,7 +14,7 @@
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/eval_source.h>
 #include <iv/lv5/json.h>
-#include <iv/lv5/runtime_object.h>
+#include <iv/lv5/runtime/runtime_object.h>
 
 namespace iv {
 namespace lv5 {

@@ -11,7 +11,7 @@
 #include <iv/lv5/jsvector.h>
 #include <iv/lv5/jsstring.h>
 #include <iv/lv5/context.h>
-#include <iv/lv5/runtime_object.h>
+#include <iv/lv5/runtime/runtime_object.h>
 
 namespace iv {
 namespace lv5 {

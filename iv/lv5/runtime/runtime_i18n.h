@@ -7,7 +7,7 @@
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsi18n.h>
 #include <iv/lv5/context.h>
-#include <iv/lv5/runtime_array.h>
+#include <iv/lv5/runtime/runtime_array.h>
 namespace iv {
 namespace lv5 {
 namespace runtime {
