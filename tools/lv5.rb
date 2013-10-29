@@ -4,11 +4,11 @@ require 'formula'
 
 class Lv5 < Formula
   homepage 'https://github.com/Constellation/iv'
-  url 'https://github.com/Constellation/iv/archive/69f89912a7c9160da1484347253015af782f9ac8.zip'
+  url 'https://github.com/Constellation/iv/archive/1.0.1.zip'
   head 'https://github.com/Constellation/iv.git'
-  sha1 '7ea9bdd6394ac49d6293d5be34c7aa9af5d52067'
+  sha1 '7520d877434f4c3bc2ac93a68ed778df6fe8b5ea'
 
-  version '1.0.0'
+  version '1.0.1'
   depends_on 'cmake' => :build
   depends_on 'bdw-gc'
 
