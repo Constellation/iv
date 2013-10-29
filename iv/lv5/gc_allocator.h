@@ -46,6 +46,11 @@ class GCAllocator {
   template<class U>
   GCAllocator(const GCAllocator<U>&) : library_() { }
 
+  pointer address(reference ref) const { return &ref; }
+  const_pointer address(const_reference ref) const { return &ref; }
+
+  size_type max_size() const { return size_t(-1) / sizeof(value_type); }
+
   template<typename U>
   bool operator==(const GCAllocator<U>&) { return true; }
   template<typename U>
