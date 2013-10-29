@@ -24,12 +24,11 @@ class GCAllocator {
   };
 
   value_type* allocate(std::size_t size) {
-    GC_type_traits<value_type> traits;
-    return static_cast<value_type*>(GC_selective_alloc(size * sizeof(value_type), traits.GC_is_ptr_free, true));
+    return library_.allocate(size);
   }
 
   void deallocate(value_type* ptr, std::size_t size) {
-    GC_FREE(ptr);
+    library_.deallocate(ptr, size);
   }
 
   template<class U, class... Args>
@@ -42,15 +41,18 @@ class GCAllocator {
     p->~U();
   }
 
-  GCAllocator() { }
-  GCAllocator(const GCAllocator&) { }
+  GCAllocator() : library_() { }
+  GCAllocator(const GCAllocator&) : library_() { }
   template<class U>
-  GCAllocator(const GCAllocator<U>&) { }
+  GCAllocator(const GCAllocator<U>&) : library_() { }
 
   template<typename U>
   bool operator==(const GCAllocator<U>&) { return true; }
   template<typename U>
   bool operator!=(const GCAllocator<U>&) { return false; }
+
+ private:
+  gc_allocator<T> library_;
 };
 
 } }  // namespace iv::lv5
