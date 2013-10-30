@@ -5,7 +5,7 @@
 #if defined(IV_COMPILER_MSVC) || \
     defined(__GXX_EXPERIMENTAL_CXX0X__) || \
     (defined(IV_COMPILER_CLANG) && IV_COMPILER_CLANG >= 50000)
-#ifdef IV_COMPILER_MSVC
+#if defined(IV_COMPILER_MSVC) && IV_COMPILER_MSVC < MAKE_VERSION(18, 0, 0)
 #include <stdint.h>
 #define PRIu32 "u"
 #define PRIu64 "llu"
