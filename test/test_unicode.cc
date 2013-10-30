@@ -16,27 +16,35 @@ TEST(UnicodeCase, MaskTest) {
 }
 
 TEST(UnicodeCase, UTF8ToUCS4) {
-  const std::string str = "こんにちは";
+  const uint8_t konnichiha[] = {
+    0xe3, 0x81, 0x93, 0xe3, 0x82, 0x93, 0xe3, 0x81, 0xab, 0xe3, 0x81, 0xa1, 0xe3, 0x81, 0xaf
+  };
   std::vector<uint32_t> actual;
   const std::array<uint32_t, 5> expect = { { 12371, 12435, 12395, 12385, 12399 } };
-  EXPECT_EQ(c::UNICODE_NO_ERROR, c::UTF8ToUCS4(str.begin(), str.end(), std::back_inserter(actual)));
+  EXPECT_EQ(c::UNICODE_NO_ERROR,
+            c::UTF8ToUCS4(konnichiha, konnichiha + sizeof(konnichiha) / sizeof(uint8_t), std::back_inserter(actual)));
   EXPECT_TRUE(std::equal(expect.begin(), expect.end(), actual.begin()));
 }
 
 TEST(UnicodeCase, UTF8ToUTF16) {
   {
-    const std::string str = "こんにちは";
+    const uint8_t konnichiha[] = {
+      0xe3, 0x81, 0x93, 0xe3, 0x82, 0x93, 0xe3, 0x81, 0xab, 0xe3, 0x81, 0xa1, 0xe3, 0x81, 0xaf
+    };
     std::vector<uint16_t> actual;
     const std::array<uint16_t, 5> expect = { { 12371, 12435, 12395, 12385, 12399 } };
-    EXPECT_EQ(c::UNICODE_NO_ERROR, c::UTF8ToUTF16(str.begin(), str.end(), std::back_inserter(actual)));
+    EXPECT_EQ(c::UNICODE_NO_ERROR,
+              c::UTF8ToUTF16(konnichiha, konnichiha + sizeof(konnichiha) / sizeof(uint8_t), std::back_inserter(actual)));
     EXPECT_TRUE(std::equal(expect.begin(), expect.end(), actual.begin()));
   }
   {
     // surrogate pair test
-    const std::string str = "𣧂";
+    const uint8_t str[] = {
+      0xf0, 0xa3, 0xa7, 0x82, 0x20
+    };
     std::vector<uint16_t> actual;
     const std::array<uint16_t, 2> expect = { { 55374, 56770 } };
-    EXPECT_EQ(c::UNICODE_NO_ERROR, c::UTF8ToUTF16(str.begin(), str.end(), std::back_inserter(actual)));
+    EXPECT_EQ(c::UNICODE_NO_ERROR, c::UTF8ToUTF16(str, str + sizeof(str) / sizeof(uint8_t), std::back_inserter(actual)));
     EXPECT_TRUE(std::equal(expect.begin(), expect.end(), actual.begin()));
   }
   {
@@ -49,7 +57,10 @@ TEST(UnicodeCase, UTF8ToUTF16) {
 
 TEST(UnicodeCase, UTF16ToUTF8) {
   {
-    const std::string expect = "こんにちは";
+    const uint8_t konnichiha[] = {
+      0xe3, 0x81, 0x93, 0xe3, 0x82, 0x93, 0xe3, 0x81, 0xab, 0xe3, 0x81, 0xa1, 0xe3, 0x81, 0xaf
+    };
+    const std::string expect(konnichiha, konnichiha + sizeof(konnichiha) / sizeof(uint8_t));
     std::string actual;
     const std::array<uint16_t, 5> str = { { 12371, 12435, 12395, 12385, 12399 } };
     EXPECT_EQ(c::UNICODE_NO_ERROR, c::UTF16ToUTF8(str.begin(), str.end(), std::back_inserter(actual)));
@@ -57,7 +68,10 @@ TEST(UnicodeCase, UTF16ToUTF8) {
   }
   {
     // surrogate pair test
-    const std::string expect = "𣧂";
+    const uint8_t target[] = {
+      0xf0, 0xa3, 0xa7, 0x82
+    };
+    const std::string expect(target, target + sizeof(target) / sizeof(uint8_t));
     std::string actual;
     const std::array<uint16_t, 2> str = { { 55374, 56770 } };
     EXPECT_EQ(c::UNICODE_NO_ERROR, c::UTF16ToUTF8(str.begin(), str.end(), std::back_inserter(actual)));
