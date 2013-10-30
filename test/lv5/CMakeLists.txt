@@ -1,11 +1,8 @@
 # lv5 test
 
-add_definitions("-D__STDC_FORMAT_MACROS")
-
-link_directories(
-    ${PROJECT_SOURCE_DIR}/iv/lv5/third_party/netlib_dtoa
-    ${PROJECT_SOURCE_DIR}/iv/lv5/third_party/v8_dtoa
-    )
+if (NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC"))
+    add_definitions("-D__STDC_FORMAT_MACROS")
+endif()
 
 add_executable(lv5_unit_tests
     main.cc

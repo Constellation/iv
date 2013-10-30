@@ -13,10 +13,12 @@ link_directories(
 link_directories_if_exists(/usr/local/lib)
 link_directories_if_exists(/opt/local/lib)
 
-add_definitions(
-    "-fno-strict-aliasing"
-    "-D__STDC_FORMAT_MACROS"
-    )
+if (NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC"))
+    add_definitions(
+        "-fno-strict-aliasing"
+        "-D__STDC_FORMAT_MACROS"
+        )
+endif()
 
 # liblv5
 
@@ -73,7 +75,11 @@ endmacro(link_iv)
 macro(link_lv5 target)
     link_iv(${target})
 
-    find_library(LIB_GC gc)
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+        find_library(LIB_GC NAMES gc HINTS ${PROJECT_SOURCE_DIR}/win/gc)
+    else()
+        find_library(LIB_GC gc)
+    endif()
     target_link_libraries(${target} ${LIB_GC})
 endmacro(link_lv5)
 

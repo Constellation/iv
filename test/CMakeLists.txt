@@ -1,21 +1,19 @@
 # iv test
 
 # link local directories
-if(EXISTS "/usr/local/lib/")
-    link_directories(/usr/local/lib)
-endif()
-if(EXISTS "/opt/local/lib/")
-    link_directories(/opt/local/lib)
-endif()
+link_directories_if_exists(/usr/local/lib)
+link_directories_if_exists(/opt/local/lib)
 
 link_directories(gtest)
 
 include_directories(.)
 
-add_definitions(
-    "-Wno-variadic-macros"
-    "-fno-strict-aliasing"
-    )
+if (NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC"))
+    add_definitions(
+        "-Wno-variadic-macros"
+        "-fno-strict-aliasing"
+        )
+endif()
 
 add_subdirectory(gtest)
 
