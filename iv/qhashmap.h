@@ -130,7 +130,8 @@ class QHashMap {
       Lookup(KeyType key, Allocator allocator = Allocator()) const;
 
  public:
-  class const_iterator {
+  class const_iterator
+    : public std::iterator<std::forward_iterator_tag, value_type> {
     const_iterator operator++(int);  // disabled NOLINT
    public:
     const_iterator& operator++() {
