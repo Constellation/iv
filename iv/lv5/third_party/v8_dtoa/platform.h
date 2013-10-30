@@ -48,8 +48,8 @@
 #ifdef WIN32
 
 // Microsoft Visual C++ specific stuff.
-#ifdef _MSC_VER
-
+// Microsoft Visual C++ 2013 or later has these functions.
+#if defined(_MSC_VER) && _MSC_VER < 1800
 enum {
   FP_NAN,
   FP_INFINITE,
@@ -60,9 +60,7 @@ enum {
 
 int fpclassify(double x);
 
-int strncasecmp(const char* s1, const char* s2, int n);
-
-#endif  // _MSC_VER
+#endif  // defined(_MSC_VER) && _MSC_VER < 1800
 
 #endif  // WIN32
 

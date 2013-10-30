@@ -88,7 +88,8 @@ void OS::Abort() {
 // refer to The Open Group Base Specification for specification of the correct
 // semantics for these functions.
 // (http://www.opengroup.org/onlinepubs/000095399/)
-#ifdef _MSC_VER
+// Microsoft Visual C++ 2013 or later has these functions.
+#if defined(_MSC_VER) && _MSC_VER < 1800
 
 #include <float.h>
 
@@ -109,5 +110,4 @@ int fpclassify(double x) {
   return FP_NAN;
 }
 
-
-#endif  // _MSC_VER
+#endif  // defined(_MSC_VER) && _MSC_VER < 1800
