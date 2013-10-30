@@ -64,7 +64,7 @@ TEST(IntrusiveListCase, IntrusiveListElementsTest) {
       int i = 999;
       for (List::const_reverse_iterator it = head.crbegin(),
            last = head.crend(); it != last; ++it, --i) {
-        EXPECT_EQ(i, it->value());
+        EXPECT_EQ(i, (*it).value());
       }
     }
 
@@ -99,7 +99,7 @@ TEST(IntrusiveListCase, IntrusiveListElementsTest) {
       int i = 0;
       for (List::const_reverse_iterator it = head.crbegin(),
            last = head.crend(); it != last; ++it, ++i) {
-        EXPECT_EQ(i, it->value());
+        EXPECT_EQ(i, (*it).value());
       }
     }
 
