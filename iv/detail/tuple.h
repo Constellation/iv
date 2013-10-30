@@ -4,7 +4,7 @@
 
 #if defined(IV_COMPILER_MSVC) || \
     defined(__GXX_EXPERIMENTAL_CXX0X__) || \
-    (defined(IV_COMPILER_CLANG) && IV_COMPILER_CLANG >= 50000)
+    (defined(IV_COMPILER_CLANG) && IV_COMPILER_CLANG >= IV_MAKE_VERSION(5, 0, 0))
 #include <tuple>
 
 typedef std::tuple<char, char, char> char3;

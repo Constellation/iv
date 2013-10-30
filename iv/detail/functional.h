@@ -4,7 +4,7 @@
 
 #if defined(IV_COMPILER_MSVC) || \
     defined(__GXX_EXPERIMENTAL_CXX0X__) || \
-    (defined(IV_COMPILER_CLANG) && IV_COMPILER_CLANG >= 50000)
+    (defined(IV_COMPILER_CLANG) && IV_COMPILER_CLANG >= IV_MAKE_VERSION(5, 0, 0))
 #include <functional>
 
 #if defined(IV_COMPILER_MSVC) && !defined(IV_COMPILER_MSVC_10)
@@ -20,7 +20,7 @@ namespace std { using namespace tr1; }
 
 #if defined(IV_COMPILER_MSVC) || \
     defined(__GXX_EXPERIMENTAL_CXX0X__) || \
-    (defined(IV_COMPILER_CLANG) && IV_COMPILER_CLANG >= 50000)
+    (defined(IV_COMPILER_CLANG) && IV_COMPILER_CLANG >= IV_MAKE_VERSION(5, 0, 0))
 #define IV_HASH_NAMESPACE_START std
 #define IV_HASH_NAMESPACE_END
 #else

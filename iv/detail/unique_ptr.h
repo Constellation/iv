@@ -24,7 +24,7 @@
 
 #if defined(IV_COMPILER_MSVC) || \
     defined(__GXX_EXPERIMENTAL_CXX0X__) || \
-    (defined(IV_COMPILER_CLANG) && IV_COMPILER_CLANG >= 50000)
+    (defined(IV_COMPILER_CLANG) && IV_COMPILER_CLANG >= IV_MAKE_VERSION(5, 0, 0))
 // using C++0x std::unique_ptr
 #include <memory>
 namespace iv {
