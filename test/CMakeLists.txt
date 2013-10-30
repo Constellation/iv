@@ -21,7 +21,6 @@ add_executable(iv_unit_tests
     dtoa_fixed.cc
     dtoa_precision.cc
     dtoa_shortest.cc
-    main.cc
     test_aero_compiler.cc
     test_aero_exec.cc
     test_aero_filter.cc
