@@ -10,12 +10,8 @@ link_directories(
     )
 
 # link local directories
-if(EXISTS "/usr/local/lib/")
-    link_directories(/usr/local/lib)
-endif()
-if(EXISTS "/opt/local/lib/")
-    link_directories(/opt/local/lib)
-endif()
+link_directories_if_exists(/usr/local/lib)
+link_directories_if_exists(/opt/local/lib)
 
 add_definitions(
     "-fno-strict-aliasing"
@@ -47,35 +43,38 @@ add_library(liblv5 STATIC
     runtime/symbol.cc
     runtime/weak_map.cc
     )
-
 set_target_properties(liblv5 PROPERTIES PREFIX "")
+
+target_link_libraries(liblv5 netlib_dtoa v8_dtoa)
 
 # lv5 shell
 
 add_executable(lv5 main.cc)
 
-target_link_libraries(lv5
-    netlib_dtoa
-    v8_dtoa
-    liblv5
-    )
+target_link_libraries(lv5 liblv5)
 
 # link settings
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    find_library(LIB_CXX c++)
-    target_link_libraries(liblv5 ${LIB_CXX})
-    target_link_libraries(lv5 ${LIB_CXX})
-endif()
+macro(link_iv target)
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        find_library(LIB_CXX c++)
+        target_link_libraries(${target} ${LIB_CXX})
+    endif()
 
-find_library(LIB_GC gc)
-target_link_libraries(liblv5 ${LIB_GC})
-target_link_libraries(lv5 ${LIB_GC})
+    if (NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC"))
+        find_library(LIB_M m)
+        target_link_libraries(${target} ${LIB_M})
 
-find_library(LIB_M m)
-target_link_libraries(liblv5 ${LIB_M})
-target_link_libraries(lv5 ${LIB_M})
+        find_library(LIB_PTHREAD pthread)
+        target_link_libraries(${target} ${LIB_PTHREAD})
+    endif()
+endmacro(link_iv)
 
-find_library(LIB_PTHREAD pthread)
-target_link_libraries(liblv5 ${LIB_PTHREAD})
-target_link_libraries(lv5 ${LIB_PTHREAD})
+macro(link_lv5 target)
+    link_iv(${target})
+
+    find_library(LIB_GC gc)
+    target_link_libraries(${target} ${LIB_GC})
+endmacro(link_lv5)
+
+link_lv5(lv5)

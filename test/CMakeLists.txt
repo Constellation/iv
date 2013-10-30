@@ -68,17 +68,7 @@ add_executable(iv_unit_tests
     test_unique_ptr.cc
     )
 
-find_library(LIB_M m)
-target_link_libraries(iv_unit_tests ${LIB_M})
-
-find_library(LIB_PTHREAD pthread)
-target_link_libraries(iv_unit_tests ${LIB_PTHREAD})
-
 target_link_libraries(iv_unit_tests gtest)
-
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    find_library(LIB_CXX c++)
-    target_link_libraries(iv_unit_tests ${LIB_CXX})
-endif()
+link_iv(iv_unit_tests)
 
 add_subdirectory(lv5)

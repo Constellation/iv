@@ -16,23 +16,5 @@ add_executable(lv5_unit_tests
     test_suite.cc
     )
 
-find_library(LIB_GC gc)
-target_link_libraries(lv5_unit_tests ${LIB_GC})
-
-find_library(LIB_M m)
-target_link_libraries(lv5_unit_tests ${LIB_M})
-
-find_library(LIB_PTHREAD pthread)
-target_link_libraries(lv5_unit_tests ${LIB_PTHREAD})
-
 target_link_libraries(lv5_unit_tests gtest liblv5)
-
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    find_library(LIB_CXX c++)
-    target_link_libraries(lv5_unit_tests ${LIB_CXX})
-endif()
-
-target_link_libraries(lv5_unit_tests
-    netlib_dtoa
-    v8_dtoa
-    )
+link_lv5(lv5_unit_tests)

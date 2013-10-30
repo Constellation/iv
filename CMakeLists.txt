@@ -15,11 +15,17 @@ include_directories(
     /opt/local/include
     )
 
-function (include_if_exists directory)
+macro(include_if_exists directory)
     if(EXISTS "${directory}/")
-        include_directories(directory)
+        include_directories(${directory})
     endif()
-endfunction()
+endmacro()
+
+macro(link_directories_if_exists directory)
+    if(EXISTS "${directory}/")
+        link_directories(${directory})
+    endif()
+endmacro()
 
 # include local directories
 include_if_exists(/usr/local/include)
@@ -30,6 +36,8 @@ include_if_exists(/opt/local/include)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     # using Visual Studio C++
+    include_directories(win/gc)
+    link_directories(win/gc)
 else()
     add_definitions("-pipe")
     set(${CMAKE_CXX_FLAGS} "${CMAKE_CXX_FLAGS} -fno-operator-names")
