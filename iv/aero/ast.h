@@ -126,23 +126,23 @@ class DisjunctionAssertion : public Assertion {
 
 class BackReferenceAtom : public Atom {
  public:
-  explicit BackReferenceAtom(uint16_t ref, uint16_t octal)
+  explicit BackReferenceAtom(char16_t ref, char16_t octal)
     : reference_(ref), octal_(octal) { }
-  uint16_t reference() const { return reference_; }
-  uint16_t octal() const { return octal_; }
+  char16_t reference() const { return reference_; }
+  char16_t octal() const { return octal_; }
   DECLARE_DERIVED_NODE_TYPE(BackReferenceAtom)
  private:
-  uint16_t reference_;
-  uint16_t octal_;
+  char16_t reference_;
+  char16_t octal_;
 };
 
 class CharacterAtom : public Atom {
  public:
-  explicit CharacterAtom(uint16_t ch) : character_(ch) { }
-  uint16_t character() const { return character_; }
+  explicit CharacterAtom(char16_t ch) : character_(ch) { }
+  char16_t character() const { return character_; }
   DECLARE_DERIVED_NODE_TYPE(CharacterAtom)
  private:
-  uint16_t character_;
+  char16_t character_;
 };
 
 class RangeAtom : public Atom {

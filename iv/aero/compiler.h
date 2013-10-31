@@ -43,8 +43,8 @@ class Compiler : private Visitor {
   Code* Compile(const ParsedData& data) {
     max_captures_ = data.max_captures();
     current_captures_num_ = 0;
-    const std::pair<uint16_t, std::size_t> ret = EmitQuickCheck(data);
-    const uint16_t filter = ret.first;
+    const std::pair<char16_t, std::size_t> ret = EmitQuickCheck(data);
+    const char16_t filter = ret.first;
     data.pattern()->Accept(this);
     Emit<OP::SUCCESS>();
     if (filter) {
@@ -63,7 +63,7 @@ class Compiler : private Visitor {
   bool IsMultiline() const { return flags_ & MULTILINE; }
 
  private:
-  std::pair<uint16_t, std::size_t> EmitQuickCheck(const ParsedData& data) {
+  std::pair<char16_t, std::size_t> EmitQuickCheck(const ParsedData& data) {
     // emit quick check phase for this pattern.
     // when RegExp /test/ is provided, we emit code that searching 't'
     // and if it is accepted, goto main body with this character position.
@@ -156,7 +156,7 @@ class Compiler : private Visitor {
   }
 
   void Visit(BackReferenceAtom* atom) {
-    const uint16_t ref = atom->reference();
+    const char16_t ref = atom->reference();
     if (ref < max_captures_) {
       if (IsIgnoreCase()) {
         Emit<OP::BACK_REFERENCE_IGNORE_CASE>();
@@ -169,12 +169,12 @@ class Compiler : private Visitor {
       // we treat /\2/ as escaped unicode, code number is 2.
       // but, if not octal value (like /\18/) comes,
       // we expand it \1 and 8
-      const uint16_t octal = atom->octal();
+      const char16_t octal = atom->octal();
       if (octal) {
         EmitCharacter(octal);
       } else {
         // expand \18 to \1 and 8
-        typedef std::array<uint16_t, 10> Buffer;
+        typedef std::array<char16_t, 10> Buffer;
         Buffer buffer = { { } };
         Buffer::const_iterator last = core::UInt32ToString(ref, buffer.begin());
         Buffer::const_iterator it = buffer.begin();
@@ -190,10 +190,10 @@ class Compiler : private Visitor {
     EmitCharacter(atom->character());
   }
 
-  void EmitCharacter(uint16_t ch) {
+  void EmitCharacter(char16_t ch) {
     if (IsIgnoreCase()) {
-      const uint16_t uu = core::character::ToUpperCase(ch);
-      const uint16_t lu = core::character::ToLowerCase(ch);
+      const char16_t uu = core::character::ToUpperCase(ch);
+      const char16_t lu = core::character::ToLowerCase(ch);
       if (!(uu == lu && uu == ch)) {
         if (uu == ch || lu == ch) {
           Emit<OP::CHECK_2CHAR_OR>();
@@ -211,7 +211,7 @@ class Compiler : private Visitor {
     EmitCharacterRaw(ch);
   }
 
-  void EmitCharacterRaw(uint16_t ch) {
+  void EmitCharacterRaw(char16_t ch) {
     if (ch > 0xFF) {
       Emit<OP::CHECK_2BYTE_CHAR>();
       Emit2(ch);

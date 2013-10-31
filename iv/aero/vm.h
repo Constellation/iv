@@ -85,7 +85,7 @@ class VM : private core::Noncopyable<VM> {
   template<typename Piece>
   int ExecuteImpl(Code* code, const Piece& subject, int* captures, int offset) {
     const int size = subject.size();
-    const uint16_t filter = code->filter();
+    const char16_t filter = code->filter();
     if (!filter) {
       // normal path
       do {
@@ -99,7 +99,7 @@ class VM : private core::Noncopyable<VM> {
     } else if (code->IsQuickCheckOneChar()) {
       // one char check path
       while (offset < size) {
-        const uint16_t ch = subject[offset];
+        const char16_t ch = subject[offset];
         if (ch != filter) {
           ++offset;
         } else {
@@ -114,7 +114,7 @@ class VM : private core::Noncopyable<VM> {
     } else {
       // bloom filter path
       while (offset < size) {
-        const uint16_t ch = subject[offset];
+        const char16_t ch = subject[offset];
         if ((filter & ch) != ch) {
           ++offset;
         } else {
@@ -227,7 +227,7 @@ inline int VM::Main(Code* code, const Piece& subject,
       }
 
       DEFINE_OPCODE(BACK_REFERENCE) {
-        const uint16_t ref = Load2Bytes(instr + 1);
+        const char16_t ref = Load2Bytes(instr + 1);
         assert(ref != 0);  // limited by parser
         if (ref < code->captures() && state_[ref * 2 + 1] != kUndefined) {
           assert(state_[ref * 2] != kUndefined);
@@ -251,7 +251,7 @@ inline int VM::Main(Code* code, const Piece& subject,
       }
 
       DEFINE_OPCODE(BACK_REFERENCE_IGNORE_CASE) {
-        const uint16_t ref = Load2Bytes(instr + 1);
+        const char16_t ref = Load2Bytes(instr + 1);
         if (ref < code->captures() &&
             state_[ref * 2] != kUndefined &&
             state_[ref * 2 + 1] != kUndefined) {
@@ -265,7 +265,7 @@ inline int VM::Main(Code* code, const Piece& subject,
           for (typename Piece::const_iterator it = subject.begin() + start,
                last = subject.begin() + start + length; it != last;
                ++it, ++current_position) {
-            const uint16_t current = subject[current_position];
+            const char16_t current = subject[current_position];
             if (current == *it ||
                 current == core::character::ToUpperCase(*it) ||
                 current == core::character::ToLowerCase(*it)) {
@@ -331,7 +331,7 @@ inline int VM::Main(Code* code, const Piece& subject,
 
       DEFINE_OPCODE(CHECK_2CHAR_OR) {
         if (current_position < subject.size()) {
-          const uint16_t ch = subject[current_position];
+          const char16_t ch = subject[current_position];
           if (ch == Load2Bytes(instr + 1) || ch == Load2Bytes(instr + 3)) {
             ++current_position;
             DISPATCH_NEXT(CHECK_2CHAR_OR);
@@ -342,7 +342,7 @@ inline int VM::Main(Code* code, const Piece& subject,
 
       DEFINE_OPCODE(CHECK_3CHAR_OR) {
         if (current_position < subject.size()) {
-          const uint16_t ch = subject[current_position];
+          const char16_t ch = subject[current_position];
           if (ch == Load2Bytes(instr + 1) ||
               ch == Load2Bytes(instr + 3) ||
               ch == Load2Bytes(instr + 5)) {
@@ -423,15 +423,15 @@ inline int VM::Main(Code* code, const Piece& subject,
 
       DEFINE_OPCODE(CHECK_RANGE) {
         if (current_position < subject.size()) {
-          const uint16_t ch = subject[current_position];
+          const char16_t ch = subject[current_position];
           const uint32_t length = Load4Bytes(instr + 1);
           bool in_range = false;
           for (std::size_t i = 0; i < length; i += 4) {
-            const uint16_t start = Load2Bytes(instr + 1 + 4 + i);
+            const char16_t start = Load2Bytes(instr + 1 + 4 + i);
             if (ch < start) {
               break;
             }
-            const uint16_t finish = Load2Bytes(instr + 1 + 4 + i + 2);
+            const char16_t finish = Load2Bytes(instr + 1 + 4 + i + 2);
             if (ch <= finish) {
               in_range = true;
               break;
@@ -447,15 +447,15 @@ inline int VM::Main(Code* code, const Piece& subject,
 
       DEFINE_OPCODE(CHECK_RANGE_INVERTED) {
         if (current_position < subject.size()) {
-          const uint16_t ch = subject[current_position];
+          const char16_t ch = subject[current_position];
           const uint32_t length = Load4Bytes(instr + 1);
           bool in_range = false;
           for (std::size_t i = 0; i < length; i += 4) {
-            const uint16_t start = Load2Bytes(instr + 1 + 4 + i);
+            const char16_t start = Load2Bytes(instr + 1 + 4 + i);
             if (ch < start) {
               break;
             }
-            const uint16_t finish = Load2Bytes(instr + 1 + 4 + i + 2);
+            const char16_t finish = Load2Bytes(instr + 1 + 4 + i + 2);
             if (ch <= finish) {
               in_range = true;
               break;

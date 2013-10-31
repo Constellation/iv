@@ -28,9 +28,9 @@ class QuickCheck : private Visitor {
       enabled_(true),
       added_character_count_(0) { }
 
-  std::pair<uint16_t, std::size_t> Emit(Disjunction* dis);
+  std::pair<char16_t, std::size_t> Emit(Disjunction* dis);
 
-  const core::BloomFilter<uint16_t>& filter() {
+  const core::BloomFilter<char16_t>& filter() {
     return filter_;
   }
 
@@ -58,13 +58,13 @@ class QuickCheck : private Visitor {
   void Visit(DisjunctionAtom* atom);
   void Visit(Quantifiered* atom);
 
-  void Emit(uint16_t ch) {
+  void Emit(char16_t ch) {
     filter_.Add(ch);
     ++added_character_count_;
   }
 
   Compiler* compiler_;
-  core::BloomFilter<uint16_t> filter_;
+  core::BloomFilter<char16_t> filter_;
   bool enabled_;
   std::size_t added_character_count_;
 };

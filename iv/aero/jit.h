@@ -45,7 +45,7 @@ struct Reg {
 };
 
 template<>
-struct Reg<uint16_t> {
+struct Reg<char16_t> {
   typedef Xbyak::Reg16 type;
   static const type& GetR10(Xbyak::CodeGenerator* gen) {
     return gen->r10w;
@@ -78,13 +78,13 @@ class JIT : public Xbyak::CodeGenerator {
   typedef typename Code::Data::const_pointer const_pointer;
 
   IV_STATIC_ASSERT((std::is_same<CharT, char>::value ||
-                    std::is_same<CharT, uint16_t>::value));
+                    std::is_same<CharT, char16_t>::value));
 
   static const int kIntSize = core::Size::kIntSize;
   static const int kPtrSize = core::Size::kPointerSize;
   static const int kCharSize = sizeof(CharT);  // NOLINT
   static const int k8Size = sizeof(uint8_t);  // NOLINT
-  static const int k16Size = sizeof(uint16_t);  // NOLINT
+  static const int k16Size = sizeof(char16_t);  // NOLINT
   static const int k32Size = sizeof(uint32_t);  // NOLINT
   static const int k64Size = sizeof(uint64_t);  // NOLINT
   static const int kStackSize = k64Size * 11;
@@ -345,7 +345,7 @@ IV_AERO_OPCODES(V)
   }
 
   void EmitQuickCheck() {
-    const uint16_t filter = code_.filter();
+    const char16_t filter = code_.filter();
     inLocalLabel();
     if (!filter) {
       // normal path
@@ -646,7 +646,7 @@ IV_AERO_OPCODES(V)
     inLocalLabel();
     if (!kASCII) {
       // insert ASCII check
-      test(reg, static_cast<uint16_t>(65408));  // (1111111110000000)2
+      test(reg, static_cast<char16_t>(65408));  // (1111111110000000)2
       jnz(".exit");
     }
     static const char tbl[128] = {
@@ -825,7 +825,7 @@ IV_AERO_OPCODES(V)
   }
 
   void EmitBACK_REFERENCE(const uint8_t* instr, uint32_t len) {
-    const uint16_t ref = Load2Bytes(instr + 1);
+    const char16_t ref = Load2Bytes(instr + 1);
     assert(ref != 0);  // limited by parser
     if (ref >= code_.captures()) {
       return;
@@ -867,7 +867,7 @@ IV_AERO_OPCODES(V)
   }
 
   void EmitBACK_REFERENCE_IGNORE_CASE(const uint8_t* instr, uint32_t len) {
-    const uint16_t ref = Load2Bytes(instr + 1);
+    const char16_t ref = Load2Bytes(instr + 1);
     assert(ref != 0);  // limited by parser
     if (ref >= code_.captures()) {
       return;
@@ -963,7 +963,7 @@ IV_AERO_OPCODES(V)
       jmp(jit_detail::kBackTrackLabel, T_NEAR);
       return;
     }
-    const uint16_t ch = Load2Bytes(instr + 1);
+    const char16_t ch = Load2Bytes(instr + 1);
     if (offset < 0) {
       EmitSizeGuard();
       if (ch <= 0x7FFF) {  // INT16_MAX
@@ -986,8 +986,8 @@ IV_AERO_OPCODES(V)
   }
 
   void EmitCHECK_2CHAR_OR(const uint8_t* instr, uint32_t len, int offset = -1) {
-    const uint16_t first = Load2Bytes(instr + 1);
-    const uint16_t second = Load2Bytes(instr + 3);
+    const char16_t first = Load2Bytes(instr + 1);
+    const char16_t second = Load2Bytes(instr + 3);
     inLocalLabel();
     if (offset < 0) {
       EmitSizeGuard();
@@ -1012,9 +1012,9 @@ IV_AERO_OPCODES(V)
   }
 
   void EmitCHECK_3CHAR_OR(const uint8_t* instr, uint32_t len, int offset = -1) {
-    const uint16_t first = Load2Bytes(instr + 1);
-    const uint16_t second = Load2Bytes(instr + 3);
-    const uint16_t third = Load2Bytes(instr + 5);
+    const char16_t first = Load2Bytes(instr + 1);
+    const char16_t second = Load2Bytes(instr + 3);
+    const char16_t third = Load2Bytes(instr + 5);
     inLocalLabel();
     if (offset < 0) {
       EmitSizeGuard();
@@ -1052,8 +1052,8 @@ IV_AERO_OPCODES(V)
     }
     const uint32_t length = Load4Bytes(instr + 1);
     for (std::size_t i = 0; i < length; i += 4) {
-      const uint16_t start = Load2Bytes(instr + 1 + 4 + i);
-      const uint16_t finish = Load2Bytes(instr + 1 + 4 + i + 2);
+      const char16_t start = Load2Bytes(instr + 1 + 4 + i);
+      const char16_t finish = Load2Bytes(instr + 1 + 4 + i + 2);
       if (kASCII && (!core::character::IsASCII(start))) {
         jmp(jit_detail::kBackTrackLabel, T_NEAR);
         break;
@@ -1086,8 +1086,8 @@ IV_AERO_OPCODES(V)
     }
     const uint32_t length = Load4Bytes(instr + 1);
     for (std::size_t i = 0; i < length; i += 4) {
-      const uint16_t start = Load2Bytes(instr + 1 + 4 + i);
-      const uint16_t finish = Load2Bytes(instr + 1 + 4 + i + 2);
+      const char16_t start = Load2Bytes(instr + 1 + 4 + i);
+      const char16_t finish = Load2Bytes(instr + 1 + 4 + i + 2);
       if (kASCII && (!core::character::IsASCII(start))) {
         jmp(".SUCCESS", T_NEAR);
         break;

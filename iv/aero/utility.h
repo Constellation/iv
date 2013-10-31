@@ -9,8 +9,8 @@ inline uint8_t Load1Bytes(Iter ptr) {
 }
 
 template<typename Iter>
-inline uint16_t Load2Bytes(Iter ptr) {
-  return (static_cast<uint16_t>(*ptr) << 8) | *(ptr + 1);
+inline char16_t Load2Bytes(Iter ptr) {
+  return (static_cast<char16_t>(*ptr) << 8) | *(ptr + 1);
 }
 
 template<typename Iter>

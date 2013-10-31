@@ -13,7 +13,7 @@ class Code {
   friend class VM;
   typedef std::vector<uint8_t> Data;
   Code(const std::vector<uint8_t>& vec,
-       int captures, int counters, uint16_t filter, bool one_char)
+       int captures, int counters, char16_t filter, bool one_char)
     : bytes_(vec),
       captures_(captures),
       counters_(counters),
@@ -33,7 +33,7 @@ class Code {
 
   int captures() const { return captures_; }
 
-  uint16_t filter() const { return filter_; }
+  char16_t filter() const { return filter_; }
 
   bool IsQuickCheckOneChar() const { return one_char_; }
 
@@ -41,7 +41,7 @@ class Code {
   Data bytes_;
   int captures_;
   int counters_;
-  uint16_t filter_;
+  char16_t filter_;
   bool one_char_;
 #if defined(IV_ENABLE_JIT)
   core::unique_ptr<JITCode> jit_;

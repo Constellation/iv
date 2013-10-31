@@ -281,7 +281,7 @@ class Parser {
         if (!core::character::IsASCIIAlpha(c_)) {
           return new(factory_)CharacterAtom('c');
         }
-        const uint16_t ch = c_;
+        const char16_t ch = c_;
         Advance();
         return new(factory_)CharacterAtom(ch % 32);
       }
@@ -336,7 +336,7 @@ class Parser {
       case '0': {
         // maybe octal
         const double numeric = ParseNumericClassEscape();
-        const uint16_t ch = static_cast<uint16_t>(numeric);
+        const char16_t ch = static_cast<char16_t>(numeric);
         if (ch != numeric) {
           RAISE(NUMBER_TOO_BIG);
         }
@@ -348,7 +348,7 @@ class Parser {
         } else if (c_ < 0) {
           UNEXPECT(c_);
         } else {
-          const uint16_t uc = c_;
+          const char16_t uc = c_;
           Advance();
           return new(factory_)CharacterAtom(uc);
         }
@@ -357,7 +357,7 @@ class Parser {
   }
 
   int ParseHexEscape(int len) {
-    uint16_t res = 0;
+    char16_t res = 0;
     for (int i = 0; i < len; ++i) {
       const int d = core::HexValue(c_);
       if (d < 0) {
@@ -395,20 +395,20 @@ class Parser {
         core::ParseIntegerOverflow(
             buffer8_.data(),
             buffer8_.data() + buffer8_.size(), 8) : 0;
-    const uint16_t ref = static_cast<uint16_t>(decimal);
+    const char16_t ref = static_cast<char16_t>(decimal);
     if (ref != decimal) {
       RAISE(NUMBER_TOO_BIG);
     }
     // back reference validation is not done
     // so, we should validate there is reference
     // which back reference is targeting
-    return new(factory_)BackReferenceAtom(ref, static_cast<uint16_t>(octal));
+    return new(factory_)BackReferenceAtom(ref, static_cast<char16_t>(octal));
   }
 
 
   double ParseNumericClassEscape() {
     assert(core::character::IsDecimalDigit(c_));
-    const uint16_t ch = c_;
+    const char16_t ch = c_;
     buffer8_.clear();
 
     bool start_with_zero = false;
@@ -482,8 +482,8 @@ class Parser {
     while (0 <= c_ && c_ != ']') {
       // first class atom
       assert(c_ != ']');
-      uint16_t ranged1 = 0;
-      const uint16_t start = ParseClassAtom(&ranged1, CHECK);
+      char16_t ranged1 = 0;
+      const char16_t start = ParseClassAtom(&ranged1, CHECK);
       if (c_ == '-') {
         // ClassAtom - ClassAtom ClassRanges
         Advance();
@@ -494,8 +494,8 @@ class Parser {
           ranges_.Add('-', false);
           break;
         } else {
-          uint16_t ranged2 = 0;
-          const uint16_t last = ParseClassAtom(&ranged2, CHECK);
+          char16_t ranged2 = 0;
+          const char16_t last = ParseClassAtom(&ranged2, CHECK);
           if (ranged1 || ranged2) {
             ranges_.AddOrEscaped(ranged1, start);
             ranges_.Add('-', false);
@@ -517,7 +517,7 @@ class Parser {
     return new(factory_)RangeAtom(invert, NewRange(ranges_.Finish()));
   }
 
-  uint16_t ParseClassAtom(uint16_t* ranged, int* e) {
+  char16_t ParseClassAtom(char16_t* ranged, int* e) {
     if (c_ == '\\') {
       // ClassEscape
       // get range
@@ -590,21 +590,21 @@ class Parser {
             return 0;
           } else if (core::character::IsDecimalDigit(c_)) {
             const double numeric = ParseNumericClassEscape();
-            const uint16_t uc = static_cast<uint16_t>(numeric);
+            const char16_t uc = static_cast<char16_t>(numeric);
             if (uc != numeric) {
               *e = NUMBER_TOO_BIG;
               return 0;
             }
             return uc;
           } else {
-            const uint16_t ch = c_;
+            const char16_t ch = c_;
             Advance();
             return ch;
           }
         }
       }
     } else {
-      const uint16_t ch = c_;
+      const char16_t ch = c_;
       Advance();
       return ch;
     }
