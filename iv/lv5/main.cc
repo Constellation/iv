@@ -244,7 +244,13 @@ int main(int argc, char **argv) {
   }
 
   if (cmd.Exist("version")) {
-    std::printf("lv5 %s (compiled %s %s)\n", IV_VERSION, __DATE__, __TIME__);
+    const char* jit
+#if defined(IV_ENABLE_JIT)
+        = "on";
+#else
+        = "off";
+#endif
+    std::printf("lv5 %s (compiled %s %s with JIT [%s])\n", IV_VERSION, __DATE__, __TIME__, jit);
     return EXIT_SUCCESS;
   }
 
