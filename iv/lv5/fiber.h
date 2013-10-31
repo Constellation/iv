@@ -66,11 +66,11 @@ class FiberSlot {
   const FiberSlot& operator=(const FiberSlot&);
 };
 
-template<typename CharT>
+template<typename CharT, typename ExportCharT>
 class Fiber;
 
-typedef Fiber<char> Fiber8;
-typedef Fiber<uint16_t> Fiber16;
+typedef Fiber<uint8_t,  char>     Fiber8;
+typedef Fiber<uint16_t, uint16_t> Fiber16;
 
 class FiberBase : public FiberSlot {
  public:
@@ -246,7 +246,7 @@ class FiberBase : public FiberSlot {
   FiberBase* original_;
 };
 
-template<typename CharT>
+template<typename CharT, typename ExportCharT>
 class Fiber : public FiberBase {
  public:
   typedef Fiber this_type;
@@ -265,8 +265,8 @@ class Fiber : public FiberBase {
   typedef typename std::iterator_traits<iterator>::difference_type difference_type;  // NOLINT
   typedef std::size_t size_type;
 
-  static const uint32_t k8BitFlag =
-      std::is_same<CharT, char>::value ? FiberSlot::IS_8BIT : FiberSlot::NONE;
+  static const uint32_t k8BitFlag = std::is_same<CharT, uint16_t>::value ?
+      FiberSlot::NONE : FiberSlot::IS_8BIT;
 
   static std::size_t GetControlSize() {
     return IV_ROUNDUP(sizeof(this_type), sizeof(char_type));
@@ -300,9 +300,9 @@ class Fiber : public FiberBase {
       ptr_(fiber->ptr_ + from) {
   }
 
-  explicit Fiber(const core::BasicStringPiece<CharT>& str)
+  explicit Fiber(const core::BasicStringPiece<ExportCharT>& str)
     : FiberBase(str.size(), k8BitFlag | IS_ORIGINAL | IS_EXTERNAL, this),
-      ptr_(const_cast<CharT*>(str.data())) {
+      ptr_(reinterpret_cast<CharT*>(const_cast<ExportCharT*>(str.data()))) {
   }
 
  public:
@@ -327,7 +327,8 @@ class Fiber : public FiberBase {
     return new (mem) Fiber(it, n);
   }
 
-  static this_type* NewWithExternal(const core::BasicStringPiece<CharT>& str) {
+  static this_type* NewWithExternal(
+      const core::BasicStringPiece<ExportCharT>& str) {
     return new (GC_MALLOC_ATOMIC(sizeof(this_type))) Fiber(str);
   }
 
@@ -335,8 +336,9 @@ class Fiber : public FiberBase {
     return new (GC_MALLOC_ATOMIC(sizeof(this_type))) Fiber(original, from, to);
   }
 
-  operator core::BasicStringPiece<char_type>() const {
-    return core::BasicStringPiece<char_type>(data(), size());
+  operator core::BasicStringPiece<ExportCharT>() const {
+    return core::BasicStringPiece<ExportCharT>(
+        reinterpret_cast<const ExportCharT*>(data()), size());
   }
 
   const_reference operator[](size_type n) const {

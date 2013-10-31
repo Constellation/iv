@@ -32,12 +32,12 @@ class MaybeJSONParser : private core::Noncopyable<MaybeJSONParser> {
       const Fiber8* fiber = str_->Get8Bit();
       return ParseJSON<false>(
           ctx,
-          core::StringPiece(fiber->data() + 1, fiber->size() - 2), e);
+          core::StringPiece(*fiber).substr(1, fiber->size() - 2), e);
     } else {
       const Fiber16* fiber = str_->Get16Bit();
       return ParseJSON<false>(
           ctx,
-          core::UStringPiece(fiber->data() + 1, fiber->size() - 2), e);
+          core::UStringPiece(*fiber).substr(1, fiber->size() - 2), e);
     }
   }
 

@@ -42,7 +42,7 @@ inline int64_t SplitMatch(JSString* str, uint32_t q, JSString* rhs) {
   if (str->Is8Bit() == rhs->Is8Bit()) {
     // same type
     if (str->Is8Bit()) {
-      if (std::char_traits<char>::compare(
+      if (std::char_traits<uint8_t>::compare(
               rhs->Get8Bit()->data(),
               str->Get8Bit()->data() + q, rs) != 0) {
         return -1;

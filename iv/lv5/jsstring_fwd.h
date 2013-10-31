@@ -569,9 +569,9 @@ class JSString: public JSCell {
     return static_cast<const FiberBase*>(fibers_[0]);
   }
 
-  template<typename CharT>
+  template<typename FiberT>
   void FastFlattenImpl(const FiberBase* head, const FiberBase* tail) const {
-    Fiber<CharT>* fiber = Fiber<CharT>::NewWithSize(size_);
+    FiberT* fiber = FiberT::NewWithSize(size_);
     tail->Copy(head->Copy(fiber->begin()));
     // these are Fibers, not Cons. so simply call Release
     fiber_count_ = 1;
@@ -582,15 +582,15 @@ class JSString: public JSCell {
     // use fast case flatten
     // Fiber and Fiber
     if (Is8Bit()) {
-      FastFlattenImpl<char>(head, tail);
+      FastFlattenImpl<Fiber8>(head, tail);
     } else {
-      FastFlattenImpl<uint16_t>(head, tail);
+      FastFlattenImpl<Fiber16>(head, tail);
     }
   }
 
-  template<typename CharT>
+  template<typename FiberT>
   void SlowFlattenImpl() const {
-    Fiber<CharT>* fiber = Fiber<CharT>::NewWithSize(size_);
+    FiberT* fiber = FiberT::NewWithSize(size_);
     Copy(fiber->begin());
     fiber_count_ = 1;
     fibers_[0] = fiber;
@@ -598,9 +598,9 @@ class JSString: public JSCell {
 
   void SlowFlatten() const {
     if (Is8Bit()) {
-      SlowFlattenImpl<char>();
+      SlowFlattenImpl<Fiber8>();
     } else {
-      SlowFlattenImpl<uint16_t>();
+      SlowFlattenImpl<Fiber16>();
     }
   }
 
@@ -627,7 +627,7 @@ class JSString: public JSCell {
 inline std::ostream& operator<<(std::ostream& os, const JSString& str) {
   if (str.Is8Bit()) {
     const Fiber8* fiber = str.Get8Bit();
-    os.write(fiber->data(), fiber->size());
+    os.write(reinterpret_cast<const char*>(fiber->data()), fiber->size());
   } else {
     const Fiber16* fiber = str.Get16Bit();
     core::unicode::UTF16ToUTF8(fiber->begin(),
