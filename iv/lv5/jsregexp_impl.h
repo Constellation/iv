@@ -75,7 +75,7 @@ class JSRegExpImpl : public gc_cleanup {
   static int ComputeFlags(Iter it, Iter last) {
     int flags = 0;
     for (; it != last; ++it) {
-      const uint16_t c = *it;
+      const char16_t c = *it;
       if (c == 'g') {
         if (flags & GLOBAL) {
           return -1;

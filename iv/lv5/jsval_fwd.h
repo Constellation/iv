@@ -486,6 +486,13 @@ class JSVal : public JSLayout {
   }
 
   template<typename T>
+  static inline JSVal UInt16(
+      T val,
+      typename enable_if<std::is_same<char16_t, T> >::type* = 0) {
+    return JSVal(static_cast<uint16_t>(val), detail::UInt16Tag());
+  }
+
+  template<typename T>
   static inline JSVal Int32(
       T val,
       typename enable_if<std::is_same<int32_t, T> >::type* = 0) {

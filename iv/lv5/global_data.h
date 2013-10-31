@@ -207,7 +207,7 @@ class GlobalData {
   JSString* string_empty_regexp() const { return string_empty_regexp_; }
 
   // If string is not cached, return NULL
-  JSString* GetSingleString(uint16_t ch) {
+  JSString* GetSingleString(char16_t ch) {
     if (ch < 0x80) {
       // caching value
       if (string_cache_[ch]) {

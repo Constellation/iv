@@ -68,9 +68,9 @@ struct GCHashSet {
   typedef std::unordered_set<T, Hash, Equal, GCAllocator<T> > type;
 };
 
-typedef std::basic_string<uint16_t,
-                          std::char_traits<uint16_t>,
-                          GCAllocator<uint16_t> > GCUString;
+typedef std::basic_string<char16_t,
+                          std::char_traits<char16_t>,
+                          GCAllocator<char16_t> > GCUString;
 
 struct GCAlloc {
   void* New(size_t sz) { return operator new(sz, GC); }

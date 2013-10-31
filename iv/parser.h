@@ -1837,7 +1837,7 @@ class Parser : private Noncopyable<> {
   Expression* ParseRegExpLiteral(bool contains_eq, bool *res) {
     assert(token_ == Token::TK_DIV || token_ == Token::TK_ASSIGN_DIV);
     if (lexer_.ScanRegExpLiteral(contains_eq)) {
-      const std::vector<uint16_t> content(lexer_.Buffer());
+      const std::vector<char16_t> content(lexer_.Buffer());
       if (!lexer_.ScanRegExpFlags()) {
         IV_RAISE("invalid regular expression flag");
       }

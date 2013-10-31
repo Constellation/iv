@@ -19,7 +19,7 @@ namespace lv5 {
 namespace runtime {
 namespace detail {
 
-inline bool IsURIMark(uint16_t ch) {
+inline bool IsURIMark(char16_t ch) {
   return
       ch <= 126 &&
       (ch == 33 || ((39 <= ch) &&
@@ -27,7 +27,7 @@ inline bool IsURIMark(uint16_t ch) {
                                     ((ch <= 46) || ch == 95 || ch == 126)))));
 }
 
-inline bool IsURIReserved(uint16_t ch) {
+inline bool IsURIReserved(char16_t ch) {
   return
       ch <= 64 &&
       (ch == 36 || ch == 38 || ((43 <= ch) &&
@@ -36,7 +36,7 @@ inline bool IsURIReserved(uint16_t ch) {
                                    ((ch <= 59) || ch == 61 || (63 <= ch)))))));
 }
 
-inline bool IsEscapeTarget(uint16_t ch) {
+inline bool IsEscapeTarget(char16_t ch) {
   return
       '@' == ch ||
       '*' == ch ||
@@ -49,11 +49,11 @@ inline bool IsEscapeTarget(uint16_t ch) {
 
 class URIComponent : core::Noncopyable<> {
  public:
-  static bool ContainsInEncode(uint16_t ch) {
+  static bool ContainsInEncode(char16_t ch) {
     return core::character::IsASCII(ch) &&
         (core::character::IsASCIIAlphanumeric(ch) || IsURIMark(ch));
   }
-  static bool ContainsInDecode(uint16_t ch) {
+  static bool ContainsInDecode(char16_t ch) {
     // Empty String
     return false;
   }
@@ -61,26 +61,26 @@ class URIComponent : core::Noncopyable<> {
 
 class URI : core::Noncopyable<> {
  public:
-  static bool ContainsInEncode(uint16_t ch) {
+  static bool ContainsInEncode(char16_t ch) {
     return core::character::IsASCII(ch) &&
         (core::character::IsASCIIAlphanumeric(ch) ||
          IsURIMark(ch) ||
          ch == '#' ||
          IsURIReserved(ch));
   }
-  static bool ContainsInDecode(uint16_t ch) {
+  static bool ContainsInDecode(char16_t ch) {
     return IsURIReserved(ch) || ch == '#';
   }
 };
 
 class Escape : core::Noncopyable<> {
  public:
-  static bool ContainsInEncode(uint16_t ch) {
+  static bool ContainsInEncode(char16_t ch) {
     return core::character::IsASCII(ch) &&
         (core::character::IsASCIIAlphanumeric(ch) ||
          IsEscapeTarget(ch));
   }
-  static bool ContainsInDecode(uint16_t ch) {
+  static bool ContainsInDecode(char16_t ch) {
     return IsURIReserved(ch) || ch == '#';
   }
 };
@@ -89,12 +89,12 @@ template<typename URITraits, typename FiberType>
 JSVal Encode(Context* ctx, const FiberType* fiber, Error* e) {
   static const char kHexDigits[17] = "0123456789ABCDEF";
   std::array<uint8_t, 4> uc8buf;
-  std::array<uint16_t, 3> hexbuf;
+  std::array<char16_t, 3> hexbuf;
   JSStringBuilder builder;
   hexbuf[0] = '%';
   for (typename FiberType::const_iterator it = fiber->begin(),
        last = fiber->end(); it != last; ++it) {
-    const uint16_t ch = *it;
+    const char16_t ch = *it;
     if (URITraits::ContainsInEncode(ch)) {
       builder.Append(ch);
     } else {
@@ -115,7 +115,7 @@ JSVal Encode(Context* ctx, const FiberType* fiber, Error* e) {
           e->Report(Error::URI, "invalid uri char");
           return JSUndefined;
         }
-        const uint16_t k_char = *it;
+        const char16_t k_char = *it;
         if (!core::unicode::IsLowSurrogate(k_char)) {
           // k_char is not low surrogate
           e->Report(Error::URI, "invalid uri char");
@@ -142,11 +142,11 @@ template<typename URITraits, typename FiberType>
 JSVal Decode(Context* ctx, const FiberType* fiber, Error* e) {
   JSStringBuilder builder;
   const uint32_t length = fiber->size();
-  std::array<uint16_t, 3> buf;
+  std::array<char16_t, 3> buf;
   std::array<uint8_t, 4> octets;
   buf[0] = '%';
   for (uint32_t k = 0; k < length; ++k) {
-    const uint16_t ch = (*fiber)[k];
+    const char16_t ch = (*fiber)[k];
     if (ch != '%') {
       builder.Append(ch);
     } else {
@@ -169,7 +169,7 @@ JSVal Decode(Context* ctx, const FiberType* fiber, Error* e) {
         if (URITraits::ContainsInDecode(b0)) {
           builder.Append(buf.begin(), 3);
         } else {
-          builder.Append(static_cast<uint16_t>(b0));
+          builder.Append(static_cast<char16_t>(b0));
         }
       } else {
         // b0 is 1xxxxxxx
@@ -216,7 +216,7 @@ JSVal Decode(Context* ctx, const FiberType* fiber, Error* e) {
         }
         if (v < 0x10000) {
           // not surrogate pair
-          const uint16_t code = static_cast<uint16_t>(v);
+          const char16_t code = static_cast<char16_t>(v);
           if (URITraits::ContainsInDecode(code)) {
             builder.Append(fiber->data() + start, (k - start + 1));
           } else {
@@ -225,10 +225,10 @@ JSVal Decode(Context* ctx, const FiberType* fiber, Error* e) {
         } else {
           // surrogate pair
           v -= 0x10000;
-          const uint16_t L =
+          const char16_t L =
               (v & core::unicode::kLowSurrogateMask) +
               core::unicode::kLowSurrogateMin;
-          const uint16_t H =
+          const char16_t H =
               ((v >> core::unicode::kSurrogateBits) &
                core::unicode::kHighSurrogateMask) +
               core::unicode::kHighSurrogateMin;
@@ -374,13 +374,13 @@ JSVal ThrowTypeError(const Arguments& args, Error* e) {
 template<typename FiberType>
 inline JSVal detail::EscapeHelper(Context* ctx, const FiberType* fiber, Error* e) {
   const char kHexDigits[17] = "0123456789ABCDEF";
-  std::array<uint16_t, 3> hexbuf;
+  std::array<char16_t, 3> hexbuf;
   hexbuf[0] = '%';
   JSStringBuilder builder;
   const std::size_t len = fiber->size();
   for (typename FiberType::const_iterator it = fiber->begin(),
        last = it + len; it != last; ++it) {
-    const uint16_t ch = *it;
+    const char16_t ch = *it;
     if (detail::Escape::ContainsInEncode(ch)) {
       builder.Append(ch);
     } else {
@@ -419,7 +419,7 @@ inline JSVal detail::UnescapeHelper(Context* ctx, const FiberType* fiber, Error*
   const std::size_t len = fiber->size();
   std::size_t k = 0;
   while (k != len) {
-    const uint16_t ch = (*fiber)[k];
+    const char16_t ch = (*fiber)[k];
     if (ch == '%') {
       if (k <= (len - 6) &&
           (*fiber)[k + 1] == 'u' &&
@@ -427,7 +427,7 @@ inline JSVal detail::UnescapeHelper(Context* ctx, const FiberType* fiber, Error*
           core::character::IsHexDigit((*fiber)[k + 3]) &&
           core::character::IsHexDigit((*fiber)[k + 4]) &&
           core::character::IsHexDigit((*fiber)[k + 5])) {
-        uint16_t uc = '\0';
+        char16_t uc = '\0';
         for (int i = k + 2, last = k + 6; i < last; ++i) {
           const int d = core::HexValue((*fiber)[i]);
           uc = uc * 16 + d;

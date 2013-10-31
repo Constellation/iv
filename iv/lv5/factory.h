@@ -31,8 +31,8 @@ class AstFactory
   }
 
   inline RegExpLiteral* NewRegExpLiteral(
-      const std::vector<uint16_t>& content,
-      const std::vector<uint16_t>& flags,
+      const std::vector<char16_t>& content,
+      const std::vector<char16_t>& flags,
       std::size_t begin,
       std::size_t end,
       std::size_t line_number) {

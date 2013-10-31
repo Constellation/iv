@@ -304,7 +304,7 @@ class NumberFormat {
             NumberingSystem::Lookup(NumberingSystem::LATN)) {
         for (UString::iterator it = n.begin(), last = n.end();
              it != last; ++it) {
-          const uint16_t ch = *it;
+          const char16_t ch = *it;
           if (character::IsDecimalDigit(ch)) {
             *it = numbering_system()->mapping[DecimalValue(ch)];
           }

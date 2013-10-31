@@ -28,7 +28,7 @@ namespace detail {
 static inline JSVal StringToStringValueOfImpl(JSVal this_binding,
                                               const char* msg, Error* e);
 
-static inline bool IsTrimmed(uint16_t c) {
+static inline bool IsTrimmed(char16_t c) {
   return core::character::IsWhiteSpace(c) ||
          core::character::IsLineTerminator(c);
 }
@@ -48,7 +48,7 @@ inline int64_t SplitMatch(JSString* str, uint32_t q, JSString* rhs) {
         return -1;
       }
     } else {
-      if (std::char_traits<uint16_t>::compare(
+      if (std::char_traits<char16_t>::compare(
               rhs->Get16Bit()->data(),
               str->Get16Bit()->data() + q, rs) != 0) {
         return -1;
@@ -215,12 +215,12 @@ class StringReplacer : public Replacer<StringReplacer> {
   void DoReplaceImpl(const FiberType* fiber, Builder* builder, Error* e) {
     using std::get;
     Replace::State state = Replace::kNormal;
-    uint16_t upper_digit_char = '\0';
+    char16_t upper_digit_char = '\0';
     for (typename FiberType::const_iterator it = fiber->begin(),
          last = fiber->end();
          it != last; ++it) {
 start:  // NOLINT
-      const uint16_t ch = *it;
+      const char16_t ch = *it;
       if (state == Replace::kNormal) {
         if (ch == '$') {
           state = Replace::kDollar;
@@ -400,7 +400,7 @@ inline void ReplaceOnce(Builder* builder,
   Replace::State state = Replace::kNormal;
   for (typename FiberType::const_iterator it = replace_str->begin(),
        last = replace_str->end(); it != last; ++it) {
-    const uint16_t ch = *it;
+    const char16_t ch = *it;
     if (state == Replace::kNormal) {
       if (ch == '$') {
         state = Replace::kDollar;
@@ -632,11 +632,11 @@ JSVal StringCodePointAt(const Arguments& args, Error* e) {
     }
     pos = static_cast<uint32_t>(position);
   }
-  const uint16_t first = str->At(pos);
+  const char16_t first = str->At(pos);
   if (first < 0xD800 || first > 0xDBFF || (pos + 1) == str->size()) {
     return JSVal::UInt16(first);
   }
-  const uint16_t second = str->At(pos + 1);
+  const char16_t second = str->At(pos + 1);
   if (second < 0xDC00 || second > 0xDFFF) {
     return JSVal::UInt16(first);
   }
@@ -1064,7 +1064,7 @@ JSString* ConvertCase(Context* ctx, JSString* str, Converter converter, Error* e
     return JSString::New(ctx, builder.begin(), builder.end(), true, e);
   } else {
     // Special Casing is considered
-    std::vector<uint16_t> builder;
+    std::vector<char16_t> builder;
     builder.reserve(str->size());
     const Fiber16* fiber = str->Get16Bit();
     for (Fiber16::const_iterator it = fiber->begin(),
@@ -1085,13 +1085,13 @@ JSString* ConvertCase(Context* ctx, JSString* str, Converter converter, Error* e
 }
 
 struct ToLowerCase {
-  uint64_t operator()(uint16_t ch) {
+  uint64_t operator()(char16_t ch) {
     return core::character::ToLowerCase(ch);
   }
 };
 
 struct ToUpperCase {
-  uint64_t operator()(uint16_t ch) {
+  uint64_t operator()(char16_t ch) {
     return core::character::ToUpperCase(ch);
   }
 };
@@ -1099,12 +1099,12 @@ struct ToUpperCase {
 template<typename Iter, typename Converter>
 JSString* ConvertCaseLocale(Context* ctx,
                                    Iter it, Iter last, Converter converter, Error* e) {
-  std::vector<uint16_t> builder;
+  std::vector<char16_t> builder;
   builder.reserve(std::distance(it, last));
   int prev = core::character::code::DEFAULT;
   int next = core::character::code::DEFAULT;
   for (; it != last;) {
-    const uint16_t ch = *it;
+    const char16_t ch = *it;
     ++it;
     if (it != last) {
       next = *it;
@@ -1131,7 +1131,7 @@ JSString* ConvertCaseLocale(Context* ctx,
 
 struct ToLocaleUpperCase {
   uint64_t operator()(core::character::locale::Locale locale,
-                      uint16_t c, int prev, int next) {
+                      char16_t c, int prev, int next) {
     return core::character::ToLocaleUpperCase(locale, c, prev, next);
   }
 };
@@ -1139,7 +1139,7 @@ struct ToLocaleUpperCase {
 
 struct ToLocaleLowerCase {
   uint64_t operator()(core::character::locale::Locale locale,
-                      uint16_t c, int prev, int next) {
+                      char16_t c, int prev, int next) {
     return core::character::ToLocaleLowerCase(locale, c, prev, next);
   }
 };

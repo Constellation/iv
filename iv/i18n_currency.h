@@ -15,7 +15,7 @@ struct CurrencyData {
   int digits;
   struct CurrencyCode {
     std::size_t size;
-    uint16_t data[kMaxCurrencyCodeSize];
+    char16_t data[kMaxCurrencyCodeSize];
   } symbol;
 
   int CurrencyDigits() const {

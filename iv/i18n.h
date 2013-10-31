@@ -19,14 +19,14 @@ namespace i18n {
 
 // Only mapping ASCII characters
 // 6.1 Case Sensitivity and Case Mapping
-inline uint16_t ToLocaleIdentifierUpperCase(uint16_t ch) {
+inline char16_t ToLocaleIdentifierUpperCase(char16_t ch) {
   if ('a' <= ch && ch <= 'z') {
     return ch - 'a' + 'A';
   }
   return ch;
 }
 
-inline uint16_t ToLocaleIdentifierLowerCase(uint16_t ch) {
+inline char16_t ToLocaleIdentifierLowerCase(char16_t ch) {
   if ('A' <= ch && ch <= 'Z') {
     return ch + ('a' - 'A');
   }
@@ -69,7 +69,7 @@ inline bool IsWellFormedCurrencyCode(Iter it, Iter last) {
     return false;
   }
   for (; it != last; ++it) {
-    const uint16_t ch = ToLocaleIdentifierUpperCase(*it);
+    const char16_t ch = ToLocaleIdentifierUpperCase(*it);
     if (ch < 'A' || 'Z' < ch) {
       return false;
     }

@@ -317,7 +317,7 @@ class JSString: public JSCell {
     return str;
   }
 
-  uint16_t At(size_type n) const {
+  char16_t At(size_type n) const {
     const FiberSlot* first = fibers_[fiber_count_ - 1];
     if (first->size() > n && !first->IsCons()) {
       return (*static_cast<const FiberBase*>(first))[n];
@@ -357,7 +357,7 @@ class JSString: public JSCell {
         const std::vector<char> vec(count, At(0));
         return this_type::New(ctx, vec.begin(), count, true, e);
       } else {
-        const std::vector<uint16_t> vec(count, At(0));
+        const std::vector<char16_t> vec(count, At(0));
         return this_type::New(ctx, vec.begin(), count, false, e);
       }
     }
@@ -374,7 +374,7 @@ class JSString: public JSCell {
                         uint32_t limit, Error* e) const;
 
   inline JSArray* Split(Context* ctx,
-                        uint16_t ch, uint32_t limit, Error* e) const;
+                        char16_t ch, uint32_t limit, Error* e) const;
 
   inline this_type* Substring(Context* ctx, uint32_t from, uint32_t to) const;
 
@@ -441,7 +441,7 @@ class JSString: public JSCell {
     return New(ctx, str.begin(), str.size(), true, e);
   }
 
-  static this_type* NewSingle(Context* ctx, uint16_t ch);
+  static this_type* NewSingle(Context* ctx, char16_t ch);
 
   template<typename Iter>
   static this_type* New(Context* ctx, Iter it, Iter last, bool is_8bit, Error * e) {
@@ -584,7 +584,7 @@ class JSString: public JSCell {
     if (Is8Bit()) {
       FastFlattenImpl<char>(head, tail);
     } else {
-      FastFlattenImpl<uint16_t>(head, tail);
+      FastFlattenImpl<char16_t>(head, tail);
     }
   }
 
@@ -600,7 +600,7 @@ class JSString: public JSCell {
     if (Is8Bit()) {
       SlowFlattenImpl<char>();
     } else {
-      SlowFlattenImpl<uint16_t>();
+      SlowFlattenImpl<char16_t>();
     }
   }
 
@@ -609,7 +609,7 @@ class JSString: public JSCell {
   explicit JSString(Context* ctx, const FiberBase* fiber);
   template<typename FiberType>
   JSString(Context* ctx, const FiberType* fiber, std::size_t from, std::size_t to);
-  explicit JSString(Context* ctx, uint16_t ch);
+  explicit JSString(Context* ctx, char16_t ch);
   explicit JSString(Context* ctx, const core::UStringPiece& str);
   template<typename Iter>
   JSString(Context* ctx, Iter it, std::size_t n, bool is_8bit);

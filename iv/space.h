@@ -151,9 +151,9 @@ struct SpaceList {
 
 template<typename Factory>
 struct SpaceUString {
-  typedef std::basic_string<uint16_t,
-                            std::char_traits<uint16_t>,
-                            SpaceAllocator<Factory, uint16_t> > type;
+  typedef std::basic_string<char16_t,
+                            std::char_traits<char16_t>,
+                            SpaceAllocator<Factory, char16_t> > type;
 };
 
 } }  // namespace iv::core
@@ -163,19 +163,19 @@ namespace IV_HASH_NAMESPACE_START {
 // template specialization for SpaceUString in std::unordered_map
 // allowed in section 17.4.3.1
 template<typename Factory>
-struct hash<std::basic_string<uint16_t,
-                              std::char_traits<uint16_t>,
-                              iv::core::SpaceAllocator<Factory, uint16_t> > >
+struct hash<std::basic_string<char16_t,
+                              std::char_traits<char16_t>,
+                              iv::core::SpaceAllocator<Factory, char16_t> > >
   : public std::unary_function<
     std::basic_string<
-      uint16_t,
-      std::char_traits<uint16_t>,
-      iv::core::SpaceAllocator<Factory, uint16_t> >, std::size_t> {
+      char16_t,
+      std::char_traits<char16_t>,
+      iv::core::SpaceAllocator<Factory, char16_t> >, std::size_t> {
   typedef std::unary_function<
     std::basic_string<
-      uint16_t,
-      std::char_traits<uint16_t>,
-      iv::core::SpaceAllocator<Factory, uint16_t> >, std::size_t> super_type;
+      char16_t,
+      std::char_traits<char16_t>,
+      iv::core::SpaceAllocator<Factory, char16_t> >, std::size_t> super_type;
   typedef typename super_type::argument_type argument_type;
   typedef typename super_type::result_type result_type;
   result_type operator()(const argument_type& x) const {

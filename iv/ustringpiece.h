@@ -5,7 +5,7 @@
 namespace iv {
 namespace core {
 
-typedef BasicStringPiece<uint16_t, std::char_traits<uint16_t> > UStringPiece;
+typedef BasicStringPiece<char16_t, std::char_traits<char16_t> > UStringPiece;
 
 inline UStringPiece AdoptPiece(const UStringPiece& piece) {
   return piece;
