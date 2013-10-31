@@ -40,7 +40,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     link_directories(win/gc)
 else()
     add_definitions("-pipe")
-    set(${CMAKE_CXX_FLAGS} "${CMAKE_CXX_FLAGS} -fno-operator-names")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-operator-names")
     add_definitions(
         "-Wall"
         "-Wextra"
@@ -63,8 +63,10 @@ else()
 
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Werror -g3")
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -O4")
         set(CMAKE_C_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O4")
     else()
+        set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -O3")
         set(CMAKE_C_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
     endif()
 
