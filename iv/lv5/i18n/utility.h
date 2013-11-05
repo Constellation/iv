@@ -1,6 +1,6 @@
 #ifndef IV_LV5_I18N_UTILITY_H_
 #define IV_LV5_I18N_UTILITY_H_
-#include <iv/detail/unique_ptr.h>
+#include <memory>
 #include <iv/i18n_date_time_format.h>
 #include <iv/i18n_number_format.h>
 #include <iv/i18n.h>
@@ -15,7 +15,7 @@ namespace i18n {
 template<typename T>
 class GCHandle : public gc_cleanup {
  public:
-  core::unique_ptr<T> handle;
+  std::unique_ptr<T> handle;
 };
 
 

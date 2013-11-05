@@ -102,7 +102,7 @@ class NativeCode {
   BytecodeOffsets bytecode_offsets_;
   ICVector ics_;
   Pages pages_;
-  core::unique_ptr<Assembler> asm_;
+  std::unique_ptr<Assembler> asm_;
 };
 
 } } }  // namespace iv::lv5::breaker

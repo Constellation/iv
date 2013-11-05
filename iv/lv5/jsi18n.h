@@ -2,7 +2,6 @@
 #define IV_LV5_JSI18N_H_
 #include <iterator>
 #include <string>
-#include <iv/detail/unique_ptr.h>
 #include <iv/detail/unordered_map.h>
 #include <iv/i18n.h>
 #include <iv/lv5/gc_template.h>

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <vector>
+#include <memory>
 #include <iv/detail/memory.h>
-#include <iv/detail/unique_ptr.h>
 #include <iv/intrusive_list.h>
 namespace {
 
@@ -20,7 +20,7 @@ TEST(IntrusiveListCase, IntrusiveListTest) {
 
   EXPECT_TRUE(head.empty());
 
-  iv::core::unique_ptr<A> a(new A(0));
+  std::unique_ptr<A> a(new A(0));
   head.push_back(*a);
 
   EXPECT_EQ(head.size(), 1u);

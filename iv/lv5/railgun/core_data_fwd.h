@@ -1,7 +1,7 @@
 #ifndef IV_LV5_RAILGUN_CORE_DATA_FWD_H_
 #define IV_LV5_RAILGUN_CORE_DATA_FWD_H_
 #include <algorithm>
-#include <iv/detail/unique_ptr.h>
+#include <memory>
 #include <iv/sorted_vector.h>
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/gc_kind.h>
@@ -107,7 +107,7 @@ class CoreData : public GCKind<CoreData> {
   Data data_;
   Lines lines_;
   bool compiled_;
-  core::unique_ptr<breaker::NativeCode> native_code_;
+  std::unique_ptr<breaker::NativeCode> native_code_;
 };
 
 } } }  // namespace iv::lv5::railgun

@@ -1,7 +1,7 @@
 #ifndef IV_LV5_GC_HOOK_H_
 #define IV_LV5_GC_HOOK_H_
 #include <gc/gc.h>
-#include <iv/detail/unique_ptr.h>
+#include <memory>
 namespace iv {
 namespace lv5 {
 
@@ -34,7 +34,7 @@ class GCHook {
     return new GCHook**(data);
   }
 
-  core::unique_ptr<GCHook**> target_;
+  std::unique_ptr<GCHook**> target_;
   T* delegate_;
 };
 

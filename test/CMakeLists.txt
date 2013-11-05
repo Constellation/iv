@@ -62,7 +62,6 @@ add_executable(iv_unit_tests
     test_thread.cc
     test_thread_safe_ref_counted.cc
     test_unicode.cc
-    test_unique_ptr.cc
     )
 
 target_link_libraries(iv_unit_tests gtest)

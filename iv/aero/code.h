@@ -1,7 +1,7 @@
 #ifndef IV_AERO_CODE_H_
 #define IV_AERO_CODE_H_
+#include <memory>
 #include <iv/platform.h>
-#include <iv/detail/unique_ptr.h>
 #include <iv/aero/jit_fwd.h>
 namespace iv {
 namespace aero {
@@ -44,7 +44,7 @@ class Code {
   uint16_t filter_;
   bool one_char_;
 #if defined(IV_ENABLE_JIT)
-  core::unique_ptr<JITCode> jit_;
+  std::unique_ptr<JITCode> jit_;
  public:
   JITCode* jit() const { return jit_.get(); }
 #endif

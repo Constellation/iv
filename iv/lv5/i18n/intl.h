@@ -14,7 +14,7 @@ class JSIntl : public JSObject {
   template<typename T>
   class GCHandle : public gc_cleanup {
    public:
-    core::unique_ptr<T> handle;
+    std::unique_ptr<T> handle;
   };
 };
 

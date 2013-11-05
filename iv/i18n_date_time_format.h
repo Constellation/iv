@@ -1,6 +1,6 @@
 #ifndef IV_I18N_DATE_TIME_FORMAT_H_
 #define IV_I18N_DATE_TIME_FORMAT_H_
-#include <iv/detail/unique_ptr.h>
+#include <memory>
 #include <iv/stringpiece.h>
 #include <iv/ustringpiece.h>
 #include <iv/utils.h>
@@ -263,8 +263,8 @@ class DateTimeFormat : public DateTimeFormatConstants {
   TimeZone::Type tz_;
   Calendar::Type calendar_;
   FormatOptions format_;
-  unique_ptr<NumberFormat> nf_;
-  unique_ptr<NumberFormat> nf2_;
+  std::unique_ptr<NumberFormat> nf_;
+  std::unique_ptr<NumberFormat> nf2_;
 };
 
 static const DateTimeFormat::DateTimeOptions kDateTimeOptions = { {

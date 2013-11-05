@@ -98,7 +98,7 @@ class ICUStringIteration
     }
   }
 
-  core::unique_ptr<icu::StringEnumeration> enumeration_;
+  std::unique_ptr<icu::StringEnumeration> enumeration_;
   const char* current_;
 };
 
@@ -735,7 +735,7 @@ inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
   icu::Locale locale(result.locale().c_str());
   {
     UErrorCode err = U_ZERO_ERROR;
-    core::unique_ptr<icu::NumberingSystem> numbering_system(
+    std::unique_ptr<icu::NumberingSystem> numbering_system(
         icu::NumberingSystem::createInstance(locale, err));
     if (U_FAILURE(err)) {
       e->Report(Error::Type, "numbering system initialization failed");
@@ -938,7 +938,7 @@ inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
     }
   }
 
-  core::unique_ptr<icu::TimeZone> timezone;
+  std::unique_ptr<icu::TimeZone> timezone;
   {
     // See http://userguide.icu-project.org/datetime/timezone
     const JSVal val = obj->GetField(JSDateTimeFormat::TIME_ZONE);
@@ -954,7 +954,7 @@ inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
 
   // See http://icu-project.org/apiref/icu4c/classCalendar.html
   // Calendar
-  core::unique_ptr<icu::Calendar> calendar(
+  std::unique_ptr<icu::Calendar> calendar(
       icu::Calendar::createInstance(timezone.get(), locale, err));
   if (U_FAILURE(err)) {
     e->Report(Error::Type, "calendar failed");
@@ -963,7 +963,7 @@ inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
   timezone.release();  // release
 
   const icu::UnicodeString skeleton(buffer.c_str());
-  core::unique_ptr<icu::DateTimePatternGenerator>
+  std::unique_ptr<icu::DateTimePatternGenerator>
       generator(icu::DateTimePatternGenerator::createInstance(locale, err));
   if (U_FAILURE(err)) {
     e->Report(Error::Type, "pattern generator failed");
