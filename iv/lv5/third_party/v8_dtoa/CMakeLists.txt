@@ -2,6 +2,10 @@
 
 link_directories(../third_party/netlib_dtoa)
 
+if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.8)
+    add_definitions("-Wno-unused-local-typedefs")
+endif()
+
 add_library(v8_dtoa STATIC
     checks.cc
     conversions.cc
