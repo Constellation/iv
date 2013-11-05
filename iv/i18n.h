@@ -44,13 +44,11 @@ inline bool IsStructurallyValidLanguageTag(Iter it, Iter last) {
 }
 
 inline bool IsStructurallyValidLanguageTag(const StringPiece& piece) {
-  typedef StringPiece::const_iterator Iter;
   LanguageTagScanner verifier(piece.cbegin(), piece.cend());
   return verifier.IsStructurallyValid();
 }
 
 inline bool IsStructurallyValidLanguageTag(const UStringPiece& piece) {
-  typedef UStringPiece::const_iterator Iter;
   LanguageTagScanner verifier(piece.cbegin(), piece.cend());
   return verifier.IsStructurallyValid();
 }

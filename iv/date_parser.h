@@ -346,7 +346,6 @@ class DateParser : private core::Noncopyable<> {
 
 template<typename Iter>
 double DateParser::Parse(Iter it, Iter last) {
-  typedef typename std::iterator_traits<Iter>::value_type char_type;
   for (; it != last;) {
     if (core::character::IsDigit(*it)) {
       // YYYY or HH
