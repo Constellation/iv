@@ -5,7 +5,6 @@
 #include <iv/location.h>
 #include <iv/ast.h>
 #include <iv/alloc.h>
-#include <iv/static_assert.h>
 #include <iv/ustringpiece.h>
 
 namespace iv {
@@ -28,8 +27,10 @@ class BasicAstFactory {
 #undef V
 
   BasicAstFactory() {
-    IV_STATIC_ASSERT((std::is_convertible<Factory, this_type>::value) ||
-                     (std::is_base_of<this_type, Factory>::value));
+    static_assert(
+        std::is_convertible<Factory, this_type>::value ||
+        std::is_base_of<this_type, Factory>::value,
+        "this_type should be base of Factory");
   }
 
   Identifier* NewIdentifier(Token::Type token,

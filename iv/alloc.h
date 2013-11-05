@@ -7,7 +7,6 @@
 #include <string>
 #include <limits>
 #include <iv/detail/array.h>
-#include <iv/static_assert.h>
 #include <iv/utils.h>
 #include <iv/noncopyable.h>
 

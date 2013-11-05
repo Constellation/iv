@@ -8,7 +8,6 @@
 #include <iv/noncopyable.h>
 #include <iv/debug.h>
 #include <iv/arith.h>
-#include <iv/static_assert.h>
 #include <iv/lv5/property_fwd.h>
 #include <iv/lv5/radio/arena.h>
 #include <iv/lv5/radio/cell.h>
@@ -41,7 +40,7 @@ class Core : private core::Noncopyable<Core> {
   // allocate memory for radio::Cell
   template<typename T>
   Cell* Allocate() {
-    IV_STATIC_ASSERT((std::is_base_of<Cell, T>::value));
+    static_assert(std::is_base_of<Cell, T>::value, "Cell should be base of T");
     return AllocateFrom(
         GetBlockControl<IV_ROUNDUP(sizeof(T), kBlockControlStep)>());
   }
@@ -148,9 +147,13 @@ class Core : private core::Noncopyable<Core> {
   template<std::size_t N>
   BlockControl* GetBlockControl() {
     // first block bytes is 8
-    IV_STATIC_ASSERT(N % 2 == 0);
-    IV_STATIC_ASSERT(N <= kMaxObjectSize);
-    IV_STATIC_ASSERT(((N + 1) / kBlockControlStep) < kBlockControls);
+    static_assert(N % 2 == 0, "N % 2 = 0");
+    static_assert(
+        N <= kMaxObjectSize,
+        "N should be less than or equal to MaxObjectSize");
+    static_assert(
+        ((N + 1) / kBlockControlStep) < kBlockControls,
+        "N should be in kBlockControls");
     return &controls_[(N + 1) / kBlockControlStep];
   }
 

@@ -10,7 +10,6 @@
 #include <iv/stringpiece.h>
 #include <iv/byteorder.h>
 #include <iv/platform.h>
-#include <iv/static_assert.h>
 namespace iv {
 namespace core {
 namespace detail {
@@ -132,7 +131,7 @@ inline bool operator>=(Symbol x, Symbol y) {
 typedef detail::Symbol Symbol;
 
 #if defined(IV_COMPILER_GCC) && (IV_COMPILER_GCC >= 40300)
-IV_STATIC_ASSERT(std::is_pod<Symbol>::value);
+static_assert(std::is_pod<Symbol>::value, "Symbol should be POD");
 #endif
 
 namespace symbol {

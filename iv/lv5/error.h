@@ -5,7 +5,6 @@
 #include <iv/detail/memory.h>
 #include <iv/ustring.h>
 #include <iv/noncopyable.h>
-#include <iv/static_assert.h>
 #include <iv/stringpiece.h>
 #include <iv/lv5/jsval_fwd.h>
 namespace iv {

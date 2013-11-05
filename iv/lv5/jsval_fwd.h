@@ -7,7 +7,6 @@
 #include <iv/detail/cinttypes.h>
 #include <iv/byteorder.h>
 #include <iv/enable_if.h>
-#include <iv/static_assert.h>
 #include <iv/platform.h>
 #include <iv/platform_math.h>
 #include <iv/canonicalized_nan.h>
@@ -333,7 +332,7 @@ class JSLayout {
 };
 
 #if defined(IV_COMPILER_GCC) && (IV_COMPILER_GCC > 40300)
-IV_STATIC_ASSERT(std::is_pod<JSLayout>::value);
+static_assert(std::is_pod<JSLayout>::value, "JSLayout should be POD");
 #endif
 
 class JSVal : public JSLayout {
@@ -442,8 +441,7 @@ class JSVal : public JSLayout {
   //  so not provide implicit constructor with bool.
   template<typename T>
   JSVal(T val, typename enable_if<std::is_same<bool, T> >::type* = 0) {
-    typedef std::is_same<bool, T> cond;
-    IV_STATIC_ASSERT(!(cond::value));
+    static_assert(!(std::is_same<bool, T>::value), "T should be bool");
   }
 
   JSVal ToPrimitive(Context* ctx, Hint::Object hint, Error* e) const;

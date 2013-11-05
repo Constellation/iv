@@ -4,7 +4,6 @@
 #include <iv/detail/cstdint.h>
 #include <iv/detail/array.h>
 #include <iv/detail/unordered_map.h>
-#include <iv/static_assert.h>
 #include <iv/lv5/symbol.h>
 #include <iv/lv5/railgun/direct_threading.h>
 namespace iv {
@@ -186,7 +185,7 @@ struct OP {
   };
 #undef IV_LV5_RAILGUN_DEFINE_ENUM
 
-  IV_STATIC_ASSERT(NUM_OF_OP <= 256);
+  static_assert(NUM_OF_OP <= 256, "The number of OPs should be less than 256");
 
 #define IS_NAME_LOOKUP_OP(op)\
   ( (op) == OP::LOAD_NAME ||\
@@ -326,7 +325,7 @@ struct OP {
   static inline const char* String(int op);
 };
 
-IV_STATIC_ASSERT(OP::NOP == 0);
+static_assert(OP::NOP == 0, "NOP op should be 0");
 
 #define IV_LV5_RAILGUN_DEFINE_STRINGS(V, N) #V,
 static const std::array<const char*, OP::NUM_OF_OP + 1> kOPString = { {

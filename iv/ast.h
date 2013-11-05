@@ -18,7 +18,6 @@
 #include <iv/location.h>
 #include <iv/ustringpiece.h>
 #include <iv/symbol.h>
-#include <iv/static_assert.h>
 
 namespace iv {
 namespace core {

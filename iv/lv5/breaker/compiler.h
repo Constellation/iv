@@ -2859,7 +2859,7 @@ class Compiler {
 
   void LoadCellTag(const Xbyak::Reg64& target, const Xbyak::Reg32& out) {
     // Because of Little Endianess
-    IV_STATIC_ASSERT(core::kLittleEndian);
+    static_assert(core::kLittleEndian, "System should be little endianess");
     asm_->mov(out, word[target + radio::Cell::TagOffset()]);  // NOLINT
   }
 
@@ -2936,7 +2936,7 @@ class Compiler {
                        bool store_check,
                        const char* label,
                        Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
-    IV_STATIC_ASSERT(core::kLittleEndian);
+    static_assert(core::kLittleEndian, "System should be little endianess");
 
     const TypeEntry type_entry = type_record_.Get(base);
 

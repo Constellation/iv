@@ -9,7 +9,6 @@
 #include <iv/detail/unordered_set.h>
 #include <iv/detail/type_traits.h>
 #include <iv/detail/array.h>
-#include <iv/static_assert.h>
 #include <iv/maybe.h>
 #include <iv/ast.h>
 #include <iv/ast_factory.h>

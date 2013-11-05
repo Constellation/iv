@@ -89,7 +89,8 @@ class NumberingSystem : public NumberingSystemConstants {
  public:
   typedef std::array<Type, NUM_OF_NUMBERING_SYSTEM> Candidates;
 
-  IV_STATIC_ASSERT(NUM_OF_NUMBERING_SYSTEM < UINT8_MAX);
+  static_assert(NUM_OF_NUMBERING_SYSTEM < UINT8_MAX,
+                "The number of Numbering systems should be less than 256");
 
   typedef NumberingSystemData Data;
   typedef std::unordered_map<std::string, const Data*> NumberingSystemMap;  // NOLINT

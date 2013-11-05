@@ -9,7 +9,6 @@
 #include <iv/ast_visitor.h>
 #include <iv/noncopyable.h>
 #include <iv/conversions.h>
-#include <iv/static_assert.h>
 #include <iv/enable_if.h>
 #include <iv/unicode.h>
 #include <iv/utils.h>
@@ -605,20 +604,20 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   template<OP::Type op>
   void Emit() {
-    IV_STATIC_ASSERT(OPLength<op>::value == 1);
+    static_assert(OPLength<op>::value == 1, "OP size == 1");
     data_->push_back(op);
   }
 
   template<OP::Type op>
   void Emit(Instruction arg) {
-    IV_STATIC_ASSERT(OPLength<op>::value == 2);
+    static_assert(OPLength<op>::value == 2, "OP size == 2");
     data_->push_back(op);
     data_->push_back(arg);
   }
 
   template<OP::Type op>
   void Emit(Instruction arg1, Instruction arg2) {
-    IV_STATIC_ASSERT(OPLength<op>::value == 3);
+    static_assert(OPLength<op>::value == 3, "OP size == 3");
     data_->push_back(op);
     data_->push_back(arg1);
     data_->push_back(arg2);
@@ -626,7 +625,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   template<OP::Type op>
   void Emit(Instruction arg1, Instruction arg2, Instruction arg3) {
-    IV_STATIC_ASSERT(OPLength<op>::value == 4);
+    static_assert(OPLength<op>::value == 4, "OP size == 4");
     data_->push_back(op);
     data_->push_back(arg1);
     data_->push_back(arg2);
@@ -636,7 +635,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   template<OP::Type op>
   void Emit(Instruction arg1, Instruction arg2,
             Instruction arg3, Instruction arg4) {
-    IV_STATIC_ASSERT(OPLength<op>::value == 5);
+    static_assert(OPLength<op>::value == 5, "OP size == 5");
     data_->push_back(op);
     data_->push_back(arg1);
     data_->push_back(arg2);

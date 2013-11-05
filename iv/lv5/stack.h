@@ -8,7 +8,6 @@
 #include <iv/detail/cstdint.h>
 #include <iv/noncopyable.h>
 #include <iv/singleton.h>
-#include <iv/static_assert.h>
 #include <iv/os_allocator.h>
 #include <iv/lv5/jsval_fwd.h>
 namespace iv {
@@ -43,7 +42,9 @@ class Stack : core::Noncopyable<Stack> {
   static const size_type kStackCapacity = 16 * 1024;
   static const size_type kStackBytes = kStackCapacity * sizeof(JSVal);
 
-  IV_STATIC_ASSERT(kStackCapacity < static_cast<size_type>(INT16_MAX));
+  static_assert(
+      kStackCapacity < static_cast<size_type>(INT16_MAX),
+      "The stack capacity should be less than INT16_MAX");
 
   // bytes. 4KB is page size.
   static const size_type kCommitSize = 4 * core::Size::KB;

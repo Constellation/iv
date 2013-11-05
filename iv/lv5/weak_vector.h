@@ -1,7 +1,6 @@
 #ifndef IV_LV5_WEAK_VECTOR_H_
 #define IV_LV5_WEAK_VECTOR_H_
 #include <iv/detail/type_traits.h>
-#include <iv/static_assert.h>
 #include <iv/noncopyable.h>
 #include <gc/gc_cpp.h>
 namespace iv {
@@ -10,7 +9,7 @@ namespace lv5 {
 template<typename T>
 class WeakVector : public gc_cleanup, private core::Noncopyable<WeakVector<T> > {
  public:
-  IV_STATIC_ASSERT(std::is_pointer<T>::value);
+  static_assert(std::is_pointer<T>::value, "T should be pointer type");
   typedef std::size_t size_type;
   typedef T value_type;
   typedef value_type* iterator;

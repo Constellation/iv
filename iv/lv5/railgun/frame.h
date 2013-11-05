@@ -5,7 +5,6 @@
 #include <iv/detail/memory.h>
 #include <iv/detail/type_traits.h>
 #include <iv/utils.h>
-#include <iv/static_assert.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/stack.h>
 #include <iv/lv5/railgun/fwd.h>
@@ -215,7 +214,7 @@ struct Frame {
 };
 
 #if defined(IV_COMPILER_GCC) && (IV_COMPILER_GCC > 40300)
-IV_STATIC_ASSERT(std::is_pod<Frame>::value);
+static_assert(std::is_pod<Frame>::value, "Frame should be POD");
 #endif
 
 template<typename T>

@@ -2,7 +2,6 @@
 #define IV_LV5_BREAKER_FWD_H_
 
 #include <iv/platform.h>
-#include <iv/static_assert.h>
 #include <iv/detail/cstdint.h>
 #include <iv/lv5/jsval_fwd.h>
 

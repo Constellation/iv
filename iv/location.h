@@ -2,7 +2,6 @@
 #define IV_LOCATION_H_
 #include <cstddef>
 #include <iv/detail/type_traits.h>
-#include <iv/static_assert.h>
 #include <iv/platform.h>
 namespace iv {
 namespace core {
@@ -25,7 +24,7 @@ struct Location {
 };
 
 #if defined(IV_COMPILER_GCC) && (IV_COMPILER_GCC >= 40300)
-IV_STATIC_ASSERT(std::is_pod<Location>::value);
+static_assert(std::is_pod<Location>::value, "Location should be POD");
 #endif
 
 } }  // namespace iv::core

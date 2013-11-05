@@ -10,7 +10,6 @@
 #include <iv/detail/cstdint.h>
 #include <iv/detail/type_traits.h>
 #include <iv/platform.h>
-#include <iv/static_assert.h>
 #include <iv/conversions.h>
 #include <iv/assoc_vector.h>
 #include <iv/utils.h>
@@ -77,8 +76,9 @@ class JIT : public Xbyak::CodeGenerator {
   typedef typename JITExecutable<CharT>::Executable Executable;
   typedef typename Code::Data::const_pointer const_pointer;
 
-  IV_STATIC_ASSERT((std::is_same<CharT, char>::value ||
-                    std::is_same<CharT, uint16_t>::value));
+  static_assert(
+      std::is_same<CharT, char>::value || std::is_same<CharT, uint16_t>::value,
+      "CharT shoud be either char or uint16_t");
 
   static const int kIntSize = core::Size::kIntSize;
   static const int kPtrSize = core::Size::kPointerSize;

@@ -3,7 +3,6 @@
 #include <cassert>
 #include <iterator>
 #include <iv/detail/type_traits.h>
-#include <iv/static_assert.h>
 #include <iv/noncopyable.h>
 namespace iv {
 namespace core {

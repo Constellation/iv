@@ -36,7 +36,7 @@ template<typename To, typename From>
 IV_ALWAYS_INLINE To ToBit(From val) {
   typedef typename to_bit_detail::Rep<sizeof(From)>::type bit_type;
 #if defined(IV_COMPILER_GCC) && (IV_COMPILER_GCC > 40300)
-  IV_STATIC_ASSERT(std::is_integral<To>::value);
+  static_assert(std::is_integral<To>::value, "To should be integral type");
 #endif
   return static_cast<To>(core::BitCast<bit_type>(val));
 }

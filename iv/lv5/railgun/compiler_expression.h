@@ -364,8 +364,10 @@ inline void Compiler::Visit(const Assignment* assign) {
 
 template<core::Token::Type token>
 void Compiler::EmitLogicalPath(const BinaryOperation* binary) {
-  IV_STATIC_ASSERT(token == Token::TK_LOGICAL_AND ||
-                   token == Token::TK_LOGICAL_OR);
+  static_assert(
+      token == Token::TK_LOGICAL_AND ||
+      token == Token::TK_LOGICAL_OR,
+      "The provided token should be either && or ||");
   const OP::Type kOp =
       token == Token::TK_LOGICAL_AND ? OP::IF_FALSE : OP::IF_TRUE;
   if (ignore_result()) {

@@ -1,7 +1,6 @@
 #ifndef IV_LV5_RAILGUN_INSTRUCTION_FWD_H_
 #define IV_LV5_RAILGUN_INSTRUCTION_FWD_H_
 #include <iv/debug.h>
-#include <iv/static_assert.h>
 #include <iv/lv5/symbol.h>
 #include <iv/lv5/railgun/op.h>
 #include <iv/lv5/railgun/register_id.h>
@@ -129,7 +128,7 @@ struct Instruction {
   }
 };
 
-IV_STATIC_ASSERT(sizeof(Instruction) == 8); // always 64bit
+static_assert(sizeof(Instruction) == 8, "always 64bit");
 
 } } }  // namespace iv::lv5::railgun
 

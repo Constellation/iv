@@ -35,7 +35,6 @@
 #include <iv/thread.h>
 #include <iv/byteorder.h>
 #include <iv/stringpiece.h>
-#include <iv/static_assert.h>
 #include <iv/conversions.h>
 
 namespace iv {
@@ -644,10 +643,14 @@ inline void DoubleToASCII(Buffer* buf,
                           double dd, int ndigits,
                           bool* sign_out,
                           int* exponent_out, unsigned* precision_out) {
-  IV_STATIC_ASSERT(Mode == ROUNDING_NONE ||
-                   Mode == ROUNDING_SIGNIFICANT_FIGURES ||
-                   Mode == ROUNDING_DECIMAL_PLACES);
-  IV_STATIC_ASSERT(Mode != ROUNDING_NONE || LeftRight);
+  static_assert(
+      Mode == ROUNDING_NONE ||
+      Mode == ROUNDING_SIGNIFICANT_FIGURES ||
+      Mode == ROUNDING_DECIMAL_PLACES,
+      "Mode should be one of them");
+  static_assert(
+      Mode != ROUNDING_NONE || LeftRight,
+      "When mode isn't NONE, LeftRight should be true");
 
   const bool RoundingNone = Mode == ROUNDING_NONE;
   const bool RoundingSignificantFigures = Mode == ROUNDING_SIGNIFICANT_FIGURES;

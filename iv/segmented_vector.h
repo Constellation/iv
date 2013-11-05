@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <iv/detail/array.h>
 #include <iv/utils.h>
-#include <iv/static_assert.h>
 namespace iv {
 namespace core {
 
@@ -17,7 +16,7 @@ template<typename T,
 class SegmentedVector {
  public:
 
-  IV_STATIC_ASSERT(SegmentSize != 0);
+  static_assert(SegmentSize != 0, "The segment size must not be 0");
 
   typedef std::size_t size_type;
   typedef Alloc allocator_type;
