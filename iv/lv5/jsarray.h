@@ -14,7 +14,6 @@
 #include <iv/lv5/slot.h>
 #include <iv/lv5/class.h>
 #include <iv/lv5/storage.h>
-#include <iv/lv5/adapter/select1st.h>
 #include <iv/lv5/railgun/fwd.h>
 #include <iv/lv5/radio/core_fwd.h>
 namespace iv {
@@ -250,9 +249,12 @@ inline bool JSArray::SetLength(Context* ctx, uint32_t len, bool throwable, Error
       if (elements_.map) {
         SparseArrayMap* map = elements_.map;
         std::vector<uint32_t> copy(map->size());
-        std::transform(map->begin(), map->end(),
-                       copy.begin(),
-                       adapter::select1st<SparseArrayMap::value_type>());
+        std::transform(
+            map->begin(), map->end(),
+            copy.begin(),
+            [](const SparseArrayMap::value_type& pair) {
+          return pair.first;
+        });
         std::sort(copy.begin(), copy.end(), std::greater<uint32_t>());
         for (std::vector<uint32_t>::const_iterator it = copy.begin(),
              last = copy.end(); it != last; ++it) {
