@@ -4,7 +4,7 @@
 #include <iv/lv5/jsval_fwd.h>
 #include <iv/lv5/symbol.h>
 #include <iv/lv5/radio/cell.h>
-#include <iv/lv5/radio/core_fwd.h>
+#include <iv/lv5/radio/core.h>
 namespace iv {
 namespace lv5 {
 

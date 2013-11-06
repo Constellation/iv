@@ -1,137 +1,174 @@
+// core is management class of radio noise GC
 #ifndef IV_LV5_RADIO_CORE_H_
 #define IV_LV5_RADIO_CORE_H_
-#include <algorithm>
-#include <iv/functor.h>
-#include <iv/lv5/context.h>
-#include <iv/lv5/radio/core_fwd.h>
-#include <iv/lv5/radio/scope.h>
+#include <vector>
+#include <deque>
+#include <new>
+#include <iv/detail/array.h>
+#include <iv/noncopyable.h>
+#include <iv/debug.h>
+#include <iv/arith.h>
+#include <iv/lv5/property_fwd.h>
+#include <iv/lv5/radio/arena.h>
+#include <iv/lv5/radio/cell.h>
+#include <iv/lv5/radio/block.h>
 #include <iv/lv5/radio/block_control.h>
 namespace iv {
 namespace lv5 {
+class Context;
 namespace radio {
 
-inline Core::Core()
-  : working_(NULL),
-    free_blocks_(NULL),
-    weak_maps_(NULL),
-    handles_(),
-    stack_(),
-    persistents_(),
-    controls_() {
-  stack_.reserve(kInitialMarkStackSize);
-  AddArena();
-  std::size_t size = kBlockControlStep;
-  for (BlockControls::iterator it = controls_.begin(),
-       last = controls_.end(); it != last; ++it, size += kBlockControlStep) {
-    assert(size <= kMaxObjectSize);
-    it->Initialize(size);
+static const std::size_t kInitialMarkStackSize =
+    (4 * core::Size::KB) / sizeof(Cell*);  // NOLINT
+static const std::size_t kMaxObjectSize = 512;
+static const std::size_t kBlockControlStep = 16;
+static const std::size_t kBlockControls = kMaxObjectSize / kBlockControlStep;
+
+class BlockControl;
+class Scope;
+
+class Core : private core::Noncopyable<Core> {
+ public:
+  typedef std::array<BlockControl, kBlockControls> BlockControls;
+  typedef std::vector<Cell*> MarkStack;
+  typedef std::deque<Cell*> HandleStack;
+  typedef std::deque<Cell*> PersistentStack;
+  Core();
+
+  ~Core();
+
+  // allocate memory for radio::Cell
+  template<typename T>
+  Cell* Allocate() {
+    static_assert(std::is_base_of<Cell, T>::value, "Cell should be base of T");
+    return AllocateFrom(
+        GetBlockControl<IV_ROUNDUP(sizeof(T), kBlockControlStep)>());
   }
-}
 
-inline Core::~Core() {
-  // Destroy All Arenas
-  for (Arena* arena = working_; arena;) {
-    Arena* next = arena->prev();
-    arena->DestroyAllBlocks();
-    arena->~Arena();
-    arena = next;
-  }
-}
+  // GC trigger
+  void CollectGarbage(Context* ctx);
 
-inline Cell* Core::AllocateFrom(BlockControl* control) {
-  assert(control);
-  return control->Allocate(this);
-}
-
-inline bool Core::MarkCell(Cell* cell) {
-  if (cell->color() == Color::WHITE) {
-    cell->Coloring(Color::GRAY);
-    stack_.push_back(cell);
-    return true;
-  }
-  return false;
-}
-
-inline bool Core::MarkValue(JSVal val) {
-  return (val.IsCell()) ? MarkCell(val.cell()) : false;
-}
-
-inline bool Core::MarkPropertyDescriptor(const PropertyDescriptor& desc) {
-  if (desc.IsData()) {
-    return MarkValue(desc.AsDataDescriptor()->value());
-  } else {
-    assert(desc.IsAccessor());
-    const AccessorDescriptor* accs = desc.AsAccessorDescriptor();
-    bool res = false;
-    if (accs->get()) {
-      res |= MarkCell(accs->get());
+  Block* AllocateBlock(std::size_t size) {
+    if (free_blocks_) {
+      Block* block = free_blocks_;
+      free_blocks_ = free_blocks_->next();
+      return new(block)Block(size);
     }
-    if (accs->set()) {
-      res |= MarkCell(accs->set());
-    }
-    return res;
+    AddArena();
+    return AllocateBlock(size);
   }
-}
 
-inline void Core::CollectGarbage(Context* ctx) {
-  // mark & sweep
-  Mark(ctx);
-  Collect(ctx);
-}
+  void ChainToScope(Cell* cell) {
+    handles_.push_back(cell);
+  }
 
-inline void Core::Drain() {
-  while (!stack_.empty()) {
-    Cell* cell = stack_.back();
-    stack_.pop_back();
-    if (cell->color() == Color::GRAY) {
-      cell->MarkChildren(this);
-      cell->Coloring(Color::BLACK);
+  template<typename Scope>
+  void EnterScope(Scope* scope) {
+    scope->set_current(handles_.size());
+  }
+
+  template<typename Scope>
+  void ExitScope(Scope* scope) {
+    if (Cell* cell = scope->reserved()) {
+      handles_.resize(scope->current() + 1);
+      handles_.back() = cell;
+    } else if (handles_.size() != scope->current()) {
+      assert(handles_.size() > scope->current());
+      handles_.resize(scope->current());
     }
   }
-}
 
-inline bool Core::MarkWeaks() {
-  // TODO(Constellation): implement it
-  bool newly_marked = false;
-  return newly_marked;
-}
-
-inline void Core::MarkRoots(Context* ctx) {
-  // mark context (and global data, vm stack)
-  if (ctx) {
-    // ctx->Mark(this);
+  template<typename Scope>
+  void FenceScope(Scope* scope) {
+    assert(scope->current() == handles_.size());
   }
-  // mark handles
-  std::for_each(handles_.begin(), handles_.end(), Marker(this));
-  // mark persistent handles
-  std::for_each(persistents_.begin(), persistents_.end(), Marker(this));
-}
 
-inline void Core::Mark(Context* ctx) {
-  // mark all roots
-  MarkRoots(ctx);
+  bool MarkCell(Cell* cell);
 
-  // see harmony proposal gc algorithm
-  // http://wiki.ecmascript.org/doku.php?id=harmony:weak_maps#abstract_gc_algorithm
-  // TODO(Constellation): stack all mark is faster? implement it.
-  do {
-    Drain();
-  } while (MarkWeaks());
-  assert(stack_.empty());
-}
+  bool MarkValue(JSVal val);
 
-inline void Core::Collect(Context* ctx) {
-  for (BlockControls::iterator it = controls_.begin(),
-       last = controls_.end(); it != last; ++it) {
-    it->Collect(this, ctx);
+  bool MarkPropertyDescriptor(const PropertyDescriptor& desc);
+
+  void Mark(Context* ctx);
+
+  void Collect(Context* ctx);
+
+  void ReleaseBlock(Block* block);
+
+  struct Marker {
+    explicit Marker(Core* core) : core_(core) { }
+    void operator()(Cell* cell) {
+      if (cell) {
+        core_->MarkCell(cell);
+      }
+    }
+    void operator()(const PropertyDescriptor& desc) {
+      core_->MarkPropertyDescriptor(desc);
+    }
+    void operator()(JSVal val) {
+      core_->MarkValue(val);
+    }
+    Core* core_;
+  };
+
+ private:
+  void AddArena() {
+    assert(!free_blocks_);
+    working_ = new Arena(working_);
+    // assign
+    Arena::iterator it = working_->begin();
+    const Arena::const_iterator last = working_->end();
+    assert(it != last);
+    Block* prev = free_blocks_ = &*it;
+    prev->Release();
+    ++it;
+    while (true) {
+      if (it != last) {
+        Block* block = &*it;
+        block->Release();
+        prev->set_next(block);
+        prev = block;
+        ++it;
+      } else {
+        prev->set_next(NULL);
+        break;
+      }
+    }
   }
-}
 
-inline void Core::ReleaseBlock(Block* block) {
-  block->Release();
-  block->set_next(free_blocks_);
-  free_blocks_ = block;
-}
+  void MarkRoots(Context* ctx);
+
+  bool MarkWeaks();
+
+  void Drain();
+
+  Cell* AllocateFrom(BlockControl* control);
+
+  template<std::size_t N>
+  BlockControl* GetBlockControl() {
+    // first block bytes is 8
+    static_assert(N % 2 == 0, "N % 2 = 0");
+    static_assert(
+        N <= kMaxObjectSize,
+        "N should be less than or equal to MaxObjectSize");
+    static_assert(
+        ((N + 1) / kBlockControlStep) < kBlockControls,
+        "N should be in kBlockControls");
+    return &controls_[(N + 1) / kBlockControlStep];
+  }
+
+  // WeakMaps are chained
+  Cell* weak_maps() const { return weak_maps_; }
+
+  Arena* working_;
+  Block* free_blocks_;
+  Cell* weak_maps_;
+  HandleStack handles_;  // scoped handles
+  MarkStack stack_;  // mark stack
+  PersistentStack persistents_;  // persistent handles
+  BlockControls controls_;  // blocks. first block is 8 bytes
+};
+
 
 } } }  // namespace iv::lv5::radio
 #endif  // IV_LV5_RADIO_CORE_H_

@@ -3,7 +3,7 @@
 #include <gc/gc.h>
 #include <gc/gc_cpp.h>
 #include <iv/lv5/radio/cell.h>
-#include <iv/lv5/radio/core_fwd.h>
+#include <iv/lv5/radio/core.h>
 #include <iv/lv5/class.h>
 namespace iv {
 namespace lv5 {

@@ -8,7 +8,7 @@
 #include <iv/arith.h>
 #include <iv/lv5/radio/cell.h>
 #include <iv/lv5/radio/block_size.h>
-#include <iv/lv5/radio/block_control_fwd.h>
+#include <iv/lv5/radio/block_control.h>
 // this is radio::Block
 // control space and memory block
 namespace iv {

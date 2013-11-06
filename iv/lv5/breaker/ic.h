@@ -2,7 +2,7 @@
 #define IV_BREAKER_IC_H_
 #include <iv/lv5/breaker/fwd.h>
 #include <iv/lv5/breaker/helper.h>
-#include <iv/lv5/radio/core_fwd.h>
+#include <iv/lv5/radio/core.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {

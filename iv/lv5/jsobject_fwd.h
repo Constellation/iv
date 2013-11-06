@@ -12,7 +12,7 @@
 #include <iv/lv5/storage.h>
 #include <iv/lv5/indexed_elements.h>
 #include <iv/lv5/radio/cell.h>
-#include <iv/lv5/radio/core_fwd.h>
+#include <iv/lv5/radio/core.h>
 #include <iv/lv5/jscell.h>
 namespace iv {
 namespace lv5 {

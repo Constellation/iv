@@ -2,7 +2,7 @@
 #define IV_LV5_RADIO_SCOPE_H_
 #include <iv/noncopyable.h>
 #include <iv/lv5/jsval_fwd.h>
-#include <iv/lv5/radio/core_fwd.h>
+#include <iv/lv5/radio/core.h>
 namespace iv {
 namespace lv5 {
 namespace radio {

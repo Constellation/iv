@@ -14,7 +14,7 @@
 #include <iv/lv5/bind.h>
 #include <iv/lv5/specialized_ast.h>
 #include <iv/lv5/context.h>
-#include <iv/lv5/radio/core_fwd.h>
+#include <iv/lv5/radio/core.h>
 namespace iv {
 namespace lv5 {
 

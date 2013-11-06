@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <iv/scoped_ptr.h>
 #include <iv/lv5/radio/core.h>
+#include <iv/lv5/radio/scope.h>
 #include <iv/lv5/jsstring.h>
 
 TEST(RadioCoreCase, MainTest) {

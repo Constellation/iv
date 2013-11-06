@@ -44,6 +44,8 @@ add_library(liblv5 STATIC
     runtime/string.cc
     runtime/symbol.cc
     runtime/weak_map.cc
+    radio/block_control.cc
+    radio/core.cc
     )
 set_target_properties(liblv5 PROPERTIES PREFIX "")
 

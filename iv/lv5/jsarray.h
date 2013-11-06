@@ -13,9 +13,10 @@
 #include <iv/lv5/map.h>
 #include <iv/lv5/slot.h>
 #include <iv/lv5/class.h>
+#include <iv/lv5/context.h>
 #include <iv/lv5/storage.h>
 #include <iv/lv5/railgun/fwd.h>
-#include <iv/lv5/radio/core_fwd.h>
+#include <iv/lv5/radio/core.h>
 namespace iv {
 namespace lv5 {
 

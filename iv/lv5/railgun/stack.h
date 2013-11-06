@@ -17,7 +17,7 @@
 #include <iv/lv5/stack.h>
 #include <iv/lv5/railgun/frame.h>
 #include <iv/lv5/railgun/direct_threading.h>
-#include <iv/lv5/radio/core_fwd.h>
+#include <iv/lv5/radio/core.h>
 #include <iv/lv5/breaker/fwd.h>
 namespace iv {
 namespace lv5 {
