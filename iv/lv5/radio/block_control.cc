@@ -1,3 +1,4 @@
+#include <iv/lv5/jsval.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/radio/cell.h>
 #include <iv/lv5/radio/block_control.h>

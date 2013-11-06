@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <iv/functor.h>
+#include <iv/lv5/jsval.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/radio/core.h>
 #include <iv/lv5/radio/scope.h>
