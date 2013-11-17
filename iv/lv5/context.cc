@@ -5,6 +5,7 @@
 #include <iv/ustring.h>
 #include <iv/dtoa.h>
 #include <iv/canonicalized_nan.h>
+#include <iv/concat.h>
 #include <iv/lv5/jsmath.h>
 #include <iv/lv5/jsenv.h>
 #include <iv/lv5/jsjson.h>
@@ -40,7 +41,8 @@ Context::Context(JSAPI fc, JSAPI ge)
   : global_data_(this),
     throw_type_error_(
         JSInlinedFunction<&runtime::ThrowTypeError, 0>::NewPlain(
-            this, Intern("ThrowError"), Map::NewUniqueMap(this, static_cast<JSObject*>(NULL), false))),
+            this, Intern("ThrowError"),
+            Map::NewUniqueMap(this, static_cast<JSObject*>(NULL), false))),
     global_env_(JSObjectEnv::New(this, NULL, global_obj())),
     regexp_allocator_(),
     regexp_vm_(),
@@ -54,7 +56,10 @@ Context::Context(JSAPI fc, JSAPI ge)
 void Context::Initialize() {
   Error::Dummy dummy;
   // Object and Function
-  JSObject* const obj_proto = JSObject::NewPlain(this, Map::NewUniqueMap(this, static_cast<JSObject*>(NULL), false));
+  JSObject* const obj_proto =
+      JSObject::NewPlain(this,
+                         Map::NewUniqueMap(
+                             this, static_cast<JSObject*>(NULL), false));
   global_data()->empty_object_map()->ChangePrototypeWithNoTransition(obj_proto);
   global_obj()->ChangePrototype(this, obj_proto);
 
@@ -71,7 +76,8 @@ void Context::Initialize() {
           Intern("Object"));
 
   JSFunction* func_constructor =
-      JSNativeFunction::NewPlain(this, function_constructor_, 1, Intern("Function"));
+      JSNativeFunction::NewPlain(
+          this, function_constructor_, 1, Intern("Function"));
   JSFunction* eval_function =
       JSNativeFunction::NewPlain(this, global_eval_, 1, symbol::eval());
 
@@ -269,11 +275,13 @@ void Context::InitArray(const ClassSlot& func_cls,
                         JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.4 Array
   Error::Dummy dummy;
-  JSObject* const proto = JSArray::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false));
+  JSObject* const proto =
+      JSArray::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false));
   global_data()->array_map()->ChangePrototypeWithNoTransition(proto);
   // section 15.4.2 The Array Constructor
   JSFunction* const constructor =
-      JSInlinedFunction<&runtime::ArrayConstructor, 1>::New(this, Intern("Array"));
+      JSInlinedFunction<&runtime::ArrayConstructor, 1>::New(
+          this, Intern("Array"));
 
   struct ClassSlot cls = {
     JSArray::GetClass(),
@@ -351,12 +359,14 @@ void Context::InitString(const ClassSlot& func_cls,
                          JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.5 String
   Error::Dummy dummy;
-  JSStringObject* const proto = JSStringObject::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false));
+  JSStringObject* const proto =
+      JSStringObject::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false));
   global_data()->string_map()->ChangePrototypeWithNoTransition(proto);
   global_data()->primitive_string_map()->ChangePrototypeWithNoTransition(proto);
   // section 15.5.2 The String Constructor
   JSFunction* const constructor =
-      JSInlinedFunction<&runtime::StringConstructor, 1>::New(this, Intern("String"));
+      JSInlinedFunction<&runtime::StringConstructor, 1>::New(
+          this, Intern("String"));
 
   struct ClassSlot cls = {
     JSStringObject::GetClass(),
@@ -444,11 +454,13 @@ void Context::InitBoolean(const ClassSlot& func_cls,
   // Boolean
   Error::Dummy dummy;
   JSBooleanObject* const proto =
-      JSBooleanObject::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false), false);
+      JSBooleanObject::NewPlain(
+          this, Map::NewUniqueMap(this, obj_proto, false), false);
   global_data()->boolean_map()->ChangePrototypeWithNoTransition(proto);
   // section 15.6.2 The Boolean Constructor
   JSFunction* const constructor =
-      JSInlinedFunction<&runtime::BooleanConstructor, 1>::New(this, Intern("Boolean"));
+      JSInlinedFunction<&runtime::BooleanConstructor, 1>::New(
+          this, Intern("Boolean"));
 
   struct ClassSlot cls = {
     JSBooleanObject::GetClass(),
@@ -480,11 +492,13 @@ void Context::InitNumber(const ClassSlot& func_cls,
   // 15.7 Number
   Error::Dummy dummy;
   JSNumberObject* const proto =
-      JSNumberObject::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false), 0);
+      JSNumberObject::NewPlain(
+          this, Map::NewUniqueMap(this, obj_proto, false), 0);
   global_data()->number_map()->ChangePrototypeWithNoTransition(proto);
   // section 15.7.3 The Number Constructor
   JSFunction* const constructor =
-      JSInlinedFunction<&runtime::NumberConstructor, 1>::New(this, Intern("Number"));
+      JSInlinedFunction<&runtime::NumberConstructor, 1>::New(
+          this, Intern("Number"));
 
   struct ClassSlot cls = {
     JSNumberObject::GetClass(),
@@ -559,7 +573,8 @@ void Context::InitMath(const ClassSlot& func_cls,
     obj_proto
   };
   global_data_.RegisterClass<Class::Math>(cls);
-  JSObject* const math = JSMath::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false));
+  JSObject* const math =
+      JSMath::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false));
   global_binder->def("Math", math, ATTR::W | ATTR::C);
 
   bind::Object(this, math)
@@ -652,7 +667,8 @@ void Context::InitDate(const ClassSlot& func_cls,
   // section 15.9 Date
   Error::Dummy dummy;
   JSObject* const proto =
-      JSDate::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false), core::kNaN);
+      JSDate::NewPlain(
+          this, Map::NewUniqueMap(this, obj_proto, false), core::kNaN);
   global_data()->date_map()->ChangePrototypeWithNoTransition(proto);
   // section 15.9.2.1 The Date Constructor
   JSFunction* const constructor =
@@ -679,7 +695,8 @@ void Context::InitDate(const ClassSlot& func_cls,
       .def<&runtime::DateNow, 0>("now");
 
   JSFunction* const toUTCString =
-      JSInlinedFunction<&runtime::DateToUTCString, 0>::New(this, Intern("toUTCString"));
+      JSInlinedFunction<&runtime::DateToUTCString, 0>::New(
+          this, Intern("toUTCString"));
 
   bind::Object(this, proto)
       .cls(cls.cls)
@@ -786,12 +803,14 @@ void Context::InitRegExp(const ClassSlot& func_cls,
                          JSObject* obj_proto, bind::Object* global_binder) {
   // section 15.10 RegExp
   Error::Dummy dummy;
-  Map* proto_map = global_data()->regexp_map()->ChangePrototypeTransition(this, obj_proto);
+  Map* proto_map =
+      global_data()->regexp_map()->ChangePrototypeTransition(this, obj_proto);
   JSObject* const proto = JSRegExp::NewPlain(this, proto_map);
   global_data()->regexp_map()->ChangePrototypeWithNoTransition(proto);
   // section 15.10.4 The RegExp Constructor
   JSFunction* const constructor =
-      JSInlinedFunction<&runtime::RegExpConstructor, 2>::New(this, Intern("RegExp"));
+      JSInlinedFunction<&runtime::RegExpConstructor, 2>::New(
+          this, Intern("RegExp"));
 
   struct ClassSlot cls = {
     JSRegExp::GetClass(),
@@ -826,11 +845,13 @@ void Context::InitError(const ClassSlot& func_cls,
                         JSObject* obj_proto, bind::Object* global_binder) {
   // Error
   Error::Dummy dummy;
-  JSObject* const proto = JSObject::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false));
+  JSObject* const proto =
+      JSObject::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false));
   global_data()->error_map()->ChangePrototypeWithNoTransition(proto);
   // section 15.11.2 The Error Constructor
   JSFunction* const constructor =
-      JSInlinedFunction<&runtime::ErrorConstructor, 1>::New(this, Intern("Error"));
+      JSInlinedFunction<&runtime::ErrorConstructor, 1>::New(
+          this, Intern("Error"));
 
   struct ClassSlot cls = {
     JSError::GetClass(),
@@ -851,7 +872,8 @@ void Context::InitError(const ClassSlot& func_cls,
       // section 15.11.4.1 Error.prototype.constructor
       .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
       // section 15.11.4.2 Error.prototype.name
-      .def("name", JSString::NewAsciiString(this, "Error", &dummy), ATTR::W | ATTR::C)
+      .def("name",
+           JSString::NewAsciiString(this, "Error", &dummy), ATTR::W | ATTR::C)
       // section 15.11.4.3 Error.prototype.message
       .def("message", JSString::NewEmptyString(this), ATTR::W | ATTR::C)
       // section 15.11.4.4 Error.prototype.toString()
@@ -922,7 +944,8 @@ void Context::InitError(const ClassSlot& func_cls,
     // section 15.11.6.3 ReferenceError
     JSObject* const sub_proto =
         JSObject::NewPlain(this, Map::NewUniqueMap(this, proto, false));
-    global_data()->reference_error_map()->ChangePrototypeWithNoTransition(sub_proto);
+    global_data()->reference_error_map()->ChangePrototypeWithNoTransition(
+        sub_proto);
     const Symbol sym = Intern("ReferenceError");
     JSFunction* const sub_constructor =
         JSInlinedFunction<
@@ -953,7 +976,8 @@ void Context::InitError(const ClassSlot& func_cls,
     // section 15.11.6.4 SyntaxError
     JSObject* const sub_proto =
         JSObject::NewPlain(this, Map::NewUniqueMap(this, proto, false));
-    global_data()->syntax_error_map()->ChangePrototypeWithNoTransition(sub_proto);
+    global_data()->syntax_error_map()->ChangePrototypeWithNoTransition(
+        sub_proto);
     const Symbol sym = Intern("SyntaxError");
     JSFunction* const sub_constructor =
         JSInlinedFunction<&runtime::SyntaxErrorConstructor, 1>::New(this, sym);
@@ -1053,7 +1077,8 @@ void Context::InitJSON(const ClassSlot& func_cls,
     obj_proto
   };
   global_data_.RegisterClass<Class::JSON>(cls);
-  JSObject* const json = JSJSON::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false));
+  JSObject* const json =
+      JSJSON::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false));
   global_binder->def("JSON", json, ATTR::W | ATTR::C);
   bind::Object(this, json)
       .cls(cls.cls)
@@ -1068,7 +1093,8 @@ void Context::InitMap(const ClassSlot& func_cls,
   // ES.next Map
   // http://wiki.ecmascript.org/doku.php?id=harmony:simple_maps_and_sets
   Error::Dummy dummy;
-  JSObject* const proto = JSObject::New(this, Map::NewUniqueMap(this, obj_proto, false));
+  JSObject* const proto =
+      JSObject::New(this, Map::NewUniqueMap(this, obj_proto, false));
   global_data()->map_map()->ChangePrototypeWithNoTransition(proto);
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::MapConstructor, 0>::New(this, Intern("Map"));
@@ -1080,8 +1106,8 @@ void Context::InitMap(const ClassSlot& func_cls,
 
   bind::Object(this, proto)
       .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
-      .def(Intern("@@toStringTag"),
-           JSString::NewAsciiString(this, "Map", &dummy), ATTR::W | ATTR::C)
+      .def(global_data()->builtin_symbol_toStringTag(),
+           JSString::NewAsciiString(this, "Map", &dummy), ATTR::C)
       .def<&runtime::MapClear, 0>("clear")
       .def<&runtime::MapDelete, 1>("delete")
       .def<&runtime::MapForEach, 1>("forEach")
@@ -1095,10 +1121,12 @@ void Context::InitMap(const ClassSlot& func_cls,
 void Context::InitWeakMap(const ClassSlot& func_cls,
                           JSObject* obj_proto, bind::Object* global_binder) {
   Error::Dummy dummy;
-  JSObject* const proto = JSObject::New(this, Map::NewUniqueMap(this, obj_proto, false));
+  JSObject* const proto =
+      JSObject::New(this, Map::NewUniqueMap(this, obj_proto, false));
   global_data()->weak_map_map()->ChangePrototypeWithNoTransition(proto);
   JSFunction* const constructor =
-      JSInlinedFunction<&runtime::WeakMapConstructor, 0>::New(this, Intern("WeakMap"));
+      JSInlinedFunction<&runtime::WeakMapConstructor, 0>::New(
+          this, Intern("WeakMap"));
 
   global_binder->def("WeakMap", constructor, ATTR::W | ATTR::C);
 
@@ -1107,8 +1135,8 @@ void Context::InitWeakMap(const ClassSlot& func_cls,
 
   bind::Object(this, proto)
       .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
-      .def(Intern("@@toStringTag"),
-           JSString::NewAsciiString(this, "WeakMap", &dummy), ATTR::W | ATTR::C)
+      .def(global_data()->builtin_symbol_toStringTag(),
+           JSString::NewAsciiString(this, "WeakMap", &dummy), ATTR::C)
       .def<&runtime::WeakMapClear, 0>("clear")
       .def<&runtime::WeakMapDelete, 1>("delete")
       .def<&runtime::WeakMapGet, 1>("get")
@@ -1122,7 +1150,8 @@ void Context::InitSet(const ClassSlot& func_cls,
   // ES.next Set
   // http://wiki.ecmascript.org/doku.php?id=harmony:simple_maps_and_sets
   Error::Dummy dummy;
-  JSObject* const proto = JSObject::New(this, Map::NewUniqueMap(this, obj_proto, false));
+  JSObject* const proto =
+      JSObject::New(this, Map::NewUniqueMap(this, obj_proto, false));
   global_data()->set_map()->ChangePrototypeWithNoTransition(proto);
   JSFunction* const constructor =
       JSInlinedFunction<&runtime::SetConstructor, 0>::New(this, Intern("Set"));
@@ -1134,8 +1163,8 @@ void Context::InitSet(const ClassSlot& func_cls,
 
   bind::Object(this, proto)
       .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
-      .def(Intern("@@toStringTag"),
-           JSString::NewAsciiString(this, "Set", &dummy), ATTR::W | ATTR::C)
+      .def(global_data()->builtin_symbol_toStringTag(),
+           JSString::NewAsciiString(this, "Set", &dummy), ATTR::C)
       .def<&runtime::SetAdd, 1>("add")
       .def<&runtime::SetClear, 0>("clear")
       .def<&runtime::SetDelete, 1>("delete")
@@ -1160,7 +1189,8 @@ void Context::InitIntl(const ClassSlot& func_cls,
     JSObject* const proto =
         JSCollator::NewPlain(this, Map::NewUniqueMap(this, obj_proto));
     JSFunction* const constructor =
-        JSInlinedFunction<&runtime::CollatorConstructor, 0>::New(this, Intern("Collator"));
+        JSInlinedFunction<&runtime::CollatorConstructor, 0>::New(
+            this, Intern("Collator"));
 
     struct ClassSlot cls = {
       JSCollator::GetClass(),
@@ -1190,7 +1220,8 @@ void Context::InitIntl(const ClassSlot& func_cls,
         JSObject::New(this, Map::NewUniqueMap(this, obj_proto, false));
     global_data()->number_format_map()->ChangePrototypeWithNoTransition(proto);
     JSFunction* const constructor =
-        JSInlinedFunction<&runtime::NumberFormatConstructor, 0>::New(this, symbol::NumberFormat());
+        JSInlinedFunction<&runtime::NumberFormatConstructor, 0>::New(
+            this, symbol::NumberFormat());
 
     intl_binder.def(symbol::NumberFormat(), constructor, ATTR::W | ATTR::C);
 
@@ -1212,10 +1243,13 @@ void Context::InitIntl(const ClassSlot& func_cls,
   {
     // DateTimeFormat
     JSObject* const proto =
-        JSDateTimeFormat::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false));
-    global_data()->date_time_format_map()->ChangePrototypeWithNoTransition(proto);
+        JSDateTimeFormat::NewPlain(
+            this, Map::NewUniqueMap(this, obj_proto, false));
+    global_data()->date_time_format_map()->ChangePrototypeWithNoTransition(
+        proto);
     JSFunction* const constructor =
-        JSInlinedFunction<&runtime::DateTimeFormatConstructor, 0>::New(this, Intern("DateTimeFormat"));
+        JSInlinedFunction<&runtime::DateTimeFormatConstructor, 0>::New(
+            this, Intern("DateTimeFormat"));
 
     struct ClassSlot cls = {
       JSDateTimeFormat::GetClass(),
@@ -1241,16 +1275,20 @@ void Context::InitIntl(const ClassSlot& func_cls,
 }
 
 void Context::InitBinaryBlocks(const ClassSlot& func_cls,
-                               JSObject* obj_proto, bind::Object* global_binder) {
+                               JSObject* obj_proto,
+                               bind::Object* global_binder) {
   Error::Dummy dummy;
   // ArrayBuffer
   {
-    Map* proto_map = global_data()->array_buffer_map()->ChangePrototypeTransition(this, obj_proto);
+    Map* proto_map =
+        global_data()->array_buffer_map()->ChangePrototypeTransition(
+            this, obj_proto);
     JSObject* const proto =
         JSArrayBuffer::NewPlain(this, 0, proto_map, &dummy);
     global_data()->array_buffer_map()->ChangePrototypeWithNoTransition(proto);
     JSFunction* const constructor =
-        JSInlinedFunction<&runtime::ArrayBufferConstructor, 1>::New(this, Intern("ArrayBuffer"));
+        JSInlinedFunction<&runtime::ArrayBufferConstructor, 1>::New(
+            this, Intern("ArrayBuffer"));
 
     struct ClassSlot cls = {
       JSArrayBuffer::GetClass(),
@@ -1280,15 +1318,19 @@ void Context::InitBinaryBlocks(const ClassSlot& func_cls,
   InitTypedArray<JSUint32Array, Class::Uint32Array>(func_cls, global_binder);
   InitTypedArray<JSFloat32Array, Class::Float32Array>(func_cls, global_binder);
   InitTypedArray<JSFloat64Array, Class::Float64Array>(func_cls, global_binder);
-  InitTypedArray<JSUint8ClampedArray, Class::Uint8ClampedArray>(func_cls, global_binder);
+  InitTypedArray<JSUint8ClampedArray, Class::Uint8ClampedArray>(func_cls,
+                                                                global_binder);
 
   // DataView
   {
-    Map* proto_map = global_data()->data_view_map()->ChangePrototypeTransition(this, obj_proto);
+    Map* proto_map =
+        global_data()->data_view_map()->ChangePrototypeTransition(this,
+                                                                  obj_proto);
     JSObject* const proto = JSObject::New(this, proto_map);
     global_data()->data_view_map()->ChangePrototypeWithNoTransition(proto);
     JSFunction* const constructor =
-        JSInlinedFunction<&runtime::DataViewConstructor, 1>::New(this, Intern("DataView"));
+        JSInlinedFunction<&runtime::DataViewConstructor, 1>::New(
+            this, Intern("DataView"));
 
     struct ClassSlot cls = {
       JSDataView::GetClass(),
@@ -1326,16 +1368,24 @@ void Context::InitBinaryBlocks(const ClassSlot& func_cls,
 }
 
 template<typename TypedArray, Class::JSClassType CLS>
-inline void Context::InitTypedArray(const ClassSlot& func_cls, bind::Object* global_binder) {
+inline void Context::InitTypedArray(const ClassSlot& func_cls,
+                                    bind::Object* global_binder) {
   Error::Dummy dummy;
-  Map* proto_map = global_data()->typed_array_map(TypedArrayTraits<typename TypedArray::Element>::code)->ChangePrototypeTransition(this, global_data()->object_prototype());
+  Map* proto_map =
+      global_data()->typed_array_map(
+          TypedArrayTraits<typename TypedArray::Element>::code)->
+            ChangePrototypeTransition(this, global_data()->object_prototype());
   JSObject* const proto = JSObject::New(this, proto_map);
-  global_data()->typed_array_map(TypedArrayTraits<typename TypedArray::Element>::code)->ChangePrototypeWithNoTransition(proto);
+  global_data()->typed_array_map(
+      TypedArrayTraits<typename TypedArray::Element>::code)->
+        ChangePrototypeWithNoTransition(proto);
   const Class* cls = TypedArray::GetClass();
   JSFunction* const constructor =
-      JSInlinedFunction<&runtime::TypedArrayConstructor<typename TypedArray::Element, TypedArray>, 1>::New(
-          this,
-          Intern(cls->name));
+      JSInlinedFunction<
+        &runtime::TypedArrayConstructor<
+          typename TypedArray::Element, TypedArray>, 1>::New(
+            this,
+            Intern(cls->name));
   struct ClassSlot slot = {
     TypedArray::GetClass(),
     Intern(cls->name),
@@ -1345,15 +1395,23 @@ inline void Context::InitTypedArray(const ClassSlot& func_cls, bind::Object* glo
   };
   global_data()->RegisterClass<CLS>(slot);
   global_binder->def(slot.name, constructor, ATTR::W | ATTR::C);
-  global_data()->set_typed_array_prototype(TypedArrayTraits<typename TypedArray::Element>::code, proto);
+  global_data()->set_typed_array_prototype(
+      TypedArrayTraits<typename TypedArray::Element>::code, proto);
   constructor->ChangePrototype(this, func_cls.prototype);
   bind::Object(this, constructor)
       .def(symbol::prototype(), proto, ATTR::NONE)
-      .def("BYTES_PER_ELEMENT", JSVal::UnSigned(static_cast<uint32_t>(sizeof(typename TypedArray::Element))), ATTR::NONE);
+      .def("BYTES_PER_ELEMENT",
+           JSVal::UnSigned(
+               static_cast<uint32_t>(sizeof(typename TypedArray::Element))),
+           ATTR::NONE);
   bind::Object proto_binder(this, proto);
   proto_binder.def(symbol::constructor(), constructor, ATTR::W | ATTR::C);
-  proto_binder.def<&runtime::TypedArraySet<typename TypedArray::Element, TypedArray>, 1>("set");
-  proto_binder.def<&runtime::TypedArraySubarray<typename TypedArray::Element, TypedArray>, 1>("subarray");
+  proto_binder.def<
+      &runtime::TypedArraySet<
+        typename TypedArray::Element, TypedArray>, 1>("set");
+  proto_binder.def<
+      &runtime::TypedArraySubarray<
+        typename TypedArray::Element, TypedArray>, 1>("subarray");
 }
 
 void Context::InitReflect(const ClassSlot& func_cls,
@@ -1368,7 +1426,8 @@ void Context::InitReflect(const ClassSlot& func_cls,
     obj_proto
   };
   global_data_.RegisterClass<Class::Reflect>(cls);
-  JSObject* const ref = JSReflect::New(this, Map::NewUniqueMap(this, obj_proto, false));
+  JSObject* const ref =
+      JSReflect::New(this, Map::NewUniqueMap(this, obj_proto, false));
   global_binder->def("Reflect", ref, ATTR::W | ATTR::C);
 
   bind::Object(this, ref)
@@ -1415,16 +1474,16 @@ void Context::InitReflect(const ClassSlot& func_cls,
 
 void Context::InitSymbol(const ClassSlot& func_cls,
                          JSObject* obj_proto, bind::Object* global_binder) {
-  // ES.next Symbol
   Error::Dummy dummy;
-  JSObject* const proto =
-      JSSymbol::NewPlain(this, Map::NewUniqueMap(this, obj_proto, false));
-  global_data()->private_symbol_map()->ChangePrototypeWithNoTransition(proto);
+  JSObject* const proto = JSObject::New(this);
+  global_data()->symbol_map()->ChangePrototypeWithNoTransition(proto);
+  global_data()->primitive_symbol_map()->ChangePrototypeWithNoTransition(proto);
   JSFunction* const constructor =
-      JSInlinedFunction<&runtime::SymbolConstructor, 0>::New(this, Intern("Symbol"));
+      JSInlinedFunction<&runtime::SymbolConstructor, 1>::New(
+          this, Intern("Symbol"));
 
   struct ClassSlot cls = {
-    JSSymbol::GetClass(),
+    JSSymbolObject::GetClass(),
     Intern("Symbol"),
     JSString::NewAsciiString(this, "Symbol", &dummy),
     constructor,
@@ -1432,14 +1491,32 @@ void Context::InitSymbol(const ClassSlot& func_cls,
   };
   global_data_.RegisterClass<Class::Symbol>(cls);
   global_binder->def("Symbol", constructor, ATTR::W | ATTR::C);
+  global_data_.set_symbol_prototype(proto);
 
   bind::Object(this, constructor)
       .def(symbol::prototype(), proto, ATTR::NONE)
-      .def<&runtime::SymbolIsSymbol, 1>("isSymbol");
+#define V(name)\
+      .def(symbol::name(),\
+           global_data()->IV_CONCAT(builtin_symbol_, name)(), ATTR::NONE)
+      IV_BUILTIN_SYMBOLS(V)
+#undef V
+      .def(global_data()->builtin_symbol_create(),
+           JSInlinedFunction<
+             &runtime::SymbolCreate, 0>::New(
+                 this, Intern("[Symbol.create]")),
+             ATTR::C);
 
   bind::Object(this, proto)
-      .cls(cls.cls)
-      .def(symbol::constructor(), constructor, ATTR::W | ATTR::C);
+      .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
+      .def<&runtime::SymbolToString, 0>("toString")
+      .def<&runtime::SymbolValueOf, 0>("valueOf")
+      .def(global_data()->builtin_symbol_toStringTag(),
+           JSString::NewAsciiString(this, "Symbol", &dummy), ATTR::C)
+      .def(global_data()->builtin_symbol_toPrimitive(),
+           JSInlinedFunction<
+             &runtime::SymbolToPrimitive, 1>::New(
+                 this, Intern("[Symbol.toPrimitive]")),
+             ATTR::C);
 }
 
 Symbol Context::Intern(const core::StringPiece& str) {

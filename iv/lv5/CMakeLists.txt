@@ -24,6 +24,7 @@ endif()
 
 add_library(liblv5 STATIC
     context.cc
+    global_symbols.cc
     runtime/array.cc
     runtime/array_buffer.cc
     runtime/boolean.cc

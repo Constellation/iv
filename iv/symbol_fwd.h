@@ -89,7 +89,8 @@ inline Symbol MakeSymbol(const core::UString* str) {
   return symbol;
 }
 
-inline Symbol MakePrivateSymbol(const core::UString* str) {
+template<typename T>
+inline Symbol MakePrivateSymbol(T* str) {
   Symbol symbol = { };
   symbol.str_.str_ = reinterpret_cast<uintptr_t>(str);
   return symbol;
@@ -182,9 +183,17 @@ inline core::UString GetIndexStringFromSymbol(Symbol sym) {
 inline core::UString GetSymbolString(Symbol sym) {
   if (IsIndexSymbol(sym)) {
     return GetIndexStringFromSymbol(sym);
-  } else {
+  } else if (IsStringSymbol(sym)) {
     return *GetStringFromSymbol(sym);
+  } else {
+    return core::UString();
   }
+}
+
+template<typename T>
+inline T* GetPtrFromSymbol(Symbol sym) {
+  assert(IsPrivateSymbol(sym));
+  return reinterpret_cast<T*>(sym.str_.str_);
 }
 
 }  // namespace symbol

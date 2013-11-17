@@ -14,16 +14,10 @@ inline void Delete(void* obj, void* data) {
   reinterpret_cast<T*>(obj)->~T();
 }
 
-inline core::Symbol MakeGCPrivateSymbol(Context* ctx) {
-  // create empty unique string
-  const core::UString* string =
-      new (GC, Delete<core::UString>) core::UString();
-  return core::detail::MakePrivateSymbol(string);
-}
-
-inline core::Symbol MakePrivateSymbol(Context* ctx, const core::UString* ptr) {
-  // create empty unique string
-  return core::detail::MakePrivateSymbol(ptr);
+template<typename T>
+inline core::Symbol MakeGCPrivateSymbol(Context* ctx, T* ptr) {
+  // T should be GC-controlled pointer
+  return core::detail::MakePrivateSymbol<T>(ptr);
 }
 
 } } }  // namespace iv::lv5::symbol

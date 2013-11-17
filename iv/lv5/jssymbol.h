@@ -9,28 +9,32 @@
 namespace iv {
 namespace lv5 {
 
-class JSSymbol : public JSObject {
+class JSSymbol : public JSCell {
  public:
-  IV_LV5_DEFINE_JSCLASS(JSSymbol, Symbol)
-
-  static JSSymbol* New(Context* ctx) {
-    JSSymbol* const name =
-        new JSSymbol(ctx, ctx->global_data()->private_symbol_map());
-    name->set_cls(GetClass());
-    return name;
+  static JSSymbol* New(Context* ctx, JSVal description) {
+    return new JSSymbol(ctx, description);
   }
 
-  static JSSymbol* NewPlain(Context* ctx, Map* map) {
-    return new JSSymbol(ctx, map);
+  static JSSymbol* Extract(Symbol sym) {
+    assert(symbol::IsPrivateSymbol(sym));
+    return symbol::GetPtrFromSymbol<JSSymbol>(sym);
   }
 
   Symbol symbol() const { return symbol_; }
+  JSVal description() const { return description_; }
+
+  virtual void MarkChildren(radio::Core* core) {
+    core->MarkValue(description_);
+    core->MarkCell(Extract(symbol_));
+  }
  private:
-  JSSymbol(Context* ctx, Map* map)
-    : JSObject(map),
-      symbol_(symbol::MakeGCPrivateSymbol(ctx)) { }
+  JSSymbol(Context* ctx, JSVal description)
+    : JSCell(radio::SYMBOL, ctx->global_data()->primitive_symbol_map(), NULL),
+      symbol_(symbol::MakeGCPrivateSymbol(ctx, this)),
+      description_(description) { }
 
   Symbol symbol_;
+  JSVal description_;
 };
 
 } }  // namespace iv::lv5

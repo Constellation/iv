@@ -51,3 +51,9 @@ spec/function/function-type-error.js
 spec/to-string.js
 spec/regress/object-indexed-initializer.js
 spec/function-prototype-cache.js
+spec/symbol/constructor.js
+spec/symbol/properties.js
+spec/symbol/toString.js
+spec/symbol/valueOf.js
+spec/symbol/toPrimitive.js
+spec/symbol/toStringTag.js

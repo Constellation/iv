@@ -40,6 +40,7 @@ class Chain : public radio::HeapObject<radio::POINTER> {
     maps.reserve(4);
     const JSCell* current = begin;
     do {
+      assert(current);
       Map* map = current->FlattenMap();
       maps.push_back(map);
       current = current->prototype();

@@ -1131,8 +1131,9 @@ inline Rep LOAD_PROP(Frame* stack, JSVal base, LoadPropertyIC* ic) {  // NOLINT
     return Extract(res);
   }
 
-  // object or string
+  // object, string or symbol
   JSCell* cell = static_cast<JSCell*>(base.cell());
+  assert(cell);
 
   // cache phase
   // own property / proto property / chain lookup property

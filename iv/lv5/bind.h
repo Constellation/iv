@@ -76,6 +76,10 @@ class Object : public Scope {
     return *this;
   }
 
+  Object& def(JSSymbol* symbol, JSVal val, int attr) {
+    return def(symbol->symbol(), val, attr);
+  }
+
   Object& def(const core::StringPiece& string, JSVal val, int attr) {
     return def(ctx_->Intern(string), val, attr);
   }

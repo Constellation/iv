@@ -9,7 +9,13 @@ namespace runtime {
 
 JSVal SymbolConstructor(const Arguments& args, Error* e);
 
-JSVal SymbolIsSymbol(const Arguments& args, Error* e);
+JSVal SymbolToString(const Arguments& args, Error* e);
+
+JSVal SymbolValueOf(const Arguments& args, Error* e);
+
+JSVal SymbolCreate(const Arguments& args, Error* e);
+
+JSVal SymbolToPrimitive(const Arguments& args, Error* e);
 
 } } }  // namespace iv::lv5::runtime
 #endif  // IV_LV5_RUNTIME_SYMBOL_H_

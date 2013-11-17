@@ -8,6 +8,17 @@
 namespace iv {
 namespace core {
 namespace symbol {
+
+#define IV_BUILTIN_SYMBOLS(V)\
+  V(create)\
+  V(hasInstance)\
+  V(isConcatSpreadable)\
+  V(isRegExp)\
+  V(iterator)\
+  V(toPrimitive)\
+  V(toStringTag)\
+  V(unscopables)
+
 // default symbols
 #define IV_DEFAULT_SYMBOLS(V)\
     V(length)\
@@ -65,7 +76,8 @@ namespace symbol {
     V(byteLength)\
     V(buffer)\
     V(byteOffset)\
-    V(add)
+    V(add)\
+    IV_BUILTIN_SYMBOLS(V)
 
 class DefaultSymbolProvider : public core::Singleton<DefaultSymbolProvider> {
  public:

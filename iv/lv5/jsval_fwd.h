@@ -32,6 +32,7 @@ class JSReference;
 class JSEnv;
 class JSObject;
 class JSString;
+class JSSymbol;
 class Slot;
 
 namespace detail {
@@ -50,6 +51,7 @@ struct Layout<4, true> {
         bool boolean_;
         JSObject* object_;
         JSString* string_;
+        JSSymbol* symbol_;
         JSReference* reference_;
         JSEnv* environment_;
         int32_t int32_;
@@ -73,6 +75,7 @@ struct Layout<4, false> {
         bool boolean_;
         JSObject* object_;
         JSString* string_;
+        JSSymbol* symbol_;
         JSReference* reference_;
         JSEnv* environment_;
         int32_t int32_;
@@ -97,6 +100,7 @@ struct Layout<8, true> {
         bool boolean_;
         JSObject* object_;
         JSString* string_;
+        JSSymbol* symbol_;
         JSReference* reference_;
         JSEnv* environment_;
         JSVal* jsvalref_;
@@ -124,6 +128,7 @@ struct Layout<8, false> {
         bool boolean_;
         JSObject* object_;
         JSString* string_;
+        JSSymbol* symbol_;
         JSReference* reference_;
         JSEnv* environment_;
         JSVal* jsvalref_;
@@ -255,6 +260,8 @@ class JSLayout {
 
   bool IsString() const;
 
+  bool IsSymbol() const;
+
   bool IsObject() const;
 
   bool IsReference() const;
@@ -270,6 +277,8 @@ class JSLayout {
   JSEnv* environment() const;
 
   JSString* string() const;
+
+  JSSymbol* symbol() const;
 
   JSObject* object() const;
 
@@ -292,6 +301,8 @@ class JSLayout {
   void set_value(JSObject* val);
 
   void set_value(JSString* val);
+
+  void set_value(JSSymbol* val);
 
   void set_value(JSReference* val);
 
@@ -355,6 +366,11 @@ class JSVal : public JSLayout {
   }
 
   JSVal(JSString* val)  // NOLINT
+    : JSLayout() {
+    set_value(val);
+  }
+
+  JSVal(JSSymbol* val)  // NOLINT
     : JSLayout() {
     set_value(val);
   }

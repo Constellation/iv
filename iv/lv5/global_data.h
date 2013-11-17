@@ -20,6 +20,7 @@
 #include <iv/lv5/jsglobal.h>
 #include <iv/lv5/attributes.h>
 #include <iv/lv5/binary_blocks.h>
+#include <iv/lv5/global_symbols.h>
 namespace iv {
 namespace lv5 {
 
@@ -27,7 +28,7 @@ class JSRegExpImpl;
 class Context;
 
 // GlobalData has symboltable, global object
-class GlobalData {
+class GlobalData : public GlobalSymbols {
  public:
   friend class Context;
   typedef core::UniformRandomGenerator<core::Xor128> RandomGenerator;
@@ -51,13 +52,16 @@ class GlobalData {
       string_object_(),
       string_number_(),
       string_string_(),
+      string_symbol_(),
       string_boolean_(),
       string_empty_regexp_(),
       primitive_string_map_(Map::New(ctx, static_cast<JSObject*>(NULL), true)),
+      primitive_symbol_map_(Map::New(ctx, static_cast<JSObject*>(NULL), true)),
       empty_object_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
       function_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
       array_map_(Map::New(ctx, static_cast<JSObject*>(NULL), true)),
       string_map_(Map::New(ctx, static_cast<JSObject*>(NULL), true)),
+      symbol_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
       boolean_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
       number_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
       date_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
@@ -79,7 +83,6 @@ class GlobalData {
       strict_arguments_map_(NULL),
       number_format_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
       date_time_format_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
-      private_symbol_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
       gc_hook_(this) {
     {
       Error::Dummy e;
@@ -92,6 +95,7 @@ class GlobalData {
       string_object_ = JSString::NewAsciiString(ctx, "object", &e);
       string_number_ = JSString::NewAsciiString(ctx, "number", &e);
       string_string_ = JSString::NewAsciiString(ctx, "string", &e);
+      string_symbol_ = JSString::NewAsciiString(ctx, "symbol", &e);
       string_boolean_ = JSString::NewAsciiString(ctx, "boolean", &e);
       string_empty_regexp_ = JSString::NewAsciiString(ctx, "(?:)", &e);
 
@@ -136,6 +140,8 @@ class GlobalData {
         builder.Add(symbol::byteOffset(), ATTR::CreateData(ATTR::N));
         *it = builder.Build(false, true);
       }
+
+      InitGlobalSymbols(ctx);
     }
   }
 
@@ -203,6 +209,7 @@ class GlobalData {
   JSString* string_object() const { return string_object_; }
   JSString* string_number() const { return string_number_; }
   JSString* string_string() const { return string_string_; }
+  JSString* string_symbol() const { return string_symbol_; }
   JSString* string_boolean() const { return string_boolean_; }
   JSString* string_empty_regexp() const { return string_empty_regexp_; }
 
@@ -219,10 +226,12 @@ class GlobalData {
   }
 
   Map* primitive_string_map() const { return primitive_string_map_; }
+  Map* primitive_symbol_map() const { return primitive_symbol_map_; }
   Map* empty_object_map() const { return empty_object_map_; }
   Map* function_map() const { return function_map_; }
   Map* array_map() const { return array_map_; }
   Map* string_map() const { return string_map_; }
+  Map* symbol_map() const { return symbol_map_; }
   Map* boolean_map() const { return boolean_map_; }
   Map* number_map() const { return number_map_; }
   Map* date_map() const { return date_map_; }
@@ -244,7 +253,6 @@ class GlobalData {
   Map* strict_arguments_map() const { return strict_arguments_map_; }
   Map* number_format_map() const { return number_format_map_; }
   Map* date_time_format_map() const { return date_time_format_map_; }
-  Map* private_symbol_map() const { return private_symbol_map_; }
 
   void InitArgumentsMap() {
     JSObject* proto = object_prototype();
@@ -277,6 +285,7 @@ class GlobalData {
   JSObject* function_prototype() const { return function_prototype_; }
   JSObject* array_prototype() const { return array_prototype_; }
   JSObject* string_prototype() const { return string_prototype_; }
+  JSObject* symbol_prototype() const { return symbol_prototype_; }
   JSObject* boolean_prototype() const { return boolean_prototype_; }
   JSObject* number_prototype() const { return number_prototype_; }
   JSObject* date_prototype() const { return date_prototype_; }
@@ -297,7 +306,6 @@ class GlobalData {
   JSObject* typed_array_prototype(TypedCode::Code code) const { return typed_array_prototypes_[code]; }
   JSObject* number_format_prototype() const { return number_format_prototype_; }
   JSObject* date_time_format_prototype() const { return date_time_format_prototype_; }
-  JSObject* private_symbol_prototype() const { return private_symbol_prototype_; }
 
  private:
   // prototypes setter
@@ -305,6 +313,7 @@ class GlobalData {
   void set_function_prototype(JSObject* proto) { function_prototype_ = proto; }
   void set_array_prototype(JSObject* proto) { array_prototype_ = proto; }
   void set_string_prototype(JSObject* proto) { string_prototype_ = proto; }
+  void set_symbol_prototype(JSObject* proto) { symbol_prototype_ = proto; }
   void set_boolean_prototype(JSObject* proto) { boolean_prototype_ = proto; }
   void set_number_prototype(JSObject* proto) { number_prototype_ = proto; }
   void set_date_prototype(JSObject* proto) { date_prototype_ = proto; }
@@ -324,7 +333,6 @@ class GlobalData {
   void set_typed_array_prototype(TypedCode::Code code, JSObject* proto) { typed_array_prototypes_[code] = proto; }
   void set_number_format_prototype(JSObject* proto) { number_format_prototype_ = proto; }
   void set_date_time_format_prototype(JSObject* proto) { date_time_format_prototype_ = proto; }
-  void set_private_symbol_prototype(JSObject* proto) { private_symbol_prototype_ = proto; }
 
 
   Context* ctx_;
@@ -346,6 +354,7 @@ class GlobalData {
   JSString* string_object_;
   JSString* string_number_;
   JSString* string_string_;
+  JSString* string_symbol_;
   JSString* string_boolean_;
   JSString* string_empty_regexp_;
 
@@ -354,6 +363,7 @@ class GlobalData {
   JSObject* function_prototype_;
   JSObject* array_prototype_;
   JSObject* string_prototype_;
+  JSObject* symbol_prototype_;
   JSObject* boolean_prototype_;
   JSObject* number_prototype_;
   JSObject* date_prototype_;
@@ -374,14 +384,15 @@ class GlobalData {
   TypedArrayPrototypes typed_array_prototypes_;
   JSObject* number_format_prototype_;
   JSObject* date_time_format_prototype_;
-  JSObject* private_symbol_prototype_;
 
   // builtin maps
   Map* primitive_string_map_;
+  Map* primitive_symbol_map_;
   Map* empty_object_map_;
   Map* function_map_;
   Map* array_map_;
   Map* string_map_;
+  Map* symbol_map_;
   Map* boolean_map_;
   Map* number_map_;
   Map* date_map_;
@@ -403,7 +414,6 @@ class GlobalData {
   Map* strict_arguments_map_;
   Map* number_format_map_;
   Map* date_time_format_map_;
-  Map* private_symbol_map_;
 
   GCHook<GlobalData> gc_hook_;
 };

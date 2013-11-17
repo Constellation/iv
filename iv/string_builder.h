@@ -31,7 +31,9 @@ class BasicStringBuilder : protected std::vector<CharT> {
   }
 
   void Append(const core::StringPiece& piece) {
-    insert(container_type::end(), piece.begin(), piece.end());
+    insert(container_type::end(),
+           reinterpret_cast<const uint8_t*>(piece.data()),
+           reinterpret_cast<const uint8_t*>(piece.data()) + piece.size());
   }
 
   void Append(CharT ch) {
@@ -55,7 +57,9 @@ class BasicStringBuilder : protected std::vector<CharT> {
   }
 
   void append(const core::StringPiece& piece) {
-    insert(container_type::end(), piece.begin(), piece.end());
+    insert(container_type::end(),
+           reinterpret_cast<const uint8_t*>(piece.data()),
+           reinterpret_cast<const uint8_t*>(piece.data()) + piece.size());
   }
 
   using container_type::push_back;
