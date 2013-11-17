@@ -307,6 +307,10 @@ void Context::InitArray(const ClassSlot& func_cls,
       // ES.next Array.from
       .def<&runtime::ArrayOf, 0>("of");
 
+
+  JSFunction* array_values =
+     JSInlinedFunction<&runtime::ArrayValues, 0>::New(this, Intern("values"));
+
   bind::Object(this, proto)
       .cls(cls.cls)
       // section 15.5.4.1 Array.prototype.constructor
@@ -364,7 +368,11 @@ void Context::InitArray(const ClassSlot& func_cls,
       .def<&runtime::ArrayKeys, 0>("keys")
       // ES6
       // section 22.1.3.29 Array.prototype.values()
-      .def<&runtime::ArrayValues, 0>("values");
+      .def("values", array_values, ATTR::W | ATTR::C)
+      // ES6
+      // section 21.1.3.30 Array.prototype[@@iterator]()
+      .def(global_data()->builtin_symbol_iterator(),
+           array_values, ATTR::W | ATTR::C);
   global_data()->set_array_prototype(proto);
 
   // Init ArrayIterator
