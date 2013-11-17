@@ -367,20 +367,22 @@ void Context::InitArray(const ClassSlot& func_cls,
       .def<&runtime::ArrayValues, 0>("values");
   global_data()->set_array_prototype(proto);
 
-
   // Init ArrayIterator
   JSObject* const array_iterator_proto = JSObject::New(this);
   global_data()->array_iterator_map()->ChangePrototypeWithNoTransition(
       array_iterator_proto);
   bind::Object(this, array_iterator_proto)
+      // ES6
       // section 22.1.5.2.1 %ArrayIteratorPrototype%.next()
       .def<&runtime::ArrayIteratorNext, 0>("next")
+      // ES6
       // section 22.1.5.2.2 %ArrayIteratorPrototype%[@@iterator]()
       .def(global_data()->builtin_symbol_toPrimitive(),
            JSInlinedFunction<
              &runtime::ArrayIteratorIterator, 0>::New(
                  this, Intern("[Symbol.iterator]")),
              ATTR::W | ATTR::C)
+      // ES6
       // section 22.1.5.2.3 %ArrayIteratorPrototype%[@@toStringTag]
       .def(global_data()->builtin_symbol_toStringTag(),
            JSString::NewAsciiString(this, "Array Iterator", &dummy),
@@ -478,8 +480,37 @@ void Context::InitString(const ClassSlot& func_cls,
       .def<&runtime::StringReverse, 0>("reverse")
       // section B.2.3 String.prototype.substr(start, length)
       // this method is deprecated.
-      .def<&runtime::StringSubstr, 2>("substr");
+      .def<&runtime::StringSubstr, 2>("substr")
+      // ES6
+      // section 21.1.3.27 String.prototype[@@iterator]()
+      .def(global_data()->builtin_symbol_iterator(),
+           JSInlinedFunction<
+             &runtime::StringIterator, 0>::New(
+                 this, Intern("[Symbol.iterator]")),
+             ATTR::W | ATTR::C);
   global_data()->set_string_prototype(proto);
+
+  // Init StringIterator
+  JSObject* const string_iterator_proto = JSObject::New(this);
+  global_data()->string_iterator_map()->ChangePrototypeWithNoTransition(
+      string_iterator_proto);
+  bind::Object(this, string_iterator_proto)
+      // ES6
+      // section 21.1.5.2.1 %StringIteratorPrototype%.next()
+      .def<&runtime::StringIteratorNext, 0>("next")
+      // ES6
+      // section 21.1.5.2.2 %StringIteratorPrototype%[@@iterator]()
+      .def(global_data()->builtin_symbol_toPrimitive(),
+           JSInlinedFunction<
+             &runtime::StringIteratorIterator, 0>::New(
+                 this, Intern("[Symbol.iterator]")),
+             ATTR::W | ATTR::C)
+      // ES6
+      // section 21.1.5.2.3 %StringIteratorPrototype%[@@toStringTag]
+      .def(global_data()->builtin_symbol_toStringTag(),
+           JSString::NewAsciiString(this, "String Iterator", &dummy),
+           ATTR::W | ATTR::C);
+  global_data()->set_string_iterator_prototype(string_iterator_proto);
 }
 
 void Context::InitBoolean(const ClassSlot& func_cls,

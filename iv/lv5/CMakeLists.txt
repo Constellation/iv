@@ -44,6 +44,7 @@ add_library(liblv5 STATIC
     runtime/regexp.cc
     runtime/set.cc
     runtime/string.cc
+    runtime/string_iterator.cc
     runtime/symbol.cc
     runtime/weak_map.cc
     radio/block_control.cc

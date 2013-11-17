@@ -16,6 +16,7 @@
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsstring.h>
 #include <iv/lv5/jsstringobject.h>
+#include <iv/lv5/jsstring_iterator.h>
 #include <iv/lv5/jsregexp.h>
 #include <iv/lv5/internal.h>
 #include <iv/lv5/runtime/regexp.h>
@@ -1406,6 +1407,16 @@ JSVal StringSubstr(const Arguments& args, Error* e) {
   const uint32_t capacity = core::DoubleToUInt32(result6);
   const uint32_t start_position = core::DoubleToUInt32(result5);
   return str->Substring(ctx, start_position, start_position + capacity);
+}
+
+// ES6
+// section 21.1.3.27 String.prototype[@@iterator]()
+JSVal StringIterator(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("String.prototype[@@iterator]", args, e);
+  const JSVal val = args.this_binding();
+  val.CheckObjectCoercible(IV_LV5_ERROR(e));
+  JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
+  return JSStringIterator::New(args.ctx(), str);
 }
 
 } } }  // namespace iv::lv5::runtime

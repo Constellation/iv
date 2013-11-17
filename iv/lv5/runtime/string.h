@@ -101,5 +101,10 @@ JSVal StringReverse(const Arguments& args, Error* e);
 // this method is deprecated.
 JSVal StringSubstr(const Arguments& args, Error* e);
 
+// ES6
+// section 21.1.3.27 String.prototype[@@iterator]()
+JSVal StringIterator(const Arguments& args, Error* e);
+
+
 } } }  // namespace iv::lv5::runtime
 #endif  // IV_LV5_RUNTIME_STRING_H_

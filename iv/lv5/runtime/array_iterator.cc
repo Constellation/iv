@@ -1,4 +1,3 @@
-#include <iv/conversions.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/constructor_check.h>
 #include <iv/lv5/arguments.h>
@@ -13,7 +12,7 @@
 #include <iv/lv5/jsarray_iterator.h>
 #include <iv/lv5/jsiterator_result.h>
 #include <iv/lv5/runtime/object.h>
-#include <iv/lv5/runtime/array.h>
+#include <iv/lv5/runtime/array_iterator.h>
 namespace iv {
 namespace lv5 {
 namespace runtime {
@@ -75,6 +74,7 @@ JSVal ArrayIteratorNext(const Arguments& args, Error* e) {
 // ES6
 // section 22.1.5.2.2 %ArrayIteratorPrototype%[@@iterator]()
 JSVal ArrayIteratorIterator(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("%ArrayIterator%[@@iterator]", args, e);
   return args.this_binding();
 }
 

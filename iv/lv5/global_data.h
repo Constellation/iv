@@ -62,6 +62,7 @@ class GlobalData : public GlobalSymbols {
       array_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), true)),
       array_iterator_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), true)),
       string_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), true)),
+      string_iterator_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), true)),
       symbol_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
       boolean_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
       number_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
@@ -255,6 +256,7 @@ class GlobalData : public GlobalSymbols {
   Map* array_map() const { return array_map_; }
   Map* array_iterator_map() const { return array_iterator_map_; }
   Map* string_map() const { return string_map_; }
+  Map* string_iterator_map() const { return string_iterator_map_; }
   Map* symbol_map() const { return symbol_map_; }
   Map* boolean_map() const { return boolean_map_; }
   Map* number_map() const { return number_map_; }
@@ -311,6 +313,7 @@ class GlobalData : public GlobalSymbols {
   JSObject* array_prototype() const { return array_prototype_; }
   JSObject* array_iterator_prototype() const { return array_iterator_prototype_; }
   JSObject* string_prototype() const { return string_prototype_; }
+  JSObject* string_iterator_prototype() const { return string_iterator_prototype_; }
   JSObject* symbol_prototype() const { return symbol_prototype_; }
   JSObject* boolean_prototype() const { return boolean_prototype_; }
   JSObject* number_prototype() const { return number_prototype_; }
@@ -340,6 +343,7 @@ class GlobalData : public GlobalSymbols {
   void set_array_prototype(JSObject* proto) { array_prototype_ = proto; }
   void set_array_iterator_prototype(JSObject* proto) { array_iterator_prototype_ = proto; }
   void set_string_prototype(JSObject* proto) { string_prototype_ = proto; }
+  void set_string_iterator_prototype(JSObject* proto) { string_iterator_prototype_ = proto; }
   void set_symbol_prototype(JSObject* proto) { symbol_prototype_ = proto; }
   void set_boolean_prototype(JSObject* proto) { boolean_prototype_ = proto; }
   void set_number_prototype(JSObject* proto) { number_prototype_ = proto; }
@@ -391,6 +395,7 @@ class GlobalData : public GlobalSymbols {
   JSObject* array_prototype_;
   JSObject* array_iterator_prototype_;
   JSObject* string_prototype_;
+  JSObject* string_iterator_prototype_;
   JSObject* symbol_prototype_;
   JSObject* boolean_prototype_;
   JSObject* number_prototype_;
@@ -421,6 +426,7 @@ class GlobalData : public GlobalSymbols {
   Map* array_map_;
   Map* array_iterator_map_;
   Map* string_map_;
+  Map* string_iterator_map_;
   Map* symbol_map_;
   Map* boolean_map_;
   Map* number_map_;
