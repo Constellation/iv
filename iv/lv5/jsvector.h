@@ -1,5 +1,6 @@
 #ifndef IV_LV5_JSVECTOR_H_
 #define IV_LV5_JSVECTOR_H_
+#include <initializer_list>
 #include <iv/lv5/jsarray.h>
 namespace iv {
 namespace lv5 {
@@ -110,6 +111,12 @@ class JSVector : private JSArray {
                        const JSVal& v = JSUndefined) {
     JSVector* vec = new JSVector(ctx, n, v);
     vec->set_cls(JSArray::GetClass());
+    return vec;
+  }
+
+  static JSVector* New(Context* ctx, std::initializer_list<JSVal> list) {
+    JSVector* vec = New(ctx);
+    vec->assign(list.begin(), list.end());
     return vec;
   }
 

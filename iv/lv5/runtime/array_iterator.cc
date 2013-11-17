@@ -60,9 +60,10 @@ JSVal ArrayIteratorNext(const Arguments& args, Error* e) {
   switch (kind) {
     case ArrayIterationKind::KEY_PLUS_VALUE:
     case ArrayIterationKind::SPARSE_KEY_PLUS_VALUE: {
-      JSVector* vec = JSVector::New(ctx, 2);
-      (*vec)[0] = JSVal::UInt32(index);
-      (*vec)[1] = value;
+      JSVector* vec = JSVector::New(ctx, {
+        JSVal::UInt32(index),
+        value
+      });
       return JSIteratorResult::New(ctx, vec->ToJSArray(), false);
     }
 
