@@ -37,7 +37,7 @@ class Error;
 //       have Fiber array <Cons|Fiber>*
 //       this class is only seen in JSString
 
-class JSString: public JSCell {
+class JSString : public JSCell {
  public:
   friend class GlobalData;
   typedef JSString this_type;
