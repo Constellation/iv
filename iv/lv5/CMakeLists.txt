@@ -27,6 +27,7 @@ add_library(liblv5 STATIC
     global_symbols.cc
     runtime/array.cc
     runtime/array_buffer.cc
+    runtime/array_iterator.cc
     runtime/boolean.cc
     runtime/data_view.cc
     runtime/date.cc

@@ -5,6 +5,7 @@
 #include <iv/lv5/runtime/object.h>
 #include <iv/lv5/runtime/function.h>
 #include <iv/lv5/runtime/array.h>
+#include <iv/lv5/runtime/array_iterator.h>
 #include <iv/lv5/runtime/string.h>
 #include <iv/lv5/runtime/boolean.h>
 #include <iv/lv5/runtime/number.h>

@@ -8,6 +8,7 @@
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsarray.h>
 #include <iv/lv5/jsvector.h>
+#include <iv/lv5/jsarray_iterator.h>
 #include <iv/lv5/jsstring.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/runtime/object.h>
@@ -1450,6 +1451,33 @@ JSVal ArrayReduceRight(const Arguments& args, Error* e) {
     }
   }
   return accumulator;
+}
+
+// ES6
+// section 22.1.3.4 Array.prototype.entries()
+JSVal ArrayEntries(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.entries", args, e);
+  Context* const ctx = args.ctx();
+  JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
+  return JSArrayIterator::New(ctx, obj, ArrayIterationKind::KEY_PLUS_VALUE);
+}
+
+// ES6
+// section 22.1.3.13 Array.prototype.keys()
+JSVal ArrayKeys(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.keys", args, e);
+  Context* const ctx = args.ctx();
+  JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
+  return JSArrayIterator::New(ctx, obj, ArrayIterationKind::KEY);
+}
+
+// ES6
+// section 22.1.3.29 Array.prototype.values()
+JSVal ArrayValues(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Array.prototype.values", args, e);
+  Context* const ctx = args.ctx();
+  JSObject* const obj = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
+  return JSArrayIterator::New(ctx, obj, ArrayIterationKind::VALUE);
 }
 
 } } }  // namespace iv::lv5::runtime

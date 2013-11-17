@@ -60,7 +60,11 @@ void Context::Initialize() {
       JSObject::NewPlain(this,
                          Map::NewUniqueMap(
                              this, static_cast<JSObject*>(nullptr), false));
+
+  // Object Map initializations
   global_data()->empty_object_map()->ChangePrototypeWithNoTransition(obj_proto);
+  global_data()->InitNormalObjectMaps(this);
+
   global_obj()->ChangePrototype(this, obj_proto);
 
   JSFunction* const func_proto =
@@ -351,8 +355,37 @@ void Context::InitArray(const ClassSlot& func_cls,
       .def<&runtime::ArrayReduce, 1>("reduce")
       // section 15.4.4.22
       // Array.prototype.reduceRight(callbackfn[, initialValue])
-      .def<&runtime::ArrayReduceRight, 1>("reduceRight");
+      .def<&runtime::ArrayReduceRight, 1>("reduceRight")
+      // ES6
+      // section 22.1.3.4 Array.prototype.entries()
+      .def<&runtime::ArrayEntries, 0>("entries")
+      // ES6
+      // section 22.1.3.13 Array.prototype.keys()
+      .def<&runtime::ArrayKeys, 0>("keys")
+      // ES6
+      // section 22.1.3.29 Array.prototype.values()
+      .def<&runtime::ArrayValues, 0>("values");
   global_data()->set_array_prototype(proto);
+
+
+  // Init ArrayIterator
+  JSObject* const array_iterator_proto = JSObject::New(this);
+  global_data()->array_iterator_map()->ChangePrototypeWithNoTransition(
+      array_iterator_proto);
+  bind::Object(this, array_iterator_proto)
+      // section 22.1.5.2.1 %ArrayIteratorPrototype%.next()
+      .def<&runtime::ArrayIteratorNext, 0>("next")
+      // section 22.1.5.2.2 %ArrayIteratorPrototype%[@@iterator]()
+      .def(global_data()->builtin_symbol_toPrimitive(),
+           JSInlinedFunction<
+             &runtime::ArrayIteratorIterator, 0>::New(
+                 this, Intern("[Symbol.iterator]")),
+             ATTR::W | ATTR::C)
+      // section 22.1.5.2.3 %ArrayIteratorPrototype%[@@toStringTag]
+      .def(global_data()->builtin_symbol_toStringTag(),
+           JSString::NewAsciiString(this, "Array Iterator", &dummy),
+           ATTR::W | ATTR::C);
+  global_data()->set_array_iterator_prototype(array_iterator_proto);
 }
 
 void Context::InitString(const ClassSlot& func_cls,

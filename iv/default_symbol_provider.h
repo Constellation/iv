@@ -42,6 +42,7 @@ namespace symbol {
     V(get)\
     V(set)\
     V(value)\
+    V(done)\
     V(configurable)\
     V(writable)\
     V(enumerable)\

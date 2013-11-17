@@ -36,6 +36,7 @@ class JSObject : public JSCell {
 
   static const uint32_t kFlagExtensible = 0x1;
   static const uint32_t kFlagCallable = 0x2;
+  static const uint32_t kFlagTuple = 0x4;
 
   virtual ~JSObject() { }
 
@@ -189,6 +190,10 @@ class JSObject : public JSCell {
 
   static void MapTransitionWithReallocation(
       JSObject* base, JSVal src, Map* transit, uint32_t offset);
+
+  void MakeTuple() { flags_ |= kFlagTuple; }
+  bool IsTuple() const { return flags_ & kFlagTuple; }
+
  protected:
   explicit JSObject(Map* map);
   explicit JSObject(const JSObject& obj);

@@ -5,6 +5,7 @@
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/jsfunction_fwd.h>
+#include <iv/lv5/jssymbol.h>
 #include <iv/lv5/arguments.h>
 #include <iv/lv5/attributes.h>
 #include <iv/lv5/context.h>
@@ -30,6 +31,11 @@ class Object : public Scope {
   Object& cls(const Class* cls) {
     obj_->set_cls(cls);
     return *this;
+  }
+
+  template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
+  Object& def(JSSymbol* symbol) {
+    return def<func, n>(symbol->symbol());
   }
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>

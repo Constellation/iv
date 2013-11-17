@@ -96,5 +96,17 @@ JSVal ArrayReduce(const Arguments& args, Error* e);
 // section 15.4.4.22 Array.prototype.reduceRight(callbackfn[, initialValue])
 JSVal ArrayReduceRight(const Arguments& args, Error* e);
 
+// ES6
+// section 22.1.3.4 Array.prototype.entries()
+JSVal ArrayEntries(const Arguments& args, Error* e);
+
+// ES6
+// section 22.1.3.13 Array.prototype.keys()
+JSVal ArrayKeys(const Arguments& args, Error* e);
+
+// ES6
+// section 22.1.3.29 Array.prototype.values()
+JSVal ArrayValues(const Arguments& args, Error* e);
+
 } } }  // namespace iv::lv5::runtime
 #endif  // IV_LV5_RUNTIME_ARRAY_H_

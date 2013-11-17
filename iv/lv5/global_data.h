@@ -60,6 +60,7 @@ class GlobalData : public GlobalSymbols {
       empty_object_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
       function_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
       array_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), true)),
+      array_iterator_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), true)),
       string_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), true)),
       symbol_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
       boolean_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
@@ -78,6 +79,7 @@ class GlobalData : public GlobalSymbols {
       set_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
       array_buffer_map_(nullptr),
       data_view_map_(nullptr),
+      iterator_result_map_(nullptr),
       typed_array_maps_(),
       normal_arguments_map_(nullptr),
       strict_arguments_map_(nullptr),
@@ -143,6 +145,27 @@ class GlobalData : public GlobalSymbols {
 
       InitGlobalSymbols(ctx);
     }
+  }
+
+  void InitNormalObjectMaps(Context* ctx) {
+    // IteratorResult Map
+    uint32_t value_offset, done_offset;
+    iterator_result_map_ =
+        empty_object_map()
+          ->AddPropertyTransition(
+              ctx,
+              symbol::value(),
+              ATTR::Object::Data(),
+              &value_offset
+          )
+          ->AddPropertyTransition(
+              ctx,
+              symbol::done(),
+              ATTR::Object::Data(),
+              &done_offset
+          );
+    // assert(value_offset == JSIteratorResult::VALUE);
+    // assert(done_offset  == JSIteratorResult::DONE);
   }
 
   Symbol Intern(const core::StringPiece& str) {
@@ -230,6 +253,7 @@ class GlobalData : public GlobalSymbols {
   Map* empty_object_map() const { return empty_object_map_; }
   Map* function_map() const { return function_map_; }
   Map* array_map() const { return array_map_; }
+  Map* array_iterator_map() const { return array_iterator_map_; }
   Map* string_map() const { return string_map_; }
   Map* symbol_map() const { return symbol_map_; }
   Map* boolean_map() const { return boolean_map_; }
@@ -248,6 +272,7 @@ class GlobalData : public GlobalSymbols {
   Map* set_map() const { return set_map_; }
   Map* array_buffer_map() const { return array_buffer_map_; }
   Map* data_view_map() const { return data_view_map_; }
+  Map* iterator_result_map() const { return iterator_result_map_; }
   Map* typed_array_map(TypedCode::Code code) const { return typed_array_maps_[code]; }
   Map* normal_arguments_map() const { return normal_arguments_map_; }
   Map* strict_arguments_map() const { return strict_arguments_map_; }
@@ -284,6 +309,7 @@ class GlobalData : public GlobalSymbols {
   JSObject* object_prototype() const { return object_prototype_; }
   JSObject* function_prototype() const { return function_prototype_; }
   JSObject* array_prototype() const { return array_prototype_; }
+  JSObject* array_iterator_prototype() const { return array_iterator_prototype_; }
   JSObject* string_prototype() const { return string_prototype_; }
   JSObject* symbol_prototype() const { return symbol_prototype_; }
   JSObject* boolean_prototype() const { return boolean_prototype_; }
@@ -312,6 +338,7 @@ class GlobalData : public GlobalSymbols {
   void set_object_prototype(JSObject* proto) { object_prototype_ = proto; }
   void set_function_prototype(JSObject* proto) { function_prototype_ = proto; }
   void set_array_prototype(JSObject* proto) { array_prototype_ = proto; }
+  void set_array_iterator_prototype(JSObject* proto) { array_iterator_prototype_ = proto; }
   void set_string_prototype(JSObject* proto) { string_prototype_ = proto; }
   void set_symbol_prototype(JSObject* proto) { symbol_prototype_ = proto; }
   void set_boolean_prototype(JSObject* proto) { boolean_prototype_ = proto; }
@@ -362,6 +389,7 @@ class GlobalData : public GlobalSymbols {
   JSObject* object_prototype_;
   JSObject* function_prototype_;
   JSObject* array_prototype_;
+  JSObject* array_iterator_prototype_;
   JSObject* string_prototype_;
   JSObject* symbol_prototype_;
   JSObject* boolean_prototype_;
@@ -391,6 +419,7 @@ class GlobalData : public GlobalSymbols {
   Map* empty_object_map_;
   Map* function_map_;
   Map* array_map_;
+  Map* array_iterator_map_;
   Map* string_map_;
   Map* symbol_map_;
   Map* boolean_map_;
@@ -409,6 +438,7 @@ class GlobalData : public GlobalSymbols {
   Map* set_map_;
   Map* array_buffer_map_;
   Map* data_view_map_;
+  Map* iterator_result_map_;
   TypedArrayMaps typed_array_maps_;
   Map* normal_arguments_map_;
   Map* strict_arguments_map_;
