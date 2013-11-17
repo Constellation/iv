@@ -311,6 +311,15 @@ void Context::InitArray(const ClassSlot& func_cls,
   JSFunction* array_values =
      JSInlinedFunction<&runtime::ArrayValues, 0>::New(this, Intern("values"));
 
+  JSVector* unscopables = JSVector::New(this, 7);
+  (*unscopables)[0] = JSString::NewAsciiString(this, "find", &dummy);
+  (*unscopables)[1] = JSString::NewAsciiString(this, "findIndex", &dummy);
+  (*unscopables)[2] = JSString::NewAsciiString(this, "fill", &dummy);
+  (*unscopables)[3] = JSString::NewAsciiString(this, "copyWithin", &dummy);
+  (*unscopables)[4] = JSString::NewAsciiString(this, "entries", &dummy);
+  (*unscopables)[5] = JSString::NewAsciiString(this, "keys", &dummy);
+  (*unscopables)[6] = JSString::NewAsciiString(this, "values", &dummy);
+
   bind::Object(this, proto)
       .cls(cls.cls)
       // section 15.5.4.1 Array.prototype.constructor
@@ -372,7 +381,11 @@ void Context::InitArray(const ClassSlot& func_cls,
       // ES6
       // section 21.1.3.30 Array.prototype[@@iterator]()
       .def(global_data()->builtin_symbol_iterator(),
-           array_values, ATTR::W | ATTR::C);
+           array_values, ATTR::W | ATTR::C)
+      // ES6
+      // section 22.1.3.31 Array.prototype[@@unscopables]
+      .def(global_data()->builtin_symbol_unscopables(),
+           unscopables->ToJSArray(), ATTR::W | ATTR::C);
   global_data()->set_array_prototype(proto);
 
   // Init ArrayIterator
