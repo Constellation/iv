@@ -35,7 +35,7 @@ class Chain : public radio::HeapObject<radio::POINTER> {
   // chain not contains end map
   static Chain* New(const JSCell* begin, const JSCell* end) {
     assert(begin != end);
-    assert(begin != NULL);
+    assert(begin != nullptr);
     std::vector<Map*> maps;
     maps.reserve(4);
     const JSCell* current = begin;
@@ -118,16 +118,16 @@ class Chain : public radio::HeapObject<radio::POINTER> {
     return size_;
   }
 
-  // maybe return NULL
+  // maybe return nullptr
   JSObject* Validate(JSObject* target, Map* cache) const {
     JSObject* current = target;
     for (const_iterator it = cbegin(), last = cend();
          current && it != last; ++it, current = current->prototype()) {
       if (*it != current->map()) {
-        return NULL;
+        return nullptr;
       }
     }
-    return (current && cache == current->map()) ? current : NULL;
+    return (current && cache == current->map()) ? current : nullptr;
   }
 
   void MarkChildren(radio::Core* core) {

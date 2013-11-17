@@ -29,7 +29,7 @@ class Xor128 {
     return limits::max();
   }
   void seed() {
-    seed(static_cast<result_type>(std::time(NULL)));
+    seed(static_cast<result_type>(std::time(nullptr)));
   }
   void seed(result_type x0) {
     x_ ^= x0;

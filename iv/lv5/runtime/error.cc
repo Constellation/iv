@@ -20,9 +20,9 @@ namespace detail {
 static inline JSString* ErrorMessageString(const Arguments& args, Error* e) {
   const JSVal msg = args.At(0);
   if (msg.IsUndefined()) {
-    return NULL;
+    return nullptr;
   }
-  return msg.ToString(args.ctx(), IV_LV5_ERROR_WITH(e, NULL));
+  return msg.ToString(args.ctx(), IV_LV5_ERROR_WITH(e, nullptr));
 }
 
 }  // namespace detail

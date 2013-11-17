@@ -35,7 +35,7 @@ class Slot : public StoredSlot {
 
   Slot()
     : StoredSlot(JSEmpty, Attributes::Safe::NotFound()),
-      base_(NULL),
+      base_(nullptr),
       offset_(UINT32_MAX),
       flags_(FLAG_INIT) {
   }
@@ -103,7 +103,7 @@ class Slot : public StoredSlot {
   void Clear() {
     StoredSlot::set(JSEmpty, Attributes::Safe::NotFound());
     flags_ = FLAG_INIT;
-    base_ = NULL;
+    base_ = nullptr;
     offset_ = UINT32_MAX;
   }
 

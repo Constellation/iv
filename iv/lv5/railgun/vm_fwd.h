@@ -66,10 +66,10 @@ class VM : private Operation {
  private:
   // dispatch table get pass
   explicit VM(DispatchTableTag tag)
-    : Operation(NULL),
+    : Operation(nullptr),
       stack_(tag),
-      direct_threading_dispatch_table_(NULL) {
-    Execute(NULL, NULL);
+      direct_threading_dispatch_table_(nullptr) {
+    Execute(nullptr, nullptr);
   }
 
   static LabelOPTable CreateLabelTable() {

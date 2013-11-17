@@ -117,7 +117,7 @@ class PropertyDescriptor : protected Attributes::External {
                            ATTR::UNDEF_WRITABLE),
       value_() {
     value_.accessor_.getter_ = getter;
-    value_.accessor_.setter_ = NULL;
+    value_.accessor_.setter_ = nullptr;
   }
 
   PropertyDescriptor(AccessorDescriptorSetterTag tag,
@@ -128,7 +128,7 @@ class PropertyDescriptor : protected Attributes::External {
                            ATTR::UNDEF_GETTER |
                            ATTR::UNDEF_WRITABLE),
       value_() {
-    value_.accessor_.getter_ = NULL;
+    value_.accessor_.getter_ = nullptr;
     value_.accessor_.setter_ = setter;
   }
 

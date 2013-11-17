@@ -156,7 +156,7 @@ JSVal ObjectCreate(const Arguments& args, Error* e) {
   if (!args.empty()) {
     const JSVal first = args.front();
     if (first.IsObject() || first.IsNull()) {
-      JSObject* prototype = NULL;
+      JSObject* prototype = nullptr;
       if (first.IsObject()) {
         prototype = first.object();
       }

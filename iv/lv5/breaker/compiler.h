@@ -67,7 +67,7 @@ class Compiler {
   explicit Compiler(Context* ctx, railgun::Code* top)
     : ctx_(ctx),
       top_(top),
-      code_(NULL),
+      code_(nullptr),
       asm_(new Assembler),
       native_code_(new NativeCode(asm_)),
       jump_map_(),
@@ -76,7 +76,7 @@ class Compiler {
       handler_links_(),
       codes_(),
       counter_(0),
-      previous_instr_(NULL),
+      previous_instr_(nullptr),
       last_used_(kInvalidUsedOffset),
       last_used_candidate_(),
       type_record_() {
@@ -141,7 +141,7 @@ class Compiler {
     codes_.push_back(code);
     jump_map_.clear();
     entry_points_.insert(std::make_pair(code, asm_->size()));
-    previous_instr_ = NULL;
+    previous_instr_ = nullptr;
     kill_last_used();
     type_record_.Init(code);
   }
@@ -219,7 +219,7 @@ class Compiler {
     asm_->sub(qword[r14 + offsetof(Frame, ret)], k64Size * kStackPayload);
 
     const Instruction* total_first_instr = code_->core_data()->data()->data();
-    const Instruction* previous = NULL;
+    const Instruction* previous = nullptr;
     const Instruction* instr = code_->begin();
     for (const Instruction* last = code_->end(); instr != last;) {
       const uint32_t opcode = instr->GetOP();
@@ -228,7 +228,7 @@ class Compiler {
 
       const bool in_basic_block = SplitBasicBlock(previous, instr);
       if (!in_basic_block) {
-        set_previous_instr(NULL);
+        set_previous_instr(nullptr);
         kill_last_used();
         type_record_.Clear();
       } else {
@@ -759,7 +759,7 @@ class Compiler {
       const std::ptrdiff_t offset =
           IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
       asm_->mov(rdi, qword[rsi + offset]);
-      asm_->test(rdi, rdi);  // class is NULL => String...
+      asm_->test(rdi, rdi);  // class is nullptr => String...
       asm_->jnz(".end", Xbyak::CodeGenerator::T_NEAR);  // object
       // string fall-through
 
@@ -2952,7 +2952,7 @@ class Compiler {
     if (!type_entry.type().IsArray()) {
       const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
       asm_->mov(tmp, qword[target + offset]);
-      asm_->test(tmp, tmp);  // class is NULL => String...
+      asm_->test(tmp, tmp);  // class is nullptr => String...
       asm_->jz(label, type);
 
       const std::ptrdiff_t get_method = Class::MethodTableOffset() + IV_OFFSETOF(MethodTable, GetOwnIndexedPropertySlot);

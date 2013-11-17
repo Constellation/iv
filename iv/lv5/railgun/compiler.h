@@ -132,10 +132,10 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   explicit Compiler(Context* ctx, bool use_folded_registers)
     : ctx_(ctx),
       use_folded_registers_(use_folded_registers),
-      code_(NULL),
-      core_(NULL),
-      data_(NULL),
-      script_(NULL),
+      code_(nullptr),
+      core_(nullptr),
+      data_(nullptr),
+      script_(nullptr),
       code_info_stack_(),
       jump_table_(),
       level_stack_(),
@@ -156,7 +156,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   // Global Code
   Code* CompileGlobal(const FunctionLiteral& global, JSScript* script) {
-    Code* code = NULL;
+    Code* code = nullptr;
     {
       script_ = script;
       core_ = CoreData::New();
@@ -173,7 +173,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   // Function Code
   Code* CompileFunction(const FunctionLiteral& function, JSScript* script) {
-    Code* code = NULL;
+    Code* code = nullptr;
     {
       script_ = script;
       core_ = CoreData::New();
@@ -191,7 +191,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   // Direct call to eval Code
   Code* CompileEval(const FunctionLiteral& eval, JSScript* script) {
-    Code* code = NULL;
+    Code* code = nullptr;
     {
       script_ = script;
       core_ = CoreData::New();
@@ -215,7 +215,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
 
   // Indirect call to eval Code
   Code* CompileIndirectEval(const FunctionLiteral& eval, JSScript* script) {
-    Code* code = NULL;
+    Code* code = nullptr;
     {
       script_ = script;
       core_ = CoreData::New();
@@ -1069,7 +1069,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   void RegisterJumpTarget(const BreakableStatement* stmt,
                           Jump::Targets* breaks) {
     jump_table_.insert(
-        std::make_pair(stmt, Jump(CurrentLevel(), breaks, NULL)));
+        std::make_pair(stmt, Jump(CurrentLevel(), breaks, nullptr)));
   }
 
   void RegisterJumpTarget(const IterationStatement* stmt,
@@ -1088,11 +1088,11 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   }
 
   void PushLevelEnv() {
-    level_stack_.push_back(Level(Level::ENV, NULL));
+    level_stack_.push_back(Level(Level::ENV, nullptr));
   }
 
   void PushLevelIterator(RegisterID iterator) {
-    Level level(Level::ITERATOR, NULL);
+    Level level(Level::ITERATOR, nullptr);
     level.set_ret(iterator);
     level_stack_.push_back(level);
   }

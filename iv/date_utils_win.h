@@ -142,8 +142,8 @@ inline std::array<char, kMaxTZNameSize> LocalTimeZoneImpl(double t) {
                             -1,
                             buffer.data(),
                             buffer.size(),
-                            NULL,
-                            NULL);
+                            nullptr,
+                            nullptr);
       buffer[buffer.size() - 1] = '\0';
       break;
     }
@@ -154,8 +154,8 @@ inline std::array<char, kMaxTZNameSize> LocalTimeZoneImpl(double t) {
                             -1,
                             buffer.data(),
                             buffer.size(),
-                            NULL,
-                            NULL);
+                            nullptr,
+                            nullptr);
       buffer[buffer.size() - 1] = '\0';
       break;
     }

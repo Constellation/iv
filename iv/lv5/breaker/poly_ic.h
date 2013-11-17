@@ -26,8 +26,8 @@ class PolyICUnit: public core::IntrusiveListBase {
   };
 
   explicit PolyICUnit(Type type)
-    : own_(NULL),
-      proto_(NULL),
+    : own_(nullptr),
+      proto_(nullptr),
       type_(type),
       tail_(0) {
   }
@@ -120,7 +120,7 @@ class ChainedPolyIC : public PolyIC {
   template<typename Generator>
   Unit* Generate(const Generator& gen) {
     if (size() >= Derived::kMaxPolyICSize) {
-      return NULL;
+      return nullptr;
     }
 
     Unit* ic = new Unit(Generator::kType);
@@ -281,7 +281,7 @@ class LoadPropertyIC : public PropertyIC<LoadPropertyIC> {
     }
 
     void operator()(LoadPropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
-      JSObject* prototype = NULL;
+      JSObject* prototype = nullptr;
       as->mov(r11, rsi);
       for (Chain::const_iterator it = chain_->begin(),
            last = chain_->end(); it != last; ++it) {
@@ -478,7 +478,7 @@ class StorePropertyIC : public PropertyIC<StorePropertyIC> {
     }
 
     void operator()(StorePropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
-      JSObject* prototype = NULL;
+      JSObject* prototype = nullptr;
       as->mov(r11, rsi);
       for (Chain::const_iterator it = chain_->begin(),
            last = chain_->end(); it != last; ++it) {
@@ -487,7 +487,7 @@ class StorePropertyIC : public PropertyIC<StorePropertyIC> {
         prototype = map->prototype();
         as->mov(r11, core::BitCast<uintptr_t>(prototype));
       }
-      assert(prototype == NULL);  // last is NULL
+      assert(prototype == nullptr);  // last is nullptr
       // transition
       helper::MovConstant(as, qword[rsi + JSObject::MapOffset()], core::BitCast<uintptr_t>(transit_), r10);
       // store
@@ -514,7 +514,7 @@ class StorePropertyIC : public PropertyIC<StorePropertyIC> {
     }
 
     void operator()(StorePropertyIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
-      JSObject* prototype = NULL;
+      JSObject* prototype = nullptr;
       as->mov(r11, rsi);
       for (Chain::const_iterator it = chain_->begin(),
            last = chain_->end(); it != last; ++it) {
@@ -523,7 +523,7 @@ class StorePropertyIC : public PropertyIC<StorePropertyIC> {
         prototype = map->prototype();
         as->mov(r11, core::BitCast<uintptr_t>(prototype));
       }
-      assert(prototype == NULL);  // last is NULL
+      assert(prototype == nullptr);  // last is nullptr
       // call
       as->mov(rdi, rsi);
       as->mov(rsi, rdx);
@@ -629,7 +629,7 @@ class StoreElementIC : public ChainedPolyIC<StoreElementIC> {
     }
 
     void operator()(StoreElementIC* site, Xbyak::CodeGenerator* as, const char* fail) const {
-      JSObject* prototype = NULL;
+      JSObject* prototype = nullptr;
       as->mov(r9, rsi);
       for (Chain::const_iterator it = chain_->begin(),
            last = chain_->end(); it != last; ++it) {

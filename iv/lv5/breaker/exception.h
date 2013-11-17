@@ -72,7 +72,7 @@ inline void* SearchExceptionHandler(void* pc, void** rsp,
     }
     // handler not in this frame
     // so, unwind frame and search again
-    if (frame->prev_pc_ == NULL) {
+    if (frame->prev_pc_ == nullptr) {
       // this code is invoked by native function
       // so, not unwind and return (continues to after for main loop)
       break;

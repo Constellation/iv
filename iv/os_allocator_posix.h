@@ -21,7 +21,7 @@ namespace core {
 
 inline void* OSAllocator::Allocate(std::size_t bytes) {
   int fd = -1;
-  void* mem = NULL;
+  void* mem = nullptr;
   mem = mmap(mem, bytes,
              PROT_READ | PROT_WRITE, MAP_PRIVATE | IV_MAP_ANON, fd, 0);
   if (mem == MAP_FAILED) {

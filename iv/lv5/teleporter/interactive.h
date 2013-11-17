@@ -59,7 +59,7 @@ class Interactive {
         JSVal val;
         if (ctx_.Run(script)) {
           val = ctx_.ErrorVal();
-          ctx_.SetStatement(Context::NORMAL, JSEmpty, NULL);
+          ctx_.SetStatement(Context::NORMAL, JSEmpty, nullptr);
         } else {
           val = ctx_.ret();
         }
@@ -96,7 +96,7 @@ class Interactive {
         std::fprintf(stderr, "%s\n", parser.error().c_str());
       }
       delete factory;
-      return NULL;
+      return nullptr;
     } else {
       return JSEvalScript<core::FileSource>::New(&ctx_, eval,
                                                  factory, src);

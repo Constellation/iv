@@ -10,9 +10,9 @@ namespace lv5 {
 namespace radio {
 
 Core::Core()
-  : working_(NULL),
-    free_blocks_(NULL),
-    weak_maps_(NULL),
+  : working_(nullptr),
+    free_blocks_(nullptr),
+    weak_maps_(nullptr),
     handles_(),
     stack_(),
     persistents_(),

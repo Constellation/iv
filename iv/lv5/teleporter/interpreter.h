@@ -32,7 +32,7 @@ namespace teleporter {
 
 #define CHECK_IN_STMT  ctx_->error());\
   if (ctx_->IsError()) {\
-    RETURN_STMT(Context::THROW, JSEmpty, NULL);\
+    RETURN_STMT(Context::THROW, JSEmpty, nullptr);\
   }\
   ((void)0
 #define DUMMY )  // to make indentation work
@@ -59,7 +59,7 @@ namespace teleporter {
 #define EVAL_IN_STMT(node)\
   node->Accept(this);\
   if (ctx_->IsError()) {\
-    RETURN_STMT(Context::THROW, JSEmpty, NULL);\
+    RETURN_STMT(Context::THROW, JSEmpty, nullptr);\
   }
 
 // section 13.2.1 [[Call]]
@@ -128,7 +128,7 @@ void Interpreter::Invoke(JSCodeFunction* code,
 
   // step 6, 7
   if (!env->HasBinding(ctx_, symbol::arguments())) {
-    JSObject* args_obj = NULL;
+    JSObject* args_obj = nullptr;
     if (!ctx_->IsStrict()) {
       args_obj = JSNormalArguments::New(
           ctx_, code,
@@ -184,14 +184,14 @@ void Interpreter::Invoke(JSCodeFunction* code,
     const Statement* stmt = *it;
     EVAL_IN_STMT(stmt);
     if (ctx_->IsMode<Context::THROW>()) {
-      RETURN_STMT(Context::THROW, ctx_->ret(), NULL);
+      RETURN_STMT(Context::THROW, ctx_->ret(), nullptr);
     }
     if (ctx_->IsMode<Context::RETURN>()) {
-      RETURN_STMT(Context::RETURN, ctx_->ret(), NULL);
+      RETURN_STMT(Context::RETURN, ctx_->ret(), nullptr);
     }
     assert(ctx_->IsMode<Context::NORMAL>());
   }
-  RETURN_STMT(Context::NORMAL, JSUndefined, NULL);
+  RETURN_STMT(Context::NORMAL, JSUndefined, nullptr);
 }
 
 
@@ -230,14 +230,14 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
         if (existing_prop.IsAccessor()) {
           ctx_->error()->Report(Error::Type,
                                 "create mutable function binding failed");
-          RETURN_STMT(Context::THROW, JSEmpty, NULL);
+          RETURN_STMT(Context::THROW, JSEmpty, nullptr);
         }
         const DataDescriptor* const data = existing_prop.AsDataDescriptor();
         if (!data->IsWritable() ||
             !data->IsEnumerable()) {
           ctx_->error()->Report(Error::Type,
                                 "create mutable function binding failed");
-          RETURN_STMT(Context::THROW, JSEmpty, NULL);
+          RETURN_STMT(Context::THROW, JSEmpty, nullptr);
         }
       }
     }
@@ -264,7 +264,7 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
     EVAL_IN_STMT(stmt);
     if (ctx_->IsMode<Context::THROW>()) {
       // section 12.1 step 4
-      RETURN_STMT(Context::THROW, value, NULL);
+      RETURN_STMT(Context::THROW, value, nullptr);
     }
     if (!ctx_->ret().IsEmpty()) {
       value = ctx_->ret();
@@ -274,7 +274,7 @@ void Interpreter::Run(const FunctionLiteral* global, bool is_eval) {
     }
   }
   assert(ctx_->IsMode<Context::NORMAL>());
-  RETURN_STMT(Context::NORMAL, value, NULL);
+  RETURN_STMT(Context::NORMAL, value, nullptr);
 }
 
 
@@ -288,7 +288,7 @@ void Interpreter::Visit(const Block* block) {
     EVAL_IN_STMT(stmt);
     if (ctx_->IsMode<Context::THROW>()) {
       // section 12.1 step 4
-      RETURN_STMT(Context::THROW, value, NULL);
+      RETURN_STMT(Context::THROW, value, nullptr);
     }
     if (!ctx_->ret().IsEmpty()) {
       value = ctx_->ret();
@@ -296,7 +296,7 @@ void Interpreter::Visit(const Block* block) {
 
     if (ctx_->IsMode<Context::BREAK>() &&
         ctx_->InCurrentLabelSet(block)) {
-      RETURN_STMT(Context::NORMAL, value, NULL);
+      RETURN_STMT(Context::NORMAL, value, nullptr);
     }
     if (!ctx_->IsMode<Context::NORMAL>()) {
       RETURN_STMT(ctx_->mode(), value, ctx_->target());
@@ -331,17 +331,17 @@ void Interpreter::Visit(const VariableStatement* var) {
       PutValue(lhs, val, CHECK_IN_STMT);
     }
   }
-  RETURN_STMT(Context::NORMAL, JSEmpty, NULL);
+  RETURN_STMT(Context::NORMAL, JSEmpty, nullptr);
 }
 
 
 void Interpreter::Visit(const FunctionDeclaration* func) {
-  RETURN_STMT(Context::NORMAL, JSEmpty, NULL);
+  RETURN_STMT(Context::NORMAL, JSEmpty, nullptr);
 }
 
 
 void Interpreter::Visit(const EmptyStatement* empty) {
-  RETURN_STMT(Context::NORMAL, JSEmpty, NULL);
+  RETURN_STMT(Context::NORMAL, JSEmpty, nullptr);
 }
 
 
@@ -357,7 +357,7 @@ void Interpreter::Visit(const IfStatement* stmt) {
       EVAL_IN_STMT(else_stmt.Address());
       // through else statement's result
     } else {
-      RETURN_STMT(Context::NORMAL, JSEmpty, NULL);
+      RETURN_STMT(Context::NORMAL, JSEmpty, nullptr);
     }
   }
 }
@@ -375,7 +375,7 @@ void Interpreter::Visit(const DoWhileStatement* stmt) {
         !ctx_->InCurrentLabelSet(stmt)) {
       if (ctx_->IsMode<Context::BREAK>() &&
           ctx_->InCurrentLabelSet(stmt)) {
-        RETURN_STMT(Context::NORMAL, value, NULL);
+        RETURN_STMT(Context::NORMAL, value, nullptr);
       }
       if (!ctx_->IsMode<Context::NORMAL>()) {
         ABRUPT();
@@ -386,7 +386,7 @@ void Interpreter::Visit(const DoWhileStatement* stmt) {
     const bool val = expr.ToBoolean();
     iterating = val;
   }
-  RETURN_STMT(Context::NORMAL, value, NULL);
+  RETURN_STMT(Context::NORMAL, value, nullptr);
 }
 
 
@@ -405,14 +405,14 @@ void Interpreter::Visit(const WhileStatement* stmt) {
           !ctx_->InCurrentLabelSet(stmt)) {
         if (ctx_->IsMode<Context::BREAK>() &&
             ctx_->InCurrentLabelSet(stmt)) {
-          RETURN_STMT(Context::NORMAL, value, NULL);
+          RETURN_STMT(Context::NORMAL, value, nullptr);
         }
         if (!ctx_->IsMode<Context::NORMAL>()) {
           ABRUPT();
         }
       }
     } else {
-      RETURN_STMT(Context::NORMAL, value, NULL);
+      RETURN_STMT(Context::NORMAL, value, nullptr);
     }
   }
 }
@@ -430,7 +430,7 @@ void Interpreter::Visit(const ForStatement* stmt) {
       const JSVal expr = GetValue(ctx_->ret(), CHECK_IN_STMT);
       const bool val = expr.ToBoolean();
       if (!val) {
-        RETURN_STMT(Context::NORMAL, value, NULL);
+        RETURN_STMT(Context::NORMAL, value, nullptr);
       }
     }
     EVAL_IN_STMT(stmt->body());
@@ -441,7 +441,7 @@ void Interpreter::Visit(const ForStatement* stmt) {
         !ctx_->InCurrentLabelSet(stmt)) {
       if (ctx_->IsMode<Context::BREAK>() &&
           ctx_->InCurrentLabelSet(stmt)) {
-        RETURN_STMT(Context::NORMAL, value, NULL);
+        RETURN_STMT(Context::NORMAL, value, nullptr);
       }
       if (!ctx_->IsMode<Context::NORMAL>()) {
         ABRUPT();
@@ -456,7 +456,7 @@ void Interpreter::Visit(const ForStatement* stmt) {
 
 
 void Interpreter::Visit(const ForInStatement* stmt) {
-  const Expression* lexpr = NULL;
+  const Expression* lexpr = nullptr;
   Symbol for_decl = symbol::kDummySymbol;
   if (stmt->each()->AsVariableStatement()) {
     const Declaration* decl =
@@ -464,7 +464,7 @@ void Interpreter::Visit(const ForInStatement* stmt) {
     for_decl = decl->name()->symbol();
     Resolve(for_decl);
     if (ctx_->IsError()) {
-      RETURN_STMT(Context::THROW, JSEmpty, NULL);
+      RETURN_STMT(Context::THROW, JSEmpty, nullptr);
     }
     const JSVal lhs = ctx_->ret();
     if (const core::Maybe<const Expression> expr = decl->expr()) {
@@ -479,7 +479,7 @@ void Interpreter::Visit(const ForInStatement* stmt) {
   EVAL_IN_STMT(stmt->enumerable());
   const JSVal expr = GetValue(ctx_->ret(), CHECK_IN_STMT);
   if (expr.IsNullOrUndefined()) {
-    RETURN_STMT(Context::NORMAL, JSEmpty, NULL);
+    RETURN_STMT(Context::NORMAL, JSEmpty, nullptr);
   }
   JSObject* const obj = expr.ToObject(ctx_, CHECK_IN_STMT);
   JSVal value = JSEmpty;
@@ -495,7 +495,7 @@ void Interpreter::Visit(const ForInStatement* stmt) {
     } else {
       Resolve(for_decl);
       if (ctx_->IsError()) {
-        RETURN_STMT(Context::THROW, JSEmpty, NULL);
+        RETURN_STMT(Context::THROW, JSEmpty, nullptr);
       }
     }
     const JSVal lhs = ctx_->ret();
@@ -508,14 +508,14 @@ void Interpreter::Visit(const ForInStatement* stmt) {
         !ctx_->InCurrentLabelSet(stmt)) {
       if (ctx_->IsMode<Context::BREAK>() &&
           ctx_->InCurrentLabelSet(stmt)) {
-        RETURN_STMT(Context::NORMAL, value, NULL);
+        RETURN_STMT(Context::NORMAL, value, nullptr);
       }
       if (!ctx_->IsMode<Context::NORMAL>()) {
         ABRUPT();
       }
     }
   }
-  RETURN_STMT(Context::NORMAL, value, NULL);
+  RETURN_STMT(Context::NORMAL, value, nullptr);
 }
 
 
@@ -527,7 +527,7 @@ void Interpreter::Visit(const ContinueStatement* stmt) {
 void Interpreter::Visit(const BreakStatement* stmt) {
   if (!stmt->target() && stmt->label() != symbol::kDummySymbol) {
     // interpret as EmptyStatement
-    RETURN_STMT(Context::NORMAL, JSEmpty, NULL);
+    RETURN_STMT(Context::NORMAL, JSEmpty, nullptr);
   }
   RETURN_STMT(Context::BREAK, JSEmpty, stmt->target());
 }
@@ -537,9 +537,9 @@ void Interpreter::Visit(const ReturnStatement* stmt) {
   if (const core::Maybe<const Expression> expr = stmt->expr()) {
     EVAL_IN_STMT(expr.Address());
     const JSVal value = GetValue(ctx_->ret(), CHECK_IN_STMT);
-    RETURN_STMT(Context::RETURN, value, NULL);
+    RETURN_STMT(Context::RETURN, value, nullptr);
   } else {
-    RETURN_STMT(Context::RETURN, JSUndefined, NULL);
+    RETURN_STMT(Context::RETURN, JSUndefined, nullptr);
   }
 }
 
@@ -638,7 +638,7 @@ void Interpreter::Visit(const SwitchStatement* stmt) {
   }
 
   if (ctx_->IsMode<Context::BREAK>() && ctx_->InCurrentLabelSet(stmt)) {
-    RETURN_STMT(Context::NORMAL, value, NULL);
+    RETURN_STMT(Context::NORMAL, value, nullptr);
   }
   RETURN_STMT(ctx_->mode(), value, ctx_->target());
 }
@@ -649,7 +649,7 @@ void Interpreter::Visit(const ThrowStatement* stmt) {
   EVAL_IN_STMT(stmt->expr());
   const JSVal ref = GetValue(ctx_->ret(), CHECK_IN_STMT);
   ctx_->error()->Report(ref);
-  RETURN_STMT(Context::THROW, ref, NULL);
+  RETURN_STMT(Context::THROW, ref, nullptr);
 }
 
 
@@ -679,7 +679,7 @@ void Interpreter::Visit(const TryStatement* stmt) {
     }
     const BreakableStatement* const target = ctx_->target();
 
-    ctx_->SetStatement(Context::NORMAL, JSEmpty, NULL);
+    ctx_->SetStatement(Context::NORMAL, JSEmpty, nullptr);
     (*block).Accept(this);
     if (ctx_->IsMode<Context::NORMAL>()) {
       if (mode == Context::THROW) {
@@ -694,14 +694,14 @@ void Interpreter::Visit(const TryStatement* stmt) {
 void Interpreter::Visit(const DebuggerStatement* stmt) {
   // section 12.15 debugger statement
   // implementation define debugging facility is not available
-  RETURN_STMT(Context::NORMAL, JSEmpty, NULL);
+  RETURN_STMT(Context::NORMAL, JSEmpty, nullptr);
 }
 
 
 void Interpreter::Visit(const ExpressionStatement* stmt) {
   EVAL_IN_STMT(stmt->expr());
   const JSVal value = GetValue(ctx_->ret(), CHECK);
-  RETURN_STMT(Context::NORMAL, value, NULL);
+  RETURN_STMT(Context::NORMAL, value, nullptr);
 }
 
 
@@ -1308,12 +1308,12 @@ void Interpreter::Visit(const ObjectLiteral* literal) {
     } else {
       EVAL(get<2>(prop));
       if (type == ObjectLiteral::GET) {
-        desc = AccessorDescriptor(ctx_->ret().object(), NULL,
+        desc = AccessorDescriptor(ctx_->ret().object(), nullptr,
                                   ATTR::ENUMERABLE |
                                   ATTR::CONFIGURABLE |
                                   ATTR::UNDEF_SETTER);
       } else {
-        desc = AccessorDescriptor(NULL, ctx_->ret().object(),
+        desc = AccessorDescriptor(nullptr, ctx_->ret().object(),
                                   ATTR::ENUMERABLE |
                                   ATTR::CONFIGURABLE|
                                   ATTR::UNDEF_GETTER);

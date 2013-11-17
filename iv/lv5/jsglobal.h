@@ -123,7 +123,7 @@ class JSGlobal : public JSObject {
 
  private:
   explicit JSGlobal(Context* ctx)
-    : JSObject(Map::NewUniqueMap(ctx, static_cast<JSObject*>(NULL), false)),
+    : JSObject(Map::NewUniqueMap(ctx, static_cast<JSObject*>(nullptr), false)),
       symbol_map_(),
       variables_() {
     set_cls(GetClass());

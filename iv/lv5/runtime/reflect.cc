@@ -34,7 +34,7 @@ JSVal ReflectSetPrototypeOf(const Arguments& args, Error* e) {
   if (!obj->IsExtensible()) {
     return JSFalse;
   }
-  obj->ChangePrototype(ctx, proto.IsObject() ? proto.object() : NULL);
+  obj->ChangePrototype(ctx, proto.IsObject() ? proto.object() : nullptr);
   return JSTrue;
 }
 

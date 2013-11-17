@@ -79,8 +79,8 @@ class QHashMap {
   // If an entry with matching key is found, Lookup()
   // returns that entry. If no matching entry is found,
   // but insert is set, a new entry is inserted with
-  // corresponding key, key hash, and NULL value.
-  // Otherwise, NULL is returned.
+  // corresponding key, key hash, and nullptr value.
+  // Otherwise, nullptr is returned.
   IV_ALWAYS_INLINE Entry* Lookup(
       KeyType key, bool insert, Allocator allocator = Allocator());
   IV_ALWAYS_INLINE std::pair<Entry*, bool>
@@ -105,7 +105,7 @@ class QHashMap {
 
   // Iteration
   //
-  // for (Entry* p = map.Start(); p != NULL; p = map.Next(p)) {
+  // for (Entry* p = map.Start(); p != nullptr; p = map.Next(p)) {
   //   ...
   // }
   //
@@ -125,7 +125,7 @@ class QHashMap {
   void Resize(Allocator allocator = Allocator());
 
   // If an entry with matching key is found, Lookup()
-  // returns that entry. If no matching entry is found, NULL is returned.
+  // returns that entry. If no matching entry is found, nullptr is returned.
   IV_ALWAYS_INLINE Entry*
       Lookup(KeyType key, Allocator allocator = Allocator()) const;
 
@@ -178,11 +178,11 @@ class QHashMap {
   typedef ValueType mapped_type;
 
   iterator begin() { return iterator(this, this->Start()); }
-  iterator end() { return iterator(this, NULL); }
+  iterator end() { return iterator(this, nullptr); }
   const_iterator begin() const { return const_iterator(this, this->Start()); }
-  const_iterator end() const { return const_iterator(this, NULL); }
+  const_iterator end() const { return const_iterator(this, nullptr); }
   const_iterator cbegin() const { return const_iterator(this, this->Start()); }
-  const_iterator cend() const { return const_iterator(this, NULL); }
+  const_iterator cend() const { return const_iterator(this, nullptr); }
 
   IV_ALWAYS_INLINE iterator find(KeyType key) {
     return iterator(this, this->Lookup(key));
@@ -245,7 +245,7 @@ QHashMap<KeyType, ValueType, KeyTraits, Allocator>::Lookup(
     return p;
   }
   // No entry found and none inserted.
-  return NULL;
+  return nullptr;
 }
 
 
@@ -262,7 +262,7 @@ QHashMap<KeyType, ValueType, KeyTraits, Allocator>::Lookup(
   // No entry found; insert one if necessary.
   if (insert) {
     p->first = key;
-    // p->second = NULL;
+    // p->second = nullptr;
     occupancy_++;
 
     // Grow the map if we reached >= 80% occupancy.
@@ -275,7 +275,7 @@ QHashMap<KeyType, ValueType, KeyTraits, Allocator>::Lookup(
   }
 
   // No entry found and none inserted.
-  return NULL;
+  return nullptr;
 }
 
 
@@ -293,7 +293,7 @@ QHashMap<KeyType, ValueType, KeyTraits, Allocator>::LookupWithFound(
   // No entry found; insert one if necessary.
   if (insert) {
     p->first = key;
-    // p->second = NULL;
+    // p->second = nullptr;
     occupancy_++;
 
     // Grow the map if we reached >= 80% occupancy.
@@ -306,7 +306,7 @@ QHashMap<KeyType, ValueType, KeyTraits, Allocator>::LookupWithFound(
   }
 
   // No entry found and none inserted.
-  return std::make_pair(static_cast<Entry*>(NULL), false);
+  return std::make_pair(static_cast<Entry*>(nullptr), false);
 }
 
 
@@ -406,7 +406,7 @@ QHashMap<KeyType, ValueType, KeyTraits, Allocator>::Next(Entry* p) const {
       return p;
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 

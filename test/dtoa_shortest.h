@@ -27,7 +27,7 @@
 
 // This file contains 100.000 decimal representations of random doubles. They
 // have been generated using Gay's dtoa to produce the shortest representation:
-//          decimal_rep = dtoa(v, 0, 0, &decimal_point, &sign, NULL);
+//          decimal_rep = dtoa(v, 0, 0, &decimal_point, &sign, nullptr);
 #ifndef IV_TEST_DTOA_SHORTEST_H_
 #define IV_TEST_DTOA_SHORTEST_H_
 #include <iv/detail/array.h>

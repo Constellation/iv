@@ -30,7 +30,7 @@ class ConstantPool {
 
   ConstantPool(Context* ctx)
     : ctx_(ctx),
-      code_(NULL),
+      code_(nullptr),
       jsstring_to_index_map_(),
       double_to_index_map_(),
       undefined_index_(),

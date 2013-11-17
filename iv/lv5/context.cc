@@ -42,11 +42,11 @@ Context::Context(JSAPI fc, JSAPI ge)
     throw_type_error_(
         JSInlinedFunction<&runtime::ThrowTypeError, 0>::NewPlain(
             this, Intern("ThrowError"),
-            Map::NewUniqueMap(this, static_cast<JSObject*>(NULL), false))),
-    global_env_(JSObjectEnv::New(this, NULL, global_obj())),
+            Map::NewUniqueMap(this, static_cast<JSObject*>(nullptr), false))),
+    global_env_(JSObjectEnv::New(this, nullptr, global_obj())),
     regexp_allocator_(),
     regexp_vm_(),
-    stack_(NULL),
+    stack_(nullptr),
     function_constructor_(fc),
     global_eval_(ge),
     i18n_() {
@@ -59,7 +59,7 @@ void Context::Initialize() {
   JSObject* const obj_proto =
       JSObject::NewPlain(this,
                          Map::NewUniqueMap(
-                             this, static_cast<JSObject*>(NULL), false));
+                             this, static_cast<JSObject*>(nullptr), false));
   global_data()->empty_object_map()->ChangePrototypeWithNoTransition(obj_proto);
   global_obj()->ChangePrototype(this, obj_proto);
 
@@ -215,7 +215,7 @@ void Context::Initialize() {
       JSArguments::GetClass(),
       Intern("Arguments"),
       JSString::NewAsciiString(this, "Arguments", &dummy),
-      NULL,
+      nullptr,
       obj_proto
     };
     global_data_.RegisterClass<Class::Arguments>(cls);
@@ -232,7 +232,7 @@ void Context::InitGlobal(const ClassSlot& func_cls,
     JSGlobal::GetClass(),
     symbol::global(),
     JSString::NewAsciiString(this, "global", &dummy),
-    NULL,
+    nullptr,
     obj_proto
   };
   global_data_.RegisterClass<Class::global>(cls);
@@ -569,7 +569,7 @@ void Context::InitMath(const ClassSlot& func_cls,
     JSMath::GetClass(),
     Intern("Math"),
     JSString::NewAsciiString(this, "Math", &dummy),
-    NULL,
+    nullptr,
     obj_proto
   };
   global_data_.RegisterClass<Class::Math>(cls);
@@ -1073,7 +1073,7 @@ void Context::InitJSON(const ClassSlot& func_cls,
     JSJSON::GetClass(),
     Intern("JSON"),
     JSString::NewAsciiString(this, "JSON", &dummy),
-    NULL,
+    nullptr,
     obj_proto
   };
   global_data_.RegisterClass<Class::JSON>(cls);
@@ -1422,7 +1422,7 @@ void Context::InitReflect(const ClassSlot& func_cls,
     JSReflect::GetClass(),
     Intern("Reflect"),
     JSString::NewAsciiString(this, "Reflect", &dummy),
-    NULL,
+    nullptr,
     obj_proto
   };
   global_data_.RegisterClass<Class::Reflect>(cls);

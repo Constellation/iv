@@ -162,7 +162,7 @@ class BasicAstFactory {
 
   template<typename T>
   T** NewPtr() {
-    return new (static_cast<Factory*>(this)->New(sizeof(T*))) T*(NULL);  // NOLINT
+    return new (static_cast<Factory*>(this)->New(sizeof(T*))) T*(nullptr);  // NOLINT
   }
 
   template<typename T>

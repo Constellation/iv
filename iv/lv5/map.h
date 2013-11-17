@@ -111,7 +111,7 @@ class Map : public radio::HeapObject<radio::POINTER> {
           return holder_.pair.map;
         }
       }
-      return NULL;
+      return nullptr;
     }
 
     void Insert(Symbol name, Attributes::Safe attributes, Map* map) {
@@ -186,7 +186,7 @@ class Map : public radio::HeapObject<radio::POINTER> {
 
   class DeleteEntryHolder {
    public:
-    DeleteEntryHolder() : entry_(NULL), size_(0) { }
+    DeleteEntryHolder() : entry_(nullptr), size_(0) { }
 
     void Push(uint32_t offset) {
       entry_ = new(GC)DeleteEntry(entry_, offset);
@@ -294,7 +294,7 @@ class Map : public radio::HeapObject<radio::POINTER> {
         AllocateTable();
       }
       assert(HasTable());
-      Map* map = NULL;
+      Map* map = nullptr;
       if (transitions_.IsEnabledUniqueTransition()) {
         map = NewUniqueMap(ctx, this);
       } else {
@@ -392,7 +392,7 @@ class Map : public radio::HeapObject<radio::POINTER> {
   Map* ChangePrototypeTransition(Context* ctx, JSObject* prototype) {
     if (IsUnique()) {
       // extend this map with no transition
-      Map* map = NULL;
+      Map* map = nullptr;
       if (transitions_.IsEnabledUniqueTransition()) {
         map = NewUniqueMap(ctx, this);
       } else {
@@ -411,7 +411,7 @@ class Map : public radio::HeapObject<radio::POINTER> {
   Map* ChangeIndexedTransition(Context* ctx) {
     if (IsUnique()) {
       // extend this map with no transition
-      Map* map = NULL;
+      Map* map = nullptr;
       if (transitions_.IsEnabledUniqueTransition()) {
         map = NewUniqueMap(ctx, this);
       } else {
@@ -443,8 +443,8 @@ class Map : public radio::HeapObject<radio::POINTER> {
 
   Map(JSObject* prototype, bool unique, bool indexed)
     : prototype_(prototype),
-      previous_(NULL),
-      table_(NULL),
+      previous_(nullptr),
+      table_(nullptr),
       transitions_(!unique, indexed),
       deleted_(),
       added_(std::make_pair(symbol::kDummySymbol, Entry::NotFound())),
@@ -455,7 +455,7 @@ class Map : public radio::HeapObject<radio::POINTER> {
   Map(Map* previous, bool unique)
     : prototype_(previous->prototype()),
       previous_(previous),
-      table_((unique && previous->IsUnique()) ? previous->table_ : NULL),
+      table_((unique && previous->IsUnique()) ? previous->table_ : nullptr),
       transitions_(!unique, previous->transitions_.IsIndexed()),
       deleted_(previous->deleted_),
       added_(std::make_pair(symbol::kDummySymbol, Entry::NotFound())),
@@ -465,7 +465,7 @@ class Map : public radio::HeapObject<radio::POINTER> {
 
   explicit Map(TargetTable* table, JSObject* prototype, bool unique, bool indexed)
     : prototype_(prototype),
-      previous_(NULL),
+      previous_(nullptr),
       table_(table),
       transitions_(!unique, indexed),
       deleted_(),
@@ -477,8 +477,8 @@ class Map : public radio::HeapObject<radio::POINTER> {
   // ObjectLiteral Map
   template<typename Iter>
   Map(Iter it, Iter last)
-    : prototype_(NULL),
-      previous_(NULL),
+    : prototype_(nullptr),
+      previous_(nullptr),
       table_(new(GC)TargetTable(it, last)),
       transitions_(true, false),
       deleted_(),
@@ -536,7 +536,7 @@ class Map : public radio::HeapObject<radio::POINTER> {
       table_->insert((*it)->added_);
     }
     assert(GetSlotsSize() == calculated_size_);
-    previous_ = NULL;
+    previous_ = nullptr;
   }
 
   TargetTable* table() const { return table_; }

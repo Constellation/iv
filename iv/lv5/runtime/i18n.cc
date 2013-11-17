@@ -90,7 +90,7 @@ JSVal CollatorSupportedLocalesOf(const Arguments& args, Error* e) {
 
 JSVal NumberFormatConstructor(const Arguments& args, Error* e) {
   Context* ctx = args.ctx();
-  JSObject* obj = NULL;
+  JSObject* obj = nullptr;
   const JSVal t = args.this_binding();
   const JSVal locales = args.At(0);
   const JSVal options = args.At(1);

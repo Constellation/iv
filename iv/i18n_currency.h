@@ -589,7 +589,7 @@ class Currency {
     if (it != Map().end()) {
       return it->second;
     }
-    return NULL;
+    return nullptr;
   }
 
   static const Data* Lookup(Type type) {

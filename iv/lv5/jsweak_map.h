@@ -27,7 +27,7 @@ class JSWeakMap : public core::AllStatic {
       Box* key;
       JSVal value;
       State state;
-      Element() : key(NULL), value(JSUndefined), state(EMPTY) { }
+      Element() : key(nullptr), value(JSUndefined), state(EMPTY) { }
     };
 
     typedef GCVector<Element>::type Vector;
@@ -149,7 +149,7 @@ class JSWeakMap : public core::AllStatic {
         if (point.state == USED) {
           if (!point.key->IsCollected()) {
             if (point.key->get() == cell) {
-              point.key->set(NULL);
+              point.key->set(nullptr);
               point.value = JSUndefined;
               point.state = DELETED;
               size_ -= 1;
@@ -214,28 +214,28 @@ class JSWeakMap : public core::AllStatic {
   static JSObject* Initialize(Context* ctx, JSVal input, JSVal it, Error* e) {
     if (!input.IsObject()) {
       e->Report(Error::Type, "WeakMapInitialize to non-object");
-      return NULL;
+      return nullptr;
     }
 
     JSObject* obj = input.object();
     if (obj->HasOwnProperty(ctx, symbol())) {
       e->Report(Error::Type, "re-initialize map object");
-      return NULL;
+      return nullptr;
     }
 
     if (!obj->IsExtensible()) {
       e->Report(Error::Type, "WeakMapInitialize to un-extensible object");
-      return NULL;
+      return nullptr;
     }
 
-    JSObject* iterable = NULL;
-    JSFunction* adder = NULL;
+    JSObject* iterable = nullptr;
+    JSFunction* adder = nullptr;
     if (!it.IsUndefined()) {
-      iterable = it.ToObject(ctx, IV_LV5_ERROR_WITH(e, NULL));
-      JSVal val = obj->Get(ctx, symbol::set(), IV_LV5_ERROR_WITH(e, NULL));
+      iterable = it.ToObject(ctx, IV_LV5_ERROR_WITH(e, nullptr));
+      JSVal val = obj->Get(ctx, symbol::set(), IV_LV5_ERROR_WITH(e, nullptr));
       if (!val.IsCallable()) {
         e->Report(Error::Type, "WeakMapInitialize adder, `obj.set` is not callable");
-        return NULL;
+        return nullptr;
       }
       adder = static_cast<JSFunction*>(val.object());
     }
@@ -246,7 +246,7 @@ class JSWeakMap : public core::AllStatic {
       ctx,
       symbol(),
       DataDescriptor(JSVal::Cell(data), ATTR::W | ATTR::E | ATTR::C),
-      false, IV_LV5_ERROR_WITH(e, NULL));
+      false, IV_LV5_ERROR_WITH(e, nullptr));
 
     if (iterable) {
       // TODO(Constellation) iv / lv5 doesn't have iterator system
@@ -256,16 +256,16 @@ class JSWeakMap : public core::AllStatic {
            it = collector.names().begin(),
            last = collector.names().end();
            it != last; ++it) {
-        const JSVal v = iterable->Get(ctx, (*it), IV_LV5_ERROR_WITH(e, NULL));
-        JSObject* item = v.ToObject(ctx, IV_LV5_ERROR_WITH(e, NULL));
+        const JSVal v = iterable->Get(ctx, (*it), IV_LV5_ERROR_WITH(e, nullptr));
+        JSObject* item = v.ToObject(ctx, IV_LV5_ERROR_WITH(e, nullptr));
         const JSVal key =
-            item->Get(ctx, symbol::MakeSymbolFromIndex(0), IV_LV5_ERROR_WITH(e, NULL));
+            item->Get(ctx, symbol::MakeSymbolFromIndex(0), IV_LV5_ERROR_WITH(e, nullptr));
         const JSVal value =
-            item->Get(ctx, symbol::MakeSymbolFromIndex(1), IV_LV5_ERROR_WITH(e, NULL));
-        ScopedArguments arg_list(ctx, 2, IV_LV5_ERROR_WITH(e, NULL));
+            item->Get(ctx, symbol::MakeSymbolFromIndex(1), IV_LV5_ERROR_WITH(e, nullptr));
+        ScopedArguments arg_list(ctx, 2, IV_LV5_ERROR_WITH(e, nullptr));
         arg_list[0] = key;
         arg_list[1] = value;
-        adder->Call(&arg_list, obj, IV_LV5_ERROR_WITH(e, NULL));
+        adder->Call(&arg_list, obj, IV_LV5_ERROR_WITH(e, nullptr));
       }
     }
 

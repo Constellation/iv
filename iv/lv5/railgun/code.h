@@ -62,8 +62,8 @@ class Code : public radio::HeapObject<radio::POINTER> {
       constants_(),
       maps_(),
       exception_table_(),
-      construct_map_(NULL),
-      executable_(NULL) {
+      construct_map_(nullptr),
+      executable_(nullptr) {
     if (has_name_) {
       name_ = func.name().Address()->symbol();
     }

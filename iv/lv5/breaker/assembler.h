@@ -14,7 +14,7 @@ class MainCodeAllocator : public Xbyak::Allocator {
  public:
   MainCodeAllocator()
     : Xbyak::Allocator(),
-      pointer_(NULL),
+      pointer_(nullptr),
       locked_(false) { }
 
   virtual ~MainCodeAllocator() {
@@ -27,7 +27,7 @@ class MainCodeAllocator : public Xbyak::Allocator {
     if (!locked_) {
       Xbyak::Allocator::free(p);
     } else {
-      assert(pointer_ == NULL);
+      assert(pointer_ == nullptr);
       pointer_ = p;
     }
   }

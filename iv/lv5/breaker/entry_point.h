@@ -54,7 +54,7 @@ inline JSVal Execute(Context* ctx,
       code,
       func->scope(),
       func,
-      NULL,
+      nullptr,
       args->size() + 1, args->IsConstructorCalled());
   if (!frame) {
     e->Report(Error::Range, "maximum call stack size exceeded");

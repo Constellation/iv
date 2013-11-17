@@ -51,7 +51,7 @@ class JSFunction : public JSObject {
   }
 
 
-  virtual JSAPI NativeFunction() const { return NULL; }
+  virtual JSAPI NativeFunction() const { return nullptr; }
 
   virtual core::UStringPiece GetSource() const {
     static const core::UString kBlock =
@@ -122,10 +122,10 @@ class JSNativeFunction : public JSFunction {
       func_(func) {
     DefineOwnProperty(
         ctx, symbol::length(),
-        DataDescriptor(JSVal::UInt32(n), ATTR::NONE), false, NULL);
+        DataDescriptor(JSVal::UInt32(n), ATTR::NONE), false, nullptr);
     DefineOwnProperty(
         ctx, symbol::name(),
-        DataDescriptor(JSString::New(ctx, name), ATTR::NONE), false, NULL);
+        DataDescriptor(JSString::New(ctx, name), ATTR::NONE), false, nullptr);
   }
 
   JSAPI func_;
@@ -224,20 +224,20 @@ class JSInlinedFunction : public JSFunction {
     : JSFunction(ctx, FUNCTION_NATIVE, false) {
     DefineOwnProperty(
         ctx, symbol::length(),
-        DataDescriptor(JSVal::UInt32(n), ATTR::NONE), false, NULL);
+        DataDescriptor(JSVal::UInt32(n), ATTR::NONE), false, nullptr);
     DefineOwnProperty(
         ctx, symbol::name(),
-        DataDescriptor(JSString::New(ctx, name), ATTR::NONE), false, NULL);
+        DataDescriptor(JSString::New(ctx, name), ATTR::NONE), false, nullptr);
   }
 
   JSInlinedFunction(Context* ctx, Symbol name, Map* map)
     : JSFunction(ctx, map, FUNCTION_NATIVE, false) {
     DefineOwnProperty(
         ctx, symbol::length(),
-        DataDescriptor(JSVal::UInt32(n), ATTR::NONE), false, NULL);
+        DataDescriptor(JSVal::UInt32(n), ATTR::NONE), false, nullptr);
     DefineOwnProperty(
         ctx, symbol::name(),
-        DataDescriptor(JSString::New(ctx, name), ATTR::NONE), false, NULL);
+        DataDescriptor(JSString::New(ctx, name), ATTR::NONE), false, nullptr);
   }
 };
 

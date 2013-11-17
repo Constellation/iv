@@ -6,7 +6,7 @@ namespace core {
 
 class Any {
  public:
-  Any() : ptr_(NULL) { }
+  Any() : ptr_(nullptr) { }
 
   // This is Wrapper Class,
   // so we cannot set constructor as explicit.
@@ -17,7 +17,7 @@ class Any {
   Any(T* val) : ptr_(new Holder<T*>(val)) { }  // NOLINT
 
   Any(const Any & other)
-    : ptr_(other.ptr_ ? other.ptr_->Clone() : NULL) { }
+    : ptr_(other.ptr_ ? other.ptr_->Clone() : nullptr) { }
 
   ~Any() {
     delete ptr_;

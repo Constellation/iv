@@ -23,8 +23,8 @@ static const int32_t kRegExpInfinity = std::numeric_limits<int32_t>::max();
   ACCEPT_VISITOR
 
 #define DECLARE_NODE_TYPE_BASE(type)\
-  inline virtual const type* As##type() const { return NULL; }\
-  inline virtual type* As##type() { return NULL; }
+  inline virtual const type* As##type() const { return nullptr; }\
+  inline virtual type* As##type() { return nullptr; }
 
 class Expression : public core::SpaceObject {
  public:

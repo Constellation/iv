@@ -52,8 +52,8 @@ namespace ast {
   inline NodeType Type() const { return k##type; }
 
 #define DECLARE_NODE_TYPE_BASE(type) \
-  inline virtual const type<Factory>* As##type() const { return NULL; }\
-  inline virtual type<Factory>* As##type() { return NULL; }
+  inline virtual const type<Factory>* As##type() const { return nullptr; }\
+  inline virtual type<Factory>* As##type() { return nullptr; }
 
 enum NodeType {
 #define V(type)\
@@ -92,7 +92,7 @@ class Scope : public ScopeBase<Factory> {
   typedef Scope<Factory> this_type;
 
   explicit Scope(Factory* factory, bool is_global, Assigneds* params)
-    : up_(NULL),
+    : up_(nullptr),
       params_(params),
       vars_(typename Variables::allocator_type(factory)),
       funcs_(typename FunctionLiterals::allocator_type(factory)),
@@ -200,7 +200,7 @@ class Scope : public ScopeBase<Factory> {
     return IsArgumentsRealized() && !strict();
   }
 
-  void RollUp(Assigned<Factory>* expression) {  // maybe NULL
+  void RollUp(Assigned<Factory>* expression) {  // maybe nullptr
     std::unordered_set<Symbol> already;
 
     // parameters
@@ -787,7 +787,7 @@ class BreakStatement : public BreakStatementBase<Factory> {
     //   do {
     //     test: break test;
     //   } while (0);
-    // if above example, target is NULL
+    // if above example, target is nullptr
     assert(target_ || !label_.IsDummy());
   }
   inline const SymbolHolder& label() const { return label_; }
@@ -796,7 +796,7 @@ class BreakStatement : public BreakStatementBase<Factory> {
       assert(*target_);
       return *target_;
     } else {
-      return NULL;
+      return nullptr;
     }
   }
   DECLARE_DERIVED_NODE_TYPE(BreakStatement)
@@ -1376,7 +1376,7 @@ class Inherit<Factory, kArrayLiteral>
 INHERIT(ArrayLiteral);
 
 
-// items is NULL able
+// items is nullptr able
 template<typename Factory>
 class ArrayLiteral : public ArrayLiteralBase<Factory> {
  public:

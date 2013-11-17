@@ -87,7 +87,7 @@ inline JSVal VM::Execute(Arguments* args, JSVMFunction* func, Error* e) {
       func->code(),
       func->scope(),
       func,
-      NULL,
+      nullptr,
       args->size() + 1, args->IsConstructorCalled());
   if (!frame) {
     e->Report(Error::Range, "maximum call stack size exceeded");
@@ -108,12 +108,12 @@ inline JSVal VM::Execute(Arguments* args, JSVMFunction* func, Error* e) {
 inline JSVal VM::Execute(Frame* start, Error* e) {
 #if defined(IV_LV5_RAILGUN_USE_DIRECT_THREADED_CODE)
   if (!start) {
-    // if start frame is NULL, this pass is getting labels table for
+    // if start frame is nullptr, this pass is getting labels table for
     // direct threading mode
 #define V(label, N) &&label,
     static const DirectThreadingDispatchTable kDispatchTable = { {
       IV_LV5_RAILGUN_OP_LIST(V)
-      NULL
+      nullptr
     } };
     // get direct threading dispatch table
     direct_threading_dispatch_table_ = &kDispatchTable;
@@ -330,7 +330,7 @@ inline JSVal VM::Execute(Frame* start, Error* e) {
         // no return at last
         // return undefined
         // if previous code is not native code, unwind frame and jump
-        if (frame->prev_pc_ == NULL) {
+        if (frame->prev_pc_ == nullptr) {
           // this code is invoked by native function
           return src;
         }
@@ -506,7 +506,7 @@ inline JSVal VM::Execute(Frame* start, Error* e) {
         // opcode | (dst | base | name) | map | offset | nop
         const JSVal base = REG(instr[1].ssw.i16[1]);
         base.CheckObjectCoercible(ERR);
-        JSObject* obj = NULL;
+        JSObject* obj = nullptr;
         if (base.IsPrimitive()) {
           // primitive prototype cache
           JSVal res;
@@ -545,7 +545,7 @@ inline JSVal VM::Execute(Frame* start, Error* e) {
         // opcode | (dst | base | name) | map | map | offset
         const JSVal base = REG(instr[1].ssw.i16[1]);
         base.CheckObjectCoercible(ERR);
-        JSObject* obj = NULL;
+        JSObject* obj = nullptr;
         if (base.IsPrimitive()) {
           // primitive prototype cache
           JSVal res;
@@ -577,7 +577,7 @@ inline JSVal VM::Execute(Frame* start, Error* e) {
         // opcode | (dst | base | name) | chain | map | offset
         const JSVal base = REG(instr[1].ssw.i16[1]);
         base.CheckObjectCoercible(ERR);
-        JSObject* obj = NULL;
+        JSObject* obj = nullptr;
         if (base.IsPrimitive()) {
           // primitive prototype cache
           JSVal res;
@@ -646,7 +646,7 @@ inline JSVal VM::Execute(Frame* start, Error* e) {
             instr[3].u32[0] = slot.offset();
             global->Direct(slot.offset()) = src;
           } else {
-            instr[2].map = NULL;
+            instr[2].map = nullptr;
             StoreName(ctx()->global_env(), name, src, strict, ERR);
           }
         }
@@ -1954,7 +1954,7 @@ inline JSVal VM::Execute(Frame* start, Error* e) {
                 ctx(), index,
                 AccessorDescriptor(
                     item.object(),
-                    NULL,
+                    nullptr,
                     ATTR::E| ATTR::C|
                     ATTR::UNDEF_SETTER),
                 &slot, false, e);
@@ -1963,7 +1963,7 @@ inline JSVal VM::Execute(Frame* start, Error* e) {
             obj->DefineOwnIndexedPropertySlot(
                 ctx(), index,
                 AccessorDescriptor(
-                    NULL,
+                    nullptr,
                     item.object(),
                     ATTR::E| ATTR::C|
                     ATTR::UNDEF_GETTER),
@@ -1989,7 +1989,7 @@ inline JSVal VM::Execute(Frame* start, Error* e) {
           Accessor* ac = static_cast<Accessor*>(obj->Direct(instr[2].u32[0]).cell());
           ac->set_getter(value.object());
         } else {
-          obj->Direct(instr[2].u32[0]) = JSVal::Cell(Accessor::New(ctx(), value.object(), NULL));
+          obj->Direct(instr[2].u32[0]) = JSVal::Cell(Accessor::New(ctx(), value.object(), nullptr));
         }
         DISPATCH(STORE_OBJECT_GET);
       }
@@ -2002,7 +2002,7 @@ inline JSVal VM::Execute(Frame* start, Error* e) {
           Accessor* ac = static_cast<Accessor*>(obj->Direct(instr[2].u32[0]).cell());
           ac->set_setter(value.object());
         } else {
-          obj->Direct(instr[2].u32[0]) = JSVal::Cell(Accessor::New(ctx(), NULL, value.object()));
+          obj->Direct(instr[2].u32[0]) = JSVal::Cell(Accessor::New(ctx(), nullptr, value.object()));
         }
         DISPATCH(STORE_OBJECT_SET);
       }
@@ -2218,7 +2218,7 @@ inline JSVal VM::Execute(Frame* start, Error* e) {
       }
       // handler not in this frame
       // so, unwind frame and search again
-      if (frame->prev_pc_ == NULL) {
+      if (frame->prev_pc_ == nullptr) {
         // this code is invoked by native function
         // so, not unwind and return (continues to after for main loop)
         break;

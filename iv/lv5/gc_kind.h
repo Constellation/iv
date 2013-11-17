@@ -29,7 +29,7 @@ class GCKind {
       allocated_.insert(mem);
       GC_REGISTER_FINALIZER_IGNORE_SELF(mem,
                                         &DestructorCall,
-                                        NULL, NULL, NULL);
+                                        nullptr, nullptr, nullptr);
       return mem;
     }
 
@@ -67,7 +67,7 @@ class GCKind {
 
   void operator delete(void* obj) {
     GC_FREE(obj);
-    GC_REGISTER_FINALIZER_IGNORE_SELF(obj, NULL, NULL, NULL, NULL);
+    GC_REGISTER_FINALIZER_IGNORE_SELF(obj, nullptr, nullptr, nullptr, nullptr);
   }
 
   virtual ~GCKind() { }

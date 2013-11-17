@@ -197,11 +197,11 @@ class JSDeclEnv : public JSEnv {
   }
 
   JSObjectEnv* AsJSObjectEnv() {
-    return NULL;
+    return nullptr;
   }
 
   JSStaticEnv* AsJSStaticEnv() {
-    return NULL;
+    return nullptr;
   }
 
   static JSDeclEnv* New(Context* ctx, JSEnv* outer) {
@@ -332,7 +332,7 @@ class JSObjectEnv : public JSEnv {
   }
 
   bool DeleteBinding(Context* ctx, Symbol name) {
-    return record_->Delete(ctx, name, false, NULL);
+    return record_->Delete(ctx, name, false, nullptr);
   }
 
   void CreateMutableBinding(Context* ctx, Symbol name, bool del, Error* err) {
@@ -381,7 +381,7 @@ class JSObjectEnv : public JSEnv {
   }
 
   JSDeclEnv* AsJSDeclEnv() {
-    return NULL;
+    return nullptr;
   }
 
   JSObjectEnv* AsJSObjectEnv() {
@@ -389,7 +389,7 @@ class JSObjectEnv : public JSEnv {
   }
 
   JSStaticEnv* AsJSStaticEnv() {
-    return NULL;
+    return nullptr;
   }
 
   JSObject* record() {
@@ -458,11 +458,11 @@ class JSStaticEnv : public JSEnv {
   }
 
   JSDeclEnv* AsJSDeclEnv() {
-    return NULL;
+    return nullptr;
   }
 
   JSObjectEnv* AsJSObjectEnv() {
-    return NULL;
+    return nullptr;
   }
 
   JSStaticEnv* AsJSStaticEnv() {

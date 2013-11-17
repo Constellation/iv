@@ -35,7 +35,7 @@ class IndexedElements {
 
   IndexedElements()
     : vector(),
-      map(NULL),
+      map(nullptr),
       length_(0),
       flags_(FLAG_DENSE | FLAG_WRITABLE) {
   }
@@ -62,7 +62,7 @@ class IndexedElements {
 
   void MakeDense() {
     flags_ |= static_cast<uint32_t>(FLAG_DENSE);
-    map = NULL;
+    map = nullptr;
   }
 
   void MakeReadOnly() { flags_ &= ~static_cast<uint32_t>(FLAG_WRITABLE); }

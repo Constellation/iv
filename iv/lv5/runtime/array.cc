@@ -881,7 +881,7 @@ JSVal ArraySplice(const Arguments& args, Error* e) {
     actual_delete_count = std::min<uint32_t>(0, len - actual_start);
   }
 
-  JSArray* ary = NULL;
+  JSArray* ary = nullptr;
   if (actual_delete_count > IndexedElements::kMaxVectorSize) {
     ary = JSArray::New(ctx, actual_delete_count);
     for (uint32_t k = 0; k < actual_delete_count; ++k) {

@@ -26,12 +26,12 @@ inline JSVal FromPropertyDescriptor(Context* ctx,
     obj->DefineOwnProperty(
         ctx, symbol::value(),
         DataDescriptor(data->value(), ATTR::W | ATTR::E | ATTR::C),
-        false, NULL);
+        false, nullptr);
     obj->DefineOwnProperty(
         ctx, symbol::writable(),
         DataDescriptor(JSVal::Bool(data->IsWritable()),
                        ATTR::W | ATTR::E | ATTR::C),
-        false, NULL);
+        false, nullptr);
   } else {
     assert(desc.IsAccessor());
     const AccessorDescriptor* const accs = desc.AsAccessorDescriptor();
@@ -39,23 +39,23 @@ inline JSVal FromPropertyDescriptor(Context* ctx,
     obj->DefineOwnProperty(
         ctx, symbol::get(),
         DataDescriptor(getter, ATTR::W | ATTR::E | ATTR::C),
-        false, NULL);
+        false, nullptr);
     const JSVal setter = (accs->set()) ? accs->set() : JSVal(JSUndefined);
     obj->DefineOwnProperty(
         ctx, symbol::set(),
         DataDescriptor(setter, ATTR::W | ATTR::E | ATTR::C),
-        false, NULL);
+        false, nullptr);
   }
   obj->DefineOwnProperty(
       ctx, symbol::enumerable(),
       DataDescriptor(JSVal::Bool(desc.IsEnumerable()),
                      ATTR::W | ATTR::E | ATTR::C),
-      false, NULL);
+      false, nullptr);
   obj->DefineOwnProperty(
       ctx, symbol::configurable(),
       DataDescriptor(JSVal::Bool(desc.IsConfigurable()),
                      ATTR::W | ATTR::E | ATTR::C),
-      false, NULL);
+      false, nullptr);
   return obj;
 }
 
@@ -68,8 +68,8 @@ inline PropertyDescriptor ToPropertyDescriptor(Context* ctx,
   Attributes::Raw attr = ATTR::DEFAULT;
   JSObject* const obj = target.object();
   JSVal value = JSUndefined;
-  JSObject* getter = NULL;
-  JSObject* setter = NULL;
+  JSObject* getter = nullptr;
+  JSObject* setter = nullptr;
   {
     // step 3
     const Symbol sym = symbol::enumerable();
@@ -212,7 +212,7 @@ inline const FunctionLiteral* IsOneFunctionExpression(
     }
   }
   e->Report(Error::Syntax, "Function Constructor with invalid arguments");
-  return NULL;
+  return nullptr;
 }
 
 inline uint32_t GetLength(Context* ctx, JSObject* obj, Error* e) {

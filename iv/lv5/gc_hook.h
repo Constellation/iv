@@ -15,14 +15,14 @@ class GCHook {
   }
 
   ~GCHook() {
-    GC_REGISTER_FINALIZER_NO_ORDER(*target_, NULL, NULL, NULL, NULL);
+    GC_REGISTER_FINALIZER_NO_ORDER(*target_, nullptr, nullptr, nullptr, nullptr);
   }
 
  private:
   static void Main(void* ptr, void* data) {
     GCHook* hook = *reinterpret_cast<GCHook**>(ptr);
     hook->delegate_->OnGarbageCollect();
-    GC_REGISTER_FINALIZER_NO_ORDER(ptr, &Main, data, NULL, NULL);
+    GC_REGISTER_FINALIZER_NO_ORDER(ptr, &Main, data, nullptr, nullptr);
   }
 
   static GCHook*** Initialize(GCHook* target) {
@@ -30,7 +30,7 @@ class GCHook {
         reinterpret_cast<GCHook**>(GC_MALLOC_ATOMIC(sizeof(target)));
     data[0] = target;
     GC_REGISTER_FINALIZER_NO_ORDER(
-        reinterpret_cast<void*>(data), &Main, NULL, NULL, NULL);
+        reinterpret_cast<void*>(data), &Main, nullptr, nullptr, nullptr);
     return new GCHook**(data);
   }
 

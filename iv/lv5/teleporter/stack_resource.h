@@ -20,7 +20,7 @@ class StackResource : private core::Noncopyable<> {
       stack_mark_proc_(GC_new_proc(&StackMark)),
       stack_kind_(GC_new_kind(stack_free_list_,
                               GC_MAKE_PROC(stack_mark_proc_, 0), 0, 1)),
-      stack_(NULL) {
+      stack_(nullptr) {
     stack_ = new(GC_generic_malloc(sizeof(Stack), stack_kind_))Stack;
   }
 
@@ -39,7 +39,7 @@ class StackResource : private core::Noncopyable<> {
                               GC_word env) {
     // first JSVal is pointer to Stack
     const Stack* vmstack = reinterpret_cast<Stack*>(stack);
-    GCMSEntry* entry = GC_MARK_AND_PUSH(stack, mark_sp, mark_sp_limit, NULL);
+    GCMSEntry* entry = GC_MARK_AND_PUSH(stack, mark_sp, mark_sp_limit, nullptr);
 
     for (Stack::const_pointer it = vmstack->begin(),
          last = vmstack->GetTop(); it != last; ++it) {

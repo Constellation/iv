@@ -318,7 +318,7 @@ inline JSEnv* GetEnv(Context* ctx, JSEnv* env, Symbol name) {
       current = current->outer();
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 inline Rep LOAD_GLOBAL(Frame* stack, Symbol name, GlobalIC* ic, Assembler* as) {
@@ -637,7 +637,7 @@ inline void STORE_OBJECT_INDEXED(
           ctx, index,
           AccessorDescriptor(
               item.object(),
-              NULL,
+              nullptr,
               ATTR::E| ATTR::C|
               ATTR::UNDEF_SETTER),
           &slot, false, &dummy);
@@ -646,7 +646,7 @@ inline void STORE_OBJECT_INDEXED(
       obj->DefineOwnIndexedPropertySlot(
           ctx, index,
           AccessorDescriptor(
-              NULL,
+              nullptr,
               item.object(),
               ATTR::E| ATTR::C|
               ATTR::UNDEF_GETTER),
@@ -658,13 +658,13 @@ inline void STORE_OBJECT_INDEXED(
 inline void STORE_OBJECT_GET(
     Context* ctx, JSVal target, JSVal item, uint32_t offset) {
   JSObject* obj = target.object();
-  obj->Direct(offset) = JSVal::Cell(Accessor::New(ctx, item.object(), NULL));
+  obj->Direct(offset) = JSVal::Cell(Accessor::New(ctx, item.object(), nullptr));
 }
 
 inline void STORE_OBJECT_SET(
     Context* ctx, JSVal target, JSVal item, uint32_t offset) {
   JSObject* obj = target.object();
-  obj->Direct(offset) = JSVal::Cell(Accessor::New(ctx, NULL, item.object()));
+  obj->Direct(offset) = JSVal::Cell(Accessor::New(ctx, nullptr, item.object()));
 }
 
 inline void INIT_VECTOR_ARRAY_ELEMENT(
@@ -961,7 +961,7 @@ inline Rep STORE_ELEMENT_INDEXED(
       obj, ctx, index, src, &slot, ic->strict(), IV_LV5_BREAKER_ERR);
   if (indexed && slot.put_result_type() == Slot::PUT_INDEXED_OPTIMIZED) {
     // ic to hole path
-    Chain* chain = Chain::New(obj, NULL);
+    Chain* chain = Chain::New(obj, nullptr);
     ic->StoreNewElement(chain);
   }
   return 0;
@@ -1015,7 +1015,7 @@ inline Rep STORE_ELEMENT(
   if (indexed && slot.put_result_type() == Slot::PUT_INDEXED_OPTIMIZED &&
       obj->method()->DefineOwnIndexedPropertySlot == JSObject::DefineOwnIndexedPropertySlotMethod) {  // NOLINT
     // ic to hole path
-    Chain* chain = Chain::New(obj, NULL);
+    Chain* chain = Chain::New(obj, nullptr);
     ic->StoreNewElement(chain);
   }
   return 0;
@@ -1205,7 +1205,7 @@ inline Rep STORE_PROP(
   // cache it, new
   assert(previous != obj->map());
 
-  Chain* chain = Chain::New(obj, NULL);  // list up all maps
+  Chain* chain = Chain::New(obj, nullptr);  // list up all maps
   (*chain)[0] = previous;  // first is previous
 
   if (previous->StorageCapacity() == obj->map()->StorageCapacity()) {

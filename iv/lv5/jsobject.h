@@ -39,7 +39,7 @@ inline bool IsAbsentDescriptor(const PropertyDescriptor& desc) {
 }
 
 inline JSObject::JSObject(Map* map)
-  : JSCell(radio::OBJECT, map, NULL),
+  : JSCell(radio::OBJECT, map, nullptr),
     slots_(map->GetSlotsSize()),
     elements_(),
     flags_(kFlagExtensible) {

@@ -130,7 +130,7 @@ class Core : private core::Noncopyable<Core> {
         prev = block;
         ++it;
       } else {
-        prev->set_next(NULL);
+        prev->set_next(nullptr);
         break;
       }
     }

@@ -11,13 +11,13 @@ class ScopedPtr : private Noncopyable<ScopedPtr<T> > {
   typedef ScopedPtr<T> this_type;
   typedef void (this_type::*bool_type)() const;
 
-  explicit ScopedPtr(T* ptr = NULL) : ptr_(ptr) { }
+  explicit ScopedPtr(T* ptr = nullptr) : ptr_(ptr) { }
 
   ~ScopedPtr() {
     delete ptr_;
   }
 
-  void reset(T* ptr = NULL) {
+  void reset(T* ptr = nullptr) {
     if (ptr_ != ptr) {
       delete ptr_;
       ptr_ = ptr;
@@ -46,7 +46,7 @@ class ScopedPtr : private Noncopyable<ScopedPtr<T> > {
 
   T* release() const {
     T* res = ptr_;
-    ptr_ = NULL;
+    ptr_ = nullptr;
     return res;
   }
 
@@ -56,12 +56,12 @@ class ScopedPtr : private Noncopyable<ScopedPtr<T> > {
   }
 
   operator bool_type() const {
-    return (ptr_ == NULL) ?
+    return (ptr_ == nullptr) ?
         0 : &this_type::this_type_does_not_support_comparisons;
   }
 
   bool operator!() const {
-    return ptr_ == NULL;
+    return ptr_ == nullptr;
   }
 
  private:
@@ -93,13 +93,13 @@ class ScopedPtr<T[]> : Noncopyable<ScopedPtr<T[]> > {
  public:
   typedef ScopedPtr<T> this_type;
   typedef void (this_type::*bool_type)() const;
-  explicit ScopedPtr(T* ptr = NULL) : ptr_(ptr) { }
+  explicit ScopedPtr(T* ptr = nullptr) : ptr_(ptr) { }
 
   ~ScopedPtr() {
     delete [] ptr_;
   }
 
-  void reset(T* ptr = NULL) {
+  void reset(T* ptr = nullptr) {
     if (ptr_ != ptr) {
       delete [] ptr_;
       ptr_ = ptr;
@@ -132,7 +132,7 @@ class ScopedPtr<T[]> : Noncopyable<ScopedPtr<T[]> > {
 
   T* release() const {
     T* res = ptr_;
-    ptr_ = NULL;
+    ptr_ = nullptr;
     return res;
   }
 
@@ -141,12 +141,12 @@ class ScopedPtr<T[]> : Noncopyable<ScopedPtr<T[]> > {
   }
 
   operator bool_type() const {
-    return (ptr_ == NULL) ?
+    return (ptr_ == nullptr) ?
         0 : &this_type::this_type_does_not_support_comparisons;
   }
 
   bool operator!() const {
-    return ptr_ == NULL;
+    return ptr_ == nullptr;
   }
 
  private:

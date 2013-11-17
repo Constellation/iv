@@ -31,7 +31,7 @@ class JSRegExpImpl : public gc_cleanup {
                const core::UStringPiece& value, int flags)
     : flags_(flags),
       error_(0),
-      code_(NULL) {
+      code_(nullptr) {
     Initialize(allocator, value);
   }
 
@@ -39,14 +39,14 @@ class JSRegExpImpl : public gc_cleanup {
                const core::StringPiece& value, int flags)
     : flags_(flags),
       error_(0),
-      code_(NULL) {
+      code_(nullptr) {
     Initialize(allocator, value);
   }
 
   JSRegExpImpl(core::Space* allocator)
     : flags_(NONE),
       error_(0),
-      code_(NULL) {
+      code_(nullptr) {
     Initialize(allocator, detail::kEmptyPattern);
   }
 

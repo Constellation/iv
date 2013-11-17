@@ -58,8 +58,8 @@ class Stack : public lv5::Stack {
 
   Stack()
     : lv5::Stack(),
-      resource_(NULL),
-      current_(NULL) {
+      resource_(nullptr),
+      current_(nullptr) {
     resource_ = new Resource(this);
   }
 
@@ -95,7 +95,7 @@ class Stack : public lv5::Stack {
       return frame;
     } else {
       // stack overflow
-      return NULL;
+      return nullptr;
     }
   }
 
@@ -107,7 +107,7 @@ class Stack : public lv5::Stack {
     assert(code);
     if (Frame* frame = GainFrame(arg, 1, code)) {
       frame->code_ = code;
-      frame->prev_pc_ = NULL;
+      frame->prev_pc_ = nullptr;
       frame->variable_env_ = variable_env;
       frame->lexical_env_ = lexical_env;
       frame->prev_ = current_;
@@ -118,7 +118,7 @@ class Stack : public lv5::Stack {
       return frame;
     } else {
       // stack overflow
-      return NULL;
+      return nullptr;
     }
   }
 
@@ -130,7 +130,7 @@ class Stack : public lv5::Stack {
       // because of ScopedArguments
       Restore((std::max)(current_->GetFrameEnd(), frame->GetFrameBase()));
     } else {
-      // previous of Global Frame is NULL
+      // previous of Global Frame is nullptr
       Restore();
     }
     return current_;

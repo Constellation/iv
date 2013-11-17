@@ -37,13 +37,13 @@ class GlobalData : public GlobalSymbols {
 
   explicit GlobalData(Context* ctx)
     : ctx_(ctx),
-      random_generator_(0, 1, static_cast<int>(std::time(NULL))),
+      random_generator_(0, 1, static_cast<int>(std::time(nullptr))),
       regs_(),
       symbol_table_(),
       classes_(),
       string_cache_(),
       global_obj_(JSGlobal::New(ctx)),
-      string_empty_(NULL),
+      string_empty_(nullptr),
       string_null_(),
       string_true_(),
       string_false_(),
@@ -55,34 +55,34 @@ class GlobalData : public GlobalSymbols {
       string_symbol_(),
       string_boolean_(),
       string_empty_regexp_(),
-      primitive_string_map_(Map::New(ctx, static_cast<JSObject*>(NULL), true)),
-      primitive_symbol_map_(Map::New(ctx, static_cast<JSObject*>(NULL), true)),
-      empty_object_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
-      function_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
-      array_map_(Map::New(ctx, static_cast<JSObject*>(NULL), true)),
-      string_map_(Map::New(ctx, static_cast<JSObject*>(NULL), true)),
-      symbol_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
-      boolean_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
-      number_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
-      date_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
-      regexp_map_(NULL),
-      error_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
-      eval_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
-      range_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
-      reference_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
-      syntax_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
-      type_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
-      uri_error_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
-      map_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
-      weak_map_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
-      set_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
-      array_buffer_map_(NULL),
-      data_view_map_(NULL),
+      primitive_string_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), true)),
+      primitive_symbol_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), true)),
+      empty_object_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
+      function_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
+      array_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), true)),
+      string_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), true)),
+      symbol_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
+      boolean_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
+      number_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
+      date_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
+      regexp_map_(nullptr),
+      error_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
+      eval_error_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
+      range_error_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
+      reference_error_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
+      syntax_error_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
+      type_error_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
+      uri_error_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
+      map_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
+      weak_map_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
+      set_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
+      array_buffer_map_(nullptr),
+      data_view_map_(nullptr),
       typed_array_maps_(),
-      normal_arguments_map_(NULL),
-      strict_arguments_map_(NULL),
-      number_format_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
-      date_time_format_map_(Map::New(ctx, static_cast<JSObject*>(NULL), false)),
+      normal_arguments_map_(nullptr),
+      strict_arguments_map_(nullptr),
+      number_format_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
+      date_time_format_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
       gc_hook_(this) {
     {
       Error::Dummy e;
@@ -102,7 +102,7 @@ class GlobalData : public GlobalSymbols {
       // RegExp Map
       // see also jsregexp.h, JSRegExp::FIELD
       {
-        MapBuilder builder(ctx, NULL);
+        MapBuilder builder(ctx, nullptr);
         builder.Add(symbol::source(), ATTR::CreateData(ATTR::N));
         builder.Add(symbol::global(), ATTR::CreateData(ATTR::N));
         builder.Add(symbol::ignoreCase(), ATTR::CreateData(ATTR::N));
@@ -114,7 +114,7 @@ class GlobalData : public GlobalSymbols {
       // ArrayBuffer Map
       //   see also jsarray_buffer.h, JSArrayBuffer::FIELD
       {
-        MapBuilder builder(ctx, NULL);
+        MapBuilder builder(ctx, nullptr);
         builder.Add(symbol::byteLength(), ATTR::CreateData(ATTR::N));
         array_buffer_map_ = builder.Build(false);
       }
@@ -122,7 +122,7 @@ class GlobalData : public GlobalSymbols {
       // DataView Map
       //   see also jsdata_view.h, JSDataView::FIELD
       {
-        MapBuilder builder(ctx, NULL);
+        MapBuilder builder(ctx, nullptr);
         builder.Add(symbol::byteLength(), ATTR::CreateData(ATTR::N));
         builder.Add(symbol::buffer(), ATTR::CreateData(ATTR::N));
         builder.Add(symbol::byteOffset(), ATTR::CreateData(ATTR::N));
@@ -133,7 +133,7 @@ class GlobalData : public GlobalSymbols {
       //   see also jstyped_array.h, TypedArrayImpl::FIELD
       for (TypedArrayMaps::iterator it = typed_array_maps_.begin(),
            last = typed_array_maps_.end(); it != last; ++it) {
-        MapBuilder builder(ctx, NULL);
+        MapBuilder builder(ctx, nullptr);
         builder.Add(symbol::length(), ATTR::CreateData(ATTR::N));
         builder.Add(symbol::byteLength(), ATTR::CreateData(ATTR::N));
         builder.Add(symbol::buffer(), ATTR::CreateData(ATTR::N));
@@ -213,7 +213,7 @@ class GlobalData : public GlobalSymbols {
   JSString* string_boolean() const { return string_boolean_; }
   JSString* string_empty_regexp() const { return string_empty_regexp_; }
 
-  // If string is not cached, return NULL
+  // If string is not cached, return nullptr
   JSString* GetSingleString(uint16_t ch) {
     if (ch < 0x80) {
       // caching value
@@ -222,7 +222,7 @@ class GlobalData : public GlobalSymbols {
       }
       return (string_cache_[ch] = new JSString(ctx_, ch));
     }
-    return NULL;
+    return nullptr;
   }
 
   Map* primitive_string_map() const { return primitive_string_map_; }

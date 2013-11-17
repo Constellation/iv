@@ -46,7 +46,7 @@ class ProgramImpl {
 };
 
 template<typename T>
-ProgramImpl<T>* ProgramImpl<T>::instance_ = NULL;
+ProgramImpl<T>* ProgramImpl<T>::instance_ = nullptr;
 typedef ProgramImpl<void> Program;
 
 inline void Init(int argc, char ** argv) {

@@ -189,10 +189,10 @@ class BasicStringPiece {
   // We provide non-explicit singleton constructors so users can pass
   // in a "const char*" or a "string" wherever a "StringPiece" is
   // expected.
-  BasicStringPiece() : ptr_(NULL), length_(0) { }
+  BasicStringPiece() : ptr_(nullptr), length_(0) { }
 
   BasicStringPiece(const_pointer str)  // NOLINT
-    : ptr_(str), length_((str == NULL) ? 0 : Traits::length(str)) { }
+    : ptr_(str), length_((str == nullptr) ? 0 : Traits::length(str)) { }
 
   template<class Alloc>
   BasicStringPiece(const std::basic_string<CharT, Traits, Alloc>& str)  // NOLINT
@@ -225,7 +225,7 @@ class BasicStringPiece {
   }
 
   void clear() {
-    ptr_ = NULL;
+    ptr_ = nullptr;
     length_ = 0;
   }
 
@@ -272,7 +272,7 @@ class BasicStringPiece {
   template<class Alloc>
   operator std::basic_string<CharT, Traits, Alloc>() const {
     // std::basic_string<CharT> doesn't like to
-    // take a NULL pointer even with a 0 size.
+    // take a nullptr pointer even with a 0 size.
     if (empty()) {
       return std::basic_string<CharT, Traits, Alloc>();
     } else {

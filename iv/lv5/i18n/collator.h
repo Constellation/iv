@@ -15,22 +15,22 @@ inline JSObject* InitializeCollator(Context* ctx,
                                     JSVal locales, JSVal op, Error* e) {
   if (collator->HasOwnProperty(ctx, ctx->i18n()->symbols().initializedIntlObject())) {
     e->Report(Error::Type, "object has been already initialized as Intl group object");
-    return NULL;
+    return nullptr;
   }
 
   collator->DefineOwnProperty(
       ctx,
       ctx->i18n()->symbols().initializedIntlObject(),
       DataDescriptor(JSTrue, ATTR::N),
-      false, IV_LV5_ERROR_WITH(e, NULL));
+      false, IV_LV5_ERROR_WITH(e, nullptr));
 
-  JSVector* requested_locales = CanonicalizeLocaleList(ctx, locales, IV_LV5_ERROR_WITH(e, NULL));
+  JSVector* requested_locales = CanonicalizeLocaleList(ctx, locales, IV_LV5_ERROR_WITH(e, nullptr));
 
-  JSObject* o = NULL;
+  JSObject* o = nullptr;
   if (op.IsUndefined()) {
     o = JSObject::New(ctx);
   } else {
-    o = op.ToObject(ctx, IV_LV5_ERROR_WITH(e, NULL));
+    o = op.ToObject(ctx, IV_LV5_ERROR_WITH(e, nullptr));
   }
 
   Options options(o);
@@ -39,13 +39,13 @@ inline JSObject* InitializeCollator(Context* ctx,
     "sort",
     "search"
   } };
-  JSString* u = options.GetString(ctx, symbol::usage(), k6.begin(), k6.end(), "sort", IV_LV5_ERROR_WITH(e, NULL));
+  JSString* u = options.GetString(ctx, symbol::usage(), k6.begin(), k6.end(), "sort", IV_LV5_ERROR_WITH(e, nullptr));
 
   collator->DefineOwnProperty(
       ctx,
       ctx->i18n()->symbols().usage(),
       DataDescriptor(u, ATTR::N),
-      false, IV_LV5_ERROR_WITH(e, NULL));
+      false, IV_LV5_ERROR_WITH(e, nullptr));
 
   // TODO(Constellation) collator constructor step 8
 

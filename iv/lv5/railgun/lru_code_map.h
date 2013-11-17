@@ -24,7 +24,7 @@ class LRUCodeMap {
       return *lhs == *rhs;
     }
     // because of Array index
-    static JSString* null() { return NULL; }
+    static JSString* null() { return nullptr; }
   };
 
   typedef core::QHashMap<JSString*, Entry, KeyTraits, GCAlloc> CodeMap;
@@ -38,7 +38,7 @@ class LRUCodeMap {
   Code* Lookup(JSString* str) {
     const CodeMap::iterator it = map_.find(str);
     if (it == map_.end()) {
-      return NULL;
+      return nullptr;
     }
 
     list_.splice(list_.end(), list_, it->second.second);

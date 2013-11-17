@@ -121,7 +121,7 @@ class Arena : private core::Noncopyable<Arena> {
   typedef iterator_base<const Block> const_iterator;
 
   explicit Arena(Arena* prev)
-    : next_(NULL),
+    : next_(nullptr),
       prev_(prev) {
     Initialize();
     if (prev) {

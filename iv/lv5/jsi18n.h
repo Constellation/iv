@@ -27,14 +27,14 @@ inline JSVector* LookupSupportedLocales(Context* ctx,
   for (JSVector::const_iterator i = requested->begin(),
        iz = requested->end(); i != iz; ++i) {
     const JSVal res = *i;
-    JSString* str = res.ToString(ctx, IV_LV5_ERROR_WITH(e, NULL));
+    JSString* str = res.ToString(ctx, IV_LV5_ERROR_WITH(e, nullptr));
     const std::string locale(
         core::i18n::LanguageTagScanner::RemoveExtension(str->begin(),
                                                         str->end()));
     const AvailIter t = ctx->i18n()->BestAvailableLocale(it, last, locale);
     if (t != last) {
       JSString* str =
-          JSString::NewAsciiString(ctx, locale, IV_LV5_ERROR_WITH(e, NULL));
+          JSString::NewAsciiString(ctx, locale, IV_LV5_ERROR_WITH(e, nullptr));
       subset->push_back(str);
     }
   }
@@ -54,12 +54,12 @@ inline JSArray* SupportedLocales(Context* ctx,
                                  JSVector* requested, JSVal options, Error* e) {
   bool best_fit = true;
   if (!options.IsUndefined()) {
-    JSObject* opt = options.ToObject(ctx, IV_LV5_ERROR_WITH(e, NULL));
+    JSObject* opt = options.ToObject(ctx, IV_LV5_ERROR_WITH(e, nullptr));
     const JSVal matcher =
         opt->Get(ctx, ctx->Intern("localeMatcher"),
-                 IV_LV5_ERROR_WITH(e, NULL));
+                 IV_LV5_ERROR_WITH(e, nullptr));
     if (!matcher.IsUndefined()) {
-      JSString* str = matcher.ToString(ctx, IV_LV5_ERROR_WITH(e, NULL));
+      JSString* str = matcher.ToString(ctx, IV_LV5_ERROR_WITH(e, nullptr));
       const std::string res = str->GetUTF8();
       if (res == "lookup") {
         best_fit = false;
@@ -71,12 +71,12 @@ inline JSArray* SupportedLocales(Context* ctx,
       (best_fit)
       ? BestFitSupportedLocales(ctx, it, last, requested, e)
       : LookupSupportedLocales(ctx, it, last, requested, e);
-  IV_LV5_ERROR_GUARD_WITH(e, NULL);
+  IV_LV5_ERROR_GUARD_WITH(e, nullptr);
 
   JSArray* result = subset->ToJSArray();
-  ScopedArguments arguments(ctx, 1, IV_LV5_ERROR_WITH(e, NULL));
+  ScopedArguments arguments(ctx, 1, IV_LV5_ERROR_WITH(e, nullptr));
   arguments[0] = result;
-  runtime::ObjectFreeze(arguments, IV_LV5_ERROR_WITH(e, NULL));
+  runtime::ObjectFreeze(arguments, IV_LV5_ERROR_WITH(e, nullptr));
   result->ChangeExtensible(ctx, true);
   return result;
 }
@@ -223,11 +223,11 @@ class NumberOptions : public lv5::detail_i18n::Options {
 
 inline JSObject* ToDateTimeOptions(Context* ctx,
                                    JSVal op, bool date, bool time, Error* e) {
-  JSObject* options = NULL;
+  JSObject* options = nullptr;
   if (op.IsUndefined()) {
     options = JSObject::New(ctx);
   } else {
-    options = op.ToObject(ctx, IV_LV5_ERROR_WITH(e, NULL));
+    options = op.ToObject(ctx, IV_LV5_ERROR_WITH(e, nullptr));
   }
 
   // create Object that have options as [[Prototype]]
@@ -247,7 +247,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx,
     for (DateProperties::const_iterator it = kDateProperties.begin(),
          last = kDateProperties.end(); it != last; ++it) {
       const Symbol name = ctx->Intern(*it);
-      const JSVal res = options->Get(ctx, name, IV_LV5_ERROR_WITH(e, NULL));
+      const JSVal res = options->Get(ctx, name, IV_LV5_ERROR_WITH(e, nullptr));
       if (!res.IsUndefined()) {
         need_default = false;
       }
@@ -262,7 +262,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx,
     for (TimeProperties::const_iterator it = kTimeProperties.begin(),
          last = kTimeProperties.end(); it != last; ++it) {
       const Symbol name = ctx->Intern(*it);
-      const JSVal res = options->Get(ctx, name, IV_LV5_ERROR_WITH(e, NULL));
+      const JSVal res = options->Get(ctx, name, IV_LV5_ERROR_WITH(e, nullptr));
       if (!res.IsUndefined()) {
         need_default = false;
       }
@@ -285,7 +285,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx,
           DataDescriptor(
               JSString::NewAsciiString(ctx, "numeric", e),
               ATTR::W | ATTR::E | ATTR::C),
-          true, IV_LV5_ERROR_WITH(e, NULL));
+          true, IV_LV5_ERROR_WITH(e, nullptr));
     }
   }
 
@@ -299,7 +299,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx,
           DataDescriptor(
               JSString::NewAsciiString(ctx, "numeric", e),
               ATTR::W | ATTR::E | ATTR::C),
-          true, IV_LV5_ERROR_WITH(e, NULL));
+          true, IV_LV5_ERROR_WITH(e, nullptr));
     }
   }
 

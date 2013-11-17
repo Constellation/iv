@@ -10,7 +10,7 @@ class IntrusivePtr {
   typedef IntrusivePtr<T> this_type;
   typedef void (this_type::*bool_type)() const;
 
-  explicit IntrusivePtr(T* ptr = NULL, bool not_retain = true)
+  explicit IntrusivePtr(T* ptr = nullptr, bool not_retain = true)
     : ptr_(ptr) {
     if (not_retain) {
       Retain(ptr_);
@@ -30,7 +30,7 @@ class IntrusivePtr {
 
   ~IntrusivePtr() { Release(ptr_); }
 
-  void reset(T* ptr = NULL) {
+  void reset(T* ptr = nullptr) {
     if (ptr_ != ptr) {
       Retain(ptr);
       Release(ptr_);
@@ -61,7 +61,7 @@ class IntrusivePtr {
   T* release() const {
     Release(ptr_);
     T* res = ptr_;
-    ptr_ = NULL;
+    ptr_ = nullptr;
     return res;
   }
 
@@ -71,12 +71,12 @@ class IntrusivePtr {
   }
 
   operator bool_type() const {
-    return (ptr_ == NULL) ?
+    return (ptr_ == nullptr) ?
         0 : &this_type::this_type_does_not_support_comparisons;
   }
 
   bool operator!() const {
-    return ptr_ == NULL;
+    return ptr_ == nullptr;
   }
 
   this_type& operator=(const this_type& rhs) {

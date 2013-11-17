@@ -61,7 +61,7 @@ class ExecutablePages {
     assert(reserve <= PageSize);
 
     Buffer buffer = {
-      NULL,
+      nullptr,
       reserve
     };
 

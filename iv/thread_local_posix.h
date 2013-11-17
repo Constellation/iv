@@ -8,7 +8,7 @@ template<typename T>
 class ThreadLocalPtr {
  public:
   ThreadLocalPtr() : key_() {
-    pthread_key_create(&key_, NULL);
+    pthread_key_create(&key_, nullptr);
   }
 
   ~ThreadLocalPtr() {

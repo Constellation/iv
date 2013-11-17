@@ -22,7 +22,7 @@ static void TrimRepresentation(char* buf) {
 }  // namespace anonymous
 
 TEST(DToACase, DToAGayFixed) {
-  // dtoa(v, 3, number_digits, &decimal_point, &sign, NULL);
+  // dtoa(v, 3, number_digits, &decimal_point, &sign, nullptr);
   std::array<char, 100> buffer;
   bool sign;
   int exponent;
@@ -53,7 +53,7 @@ TEST(DToACase, DToAGayFixed) {
 }
 
 TEST(DToACase, DToAGayPrecision) {
-  // dtoa(v, 2, number_digits, &decimal_point, &sign, NULL);
+  // dtoa(v, 2, number_digits, &decimal_point, &sign, nullptr);
   std::array<char, 100> buffer;
   bool sign;
   int exponent;
@@ -75,7 +75,7 @@ TEST(DToACase, DToAGayPrecision) {
 }
 
 TEST(DToACase, DToAGayShortest) {
-  // decimal_rep = dtoa(v, 0, 0, &decimal_point, &sign, NULL);
+  // decimal_rep = dtoa(v, 0, 0, &decimal_point, &sign, nullptr);
   std::array<char, 100> buffer;
   bool sign;
   int exponent;

@@ -8,7 +8,7 @@ class Checker : public iv::core::RefCounted<Checker> {
  public:
   Checker(bool* target, std::size_t offset) : target_(target), offset_(offset) { }
 
-  Checker() : target_(NULL), offset_(0) { }
+  Checker() : target_(nullptr), offset_(0) { }
 
   ~Checker() {
     if (target_) {

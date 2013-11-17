@@ -24,7 +24,7 @@ lv5::railgun::Code* Compile(lv5::railgun::Context* ctx,
         lv5::railgun::JSSourceScript<iv::core::FileSource>::New(ctx, src);
     return lv5::railgun::CompileIndirectEval(ctx, *global, script, use_folded_registers);
   } else {
-    return NULL;
+    return nullptr;
   }
 }
 

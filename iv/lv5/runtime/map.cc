@@ -17,7 +17,7 @@ JSVal MapConstructor(const Arguments& args, Error* e) {
   Context* ctx = args.ctx();
   const JSVal first = args.At(0);
   const JSVal this_binding = args.this_binding();
-  JSObject* map = NULL;
+  JSObject* map = nullptr;
   if (this_binding.IsUndefined() ||
       JSVal::StrictEqual(this_binding, ctx->global_data()->map_prototype())) {
     map = JSObject::New(

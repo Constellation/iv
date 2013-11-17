@@ -206,8 +206,8 @@ class Token {
 namespace detail {
 template<typename T>
 const char* TokenContents<T>::kContents[Token::TK_NUM_TOKENS] = {
-  NULL,            // EOS
-  NULL,            // ILLEGAL
+  nullptr,            // EOS
+  nullptr,            // ILLEGAL
   ".",
   ":",
   ";",
@@ -231,13 +231,13 @@ const char* TokenContents<T>::kContents[Token::TK_NUM_TOKENS] = {
   "*",
   "/",
   "%",
-  NULL,            // RELATIONAL FIRST
+  nullptr,            // RELATIONAL FIRST
   "<",
   ">",
   "<=",
   ">=",
   "instanceof",
-  NULL,            // RELATIONAL LAST
+  nullptr,            // RELATIONAL LAST
   ">>",
   ">>>",
   "<<",
@@ -248,7 +248,7 @@ const char* TokenContents<T>::kContents[Token::TK_NUM_TOKENS] = {
   "&&",
   "||",
   "<!--",
-  NULL,            // ASSIGN OP FIRST
+  nullptr,            // ASSIGN OP FIRST
   "=",
   "+=",
   "-=",
@@ -261,7 +261,7 @@ const char* TokenContents<T>::kContents[Token::TK_NUM_TOKENS] = {
   "&=",
   "|=",
   "~=",
-  NULL,            // ASSIGN OP LAST
+  nullptr,            // ASSIGN OP LAST
   "delete",
   "typeof",
   "void",
@@ -312,7 +312,7 @@ const char* TokenContents<T>::kContents[Token::TK_NUM_TOKENS] = {
   "volatile",
   "get",
   "set",
-  NULL,
+  nullptr,
   "implements",
   "let",
   "private",
@@ -322,16 +322,16 @@ const char* TokenContents<T>::kContents[Token::TK_NUM_TOKENS] = {
   "package",
   "protected",
   "static",
-  NULL,
+  nullptr,
   "null",
   "false",
   "true",
-  NULL,            // NUMBER LITERAL
-  NULL,            // STRING LITERAL
-  NULL,            // IDENTIFIER
-  NULL,            // SINGLE LINE COMMENT
-  NULL,            // MULTI LINE COMMENT
-  NULL             // NOT FOUND
+  nullptr,            // NUMBER LITERAL
+  nullptr,            // STRING LITERAL
+  nullptr,            // IDENTIFIER
+  nullptr,            // SINGLE LINE COMMENT
+  nullptr,            // MULTI LINE COMMENT
+  nullptr             // NOT FOUND
 };
 
 }  // namespace iv::core::detail

@@ -19,12 +19,12 @@ inline Code* CompileInGlobal(Context* ctx,
     e->Report(
         parser.reference_error() ? Error::Reference : Error::Syntax,
         parser.error());
-    return NULL;
+    return nullptr;
   }
   Code* code = CompileGlobal(ctx, *global, script, use_folded_registers);
   if (!code) {
     e->Report(Error::Syntax, "something wrong");
-    return NULL;
+    return nullptr;
   }
   return code;
 }

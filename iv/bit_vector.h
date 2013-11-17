@@ -38,7 +38,7 @@ class BitVector {
 
  public:
   explicit BitVector(const Alloc& alloc = Alloc())
-    : data_(NULL),
+    : data_(nullptr),
       size_(0),
       capacity_(0),
       alloc_(alloc) {
@@ -46,7 +46,7 @@ class BitVector {
 
   explicit BitVector(size_type size,
                      bool val = false, const Alloc& alloc = Alloc())
-    : data_(NULL),
+    : data_(nullptr),
       size_(0),
       capacity_(0),
       alloc_(alloc) {
@@ -54,7 +54,7 @@ class BitVector {
   }
 
   BitVector(const this_type& rhs)  // NOLINT
-    : data_(NULL),
+    : data_(nullptr),
       size_(rhs.size()),
       capacity_(Capacity(size())),
       alloc_(rhs.get_allocator()) {

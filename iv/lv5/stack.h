@@ -50,8 +50,8 @@ class Stack : core::Noncopyable<Stack> {
   static const size_type kCommitSize = 4 * core::Size::KB;
 
   explicit Stack()
-    : stack_(NULL),
-      stack_pointer_(NULL) {
+    : stack_(nullptr),
+      stack_pointer_(nullptr) {
     void* ptr = core::OSAllocator::Allocate(kStackBytes);
     // core::OSAllocator::Commit(ptr, kStackBytes);
     stack_pointer_ = stack_ = reinterpret_cast<JSVal*>(ptr);
@@ -102,7 +102,7 @@ class Stack : core::Noncopyable<Stack> {
       return stack;
     }
     // stack over flow
-    return NULL;
+    return nullptr;
   }
 
   pointer Gain(pointer ptr, size_type n) {
@@ -112,7 +112,7 @@ class Stack : core::Noncopyable<Stack> {
       return ptr;
     }
     // stack over flow
-    return NULL;
+    return nullptr;
   }
 
   void Restore(pointer ptr) {

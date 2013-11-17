@@ -9,7 +9,7 @@ namespace railgun {
 
 inline void ThunkPool::Initialize(Code* code) {
   parameter_offset_ = code->params().size();
-  vec_.assign(parameter_offset_ + code->stack_size(), NULL);
+  vec_.assign(parameter_offset_ + code->stack_size(), nullptr);
 }
 
 inline int32_t ThunkPool::CalculateOffset(int16_t register_offset) {
@@ -30,7 +30,7 @@ inline int32_t ThunkPool::CalculateOffset(int16_t register_offset) {
 inline Thunk* ThunkPool::Lookup(int16_t register_offset) {
   const int32_t offset = CalculateOffset(register_offset);
   if (offset < 0) {
-    return NULL;
+    return nullptr;
   }
   assert(static_cast<uint32_t>(offset) < vec_.size());
   return vec_[offset];
@@ -60,7 +60,7 @@ inline void ThunkPool::Push(Thunk* thunk) {
 inline void ThunkPool::Remove(Thunk* thunk) {
   if (!thunk->IsChained()) {
     assert(Lookup(thunk->register_offset()));
-    Insert(thunk->register_offset(), NULL);
+    Insert(thunk->register_offset(), nullptr);
   } else {
     thunk->RemoveSelfFromChain();
   }
@@ -75,7 +75,7 @@ inline void ThunkPool::Spill(RegisterID reg) {
         current->Spill();
         current = current->next_;
       } while (start != current);
-      Insert(reg->register_offset(), NULL);
+      Insert(reg->register_offset(), nullptr);
     }
   }
 }
@@ -92,7 +92,7 @@ inline void ThunkPool::ForceSpill() {
       } while (start != current);
     }
   }
-  vec_.assign(vec_.size(), NULL);
+  vec_.assign(vec_.size(), nullptr);
 }
 
 inline RegisterID ThunkPool::EmitMV(RegisterID local) {

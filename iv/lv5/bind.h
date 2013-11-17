@@ -109,11 +109,11 @@ class Object : public Scope {
 
   Object& def_getter(const core::StringPiece& string,
                      JSObject* getter, int attr) {
-    return def_accessor(ctx_->Intern(string), getter, NULL, attr);
+    return def_accessor(ctx_->Intern(string), getter, nullptr, attr);
   }
 
   Object& def_getter(const Symbol& name, JSObject* getter, int attr) {
-    return def_accessor(name, getter, NULL, attr);
+    return def_accessor(name, getter, nullptr, attr);
   }
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
@@ -126,7 +126,7 @@ class Object : public Scope {
     obj_->DefineOwnProperty(
       ctx_, name,
       AccessorDescriptor(
-          JSInlinedFunction<func, n>::New(ctx_, name), NULL,
+          JSInlinedFunction<func, n>::New(ctx_, name), nullptr,
           ATTR::C | ATTR::UNDEF_SETTER),
       false, &e_);
     return *this;
@@ -142,7 +142,7 @@ class Object : public Scope {
     obj_->DefineOwnProperty(
       ctx_, name,
       AccessorDescriptor(
-          JSInlinedFunction<func, n>::New(ctx_, name), NULL,
+          JSInlinedFunction<func, n>::New(ctx_, name), nullptr,
           attr),
       false, &e_);
     return *this;
@@ -150,11 +150,11 @@ class Object : public Scope {
 
   Object& def_setter(const core::StringPiece& string,
                      JSObject* setter, int attr) {
-    return def_accessor(ctx_->Intern(string), NULL, setter, attr);
+    return def_accessor(ctx_->Intern(string), nullptr, setter, attr);
   }
 
   Object& def_setter(const Symbol& name, JSObject* setter, int attr) {
-    return def_accessor(name, NULL, setter, attr);
+    return def_accessor(name, nullptr, setter, attr);
   }
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
@@ -167,7 +167,7 @@ class Object : public Scope {
     obj_->DefineOwnProperty(
       ctx_, name,
       AccessorDescriptor(
-          NULL, JSInlinedFunction<func, n>::New(ctx_, name),
+          nullptr, JSInlinedFunction<func, n>::New(ctx_, name),
           ATTR::C | ATTR::UNDEF_GETTER),
       false, &e_);
     return *this;
@@ -183,7 +183,7 @@ class Object : public Scope {
     obj_->DefineOwnProperty(
       ctx_, name,
       AccessorDescriptor(
-          NULL, JSInlinedFunction<func, n>::New(ctx_, name),
+          nullptr, JSInlinedFunction<func, n>::New(ctx_, name),
           attr),
       false, &e_);
     return *this;

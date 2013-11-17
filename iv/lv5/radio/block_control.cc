@@ -19,7 +19,7 @@ Cell* BlockControl::Allocate(Core* core) {
 }
 
 void BlockControl::Collect(Core* core, Context* ctx) {
-  for (Block *prev = NULL, *block = block_; block;) {
+  for (Block *prev = nullptr, *block = block_; block;) {
     if (block->Collect(core, ctx, this)) {
       // when all objects are sweeped in block
       if (prev) {
@@ -61,7 +61,7 @@ void BlockControl::AllocateBlock(Core* core) {
       prev = cell;
       ++it;
     } else {
-      prev->set_next(NULL);
+      prev->set_next(nullptr);
       break;
     }
   }

@@ -183,11 +183,11 @@ inline void StoredSlot::Merge(Context* ctx, const PropertyDescriptor& desc) {
     attr.set_accessor();
     const AccessorDescriptor* const accs = desc.AsAccessorDescriptor();
 
-    Accessor* ac = NULL;
+    Accessor* ac = nullptr;
     if (attributes().IsAccessor()) {
       ac = accessor();
     } else {
-      ac = Accessor::New(ctx, NULL, NULL);
+      ac = Accessor::New(ctx, nullptr, nullptr);
       value_ = JSVal::Cell(ac);
     }
 

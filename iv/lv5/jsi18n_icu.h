@@ -28,12 +28,12 @@ class ICUStringIteration
   }
 
   ICUStringIteration()
-    : enumeration_(NULL),
-      current_(NULL) {
+    : enumeration_(nullptr),
+      current_(nullptr) {
   }
 
   ICUStringIteration(const ICUStringIteration& rhs)
-    : enumeration_((rhs.enumeration_) ? rhs.enumeration_->clone() : NULL),
+    : enumeration_((rhs.enumeration_) ? rhs.enumeration_->clone() : nullptr),
       current_(rhs.current_) {
   }
 
@@ -88,9 +88,9 @@ class ICUStringIteration
   void Next() {
     if (enumeration_) {
       UErrorCode status = U_ZERO_ERROR;
-      current_ = enumeration_->next(NULL, status);
+      current_ = enumeration_->next(nullptr, status);
       if (U_FAILURE(status)) {
-        current_ = NULL;
+        current_ = nullptr;
       }
       if (!current_) {
         enumeration_.reset();
@@ -200,7 +200,7 @@ class JSCollatorBoundFunction : public JSFunction {
     return JSEmpty;
   }
 
-  virtual JSAPI NativeFunction() const { return NULL; }
+  virtual JSAPI NativeFunction() const { return nullptr; }
 
   static JSCollatorBoundFunction* New(Context* ctx, JSCollator* collator) {
     JSCollatorBoundFunction* const obj =
@@ -216,12 +216,12 @@ class JSCollatorBoundFunction : public JSFunction {
     Error::Dummy dummy;
     DefineOwnProperty(
         ctx, symbol::length(),
-        DataDescriptor(JSVal::UInt32(2u), ATTR::NONE), false, NULL);
+        DataDescriptor(JSVal::UInt32(2u), ATTR::NONE), false, nullptr);
     DefineOwnProperty(
         ctx, symbol::name(),
         DataDescriptor(
             JSString::NewAsciiString(ctx, "compare", &dummy),
-            ATTR::NONE), false, NULL);
+            ATTR::NONE), false, nullptr);
   }
 
   JSCollator* collator_;
@@ -337,11 +337,11 @@ typedef std::array<CollatorOption, 6> CollatorOptionTable;
 
 static const CollatorOptionTable kCollatorOptionTable = { {
   { "kn", JSCollator::NUMERIC, "numeric",
-    Options::BOOLEAN, { { NULL } } },
+    Options::BOOLEAN, { { nullptr } } },
   { "kk", JSCollator::NORMALIZATION, "normalization",
-    Options::BOOLEAN, { { NULL } } },
+    Options::BOOLEAN, { { nullptr } } },
   { "kf", JSCollator::CASE_FIRST, "caseFirst",
-    Options::STRING, { { "upper", "lower", "false", NULL } } },
+    Options::STRING, { { "upper", "lower", "false", nullptr } } },
 } };
 
 template<JSCollator::CollatorField TYPE, UColAttribute ATTR>
@@ -365,23 +365,23 @@ struct DateTimeOption {
 typedef std::array<DateTimeOption, 9> DateTimeOptions;
 static const DateTimeOptions kDateTimeOptions = { {
   { "weekday",      JSDateTimeFormat::WEEKDAY,
-    { { "narrow", "short", "long", NULL } } },
+    { { "narrow", "short", "long", nullptr } } },
   { "era",          JSDateTimeFormat::ERA,
-    { { "narrow", "short", "long", NULL } } },
+    { { "narrow", "short", "long", nullptr } } },
   { "year",         JSDateTimeFormat::YEAR,
-    { { "2-digit", "numeric", NULL } } },
+    { { "2-digit", "numeric", nullptr } } },
   { "month",        JSDateTimeFormat::MONTH,
     { { "2-digit", "numeric", "narrow", "short", "long" } } },
   { "day",          JSDateTimeFormat::DAY,
-    { { "2-digit", "numeric", NULL } } },
+    { { "2-digit", "numeric", nullptr } } },
   { "hour",         JSDateTimeFormat::HOUR,
-    { { "2-digit", "numeric", NULL } } },
+    { { "2-digit", "numeric", nullptr } } },
   { "minute",       JSDateTimeFormat::MINUTE,
-    { { "2-digit", "numeric", NULL } } },
+    { { "2-digit", "numeric", nullptr } } },
   { "second",       JSDateTimeFormat::SECOND,
-    { { "2-digit", "numeric", NULL } } },
+    { { "2-digit", "numeric", nullptr } } },
   { "timeZoneName", JSDateTimeFormat::TIME_ZONE_NAME,
-    { { "short", "long", NULL } } }
+    { { "short", "long", nullptr } } }
 } };
 
 inline JSObject* BasicFormatMatch(Context* ctx,
@@ -395,13 +395,13 @@ inline JSObject* BasicFormatMatch(Context* ctx,
   const int32_t short_more_penalty = 3;
 
   int32_t best_score = INT32_MIN;
-  JSObject* best_format = NULL;
+  JSObject* best_format = nullptr;
   const uint32_t len =
-      internal::GetLength(ctx, formats, IV_LV5_ERROR_WITH(e, NULL));
+      internal::GetLength(ctx, formats, IV_LV5_ERROR_WITH(e, nullptr));
   for (uint32_t i = 0; i < len; ++i) {
     const JSVal v =
         formats->Get(ctx, symbol::MakeSymbolFromIndex(i),
-                     IV_LV5_ERROR_WITH(e, NULL));
+                     IV_LV5_ERROR_WITH(e, nullptr));
     assert(v.IsObject());
     JSObject* format = v.object();
     int32_t score = 0;
@@ -409,12 +409,12 @@ inline JSObject* BasicFormatMatch(Context* ctx,
          last = kDateTimeOptions.end(); it != last; ++it) {
       const Symbol name = ctx->Intern(it->key);
       const JSVal options_prop =
-          options->Get(ctx, name, IV_LV5_ERROR_WITH(e, NULL));
+          options->Get(ctx, name, IV_LV5_ERROR_WITH(e, nullptr));
       const PropertyDescriptor format_prop_desc =
           formats->GetOwnProperty(ctx, name);
       JSVal format_prop = JSUndefined;
       if (!format_prop_desc.IsEmpty()) {
-        format_prop = formats->Get(ctx, name, IV_LV5_ERROR_WITH(e, NULL));
+        format_prop = formats->Get(ctx, name, IV_LV5_ERROR_WITH(e, nullptr));
       }
       if (options_prop.IsUndefined() && !format_prop.IsUndefined()) {
         score -= addition_penalty;
@@ -492,7 +492,7 @@ inline JSVal JSCollator::Initialize(Context* ctx,
   JSVector* requested =
       i18n::CanonicalizeLocaleList(ctx, req, IV_LV5_ERROR(e));
 
-  JSObject* options = NULL;
+  JSObject* options = nullptr;
   if (op.IsUndefined()) {
     options = JSObject::New(ctx);
   } else {
@@ -532,8 +532,8 @@ inline JSVal JSCollator::Initialize(Context* ctx,
          it = detail_i18n::kCollatorOptionTable.begin(),
          last = detail_i18n::kCollatorOptionTable.end();
          it != last; ++it) {
-      JSVector* vec = NULL;
-      if (it->values[0] != NULL) {
+      JSVector* vec = nullptr;
+      if (it->values[0] != nullptr) {
         vec = JSVector::New(ctx);
         for (detail_i18n::CollatorOption::Values::const_iterator
              oit = it->values.begin(),
@@ -629,7 +629,7 @@ inline JSVal JSCollator::Initialize(Context* ctx,
   {
     const JSVal ip = opt.Get(ctx,
                              ctx->Intern("ignorePunctuation"),
-                             detail_i18n::Options::BOOLEAN, NULL,
+                             detail_i18n::Options::BOOLEAN, nullptr,
                              JSFalse, IV_LV5_ERROR(e));
     obj->SetField(JSCollator::IGNORE_PUNCTUATION, ip);
   }
@@ -766,7 +766,7 @@ inline JSVal JSDateTimeFormat::Initialize(Context* ctx,
   {
     const JSVal hour12 = opt.Get(ctx,
                                  ctx->Intern("hour12"),
-                                 detail_i18n::Options::BOOLEAN, NULL,
+                                 detail_i18n::Options::BOOLEAN, nullptr,
                                  JSUndefined, IV_LV5_ERROR(e));
     obj->SetField(JSDateTimeFormat::HOUR12, hour12);
   }

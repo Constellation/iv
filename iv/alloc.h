@@ -21,7 +21,7 @@ class Malloced {
   void  operator delete(void* p) { Delete(p); }
   static inline void* New(std::size_t size) {
     void* result = std::malloc(size);
-    if (result == NULL) {
+    if (result == nullptr) {
       OutOfMemory();
     }
     return result;
@@ -45,7 +45,7 @@ class Arena : private Noncopyable<Arena> {
   static const uintptr_t kAlignment = 8;  // double or 64bit ptr size
 
   explicit Arena(Arena* prev)
-    : next_(NULL),
+    : next_(nullptr),
       position_() {
     position_ =
         reinterpret_cast<uintptr_t>(this) +
@@ -66,11 +66,11 @@ class Arena : private Noncopyable<Arena> {
       position_ += size;
       return reinterpret_cast<void*>(result);
     }
-    return NULL;  // full up
+    return nullptr;  // full up
   }
 
   static Arena* New() {
-    return new (Malloced::New(kArenaSize)) Arena(NULL);
+    return new (Malloced::New(kArenaSize)) Arena(nullptr);
   }
 
   static Arena* New(Arena* prev) {
@@ -108,7 +108,7 @@ class Space : private Noncopyable<Space> {
   }
 
   ~Space() {
-    Arena *now = start_, *next = NULL;
+    Arena *now = start_, *next = nullptr;
     do {
       next = now->Next();
       Malloced::Delete(now);
@@ -121,7 +121,7 @@ class Space : private Noncopyable<Space> {
     if ((size - 1) < kThreshold) {
       // small memory allocator
       void* result = arena_->Allocate(size);
-      if (result == NULL) {
+      if (result == nullptr) {
         Arena* arena = arena_->Next();
         if (arena) {
           assert(arena_->Next() == arena);
@@ -131,7 +131,7 @@ class Space : private Noncopyable<Space> {
         }
         arena_->ToStart();
         result = arena_->Allocate(size);
-        if (result == NULL) {
+        if (result == nullptr) {
           Malloced::OutOfMemory();
         }
       }
@@ -148,9 +148,9 @@ class Space : private Noncopyable<Space> {
   static const std::size_t kThreshold = Size::kPointerSize * 64;
 
   static Arena* NewArena(Arena* prev) {
-    Arena* arena = NULL;
+    Arena* arena = nullptr;
     arena = Arena::New(prev);
-    if (arena == NULL) {
+    if (arena == nullptr) {
       Malloced::OutOfMemory();
       return arena;
     }

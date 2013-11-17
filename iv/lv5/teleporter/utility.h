@@ -93,7 +93,7 @@ inline JSScript* CompileScript(Context* ctx, const JSString* str,
     e->Report(
         parser.reference_error() ? Error::Reference : Error::Syntax,
         parser.error());
-    return NULL;
+    return nullptr;
   } else {
     return JSEvalScript<EvalSource>::New(ctx, eval, factory, src);
   }

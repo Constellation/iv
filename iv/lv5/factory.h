@@ -43,7 +43,7 @@ class AstFactory
       regexps_.push_back(expr);
       return Location(expr, begin, end, line_number);
     } else {
-      return NULL;
+      return nullptr;
     }
   }
  private:

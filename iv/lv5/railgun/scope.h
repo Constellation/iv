@@ -35,15 +35,15 @@ class LookupInfo {
   }
 
   static LookupInfo NewUnused() {
-    return LookupInfo(UNUSED, 0, 0, false, 0, NULL);
+    return LookupInfo(UNUSED, 0, 0, false, 0, nullptr);
   }
 
   static LookupInfo NewLookup() {
-    return LookupInfo(LOOKUP, 0, 0, false, 0, NULL);
+    return LookupInfo(LOOKUP, 0, 0, false, 0, nullptr);
   }
 
   static LookupInfo NewGlobal() {
-    return LookupInfo(GLOBAL, 0, 0, false, 0, NULL);
+    return LookupInfo(GLOBAL, 0, 0, false, 0, nullptr);
   }
 
   static LookupInfo NewHeap(uint32_t heap_location,
@@ -276,7 +276,7 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
             heap_size,
             scope->strict(),
             scope_nest_count(),
-            NULL);
+            nullptr);
         ++heap_size;
         if (info.immutable()) {
           immutable_heaps.push_back(name);
@@ -286,7 +286,7 @@ class CodeScope<Code::FUNCTION> : public VariableScope {
         map_.insert(std::make_pair(name, info));
       } else if (scope_->has_arguments()) {
         const LookupInfo info =
-            LookupInfo::NewStack(stack_size_++, scope->strict(), NULL);
+            LookupInfo::NewStack(stack_size_++, scope->strict(), nullptr);
         map_.insert(std::make_pair(symbol::arguments(), info));
       }
     }

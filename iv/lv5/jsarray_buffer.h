@@ -85,7 +85,7 @@ class JSArrayBuffer : public JSObject {
         NewPlain(
             ctx, len,
             ctx->global_data()->array_buffer_map(),
-            IV_LV5_ERROR_WITH(e, NULL));
+            IV_LV5_ERROR_WITH(e, nullptr));
     obj->set_cls(GetClass());
     return obj;
   }
@@ -94,7 +94,7 @@ class JSArrayBuffer : public JSObject {
                                  uint32_t len, Map* map, Error* e) {
     if (IsTooBigBuffer(len)) {
       e->Report(Error::Range, "too big buffer");
-      return NULL;
+      return nullptr;
     }
     return new JSArrayBuffer(ctx, len, map, e);
   }
@@ -130,7 +130,7 @@ class JSArrayBuffer : public JSObject {
       data_.u8 = new (PointerFreeGC) uint8_t[len];
       std::memset(data_.u8, 0, len);
     } else {
-      data_.u8 = NULL;
+      data_.u8 = nullptr;
     }
   }
 

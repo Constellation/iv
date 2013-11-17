@@ -32,17 +32,17 @@ class IntrusiveListBase {
   template<typename U, bool IsConst> friend class IntrusiveListIterator;
   template<typename U> friend class IntrusiveList;
 
-  IntrusiveListBase() : next_(NULL), prev_(NULL) { }
+  IntrusiveListBase() : next_(nullptr), prev_(nullptr) { }
   IntrusiveListBase(this_type* n, this_type* p) : next_(n), prev_(p) { }
 
   void Unlink() {
     assert(IsLinked());
     next_->prev_ = prev_;
     prev_->next_ = next_;
-    next_ = prev_ = NULL;
+    next_ = prev_ = nullptr;
   }
 
-  bool IsLinked() const { return !(next_ == NULL && prev_ == NULL); }
+  bool IsLinked() const { return !(next_ == nullptr && prev_ == nullptr); }
 
  private:
   this_type* pointer() { return this; }
@@ -74,7 +74,7 @@ class IntrusiveListIterator
   typedef IntrusiveListIterator<T, false> iterator;
   typedef IntrusiveListIterator<T, true> const_iterator;
 
-  IntrusiveListIterator() : current_(NULL) { }
+  IntrusiveListIterator() : current_(nullptr) { }
 
   explicit IntrusiveListIterator(cursor_type node) : current_(node) { }
 

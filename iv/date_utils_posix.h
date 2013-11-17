@@ -16,7 +16,7 @@ inline double DaylightSavingTA(double utc) {
   const std::time_t current =
       static_cast<std::time_t>(std::floor(utc / kMsPerSecond));
   const std::tm* const t = std::localtime(&current);  // NOLINT
-  if (t == NULL) {
+  if (t == nullptr) {
     return iv::core::kNaN;
   }
   if (t->tm_isdst > 0) {
@@ -31,7 +31,7 @@ inline double DaylightSavingTA(double utc) {
 
 inline double CurrentTime() {
   struct timeval tv;
-  gettimeofday(&tv, NULL);
+  gettimeofday(&tv, nullptr);
   return (tv.tv_sec + tv.tv_usec / 1000000.0) * 1000.0;
 }
 
@@ -45,7 +45,7 @@ inline const char* LocalTimeZone(double t) {
   }
   const std::time_t tv = static_cast<time_t>(std::floor(t / kMsPerSecond));
   const struct std::tm* const tmp = std::localtime(&tv);  // NOLINT
-  if (NULL == tmp) {
+  if (nullptr == tmp) {
     return "";
   }
 #if defined(IV_OS_CYGWIN)

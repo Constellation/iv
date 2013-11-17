@@ -17,7 +17,7 @@ JSVal SetConstructor(const Arguments& args, Error* e) {
   Context* ctx = args.ctx();
   const JSVal first = args.At(0);
   const JSVal this_binding = args.this_binding();
-  JSObject* set = NULL;
+  JSObject* set = nullptr;
   if (this_binding.IsUndefined() ||
       JSVal::StrictEqual(this_binding, ctx->global_data()->set_prototype())) {
     set = JSObject::New(

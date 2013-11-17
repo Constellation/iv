@@ -44,7 +44,7 @@ class JSString : public JSCell {
 
   // FiberSlots has FiberSlot by reverse order
   // for example, string "THIS" and "IS" to
-  // [ "IS", "THIS", NULL, NULL, NULL ]
+  // [ "IS", "THIS", nullptr, nullptr, nullptr ]
   typedef Fiber16::size_type size_type;
 
   static const size_type kMaxFibers = 5;
@@ -364,7 +364,7 @@ class JSString : public JSCell {
 
     if (static_cast<uint64_t>(size()) * count > kMaxSize) {
       e->Report(Error::Type, "too long string is prohibited");
-      return NULL;
+      return nullptr;
     }
 
     return new this_type(ctx, this, count);
@@ -478,7 +478,7 @@ class JSString : public JSCell {
 
     if (lhs->size() + rhs->size() > kMaxSize) {
       e->Report(Error::Type, "too long string is prohibited");
-      return NULL;
+      return nullptr;
     }
 
     return new this_type(ctx, lhs, rhs);
@@ -523,7 +523,7 @@ class JSString : public JSCell {
 
     if (size > kMaxSize) {
       e->Report(Error::Type, "too long string is prohibited");
-      return NULL;
+      return nullptr;
     }
 
     return new this_type(ctx, src, count, size, fiber_count, is_8bit);
@@ -549,7 +549,7 @@ class JSString : public JSCell {
     }
     if (n > kMaxSize) {
       e->Report(Error::Type, "too long string is prohibited");
-      return NULL;
+      return nullptr;
     }
     return new this_type(ctx, it, n, is_8bit);
   }

@@ -91,7 +91,7 @@ class Operation {
         current = current->outer();
       }
     }
-    return NULL;
+    return nullptr;
   }
 
   JSDeclEnv* GetHeapEnv(JSEnv* env, uint32_t scope_nest_count) const {
@@ -144,7 +144,7 @@ class Operation {
 
     assert(!symbol::IsArrayIndexSymbol(s));
 
-    JSObject* obj = NULL;
+    JSObject* obj = nullptr;
     if (base.IsPrimitive()) {
       // if base is primitive, property not found in "this" object
       // so, lookup from proto
@@ -585,7 +585,7 @@ class Operation {
         }
         return slot.Get(ctx_, global, e);
       } else {
-        instr[2].map = NULL;
+        instr[2].map = nullptr;
         return LoadName(ctx_->global_env(), s, strict, e);
       }
     }

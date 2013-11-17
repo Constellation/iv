@@ -5,7 +5,7 @@
 #include <iv/detail/type_traits.h>
 #include <iv/enable_if.h>
 
-// Maybe NULL pointer wrapper class
+// Maybe nullptr pointer wrapper class
 // not have ownership
 
 namespace iv {
@@ -18,7 +18,7 @@ class Maybe {
   typedef void (this_type::*bool_type)() const;
 
   Maybe(T* ptr) : ptr_(ptr) { }  // NOLINT
-  Maybe() : ptr_(NULL) { }
+  Maybe() : ptr_(nullptr) { }
 
   template<class U>
   Maybe(const Maybe<U>& rhs,
@@ -37,7 +37,7 @@ class Maybe {
   }
 
   operator bool_type() const {
-    return ptr_ != NULL ?
+    return ptr_ != nullptr ?
         &this_type::this_type_does_not_support_comparisons : 0;
   }
 

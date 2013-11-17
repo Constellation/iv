@@ -524,7 +524,7 @@ class TypeRecord {
 
   TypeRecord()
     : record_(),
-      code_(NULL) {
+      code_(nullptr) {
   }
 
   void Init(railgun::Code* code) {

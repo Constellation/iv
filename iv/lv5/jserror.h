@@ -36,7 +36,7 @@ class JSError : public JSObject {
       code_(code) {
     if (str) {
       DefineOwnProperty(ctx, symbol::message(),
-                        DataDescriptor(str, ATTR::C | ATTR::W), false, NULL);
+                        DataDescriptor(str, ATTR::C | ATTR::W), false, nullptr);
     }
   }
 
@@ -124,7 +124,7 @@ inline bool Error::Standard::RequireMaterialize(Context* ctx) const {
 
 inline JSVal Error::Standard::Detail(Context* ctx) {
   assert(code() != Error::Normal);
-  JSError* error = NULL;
+  JSError* error = nullptr;
   Error::Dummy dummy;
   JSString* message = JSString::New(ctx, detail(), &dummy);
   if (dummy) {

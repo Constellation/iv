@@ -40,7 +40,7 @@ class MT19937 {
   }
 
   void seed() {
-    seed(static_cast<result_type>(std::time(NULL)));
+    seed(static_cast<result_type>(std::time(nullptr)));
   }
 
   void seed(result_type s) {

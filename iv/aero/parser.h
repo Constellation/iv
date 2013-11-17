@@ -16,7 +16,7 @@ namespace aero {
   do {\
     if (c_ != ch) {\
       *e = UNEXPECTED_CHARACTER;\
-      return NULL;\
+      return nullptr;\
     }\
     Advance();\
   } while (0)
@@ -24,14 +24,14 @@ namespace aero {
 #define RAISE(code)\
   do {\
     *e = code;\
-    return NULL;\
+    return nullptr;\
   } while (0)
 
 #define UNEXPECT(ch) RAISE(UNEXPECTED_CHARACTER)
 
 #define CHECK  e);\
   if (*e) {\
-    return NULL;\
+    return nullptr;\
   }\
   ((void)0
 #define DUMMY )  // to make indentation work
@@ -78,12 +78,12 @@ class Parser {
   ParsedData ParsePattern(int* e) {
     if (source_.size() > kMaxPatternSize) {
       *e = TOO_LONG_REGEXP;
-      return ParsedData(NULL, captures_);
+      return ParsedData(nullptr, captures_);
     }
     Disjunction* dis = ParseDisjunction<EOS>(e);
     if (c_ != EOS) {
       *e = UNEXPECTED_CHARACTER;
-      return ParsedData(NULL, captures_);
+      return ParsedData(nullptr, captures_);
     }
     return ParsedData(dis, captures_);
   }
@@ -126,7 +126,7 @@ class Parser {
   Alternative* ParseAlternative(int* e) {
     // Terms
     Expressions* vec = NewExpressions();
-    Expression* target = NULL;
+    Expression* target = nullptr;
     while (c_ >= 0 && c_ != '|' && c_ != END) {
       bool atom = false;
       switch (c_) {
@@ -231,7 +231,7 @@ class Parser {
             // if Quantifier format, reject it.
             if (c_ == '{') {
               bool ok = false;
-              ParseQuantifier(NULL, &ok, CHECK);
+              ParseQuantifier(nullptr, &ok, CHECK);
               if (ok) {
                 UNEXPECT('{');
               }

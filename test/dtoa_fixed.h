@@ -27,7 +27,7 @@
 
 // This file contains 100.000 decimal representations of random doubles. They
 // have been generated using Gay's dtoa to produce the fixed representation:
-//         dtoa(v, 3, number_digits, &decimal_point, &sign, NULL);
+//         dtoa(v, 3, number_digits, &decimal_point, &sign, nullptr);
 #ifndef IV_TEST_DTOA_FIXED_H_
 #define IV_TEST_DTOA_FIXED_H_
 #include <iv/detail/array.h>

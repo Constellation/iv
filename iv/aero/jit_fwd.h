@@ -20,10 +20,10 @@ class Code;
 class JITCode {
  public:
   JITCode()
-    : jit8_(NULL),
-      jit16_(NULL),
-      exec8_(NULL),
-      exec16_(NULL) {
+    : jit8_(nullptr),
+      jit16_(nullptr),
+      exec8_(nullptr),
+      exec16_(nullptr) {
   }
 
   ~JITCode() {

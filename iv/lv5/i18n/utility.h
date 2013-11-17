@@ -26,28 +26,28 @@ inline JSVector* CanonicalizeLocaleList(Context* ctx, JSVal locales, Error* e) {
 
   JSVector* seen = JSVector::New(ctx);
   std::unordered_set<std::string> checker;
-  JSObject* obj = locales.ToObject(ctx, IV_LV5_ERROR_WITH(e, NULL));
+  JSObject* obj = locales.ToObject(ctx, IV_LV5_ERROR_WITH(e, nullptr));
   const uint32_t len =
-      internal::GetLength(ctx, obj, IV_LV5_ERROR_WITH(e, NULL));
+      internal::GetLength(ctx, obj, IV_LV5_ERROR_WITH(e, nullptr));
   for (uint32_t k = 0; k < len; ++k) {
     const Symbol pk = symbol::MakeSymbolFromIndex(k);
     if (obj->HasProperty(ctx, pk)) {
-      const JSVal value = obj->Get(ctx, pk, IV_LV5_ERROR_WITH(e, NULL));
+      const JSVal value = obj->Get(ctx, pk, IV_LV5_ERROR_WITH(e, nullptr));
       if (!(value.IsString() || value.IsObject())) {
         e->Report(Error::Type, "locale should be string or object");
-        return NULL;
+        return nullptr;
       }
-      JSString* tag = value.ToString(ctx, IV_LV5_ERROR_WITH(e, NULL));
+      JSString* tag = value.ToString(ctx, IV_LV5_ERROR_WITH(e, nullptr));
       core::i18n::LanguageTagScanner scanner(tag->begin(), tag->end());
       if (!scanner.IsStructurallyValid()) {
         e->Report(Error::Range, "locale pattern is not well formed");
-        return NULL;
+        return nullptr;
       }
       const std::string canonicalized = scanner.Canonicalize();
       if (checker.find(canonicalized) == checker.end()) {
         checker.insert(canonicalized);
         JSString* str =
-            JSString::NewAsciiString(ctx, canonicalized, IV_LV5_ERROR_WITH(e, NULL));
+            JSString::NewAsciiString(ctx, canonicalized, IV_LV5_ERROR_WITH(e, nullptr));
         seen->push_back(str);
       }
     }
@@ -75,9 +75,9 @@ class Options {
                       Symbol property,
                       Iter it,
                       Iter last, const char* fallback, Error* e) {
-    JSVal value = options()->Get(ctx, property, IV_LV5_ERROR_WITH(e, NULL));
+    JSVal value = options()->Get(ctx, property, IV_LV5_ERROR_WITH(e, nullptr));
     if (!value.IsUndefined()) {
-      JSString* str = value.ToString(ctx, IV_LV5_ERROR_WITH(e, NULL));
+      JSString* str = value.ToString(ctx, IV_LV5_ERROR_WITH(e, nullptr));
       if (it != last) {
         bool found = false;
         for (; it != last; ++it) {
@@ -88,7 +88,7 @@ class Options {
         }
         if (!found) {
           e->Report(Error::Range, "option out of range");
-          return NULL;
+          return nullptr;
         }
         return str;
       }
@@ -97,7 +97,7 @@ class Options {
     if (fallback) {
       return JSString::NewAsciiString(ctx, fallback, e);
     }
-    return NULL;
+    return nullptr;
   }
 
   enum TriBool {
@@ -159,14 +159,14 @@ inline JSVector* LookupSupportedLocales(Context* ctx,
   for (JSVector::const_iterator i = requested->begin(),
        iz = requested->end(); i != iz; ++i) {
     const JSVal res = *i;
-    JSString* str = res.ToString(ctx, IV_LV5_ERROR_WITH(e, NULL));
+    JSString* str = res.ToString(ctx, IV_LV5_ERROR_WITH(e, nullptr));
     const std::string locale(
         core::i18n::LanguageTagScanner::RemoveExtension(str->begin(),
                                                         str->end()));
     const AvailIter t = ctx->i18n()->BestAvailableLocale(it, last, locale);
     if (t != last) {
       JSString* str =
-          JSString::NewAsciiString(ctx, locale, IV_LV5_ERROR_WITH(e, NULL));
+          JSString::NewAsciiString(ctx, locale, IV_LV5_ERROR_WITH(e, nullptr));
       subset->push_back(str);
     }
   }
@@ -186,17 +186,17 @@ inline JSArray* SupportedLocales(Context* ctx,
                                  JSVector* requested, JSVal options, Error* e) {
   bool best_fit = true;
   if (!options.IsUndefined()) {
-    JSObject* opt = options.ToObject(ctx, IV_LV5_ERROR_WITH(e, NULL));
+    JSObject* opt = options.ToObject(ctx, IV_LV5_ERROR_WITH(e, nullptr));
     const JSVal matcher =
         opt->Get(ctx, ctx->Intern("localeMatcher"),
-                 IV_LV5_ERROR_WITH(e, NULL));
+                 IV_LV5_ERROR_WITH(e, nullptr));
     if (!matcher.IsUndefined()) {
-      JSString* str = matcher.ToString(ctx, IV_LV5_ERROR_WITH(e, NULL));
+      JSString* str = matcher.ToString(ctx, IV_LV5_ERROR_WITH(e, nullptr));
       if (str->compare("lookup") == 0) {
         best_fit = false;
       } else if (str->compare("best fit") != 0) {
         e->Report(Error::Range, "lookupMatcher pattern is not known");
-        return NULL;
+        return nullptr;
       }
     }
   }
@@ -205,7 +205,7 @@ inline JSArray* SupportedLocales(Context* ctx,
       (best_fit)
       ? BestFitSupportedLocales(ctx, it, last, requested, e)
       : LookupSupportedLocales(ctx, it, last, requested, e);
-  IV_LV5_ERROR_GUARD_WITH(e, NULL);
+  IV_LV5_ERROR_GUARD_WITH(e, nullptr);
 
   JSArray* result = subset->ToJSArray();
   PropertyNamesCollector collector;
@@ -219,7 +219,7 @@ inline JSArray* SupportedLocales(Context* ctx,
     assert(desc.IsData());
     desc.AsDataDescriptor()->set_writable(false);
     desc.set_configurable(false);
-    result->DefineOwnProperty(ctx, sym, desc, true, IV_LV5_ERROR_WITH(e, NULL));
+    result->DefineOwnProperty(ctx, sym, desc, true, IV_LV5_ERROR_WITH(e, nullptr));
   }
 
   return result;
@@ -300,9 +300,9 @@ enum DateTimeOptionsType {
 inline JSObject* ToDateTimeOptions(Context* ctx, JSVal op,
                                    DateTimeOptionsType required,
                                    DateTimeOptionsType defaults, Error* e) {
-  JSObject* options = NULL;
+  JSObject* options = nullptr;
   if (!op.IsUndefined()) {
-    options = op.ToObject(ctx, IV_LV5_ERROR_WITH(e, NULL));
+    options = op.ToObject(ctx, IV_LV5_ERROR_WITH(e, nullptr));
   }
 
   // create Object that have options as [[Prototype]]
@@ -333,7 +333,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx, JSVal op,
     for (DateProperties::const_iterator it = kDateProperties.begin(),
          last = kDateProperties.end(); it != last; ++it) {
       const Symbol name = ctx->Intern(*it);
-      const JSVal res = options->Get(ctx, name, IV_LV5_ERROR_WITH(e, NULL));
+      const JSVal res = options->Get(ctx, name, IV_LV5_ERROR_WITH(e, nullptr));
       if (!res.IsUndefined()) {
         need_default = false;
       }
@@ -344,7 +344,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx, JSVal op,
     for (TimeProperties::const_iterator it = kTimeProperties.begin(),
          last = kTimeProperties.end(); it != last; ++it) {
       const Symbol name = ctx->Intern(*it);
-      const JSVal res = options->Get(ctx, name, IV_LV5_ERROR_WITH(e, NULL));
+      const JSVal res = options->Get(ctx, name, IV_LV5_ERROR_WITH(e, nullptr));
       if (!res.IsUndefined()) {
         need_default = false;
       }
@@ -363,7 +363,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx, JSVal op,
           DataDescriptor(
               JSString::NewAsciiString(ctx, "numeric", e),
               ATTR::W | ATTR::E | ATTR::C),
-          true, IV_LV5_ERROR_WITH(e, NULL));
+          true, IV_LV5_ERROR_WITH(e, nullptr));
     }
   }
 
@@ -377,7 +377,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx, JSVal op,
           DataDescriptor(
               JSString::NewAsciiString(ctx, "numeric", e),
               ATTR::W | ATTR::E | ATTR::C),
-          true, IV_LV5_ERROR_WITH(e, NULL));
+          true, IV_LV5_ERROR_WITH(e, nullptr));
     }
   }
 

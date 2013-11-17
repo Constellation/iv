@@ -17,21 +17,21 @@ class Singleton : private core::Noncopyable<T> {
 
  private:
   static void Initialize() {
-    assert(instance_ == NULL);
+    assert(instance_ == nullptr);
     instance_ = new T;
     std::atexit(&Singleton<T>::Destroy);
   }
 
   static void Destroy() {
     delete instance_;
-    instance_ = NULL;
+    instance_ = nullptr;
   }
 
   static T* instance_;
 };
 
 template<class T>
-T* Singleton<T>::instance_ = NULL;
+T* Singleton<T>::instance_ = nullptr;
 
 } }  // namespace iv::core
 #endif  // IV_SINGLETON_H_

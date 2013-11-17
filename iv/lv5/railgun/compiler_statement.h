@@ -312,7 +312,7 @@ inline void Compiler::Visit(const ForStatement* stmt) {
 inline void Compiler::Visit(const ForInStatement* stmt) {
   ContinueTarget jump(this, stmt);
 
-  const Expression* lhs = NULL;
+  const Expression* lhs = nullptr;
   Symbol for_decl = symbol::kDummySymbol;
   if (const VariableStatement* var = stmt->each()->AsVariableStatement()) {
     const Declaration* decl = var->decls().front();

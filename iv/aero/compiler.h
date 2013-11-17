@@ -495,7 +495,7 @@ inline Code* Compile(core::Space* space,
   Parser<core::UStringPiece> parser(space, pattern, flags);
   ParsedData data = parser.ParsePattern(error);
   if (*error) {
-    return NULL;
+    return nullptr;
   }
   Compiler compiler(flags);
   return compiler.Compile(data);
@@ -508,7 +508,7 @@ inline Code* Compile(core::Space* space,
   Parser<core::StringPiece> parser(space, pattern, flags);
   ParsedData data = parser.ParsePattern(error);
   if (*error) {
-    return NULL;
+    return nullptr;
   }
   Compiler compiler(flags);
   return compiler.Compile(data);

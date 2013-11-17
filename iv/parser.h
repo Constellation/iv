@@ -27,7 +27,7 @@
     if (token_ != token) {\
       *res = false;\
       ReportUnexpectedToken(token);\
-      return NULL;\
+      return nullptr;\
     }\
   } while (0)
 
@@ -44,7 +44,7 @@
     return value;\
   } while (0)
 
-#define IV_UNEXPECT(token) IV_UNEXPECT_WITH(token, NULL)
+#define IV_UNEXPECT(token) IV_UNEXPECT_WITH(token, nullptr)
 
 #define IV_RAISE_IMPL(str, line, value)\
   do {\
@@ -56,15 +56,15 @@
   } while (0)
 
 #define IV_RAISE_WITH(str, v) IV_RAISE_IMPL(str, lexer_.line_number(), v)
-#define IV_RAISE_NUMBER(str, line) IV_RAISE_IMPL(str, line, NULL)
-#define IV_RAISE(str) IV_RAISE_WITH(str, NULL)
+#define IV_RAISE_NUMBER(str, line) IV_RAISE_IMPL(str, line, nullptr)
+#define IV_RAISE(str) IV_RAISE_WITH(str, nullptr)
 
 #define IV_RAISE_RECOVERABLE(str)\
   do {\
     *res = false;\
     SetErrorHeader(lexer_.line_number());\
     error_.append(str);\
-    return NULL;\
+    return nullptr;\
   } while (0)
 
 
@@ -76,7 +76,7 @@
 #define IV_DUMMY )  // to make indentation work
 #undef IV_DUMMY
 
-#define IV_CHECK IV_CHECK_WITH(NULL)
+#define IV_CHECK IV_CHECK_WITH(nullptr)
 
 namespace iv {
 namespace core {
@@ -123,10 +123,10 @@ class Parser : private Noncopyable<> {
       : parser_(parser),
         prev_(parser->target()),
         labels_(parser->labels()),
-        node_(NULL),
+        node_(nullptr),
         type_(type) {
       parser_->set_target(this);
-      parser_->set_labels(NULL);
+      parser_->set_labels(nullptr);
     }
     ~Target() {
       parser_->set_target(prev_);
@@ -172,8 +172,8 @@ class Parser : private Noncopyable<> {
       : parser_(parser),
         target_(parser->target()),
         labels_(parser->labels()) {
-      parser_->set_target(NULL);
-      parser_->set_labels(NULL);
+      parser_->set_target(nullptr);
+      parser_->set_labels(nullptr);
     }
     ~TargetSwitcher() {
       parser_->set_target(target_);
@@ -192,12 +192,12 @@ class Parser : private Noncopyable<> {
       reference_error_(false),
       error_state_(0),
       factory_(factory),
-      scope_(NULL),
-      environment_(NULL),
-      target_(NULL),
-      labels_(NULL),
+      scope_(nullptr),
+      environment_(nullptr),
+      target_(nullptr),
+      labels_(nullptr),
       table_(table),
-      last_parenthesized_(NULL) {
+      last_parenthesized_(nullptr) {
   }
 
 // Program
@@ -207,7 +207,7 @@ class Parser : private Noncopyable<> {
     Statements* body = factory_->template NewVector<Statement*>();
     Scope* const scope = factory_->NewScope(FunctionLiteral::GLOBAL, params);
     FunctionEnvironment<Scope> environment(environment_, &environment_, scope);
-    assert(target_ == NULL);
+    assert(target_ == nullptr);
     bool error_flag = true;
     bool *res = &error_flag;
     const ScopeSwitcher scope_switcher(this, scope);
@@ -215,10 +215,10 @@ class Parser : private Noncopyable<> {
     const bool strict = ParseSourceElements(Token::TK_EOS, body, IV_CHECK);
     const std::size_t end_position = lexer_.end_position();
     scope->set_strict(strict);
-    environment.Resolve(NULL);
+    environment.Resolve(nullptr);
     return (error_flag) ?
         factory_->NewFunctionLiteral(FunctionLiteral::GLOBAL,
-                                     NULL,
+                                     nullptr,
                                      params,
                                      body,
                                      scope,
@@ -227,7 +227,7 @@ class Parser : private Noncopyable<> {
                                      end_position,
                                      0,
                                      end_position,
-                                     1) : NULL;
+                                     1) : nullptr;
   }
 
 // SourceElements
@@ -529,7 +529,7 @@ class Parser : private Noncopyable<> {
         decl = factory_->NewDeclaration(name, expr);
       } else {
         // Undefined Expression
-        decl = factory_->NewDeclaration(name, NULL);
+        decl = factory_->NewDeclaration(name, nullptr);
       }
       decls->push_back(decl);
       scope_->AddUnresolved(name, is_const);
@@ -555,7 +555,7 @@ class Parser : private Noncopyable<> {
     assert(token_ == Token::TK_IF);
     const std::size_t begin = lexer_.begin_position();
     const std::size_t line_number = lexer_.line_number();
-    Statement* else_statement = NULL;
+    Statement* else_statement = nullptr;
     Next();
 
     IV_EXPECT(Token::TK_LPAREN);
@@ -665,7 +665,7 @@ class Parser : private Noncopyable<> {
 
     IV_EXPECT(Token::TK_LPAREN);
 
-    Statement *init = NULL;
+    Statement *init = nullptr;
 
     if (token_ != Token::TK_SEMICOLON) {
       if (token_ == Token::TK_VAR || token_ == Token::TK_CONST) {
@@ -747,7 +747,7 @@ class Parser : private Noncopyable<> {
     // ordinary for loop
     IV_EXPECT(Token::TK_SEMICOLON);
 
-    Expression* cond = NULL;
+    Expression* cond = nullptr;
     if (token_ == Token::TK_SEMICOLON) {
       // no cond expr
       Next();
@@ -756,7 +756,7 @@ class Parser : private Noncopyable<> {
       IV_EXPECT(Token::TK_SEMICOLON);
     }
 
-    Expression* next = NULL;
+    Expression* next = nullptr;
     if (token_ == Token::TK_RPAREN) {
       Next();
     } else {
@@ -813,7 +813,7 @@ class Parser : private Noncopyable<> {
     const std::size_t begin = lexer_.begin_position();
     const std::size_t line_number = lexer_.line_number();
     ast::SymbolHolder label;
-    BreakableStatement** target = NULL;
+    BreakableStatement** target = nullptr;
     Next();
     if (token_ == Token::TK_IDENTIFIER &&
         !lexer_.has_line_terminator_before_next()) {
@@ -864,7 +864,7 @@ class Parser : private Noncopyable<> {
       IV_RAISE("\"return\" not in function");
     }
 
-    Expression* expr = NULL;
+    Expression* expr = nullptr;
     if (!IsAutomaticSemicolonInserted()) {
       expr = ParseExpression(true, IV_CHECK);
     }
@@ -895,7 +895,7 @@ class Parser : private Noncopyable<> {
 
     IV_EXPECT(Token::TK_RPAREN);
 
-    Statement* stmt = NULL;
+    Statement* stmt = nullptr;
     {
       WithEnvironment environment(environment_, &environment_);
       stmt = ParseStatement(IV_CHECK);
@@ -969,7 +969,7 @@ class Parser : private Noncopyable<> {
     assert(token_ == Token::TK_CASE || token_ == Token::TK_DEFAULT);
     const std::size_t begin = lexer_.begin_position();
     const std::size_t line_number = lexer_.line_number();
-    Expression* expr = NULL;
+    Expression* expr = nullptr;
     Statements* const body = factory_->template NewVector<Statement*>();
 
     if (token_ == Token::TK_CASE) {
@@ -989,7 +989,7 @@ class Parser : private Noncopyable<> {
     }
 
     assert(body);
-    return factory_->NewCaseClause(expr == NULL,
+    return factory_->NewCaseClause(expr == nullptr,
                                    expr,
                                    body,
                                    begin,
@@ -1032,9 +1032,9 @@ class Parser : private Noncopyable<> {
     assert(token_ == Token::TK_TRY);
     const std::size_t begin = lexer_.begin_position();
     const std::size_t line_number = lexer_.line_number();
-    Block* catch_block = NULL;
-    Block* finally_block = NULL;
-    Assigned* name = NULL;
+    Block* catch_block = nullptr;
+    Block* finally_block = nullptr;
+    Assigned* name = nullptr;
     bool has_catch_or_finally = false;
 
     Next();
@@ -1717,7 +1717,7 @@ class Parser : private Noncopyable<> {
 //    | STRING
 //    | REGEXP
   Expression* ParsePrimaryExpression(bool *res) {
-    Expression* result = NULL;
+    Expression* result = nullptr;
     switch (token_) {
       case Token::TK_FUNCTION:
         result = ParseFunctionLiteral(FunctionLiteral::EXPRESSION,
@@ -1879,7 +1879,7 @@ class Parser : private Noncopyable<> {
     while (token_ != Token::TK_RBRACK) {
       if (token_ == Token::TK_COMMA) {
         // when Token::TK_COMMA, only increment length
-        items->push_back(NULL);
+        items->push_back(nullptr);
         is_primitive_constant_array = false;
       } else {
         Expression* const expr = ParseAssignmentExpression(true, IV_CHECK);
@@ -2056,7 +2056,7 @@ class Parser : private Noncopyable<> {
     } throw_error_if_strict_code = kDetectNone;
 
     Assigneds* const params = factory_->template NewVector<Assigned*>();
-    Assigned* name = NULL;
+    Assigned* name = nullptr;
 
     if (arg_type == FunctionLiteral::GENERAL) {
       assert(token_ == Token::TK_FUNCTION);
@@ -2216,7 +2216,7 @@ class Parser : private Noncopyable<> {
     Next();
     const std::size_t end_block_position = lexer_.previous_end_position();
     scope->set_strict(function_is_strict);
-    environment.Resolve((name && name->immutable()) ? name : NULL);
+    environment.Resolve((name && name->immutable()) ? name : nullptr);
     assert(params && body && scope);
     return factory_->NewFunctionLiteral(decl_type,
                                         name,
@@ -2306,7 +2306,7 @@ class Parser : private Noncopyable<> {
       return true;
     }
     for (const Target* target = target_;
-         target != NULL; target = target->previous()) {
+         target != nullptr; target = target->previous()) {
       if (ContainsLabel(target->labels(), label)) {
         return true;
       }
@@ -2316,42 +2316,42 @@ class Parser : private Noncopyable<> {
 
   BreakableStatement** LookupBreakableTarget(Symbol label) const {
     for (Target* target = target_;
-         target != NULL; target = target->previous()) {
+         target != nullptr; target = target->previous()) {
       if (ContainsLabel(target->labels(), label)) {
         return target->node();
       }
     }
-    return NULL;
+    return nullptr;
   }
 
   BreakableStatement** LookupBreakableTarget() const {
     for (Target* target = target_;
-         target != NULL; target = target->previous()) {
+         target != nullptr; target = target->previous()) {
       if (target->IsAnonymous()) {
         return target->node();
       }
     }
-    return NULL;
+    return nullptr;
   }
 
   IterationStatement** LookupContinuableTarget(Symbol label) const {
     for (Target* target = target_;
-         target != NULL; target = target->previous()) {
+         target != nullptr; target = target->previous()) {
       if (target->IsIteration() && ContainsLabel(target->labels(), label)) {
         return reinterpret_cast<IterationStatement**>(target->node());
       }
     }
-    return NULL;
+    return nullptr;
   }
 
   IterationStatement** LookupContinuableTarget() const {
     for (Target* target = target_;
-         target != NULL; target = target->previous()) {
+         target != nullptr; target = target->previous()) {
       if (target->IsIteration()) {
         return reinterpret_cast<IterationStatement**>(target->node());
       }
     }
-    return NULL;
+    return nullptr;
   }
 
   void SetErrorHeader(std::size_t line) {
@@ -2482,7 +2482,7 @@ class Parser : private Noncopyable<> {
       parser_->set_scope(scope);
     }
     ~ScopeSwitcher() {
-      assert(parser_->scope() != NULL);
+      assert(parser_->scope() != nullptr);
       parser_->set_scope(parser_->scope()->GetUpperScope());
     }
    private:
@@ -2503,7 +2503,7 @@ class Parser : private Noncopyable<> {
     }
     ~LabelSwitcher() {
       if (newly_created_) {
-        parser_->set_labels(NULL);
+        parser_->set_labels(nullptr);
         delete labels_;
       }
     }

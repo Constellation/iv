@@ -15,7 +15,7 @@ TEST(XorshiftCase, Test) {
 TEST(XorshiftCase, DistIntTest) {
   typedef iv::core::Xor128 engine_type;
   typedef iv::core::Uniform32RandomGenerator<engine_type, int> generator;
-  generator gen(0, 100, std::time(NULL));
+  generator gen(0, 100, std::time(nullptr));
   for (int i = 0; i < 10000000; ++i) {
     const int res = gen.get();
     ASSERT_LE(0, res);
@@ -26,7 +26,7 @@ TEST(XorshiftCase, DistIntTest) {
 TEST(XorshiftCase, DistRealTest) {
   typedef iv::core::Xor128 engine_type;
   typedef iv::core::UniformRandomGenerator<engine_type> generator;
-  generator gen(0.0, 1.0, std::time(NULL));
+  generator gen(0.0, 1.0, std::time(nullptr));
   for (int i = 0; i < 10000000; ++i) {
     const double res = gen.get();
     ASSERT_LE(0.0, res);

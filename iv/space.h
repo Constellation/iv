@@ -47,7 +47,7 @@ class SpaceAllocator {
     typedef SpaceAllocator<Factory, U> other;
   };
 
-  SpaceAllocator() : space_(NULL) { }
+  SpaceAllocator() : space_(nullptr) { }
   explicit SpaceAllocator(Factory* factory) throw() : space_(factory) { }
 
   template<class U>

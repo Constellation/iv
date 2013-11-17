@@ -15,7 +15,7 @@ TEST(MT19937Case, Test) {
 TEST(MT19937Case, DistIntTest) {
   typedef iv::core::MT19937 engine_type;
   typedef iv::core::Uniform32RandomGenerator<engine_type, int> generator;
-  generator gen(0, 100, std::time(NULL));
+  generator gen(0, 100, std::time(nullptr));
   for (int i = 0; i < 10000000; ++i) {
     const int res = gen.get();
     ASSERT_LE(0, res);
@@ -26,7 +26,7 @@ TEST(MT19937Case, DistIntTest) {
 TEST(MT19937Case, DistRealTest) {
   typedef iv::core::MT19937 engine_type;
   typedef iv::core::UniformRandomGenerator<engine_type> generator;
-  generator gen(0.0, 1.0, std::time(NULL));
+  generator gen(0.0, 1.0, std::time(nullptr));
   for (int i = 0; i < 10000000; ++i) {
     const double res = gen.get();
     ASSERT_LE(0.0, res);

@@ -17,7 +17,7 @@ class SymbolTable {
       : rep_(),
         size_(piece.size()),
         is_8bit_(false),
-        pointer_(NULL) {
+        pointer_(nullptr) {
       rep_.rep16_ = piece.data();
     }
 
@@ -25,7 +25,7 @@ class SymbolTable {
       : rep_(),
         size_(piece.size()),
         is_8bit_(true),
-        pointer_(NULL) {
+        pointer_(nullptr) {
       rep_.rep8_ = piece.data();
     }
 

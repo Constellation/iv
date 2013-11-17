@@ -16,7 +16,7 @@ inline Context::Context()
     RAX_(),
     direct_eval_map_(10),
     iterator_cache_(),
-    global_map_cache_(NULL) {
+    global_map_cache_(nullptr) {
   Init();
 }
 
@@ -26,7 +26,7 @@ inline Context::Context(JSAPI function_constructor, JSAPI global_eval)
     RAX_(),
     direct_eval_map_(10),
     iterator_cache_(),
-    global_map_cache_(NULL) {
+    global_map_cache_(nullptr) {
   Init();
 }
 
@@ -34,7 +34,7 @@ inline void Context::Init() {
   RegisterStack(vm_.stack());
   global_map_cache_ = new(GC)MapCache();
   {
-    const MapCacheKey key(reinterpret_cast<Map*>(NULL), symbol::kDummySymbol);
+    const MapCacheKey key(static_cast<Map*>(nullptr), symbol::kDummySymbol);
     const MapCacheEntry entry(key, core::kNotFound32);
     std::fill_n(global_map_cache_->begin(), global_map_cache_->size(), entry);
   }

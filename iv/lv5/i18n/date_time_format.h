@@ -16,7 +16,7 @@ class JSDateTimeFormatHolder : public JSObject {
   explicit JSDateTimeFormatHolder(Context* ctx)
     : JSObject(Map::NewUniqueMap(ctx, ctx->global_data()->object_prototype(), false)),
       format_(new FormatHandle()),
-      bound_(NULL) { }
+      bound_(nullptr) { }
 
   static JSDateTimeFormatHolder* New(Context* ctx,
                                      core::i18n::DateTimeFormat* number_format) {
@@ -69,7 +69,7 @@ class JSDateTimeFormatBoundFunction : public JSFunction {
     return JSEmpty;
   }
 
-  virtual JSAPI NativeFunction() const { return NULL; }
+  virtual JSAPI NativeFunction() const { return nullptr; }
 
   static JSDateTimeFormatBoundFunction* New(Context* ctx, JSDateTimeFormatHolder* format) {
     return new JSDateTimeFormatBoundFunction(ctx, format);
@@ -82,12 +82,12 @@ class JSDateTimeFormatBoundFunction : public JSFunction {
     Error::Dummy dummy;
     DefineOwnProperty(
         ctx, symbol::length(),
-        DataDescriptor(JSVal::UInt32(1u), ATTR::NONE), false, NULL);
+        DataDescriptor(JSVal::UInt32(1u), ATTR::NONE), false, nullptr);
     DefineOwnProperty(
         ctx, symbol::name(),
         DataDescriptor(
             JSString::NewAsciiString(ctx, "format", &dummy),
-            ATTR::NONE), false, NULL);
+            ATTR::NONE), false, nullptr);
   }
 
   JSDateTimeFormatHolder* format_;
@@ -99,18 +99,18 @@ inline JSObject* InitializeDateTimeFormat(Context* ctx,
                                           JSVal locales, JSVal op, Error* e) {
   if (format->HasOwnProperty(ctx, ctx->i18n()->symbols().initializedIntlObject())) {
     e->Report(Error::Type, "object has been already initialized as Intl group object");
-    return NULL;
+    return nullptr;
   }
 
   format->DefineOwnProperty(
       ctx,
       ctx->i18n()->symbols().initializedIntlObject(),
       DataDescriptor(JSTrue, ATTR::N),
-      false, IV_LV5_ERROR_WITH(e, NULL));
+      false, IV_LV5_ERROR_WITH(e, nullptr));
 
-  JSVector* requested_locales = CanonicalizeLocaleList(ctx, locales, IV_LV5_ERROR_WITH(e, NULL));
+  JSVector* requested_locales = CanonicalizeLocaleList(ctx, locales, IV_LV5_ERROR_WITH(e, nullptr));
 
-  JSObject* o = ToDateTimeOptions(ctx, op, DATE_ANY, DATE_DATE, IV_LV5_ERROR_WITH(e, NULL));
+  JSObject* o = ToDateTimeOptions(ctx, op, DATE_ANY, DATE_DATE, IV_LV5_ERROR_WITH(e, nullptr));
 
   JSObject* opt = JSObject::New(ctx);
 
@@ -122,13 +122,13 @@ inline JSObject* InitializeDateTimeFormat(Context* ctx,
     "lookup",
     "best fit"
   } };
-  JSString* matcher = options.GetString(ctx, symbol::localeMatcher(), k6.begin(), k6.end(), "best fit", IV_LV5_ERROR_WITH(e, NULL));
+  JSString* matcher = options.GetString(ctx, symbol::localeMatcher(), k6.begin(), k6.end(), "best fit", IV_LV5_ERROR_WITH(e, nullptr));
 
   opt->DefineOwnProperty(
       ctx,
       symbol::localeMatcher(),
       DataDescriptor(matcher, ATTR::N),
-      false, IV_LV5_ERROR_WITH(e, NULL));
+      false, IV_LV5_ERROR_WITH(e, nullptr));
 
   const core::i18n::LookupResult result =
       detail_i18n::ResolveLocale(
@@ -137,7 +137,7 @@ inline JSObject* InitializeDateTimeFormat(Context* ctx,
           core::i18n::DateTimeFormat::AvailableLocales().end(),
           requested_locales,
           opt,
-          IV_LV5_ERROR_WITH(e, NULL));
+          IV_LV5_ERROR_WITH(e, nullptr));
 
   // get [[localeData]]
   const core::i18n::DateTimeFormat::Data* locale =
@@ -149,9 +149,9 @@ inline JSObject* InitializeDateTimeFormat(Context* ctx,
   core::i18n::TimeZone::Type tz = core::i18n::TimeZone::UNSPECIFIED;
   {
     const JSVal time_zone =
-        options.options()->Get(ctx, symbol::timeZone(), IV_LV5_ERROR_WITH(e, NULL));
+        options.options()->Get(ctx, symbol::timeZone(), IV_LV5_ERROR_WITH(e, nullptr));
     if (!time_zone.IsUndefined()) {
-      JSString* str = time_zone.ToString(ctx, IV_LV5_ERROR_WITH(e, NULL));
+      JSString* str = time_zone.ToString(ctx, IV_LV5_ERROR_WITH(e, nullptr));
       std::vector<uint16_t> vec;
       for (JSString::const_iterator it = str->begin(),
            last = str->end(); it != last; ++it) {
@@ -159,13 +159,13 @@ inline JSObject* InitializeDateTimeFormat(Context* ctx,
       }
       if (vec.size() != 3 || vec[0] != 'U' || vec[1] != 'T' || vec[2] != 'C') {
         e->Report(Error::Range, "timeZone is not UTC");
-        return NULL;
+        return nullptr;
       }
       tz = core::i18n::TimeZone::UTC;
     }
   }
 
-  const bool hour12 = options.GetBoolean(ctx, symbol::hour12(), locale->hour12, IV_LV5_ERROR_WITH(e, NULL));
+  const bool hour12 = options.GetBoolean(ctx, symbol::hour12(), locale->hour12, IV_LV5_ERROR_WITH(e, nullptr));
 
   core::i18n::DateTimeFormat::FormatOptions set = { {  } };
   {
@@ -179,7 +179,7 @@ inline JSObject* InitializeDateTimeFormat(Context* ctx,
           options.GetString(
               ctx, prop,
               it->values.begin(), it->values.begin() + it->size,
-              NULL, IV_LV5_ERROR_WITH(e, NULL));
+              nullptr, IV_LV5_ERROR_WITH(e, nullptr));
       if (str) {
         set[i] =
             core::i18n::DateTimeFormat::ToFormatValue(str->begin(), str->end());
@@ -193,13 +193,13 @@ inline JSObject* InitializeDateTimeFormat(Context* ctx,
     "best fit"
   } };
   JSString* format_matcher = options.GetString(
-      ctx, symbol::formatMatcher(), k24.begin(), k24.end(), "best fit", IV_LV5_ERROR_WITH(e, NULL));
+      ctx, symbol::formatMatcher(), k24.begin(), k24.end(), "best fit", IV_LV5_ERROR_WITH(e, nullptr));
 
   core::i18n::DateTimeFormat::FormatOptions best_format = { { } };
   if (format_matcher->compare("basic") == 0) {
-    BasicFormatMatcher(ctx, set, *locale, &best_format, IV_LV5_ERROR_WITH(e, NULL));
+    BasicFormatMatcher(ctx, set, *locale, &best_format, IV_LV5_ERROR_WITH(e, nullptr));
   } else {
-    BestFitFormatMatcher(ctx, set, *locale, &best_format, IV_LV5_ERROR_WITH(e, NULL));
+    BestFitFormatMatcher(ctx, set, *locale, &best_format, IV_LV5_ERROR_WITH(e, nullptr));
   }
 
   // step 28 is done in best_format
@@ -219,7 +219,7 @@ inline JSObject* InitializeDateTimeFormat(Context* ctx,
       ctx,
       ctx->i18n()->symbols().initializedDateTimeFormat(),
       DataDescriptor(f, ATTR::N),
-      false, IV_LV5_ERROR_WITH(e, NULL));
+      false, IV_LV5_ERROR_WITH(e, nullptr));
 
   return format;
 }

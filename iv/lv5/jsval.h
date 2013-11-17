@@ -686,7 +686,7 @@ inline JSObject* JSLayout::GetPrimitiveProto(Context* ctx) const {
 inline JSObject* JSLayout::ToObject(Context* ctx, Error* e) const {
   if (IsNullOrUndefined()) {
     e->Report(Error::Type, "ToObject to null or undefined");
-    return NULL;
+    return nullptr;
   } else {
     return ToObject(ctx);
   }
@@ -730,11 +730,11 @@ inline JSString* JSLayout::ToString(Context* ctx, Error* e) const {
     return ctx->global_data()->string_undefined();
   } else if (IsSymbol()) {
     e->Report(Error::Type, "Cannot perform ToString operation on Symbols");
-    return NULL;
+    return nullptr;
   } else {
     assert(IsObject());
     JSLayout prim =
-        object()->DefaultValue(ctx, Hint::STRING, IV_LV5_ERROR_WITH(e, NULL));
+        object()->DefaultValue(ctx, Hint::STRING, IV_LV5_ERROR_WITH(e, nullptr));
     return prim.ToString(ctx, e);
   }
 }
@@ -1059,7 +1059,7 @@ inline CompareResult JSVal::Compare(Context* ctx,
 inline JSVal JSVal::GetSlot(Context* ctx,
                             Symbol name, Slot* slot, Error* e) const {
   if (!IsObject()) {
-    JSObject* proto = NULL;
+    JSObject* proto = nullptr;
     if (IsNullOrUndefined()) {
       e->Report(Error::Type, "null or undefined has no properties");
       return JSEmpty;
@@ -1098,7 +1098,7 @@ inline JSVal JSVal::GetSlot(Context* ctx,
 
 inline bool JSVal::GetPropertySlot(Context* ctx,
                                    Symbol name, Slot* slot, Error* e) const {
-  JSObject* obj = NULL;
+  JSObject* obj = nullptr;
   if (!IsObject()) {
     if (IsNullOrUndefined()) {
       e->Report(Error::Type, "null or undefined has no properties");

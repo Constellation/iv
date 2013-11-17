@@ -68,7 +68,7 @@ inline Map* JSFunction::construct_map(Context* ctx, Error* e) {
     return construct_map_;
   }
   Slot slot;
-  const JSVal res = GetNonIndexedSlot(ctx, symbol::prototype(), &slot, IV_LV5_ERROR_WITH(e, NULL));
+  const JSVal res = GetNonIndexedSlot(ctx, symbol::prototype(), &slot, IV_LV5_ERROR_WITH(e, nullptr));
 
   Map* map = Map::New(ctx, res.IsObject() ? res.object() : ctx->global_data()->object_prototype(), false);
   // no side effect and own prototype
@@ -89,7 +89,7 @@ inline bool JSFunction::DefineOwnNonIndexedPropertySlotMethod(JSObject* obj,
   JSFunction* function = static_cast<JSFunction*>(obj);
   if (name == symbol::prototype()) {
     // prototype override
-    function->construct_map_ = NULL;
+    function->construct_map_ = nullptr;
     slot->MakePutUnCacheable();
   }
   return JSObject::DefineOwnNonIndexedPropertySlotMethod(obj, ctx, name, desc, slot, throwable, e);

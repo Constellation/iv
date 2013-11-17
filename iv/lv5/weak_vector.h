@@ -24,7 +24,7 @@ class WeakVector : public gc_cleanup, private core::Noncopyable<WeakVector<T> > 
   typedef WeakVector<T> this_type;
 
   WeakVector(size_type n)
-    : data_(NULL),
+    : data_(nullptr),
       size_(n) {
     data_ = static_cast<value_type*>(GC_MALLOC_ATOMIC(sizeof(value_type) * size()));
   }

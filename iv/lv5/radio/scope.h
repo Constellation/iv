@@ -12,7 +12,7 @@ class Scope : private core::Noncopyable<Scope> {
   friend class Core;
   explicit Scope(Core* core)
     : core_(core),
-      reserved_(NULL),
+      reserved_(nullptr),
       current_() {
     core_->EnterScope(this);
   }
@@ -28,7 +28,7 @@ class Scope : private core::Noncopyable<Scope> {
   }
 
   JSVal Close(JSVal val) {
-    reserved_ = val.IsCell() ? val.cell() : NULL;
+    reserved_ = val.IsCell() ? val.cell() : nullptr;
     return val;
   }
 

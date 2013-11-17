@@ -152,7 +152,7 @@ class DateTimeFormat : public DateTimeFormatConstants {
         NumberFormat::Lookup(res.locale());
 
     // relevantExtensionKeys are ['nu']
-    const NumberingSystem::Data* nnu = NULL;
+    const NumberingSystem::Data* nnu = nullptr;
     {
       typedef LookupResult::UnicodeExtensions Ext;
       const Ext::const_iterator key =
@@ -177,7 +177,7 @@ class DateTimeFormat : public DateTimeFormatConstants {
             0,
             3,
             nnu,
-            NULL,
+            nullptr,
             Currency::NAME,
             false));
     nf2_.reset(
@@ -190,7 +190,7 @@ class DateTimeFormat : public DateTimeFormatConstants {
             0,
             3,
             nnu,
-            NULL,
+            nullptr,
             Currency::NAME,
             false));
   }
@@ -206,7 +206,7 @@ class DateTimeFormat : public DateTimeFormatConstants {
     if (it != Map().end()) {
       return it->second;
     }
-    return NULL;
+    return nullptr;
   }
 
   // section 12.3.2 Intl.DateTimeFormat.prototype.format

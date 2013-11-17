@@ -58,9 +58,9 @@ class WeakBox : core::Noncopyable<WeakBox<T> > {
 
   bool IsCollected() const { return registered_ && !get(); };
 
-  static this_type* New(T* ptr = NULL) {
+  static this_type* New(T* ptr = nullptr) {
     this_type* box = static_cast<this_type*>(GC_MALLOC_ATOMIC(sizeof(this_type)));
-    box->data_ = NULL;
+    box->data_ = nullptr;
     box->registered_ = false;
     if (ptr) {
       box->set(ptr);

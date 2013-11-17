@@ -116,8 +116,8 @@ class NumberFormat {
                int minimum_integer_digits = kUnspecified,
                int minimum_fraction_digits = kUnspecified,
                int maximum_fraction_digits = kUnspecified,
-               const NumberingSystem::Data* numbering_system = NULL,
-               const Currency::Data* currency = NULL,
+               const NumberingSystem::Data* numbering_system = nullptr,
+               const Currency::Data* currency = nullptr,
                Currency::Display currency_display = Currency::NAME,
                bool use_grouping = false)
     : data_(data),
@@ -390,7 +390,7 @@ class NumberFormat {
     if (it != Map().end()) {
       return it->second;
     }
-    return NULL;
+    return nullptr;
   }
 
  private:

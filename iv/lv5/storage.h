@@ -29,18 +29,18 @@ class FixedStorage {
   typedef FixedStorage<T> this_type;
 
   FixedStorage(size_type n, value_type v = value_type())
-    : data_(NULL),
+    : data_(nullptr),
       capacity_(0) {
     resize(n, v);
   }
 
   FixedStorage()
-    : data_(NULL),
+    : data_(nullptr),
       capacity_(0) {
   }
 
   FixedStorage(const this_type& v)
-    : data_(NULL),
+    : data_(nullptr),
       capacity_(0) {
     const std::size_t size = std::distance(v.begin(), v.end());
     reserve(size);
@@ -134,20 +134,20 @@ class Storage {
   }
 
   Storage(size_type n, value_type v = value_type())
-    : data_(NULL),
+    : data_(nullptr),
       size_(0),
       capacity_(0) {
     resize(n, v);
   }
 
   Storage()
-    : data_(NULL),
+    : data_(nullptr),
       size_(0),
       capacity_(0) {
   }
 
   Storage(const this_type& v)
-    : data_(NULL),
+    : data_(nullptr),
       size_(0),
       capacity_(0) {
     assign(v.begin(), v.end());

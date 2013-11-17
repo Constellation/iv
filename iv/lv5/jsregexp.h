@@ -44,19 +44,19 @@ class JSRegExp : public JSObject {
                        const core::UStringPiece& value,
                        const JSRegExpImpl* impl,
                        Error* e) {
-    JSRegExp* const reg = new JSRegExp(ctx, value, impl, IV_LV5_ERROR_WITH(e, NULL));
+    JSRegExp* const reg = new JSRegExp(ctx, value, impl, IV_LV5_ERROR_WITH(e, nullptr));
     reg->set_cls(JSRegExp::GetClass());
     return reg;
   }
 
   static JSRegExp* New(Context* ctx, JSString* value, Error* e) {
-    JSRegExp* const reg = new JSRegExp(ctx, value, IV_LV5_ERROR_WITH(e, NULL));
+    JSRegExp* const reg = new JSRegExp(ctx, value, IV_LV5_ERROR_WITH(e, nullptr));
     reg->set_cls(JSRegExp::GetClass());
     return reg;
   }
 
   static JSRegExp* New(Context* ctx, JSString* value, JSString* flags, Error* e) {
-    JSRegExp* const reg = new JSRegExp(ctx, value, flags, IV_LV5_ERROR_WITH(e, NULL));
+    JSRegExp* const reg = new JSRegExp(ctx, value, flags, IV_LV5_ERROR_WITH(e, nullptr));
     reg->set_cls(JSRegExp::GetClass());
     return reg;
   }

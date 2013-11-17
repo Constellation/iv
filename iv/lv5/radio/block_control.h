@@ -16,7 +16,7 @@ class Block;
 class BlockControl : private core::Noncopyable<BlockControl> {
  public:
   BlockControl()
-    : size_(0), block_(NULL), free_cells_(NULL) { }
+    : size_(0), block_(nullptr), free_cells_(nullptr) { }
 
   void Initialize(std::size_t size) {
     size_ = size;

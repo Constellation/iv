@@ -30,9 +30,9 @@ class Context : public iv::lv5::Context {
       binding_(global_data()->global_obj()),
       mode_(NORMAL),
       ret_(),
-      target_(NULL),
+      target_(nullptr),
       generate_script_counter_(0),
-      current_script_(NULL),
+      current_script_(nullptr),
       strict_(false),
       stack_resource_() {
     RegisterStack(stack_resource_.stack());

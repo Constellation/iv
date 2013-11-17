@@ -100,7 +100,7 @@ class Interactive {
       } else {
         std::fprintf(stderr, "%s\n", parser.error().c_str());
       }
-      return NULL;
+      return nullptr;
     }
     JSScript* script = JSSourceScript<core::FileSource>::New(&ctx_, src);
     return CompileIndirectEval(&ctx_, *eval, script);

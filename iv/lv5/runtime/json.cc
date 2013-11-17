@@ -112,8 +112,8 @@ JSVal JSONStringify(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("JSON.stringify", args, e);
   Context* const ctx = args.ctx();
   trace::Vector<JSString*>::type property_list;
-  trace::Vector<JSString*>::type* maybe = NULL;
-  JSFunction* replacer_function = NULL;
+  trace::Vector<JSString*>::type* maybe = nullptr;
+  JSFunction* replacer_function = nullptr;
   const JSVal value(args.At(0));
   const JSVal replacer(args.At(1));
   JSVal space(args.At(2));
@@ -129,7 +129,7 @@ JSVal JSONStringify(const Arguments& args, Error* e) {
       for (uint32_t i = 0; i < len; ++i) {
         const JSVal v =
             rep->Get(ctx, symbol::MakeSymbolFromIndex(i), IV_LV5_ERROR(e));
-        JSString* item = NULL;
+        JSString* item = nullptr;
         if (v.IsString()) {
           item = v.string();
         } else if (v.IsNumber()) {

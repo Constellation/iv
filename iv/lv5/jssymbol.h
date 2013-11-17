@@ -29,7 +29,7 @@ class JSSymbol : public JSCell {
   }
  private:
   JSSymbol(Context* ctx, JSVal description)
-    : JSCell(radio::SYMBOL, ctx->global_data()->primitive_symbol_map(), NULL),
+    : JSCell(radio::SYMBOL, ctx->global_data()->primitive_symbol_map(), nullptr),
       symbol_(symbol::MakeGCPrivateSymbol(ctx, this)),
       description_(description) { }
 

@@ -174,7 +174,7 @@ inline const char* WeekDayToString(double t) {
 }
 
 inline int32_t GetLocalTZA() {
-  const std::time_t current = std::time(NULL);
+  const std::time_t current = std::time(nullptr);
   std::tm local;
   std::memcpy(&local, std::localtime(&current), sizeof(std::tm));  // NOLINT
   local.tm_sec = 0;

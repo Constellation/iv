@@ -479,7 +479,7 @@ inline void Compiler::Visit(const BinaryOperation* binary) {
 
     default: {
       if (token == Token::TK_ADD && Analyzer::IsString(binary)) {
-        dst_ = EmitConcat(binary, NULL, dst_);
+        dst_ = EmitConcat(binary, nullptr, dst_);
       } else {
         Thunk lv(&thunkpool_, EmitExpression(binary->left()));
         RegisterID rv = EmitExpression(binary->right());

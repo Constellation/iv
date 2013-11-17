@@ -7,7 +7,7 @@ class Checker {
  public:
   Checker(bool* target, std::size_t offset) : target_(target), offset_(offset) { }
 
-  Checker() : target_(NULL), offset_(0) { }
+  Checker() : target_(nullptr), offset_(0) { }
 
   ~Checker() {
     if (target_) {
@@ -42,7 +42,7 @@ TEST(ScopedPtrCase, ScopedPtrBoolTest) {
   }
   {
     iv::core::ScopedPtr<Checker> ptr;
-    EXPECT_TRUE(NULL == ptr.get());
+    EXPECT_TRUE(nullptr == ptr.get());
     EXPECT_FALSE(ptr);
   }
 }

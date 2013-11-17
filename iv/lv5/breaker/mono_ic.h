@@ -21,7 +21,7 @@ class GlobalIC : public MonoIC {
     : MonoIC(),
       map_position_(),
       offset_position_(),
-      map_(NULL),
+      map_(nullptr),
       strict_(strict) {
   }
 
@@ -29,7 +29,7 @@ class GlobalIC : public MonoIC {
     const Assembler::LocalLabelScope scope(as);
 
     as->mov(rax, core::BitCast<uint64_t>(global));
-    map_position_ = IC::TestMap(as, NULL, rax, rdx, ".SLOW");
+    map_position_ = IC::TestMap(as, nullptr, rax, rdx, ".SLOW");
 
     const uint32_t dummy32 = 0x7FFF0000;
     const std::ptrdiff_t data_offset =
@@ -55,7 +55,7 @@ class GlobalIC : public MonoIC {
     const Assembler::LocalLabelScope scope(as);
 
     as->mov(rcx, core::BitCast<uint64_t>(global));
-    map_position_ = IC::TestMap(as, NULL, rcx, rdx, ".SLOW");
+    map_position_ = IC::TestMap(as, nullptr, rcx, rdx, ".SLOW");
 
     const uint32_t dummy32 = 0x7FFF0000;
     const std::ptrdiff_t data_offset =

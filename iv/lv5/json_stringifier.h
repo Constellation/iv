@@ -32,7 +32,7 @@ class JSONStackScope : private core::Noncopyable<> {
     // cyclic check
     if (std::find(stack_->begin(), stack_->end(), obj) != stack_->end()) {
       e->Report(Error::Type, "JSON.stringify not allow cyclical structure");
-      stack_ = NULL;
+      stack_ = nullptr;
     } else {
       stack_->push_back(obj);
       // stack depth check

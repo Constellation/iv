@@ -100,7 +100,7 @@ struct Frame {
   }
 
   bool IsGlobalFrame() const {
-    return prev_ == NULL;
+    return prev_ == nullptr;
   }
 
   JSVal GetThis() const {
