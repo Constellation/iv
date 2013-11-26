@@ -37,6 +37,7 @@ add_library(liblv5 STATIC
     runtime/i18n.cc
     runtime/json.cc
     runtime/map.cc
+    runtime/map_iterator.cc
     runtime/math.cc
     runtime/number.cc
     runtime/object.cc

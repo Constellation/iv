@@ -1190,6 +1190,9 @@ void Context::InitMap(const ClassSlot& func_cls,
   bind::Object(this, constructor)
       .def(symbol::prototype(), proto, ATTR::NONE);
 
+  JSFunction* map_entries =
+     JSInlinedFunction<&runtime::MapEntries, 0>::New(this, Intern("entries"));
+
   bind::Object(this, proto)
       .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
       .def(global_data()->builtin_symbol_toStringTag(),
@@ -1199,9 +1202,37 @@ void Context::InitMap(const ClassSlot& func_cls,
       .def<&runtime::MapForEach, 1>("forEach")
       .def<&runtime::MapGet, 1>("get")
       .def<&runtime::MapHas, 1>("has")
+      .def<&runtime::MapKeys, 0>("keys")
       .def<&runtime::MapSet, 2>("set")
-      .def_getter<&runtime::MapSize, 0>("size");
+      .def_getter<&runtime::MapSize, 0>("size")
+      .def<&runtime::MapValues, 0>("values")
+      .def("entries", map_entries, ATTR::W | ATTR::C)
+      .def(global_data()->builtin_symbol_iterator(),
+           map_entries, ATTR::W | ATTR::C);
   global_data()->set_map_prototype(proto);
+
+  // Init MapIterator
+  JSObject* const map_iterator_proto = JSObject::New(this);
+  global_data()->map_iterator_map()->ChangePrototypeWithNoTransition(
+      map_iterator_proto);
+  bind::Object(this, map_iterator_proto)
+      // ES6
+      // section 23.1.5.2.1 %MapIteratorPrototype%.next()
+      .def<&runtime::MapIteratorNext, 0>("next")
+      // ES6
+      // section 23.1.5.2.2 %MapIteratorPrototype%[@@iterator]()
+      .def(global_data()->builtin_symbol_toPrimitive(),
+           JSInlinedFunction<
+             &runtime::MapIteratorIterator, 0>::New(
+                 this, Intern("[Symbol.iterator]")),
+             ATTR::W | ATTR::C)
+      // ES6
+      // section 23.1.5.2.3 %MapIteratorPrototype%[@@toStringTag]
+      .def(global_data()->builtin_symbol_toStringTag(),
+           JSString::NewAsciiString(this, "Map Iterator", &dummy),
+           ATTR::W | ATTR::C);
+  global_data()->set_map_iterator_prototype(map_iterator_proto);
+
 }
 
 void Context::InitWeakMap(const ClassSlot& func_cls,

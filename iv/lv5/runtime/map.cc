@@ -6,13 +6,14 @@
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsmap.h>
+#include <iv/lv5/jsmap_iterator.h>
 #include <iv/lv5/runtime/map.h>
 namespace iv {
 namespace lv5 {
 namespace runtime {
 
-// section 15.14.2.1 Map(iterable = [])
-// section 15.14.3.1 new Map (iterable = [])
+// 15.14.2.1 Map(iterable = [])
+// 15.14.3.1 new Map (iterable = [])
 JSVal MapConstructor(const Arguments& args, Error* e) {
   Context* ctx = args.ctx();
   const JSVal first = args.At(0);
@@ -29,7 +30,7 @@ JSVal MapConstructor(const Arguments& args, Error* e) {
   return JSMap::Initialize(ctx, map, first, IV_LV5_ERROR(e));
 }
 
-// section 15.14.5.2 Map.prototype.clear()
+// 23.1.3.1 Map.prototype.clear()
 JSVal MapClear(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.clear", args, e);
   Context* ctx = args.ctx();
@@ -44,7 +45,7 @@ JSVal MapClear(const Arguments& args, Error* e) {
   return JSUndefined;
 }
 
-// section 15.14.5.3 Map.prototype.delete(key)
+// 23.1.3.3 Map.prototype.delete(key)
 JSVal MapDelete(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.delete", args, e);
   Context* ctx = args.ctx();
@@ -58,7 +59,21 @@ JSVal MapDelete(const Arguments& args, Error* e) {
   return JSVal::Bool(entries->Delete(args.At(0)));
 }
 
-// 15.14.5.4 Map.prototype.forEach(callbackfn, thisArg = undefined)
+// 23.1.3.4 Map.prototype.entries()
+JSVal MapEntries(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.entries", args, e);
+  Context* ctx = args.ctx();
+  JSObject* map = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
+  Slot slot;
+  if (!map->GetOwnPropertySlot(ctx, JSMap::symbol(), &slot)) {
+    e->Report(Error::Type, "Map.prototype.entries is not generic function");
+    return JSEmpty;
+  }
+  JSMap::Data* entries = static_cast<JSMap::Data*>(slot.value().cell());
+  return JSMapIterator::New(ctx, entries, MapIterationKind::KEY_PLUS_VALUE);
+}
+
+// 23.1.3.5 Map.prototype.forEach(callbackfn, thisArg = undefined)
 JSVal MapForEach(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.forEach", args, e);
   Context* ctx = args.ctx();
@@ -87,7 +102,7 @@ JSVal MapForEach(const Arguments& args, Error* e) {
   return JSUndefined;
 }
 
-// section 15.14.5.5 Map.prototype.get(key)
+// 23.1.3.6 Map.prototype.get(key)
 JSVal MapGet(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.get", args, e);
   Context* ctx = args.ctx();
@@ -101,7 +116,7 @@ JSVal MapGet(const Arguments& args, Error* e) {
   return entries->Get(args.At(0));
 }
 
-// section 15.14.5.6 Map.prototype.has(key)
+// 23.1.3.7 Map.prototype.has(key)
 JSVal MapHas(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.has", args, e);
   Context* ctx = args.ctx();
@@ -115,11 +130,21 @@ JSVal MapHas(const Arguments& args, Error* e) {
   return JSVal::Bool(entries->Has(args.At(0)));
 }
 
-// TODO(Constellation) iv / lv5 doesn't have iterator system
-// 15.14.5.7 Map.prototype.items()
-// 15.14.5.8 Map.prototype.keys()
+// 23.1.3.8 Map.prototype.keys()
+JSVal MapKeys(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.keys", args, e);
+  Context* ctx = args.ctx();
+  JSObject* map = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
+  Slot slot;
+  if (!map->GetOwnPropertySlot(ctx, JSMap::symbol(), &slot)) {
+    e->Report(Error::Type, "Map.prototype.keysis not generic function");
+    return JSEmpty;
+  }
+  JSMap::Data* entries = static_cast<JSMap::Data*>(slot.value().cell());
+  return JSMapIterator::New(ctx, entries, MapIterationKind::KEY);
+}
 
-// 15.14.5.9 Map.prototype.set(key, value)
+// 23.1.3.9 Map.prototype.set(key, value)
 JSVal MapSet(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.set", args, e);
   Context* ctx = args.ctx();
@@ -134,7 +159,7 @@ JSVal MapSet(const Arguments& args, Error* e) {
   return JSUndefined;
 }
 
-// 15.14.5.9 get Map.prototype.size
+// 23.1.3.10 get Map.prototype.size
 JSVal MapSize(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.size", args, e);
   Context* ctx = args.ctx();
@@ -148,8 +173,18 @@ JSVal MapSize(const Arguments& args, Error* e) {
   return JSVal::UInt32(static_cast<uint32_t>(entries->mapping().size()));
 }
 
-// TODO(Constellation) iv / lv5 doesn't have iterator system
-// 15.14.5.10 Map.prototype.values()
-// 15.14.5.11 Map.prototype.@@iterator
+// 23.1.3.11 Map.prototype.values()
+JSVal MapValues(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Map.prototype.values", args, e);
+  Context* ctx = args.ctx();
+  JSObject* map = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
+  Slot slot;
+  if (!map->GetOwnPropertySlot(ctx, JSMap::symbol(), &slot)) {
+    e->Report(Error::Type, "Map.prototype.values is not generic function");
+    return JSEmpty;
+  }
+  JSMap::Data* entries = static_cast<JSMap::Data*>(slot.value().cell());
+  return JSMapIterator::New(ctx, entries, MapIterationKind::VALUE);
+}
 
 } } }  // namespace iv::lv5::runtime
