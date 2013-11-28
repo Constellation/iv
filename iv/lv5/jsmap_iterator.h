@@ -1,5 +1,6 @@
 #ifndef IV_LV5_JSMAP_ITERATOR_H_
 #define IV_LV5_JSMAP_ITERATOR_H_
+#include <iv/forward.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/property.h>
 #include <iv/lv5/jsval.h>
@@ -55,7 +56,7 @@ class JSMapIterator : public JSMapIteratorSuper {
     return reinterpret_cast<uintptr_t>(kUniqueSymbol);
   }
 
-  using JSMapIteratorSuper::JSMapIteratorSuper;
+  IV_FORWARD_CONSTRUCTOR(JSMapIterator, JSMapIteratorSuper)
 };
 
 } }  // namespace iv::lv5

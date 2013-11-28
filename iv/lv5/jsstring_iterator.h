@@ -1,5 +1,6 @@
 #ifndef IV_LV5_JSSTRING_ITERATOR_H_
 #define IV_LV5_JSSTRING_ITERATOR_H_
+#include <iv/forward.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/property.h>
 #include <iv/lv5/jsval.h>
@@ -44,7 +45,7 @@ class JSStringIterator : public JSStringIteratorSuper {
     return reinterpret_cast<uintptr_t>(kUniqueSymbol);
   }
 
-  using JSStringIteratorSuper::JSStringIteratorSuper;
+  IV_FORWARD_CONSTRUCTOR(JSStringIterator, JSStringIteratorSuper)
 };
 
 } }  // namespace iv::lv5

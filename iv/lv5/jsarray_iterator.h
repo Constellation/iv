@@ -1,5 +1,6 @@
 #ifndef IV_LV5_JSARRAY_ITERATOR_H_
 #define IV_LV5_JSARRAY_ITERATOR_H_
+#include <iv/forward.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/property.h>
 #include <iv/lv5/jsval.h>
@@ -56,7 +57,7 @@ class JSArrayIterator : public JSArrayIteratorSuper {
     return reinterpret_cast<uintptr_t>(kUniqueSymbol);
   }
 
-  using JSArrayIteratorSuper::JSArrayIteratorSuper;
+  IV_FORWARD_CONSTRUCTOR(JSArrayIterator, JSArrayIteratorSuper)
 };
 
 } }  // namespace iv::lv5
