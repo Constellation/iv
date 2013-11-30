@@ -1277,6 +1277,9 @@ void Context::InitSet(const ClassSlot& func_cls,
   bind::Object(this, constructor)
       .def(symbol::prototype(), proto, ATTR::NONE);
 
+  JSFunction* set_values =
+     JSInlinedFunction<&runtime::SetValues, 0>::New(this, Intern("values"));
+
   bind::Object(this, proto)
       .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
       .def(global_data()->builtin_symbol_toStringTag(),
@@ -1284,9 +1287,14 @@ void Context::InitSet(const ClassSlot& func_cls,
       .def<&runtime::SetAdd, 1>("add")
       .def<&runtime::SetClear, 0>("clear")
       .def<&runtime::SetDelete, 1>("delete")
+      .def<&runtime::SetEntries, 0>("entries")
       .def<&runtime::SetForEach, 1>("forEach")
       .def<&runtime::SetHas, 1>("has")
-      .def_getter<&runtime::SetSize, 0>("size");
+      .def<&runtime::SetKeys, 0>("keys")
+      .def_getter<&runtime::SetSize, 0>("size")
+      .def("values", set_values, ATTR::W | ATTR::C)
+      .def(global_data()->builtin_symbol_iterator(),
+           set_values, ATTR::W | ATTR::C);
   global_data()->set_set_prototype(proto);
 
   // Init SetIterator

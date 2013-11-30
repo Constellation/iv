@@ -6,6 +6,8 @@
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsset.h>
+#include <iv/lv5/jsset_iterator.h>
+#include <iv/lv5/jsiterator_result.h>
 #include <iv/lv5/runtime/set.h>
 namespace iv {
 namespace lv5 {
@@ -29,7 +31,7 @@ JSVal SetConstructor(const Arguments& args, Error* e) {
   return JSSet::Initialize(ctx, set, first, IV_LV5_ERROR(e));
 }
 
-// section 15.16.5.2 Set.prototype.add(value)
+// 23.2.3.1 Set.prototype.add(value)
 JSVal SetAdd(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Set.prototype.add", args, e);
   Context* ctx = args.ctx();
@@ -44,7 +46,7 @@ JSVal SetAdd(const Arguments& args, Error* e) {
   return JSUndefined;
 }
 
-// section 15.16.5.3 Set.prototype.clear()
+// 23.2.3.2 Set.prototype.clear()
 JSVal SetClear(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Set.prototype.clear", args, e);
   Context* ctx = args.ctx();
@@ -59,7 +61,7 @@ JSVal SetClear(const Arguments& args, Error* e) {
   return JSUndefined;
 }
 
-// section 15.16.5.4 Set.prototype.delete(value)
+// 23.2.3.4 Set.prototype.delete(value)
 JSVal SetDelete(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Set.prototype.delete", args, e);
   Context* ctx = args.ctx();
@@ -73,7 +75,21 @@ JSVal SetDelete(const Arguments& args, Error* e) {
   return JSVal::Bool(entries->Delete(args.At(0)));
 }
 
-// 15.16.5.5 Set.prototype.forEach(callbackfn, thisArg = undefined)
+// 23.2.3.5 Set.prototype.entries()
+JSVal SetEntries(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Set.prototype.entries", args, e);
+  Context* ctx = args.ctx();
+  JSObject* set = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
+  Slot slot;
+  if (!set->GetOwnPropertySlot(ctx, JSSet::symbol(), &slot)) {
+    e->Report(Error::Type, "Set.prototype.entries is not generic function");
+    return JSEmpty;
+  }
+  JSSet::Data* entries = static_cast<JSSet::Data*>(slot.value().cell());
+  return JSSetIterator::New(ctx, entries, SetIterationKind::KEY_PLUS_VALUE);
+}
+
+// 23.2.3.6 Set.prototype.forEach(callbackfn, thisArg = undefined)
 JSVal SetForEach(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Set.prototype.forEach", args, e);
   Context* ctx = args.ctx();
@@ -101,7 +117,7 @@ JSVal SetForEach(const Arguments& args, Error* e) {
   return JSUndefined;
 }
 
-// section 15.16.5.6 Set.prototype.has(value)
+// 23.2.3.7 Set.prototype.has(value)
 JSVal SetHas(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Set.prototype.has", args, e);
   Context* ctx = args.ctx();
@@ -115,7 +131,21 @@ JSVal SetHas(const Arguments& args, Error* e) {
   return JSVal::Bool(entries->Has(args.At(0)));
 }
 
-// 15.16.5.7 get Set.prototype.size
+// 23.2.3.8 Set.prototype.keys()
+JSVal SetKeys(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Set.prototype.keys", args, e);
+  Context* ctx = args.ctx();
+  JSObject* set = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
+  Slot slot;
+  if (!set->GetOwnPropertySlot(ctx, JSSet::symbol(), &slot)) {
+    e->Report(Error::Type, "Set.prototype.keys is not generic function");
+    return JSEmpty;
+  }
+  JSSet::Data* entries = static_cast<JSSet::Data*>(slot.value().cell());
+  return JSSetIterator::New(ctx, entries, SetIterationKind::KEY);
+}
+
+// 23.2.3.9 get Set.prototype.size
 JSVal SetSize(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Set.prototype.size", args, e);
   Context* ctx = args.ctx();
@@ -129,8 +159,18 @@ JSVal SetSize(const Arguments& args, Error* e) {
   return JSVal::UInt32(static_cast<uint32_t>(entries->set().size()));
 }
 
-// TODO(Constellation) iv / lv5 doesn't have iterator system
-// 15.16.5.8 Set.prototype.values()
-// 15.16.5.9 Set.prototype.@@iterator
+// 23.2.3.10 Set.prototype.values()
+JSVal SetValues(const Arguments& args, Error* e) {
+  IV_LV5_CONSTRUCTOR_CHECK("Set.prototype.values", args, e);
+  Context* ctx = args.ctx();
+  JSObject* set = args.this_binding().ToObject(ctx, IV_LV5_ERROR(e));
+  Slot slot;
+  if (!set->GetOwnPropertySlot(ctx, JSSet::symbol(), &slot)) {
+    e->Report(Error::Type, "Set.prototype.values is not generic function");
+    return JSEmpty;
+  }
+  JSSet::Data* entries = static_cast<JSSet::Data*>(slot.value().cell());
+  return JSSetIterator::New(ctx, entries, SetIterationKind::VALUE);
+}
 
 } } }  // namespace iv::lv5::runtime
