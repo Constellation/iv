@@ -36,7 +36,7 @@ class Interactive {
     ctx_.DefineFunction<&Quit, 1>("quit");
     ctx_.DefineFunction<&CollectGarbage, 0>("gc");
     ctx_.DefineFunction<&HiResTime, 0>("HiResTime");
-    ctx_.DefineFunction<&railgun::Run, 0>("run");
+    ctx_.DefineFunction<&railgun::Run, 1>("run");
     ctx_.DefineFunction<&railgun::StackDepth, 0>("StackDepth");
     ctx_.DefineFunction<&railgun::Dis, 1>("dis");
     melt::Console::Export(&ctx_, &dummy);
