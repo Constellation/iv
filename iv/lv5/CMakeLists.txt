@@ -44,6 +44,7 @@ add_library(liblv5 STATIC
     runtime/reflect.cc
     runtime/regexp.cc
     runtime/set.cc
+    runtime/set_iterator.cc
     runtime/string.cc
     runtime/string_iterator.cc
     runtime/symbol.cc

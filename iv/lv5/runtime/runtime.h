@@ -19,6 +19,7 @@
 #include <iv/lv5/runtime/map_iterator.h>
 #include <iv/lv5/runtime/weak_map.h>
 #include <iv/lv5/runtime/set.h>
+#include <iv/lv5/runtime/set_iterator.h>
 #include <iv/lv5/runtime/i18n.h>
 #include <iv/lv5/runtime/array_buffer.h>
 #include <iv/lv5/runtime/data_view.h>

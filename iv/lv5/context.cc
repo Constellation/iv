@@ -1232,7 +1232,6 @@ void Context::InitMap(const ClassSlot& func_cls,
            JSString::NewAsciiString(this, "Map Iterator", &dummy),
            ATTR::W | ATTR::C);
   global_data()->set_map_iterator_prototype(map_iterator_proto);
-
 }
 
 void Context::InitWeakMap(const ClassSlot& func_cls,
@@ -1289,6 +1288,28 @@ void Context::InitSet(const ClassSlot& func_cls,
       .def<&runtime::SetHas, 1>("has")
       .def_getter<&runtime::SetSize, 0>("size");
   global_data()->set_set_prototype(proto);
+
+  // Init SetIterator
+  JSObject* const set_iterator_proto = JSObject::New(this);
+  global_data()->set_iterator_map()->ChangePrototypeWithNoTransition(
+      set_iterator_proto);
+  bind::Object(this, set_iterator_proto)
+      // ES6
+      // section 23.2.5.2.1 %SetIteratorPrototype%.next()
+      .def<&runtime::SetIteratorNext, 0>("next")
+      // ES6
+      // section 23.2.5.2.2 %SetIteratorPrototype%[@@iterator]()
+      .def(global_data()->builtin_symbol_toPrimitive(),
+           JSInlinedFunction<
+             &runtime::SetIteratorIterator, 0>::New(
+                 this, Intern("[Symbol.iterator]")),
+             ATTR::W | ATTR::C)
+      // ES6
+      // section 23.2.5.2.3 %SetIteratorPrototype%[@@toStringTag]
+      .def(global_data()->builtin_symbol_toStringTag(),
+           JSString::NewAsciiString(this, "Set Iterator", &dummy),
+           ATTR::W | ATTR::C);
+  global_data()->set_set_iterator_prototype(set_iterator_proto);
 }
 
 void Context::InitIntl(const ClassSlot& func_cls,

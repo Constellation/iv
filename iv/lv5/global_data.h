@@ -79,6 +79,7 @@ class GlobalData : public GlobalSymbols {
       map_iterator_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), true)),
       weak_map_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
       set_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), false)),
+      set_iterator_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), true)),
       array_buffer_map_(nullptr),
       data_view_map_(nullptr),
       iterator_result_map_(nullptr),
@@ -274,6 +275,7 @@ class GlobalData : public GlobalSymbols {
   Map* map_iterator_map() const { return map_iterator_map_; }
   Map* weak_map_map() const { return weak_map_map_; }
   Map* set_map() const { return set_map_; }
+  Map* set_iterator_map() const { return set_iterator_map_; }
   Map* array_buffer_map() const { return array_buffer_map_; }
   Map* data_view_map() const { return data_view_map_; }
   Map* iterator_result_map() const { return iterator_result_map_; }
@@ -333,6 +335,7 @@ class GlobalData : public GlobalSymbols {
   JSObject* map_iterator_prototype() const { return map_iterator_prototype_; }
   JSObject* weak_map_prototype() const { return weak_map_prototype_; }
   JSObject* set_prototype() const { return set_prototype_; }
+  JSObject* set_iterator_prototype() const { return set_iterator_prototype_; }
   JSObject* array_buffer_prototype() const { return array_buffer_prototype_; }
   JSObject* data_view_prototype() const { return data_view_prototype_; }
   JSObject* typed_array_prototype(TypedCode::Code code) const { return typed_array_prototypes_[code]; }
@@ -363,6 +366,7 @@ class GlobalData : public GlobalSymbols {
   void set_map_iterator_prototype(JSObject* proto) { map_iterator_prototype_ = proto; }
   void set_weak_map_prototype(JSObject* proto) { weak_map_prototype_ = proto; }
   void set_set_prototype(JSObject* proto) { set_prototype_ = proto; }
+  void set_set_iterator_prototype(JSObject* proto) { set_iterator_prototype_ = proto; }
   void set_array_buffer_prototype(JSObject* proto) { array_buffer_prototype_ = proto; }
   void set_data_view_prototype(JSObject* proto) { data_view_prototype_ = proto; }
   void set_typed_array_prototype(TypedCode::Code code, JSObject* proto) { typed_array_prototypes_[code] = proto; }
@@ -417,6 +421,7 @@ class GlobalData : public GlobalSymbols {
   JSObject* map_iterator_prototype_;
   JSObject* weak_map_prototype_;
   JSObject* set_prototype_;
+  JSObject* set_iterator_prototype_;
   JSObject* array_buffer_prototype_;
   JSObject* data_view_prototype_;
   TypedArrayPrototypes typed_array_prototypes_;
@@ -448,6 +453,7 @@ class GlobalData : public GlobalSymbols {
   Map* map_iterator_map_;
   Map* weak_map_map_;
   Map* set_map_;
+  Map* set_iterator_map_;
   Map* array_buffer_map_;
   Map* data_view_map_;
   Map* iterator_result_map_;
