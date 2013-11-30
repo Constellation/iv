@@ -43,6 +43,7 @@ namespace symbol {
     V(set)\
     V(value)\
     V(done)\
+    V(next)\
     V(configurable)\
     V(writable)\
     V(enumerable)\

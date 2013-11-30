@@ -1,5 +1,6 @@
 #ifndef IV_LV5_INTERNAL_H_
 #define IV_LV5_INTERNAL_H_
+#include <initializer_list>
 #include <iv/platform_math.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/factory.h>
@@ -221,6 +222,30 @@ inline uint32_t GetLength(Context* ctx, JSObject* obj, Error* e) {
   }
   const JSVal length = obj->Get(ctx, symbol::length(), IV_LV5_ERROR_WITH(e, 0));
   return length.ToUInt32(ctx, e);
+}
+
+inline JSVal Invoke(Context* ctx,
+                    JSVal receiver, Symbol name,
+                    std::initializer_list<JSVal> args, Error* e) {
+  JSObject* obj = nullptr;
+  if (receiver.IsObject()) {
+    obj = receiver.object();
+  } else {
+    obj = receiver.ToObject(ctx, IV_LV5_ERROR(e));
+  }
+  JSVal method = obj->Get(ctx, name, IV_LV5_ERROR(e));
+  if (!method.IsObject()) {
+    e->Report(Error::Type, "not callable object");
+    return JSEmpty;
+  }
+  if (!method.object()->IsCallable()) {
+    e->Report(Error::Type, "not callable object");
+    return JSEmpty;
+  }
+  JSFunction* callable = static_cast<JSFunction*>(method.object());
+  ScopedArguments a(ctx, args.size(), IV_LV5_ERROR(e));
+  std::copy(args.begin(), args.end(), a.begin());
+  return callable->Call(&a, receiver, e);
 }
 
 } } }  // namespace iv::lv5::internal
