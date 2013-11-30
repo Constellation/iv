@@ -82,7 +82,7 @@ int RailgunExecute(const iv::core::StringPiece& data,
   iv::lv5::Error::Standard e;
   iv::lv5::railgun::Context ctx;
   InitContext(&ctx);
-  ctx.DefineFunction<&iv::lv5::railgun::Run, 0>("run");
+  ctx.DefineFunction<&iv::lv5::railgun::Run, 1>("run");
 
   std::shared_ptr<iv::core::FileSource>
       src(new iv::core::FileSource(data, filename));
@@ -102,7 +102,7 @@ int RailgunExecuteFiles(const std::vector<std::string>& filenames) {
   iv::lv5::Error::Standard e;
   iv::lv5::railgun::Context ctx;
   InitContext(&ctx);
-  ctx.DefineFunction<&iv::lv5::railgun::Run, 0>("run");
+  ctx.DefineFunction<&iv::lv5::railgun::Run, 1>("run");
 
   std::vector<char> res;
   for (std::vector<std::string>::const_iterator it = filenames.begin(),
