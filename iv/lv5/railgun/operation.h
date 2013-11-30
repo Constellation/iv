@@ -102,7 +102,7 @@ class Operation {
     return static_cast<JSDeclEnv*>(env);
   }
 
-#define CHECK IV_LV5_ERROR_WITH(e, JSEmpty)
+#define CHECK IV_LV5_ERROR(e)
 
   JSVal LoadName(JSEnv* env, Symbol name, bool strict, Error* e) {
     if (JSEnv* current = GetEnv(env, name)) {
@@ -330,7 +330,7 @@ class Operation {
   }
 #undef CHECK
 
-#define CHECK IV_LV5_ERROR_WITH(e, JSEmpty)
+#define CHECK IV_LV5_ERROR(e)
 
   JSVal BinaryAdd(JSVal lhs, JSVal rhs, Error* e) const {
     if (lhs.IsNumber() && rhs.IsNumber()) {
@@ -434,7 +434,7 @@ class Operation {
       e->Report(Error::Type, "in requires object");
       return false;
     }
-    const Symbol s = lhs.ToSymbol(ctx_, IV_LV5_ERROR_WITH(e, false));
+    const Symbol s = lhs.ToSymbol(ctx_, IV_LV5_ERROR(e));
     return rhs.object()->HasProperty(ctx_, s);
   }
 
@@ -460,19 +460,19 @@ class Operation {
 
   int32_t BinaryBitAnd(JSVal lhs,
                        JSVal rhs, Error* e) const {
-    const int32_t left = lhs.ToInt32(ctx_, IV_LV5_ERROR_WITH(e, 0));
+    const int32_t left = lhs.ToInt32(ctx_, IV_LV5_ERROR(e));
     return left & rhs.ToInt32(ctx_, e);
   }
 
   int32_t BinaryBitXor(JSVal lhs,
                        JSVal rhs, Error* e) const {
-    const int32_t left = lhs.ToInt32(ctx_, IV_LV5_ERROR_WITH(e, 0));
+    const int32_t left = lhs.ToInt32(ctx_, IV_LV5_ERROR(e));
     return left ^ rhs.ToInt32(ctx_, e);
   }
 
   int32_t BinaryBitOr(JSVal lhs,
                       JSVal rhs, Error* e) const {
-    const int32_t left = lhs.ToInt32(ctx_, IV_LV5_ERROR_WITH(e, 0));
+    const int32_t left = lhs.ToInt32(ctx_, IV_LV5_ERROR(e));
     return left | rhs.ToInt32(ctx_, e);
   }
 

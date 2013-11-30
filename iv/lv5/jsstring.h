@@ -36,7 +36,7 @@ inline uint32_t SplitFiberWithOneChar(Context* ctx,
       builder->Append(*it);
     } else {
       JSString* str =
-          builder->Build(ctx, fiber->Is8Bit(), IV_LV5_ERROR_WITH(e, 0));
+          builder->Build(ctx, fiber->Is8Bit(), IV_LV5_ERROR(e));
       ary->JSArray::DefineOwnProperty(
           ctx, symbol::MakeSymbolFromIndex(index),
           DataDescriptor(str, ATTR::W | ATTR::E | ATTR::C),
@@ -324,7 +324,7 @@ JSArray* JSString::Split(Context* ctx,
       }
     }
   }
-  JSString* result = builder.Build(ctx, false, IV_LV5_ERROR_WITH(e, nullptr));
+  JSString* result = builder.Build(ctx, false, IV_LV5_ERROR(e));
   ary->JSArray::DefineOwnProperty(
       ctx, symbol::MakeSymbolFromIndex(index),
       DataDescriptor(result, ATTR::W | ATTR::E | ATTR::C),

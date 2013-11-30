@@ -12,6 +12,7 @@
 #include <iv/lv5/jsiterator_result.h>
 #include <iv/lv5/runtime/object.h>
 #include <iv/lv5/runtime/set_iterator.h>
+#include <iv/lv5/iterator.h>
 namespace iv {
 namespace lv5 {
 namespace runtime {

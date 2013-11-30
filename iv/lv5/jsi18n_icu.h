@@ -397,11 +397,11 @@ inline JSObject* BasicFormatMatch(Context* ctx,
   int32_t best_score = INT32_MIN;
   JSObject* best_format = nullptr;
   const uint32_t len =
-      internal::GetLength(ctx, formats, IV_LV5_ERROR_WITH(e, nullptr));
+      internal::GetLength(ctx, formats, IV_LV5_ERROR(e));
   for (uint32_t i = 0; i < len; ++i) {
     const JSVal v =
         formats->Get(ctx, symbol::MakeSymbolFromIndex(i),
-                     IV_LV5_ERROR_WITH(e, nullptr));
+                     IV_LV5_ERROR(e));
     assert(v.IsObject());
     JSObject* format = v.object();
     int32_t score = 0;
@@ -409,12 +409,12 @@ inline JSObject* BasicFormatMatch(Context* ctx,
          last = kDateTimeOptions.end(); it != last; ++it) {
       const Symbol name = ctx->Intern(it->key);
       const JSVal options_prop =
-          options->Get(ctx, name, IV_LV5_ERROR_WITH(e, nullptr));
+          options->Get(ctx, name, IV_LV5_ERROR(e));
       const PropertyDescriptor format_prop_desc =
           formats->GetOwnProperty(ctx, name);
       JSVal format_prop = JSUndefined;
       if (!format_prop_desc.IsEmpty()) {
-        format_prop = formats->Get(ctx, name, IV_LV5_ERROR_WITH(e, nullptr));
+        format_prop = formats->Get(ctx, name, IV_LV5_ERROR(e));
       }
       if (options_prop.IsUndefined() && !format_prop.IsUndefined()) {
         score -= addition_penalty;

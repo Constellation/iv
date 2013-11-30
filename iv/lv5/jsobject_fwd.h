@@ -125,7 +125,7 @@ class JSObject : public JSCell {
       if (desc.IsConfigurable()) {
         desc.set_configurable(false);
       }
-      DefineOwnProperty(ctx, sym, desc, true, IV_LV5_ERROR_WITH(e, false));
+      DefineOwnProperty(ctx, sym, desc, true, IV_LV5_ERROR(e));
     }
     ChangeExtensible(ctx, false);
     return true;
@@ -143,7 +143,7 @@ class JSObject : public JSCell {
       if (desc.IsConfigurable()) {
         desc.set_configurable(false);
       }
-      DefineOwnProperty(ctx, sym, desc, true, IV_LV5_ERROR_WITH(e, false));
+      DefineOwnProperty(ctx, sym, desc, true, IV_LV5_ERROR(e));
     }
     ChangeExtensible(ctx, false);
     return true;

@@ -33,7 +33,7 @@ class JSFunction : public JSObject {
       return false;
     }
     const JSVal got =
-        Get(ctx, symbol::prototype(), IV_LV5_ERROR_WITH(e, false));
+        Get(ctx, symbol::prototype(), IV_LV5_ERROR(e));
     if (!got.IsObject()) {
       e->Report(Error::Type, "\"prototype\" is not object");
       return false;

@@ -200,7 +200,7 @@ inline bool JSArray::DefineLengthProperty(Context* ctx,
   }
 
   const double new_len_double =
-      desc.AsDataDescriptor()->value().ToNumber(ctx, IV_LV5_ERROR_WITH(e, false));
+      desc.AsDataDescriptor()->value().ToNumber(ctx, IV_LV5_ERROR(e));
   // length must be uint32_t
   const uint32_t new_len = core::DoubleToUInt32(new_len_double);
   if (new_len != new_len_double) {

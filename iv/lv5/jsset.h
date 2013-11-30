@@ -71,8 +71,8 @@ class JSSet : public core::AllStatic {
     JSObject* iterable = nullptr;
     JSFunction* adder = nullptr;
     if (!it.IsUndefined()) {
-      iterable = it.ToObject(ctx, IV_LV5_ERROR_WITH(e, nullptr));
-      JSVal val = obj->Get(ctx, symbol::add(), IV_LV5_ERROR_WITH(e, nullptr));
+      iterable = it.ToObject(ctx, IV_LV5_ERROR(e));
+      JSVal val = obj->Get(ctx, symbol::add(), IV_LV5_ERROR(e));
       if (!val.IsCallable()) {
         e->Report(Error::Type, "SetInitialize adder, `obj.add` is not callable");
         return nullptr;
@@ -86,7 +86,7 @@ class JSSet : public core::AllStatic {
       ctx,
       symbol(),
       DataDescriptor(JSVal::Cell(data), ATTR::W | ATTR::E | ATTR::C),
-      false, IV_LV5_ERROR_WITH(e, nullptr));
+      false, IV_LV5_ERROR(e));
 
     if (iterable) {
       // TODO(Constellation) iv / lv5 doesn't have iterator system
@@ -96,10 +96,10 @@ class JSSet : public core::AllStatic {
            it = collector.names().begin(),
            last = collector.names().end();
            it != last; ++it) {
-        const JSVal value = iterable->Get(ctx, (*it), IV_LV5_ERROR_WITH(e, nullptr));
-        ScopedArguments arg_list(ctx, 1, IV_LV5_ERROR_WITH(e, nullptr));
+        const JSVal value = iterable->Get(ctx, (*it), IV_LV5_ERROR(e));
+        ScopedArguments arg_list(ctx, 1, IV_LV5_ERROR(e));
         arg_list[0] = value;
-        adder->Call(&arg_list, obj, IV_LV5_ERROR_WITH(e, nullptr));
+        adder->Call(&arg_list, obj, IV_LV5_ERROR(e));
       }
     }
 

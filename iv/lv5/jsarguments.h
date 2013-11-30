@@ -103,7 +103,7 @@ class JSNormalArguments : public JSArguments {
             const DataDescriptor* const data = desc.AsDataDescriptor();
             if (!data->IsValueAbsent()) {
               arg->env_->SetMutableBinding(ctx, mapped, data->value(),
-                                           throwable, IV_LV5_ERROR_WITH(e, false));
+                                           throwable, IV_LV5_ERROR(e));
             }
             if (!data->IsWritableAbsent() && !data->IsWritable()) {
               arg->mapping_[index] = symbol::kDummySymbol;
@@ -117,7 +117,7 @@ class JSNormalArguments : public JSArguments {
 
   IV_LV5_INTERNAL_METHOD bool DeleteIndexedMethod(JSObject* obj, Context* ctx, uint32_t index, bool throwable, Error* e) {
     JSNormalArguments* arg = static_cast<JSNormalArguments*>(obj);
-    const bool result = JSObject::DeleteIndexedMethod(obj, ctx, index, throwable, IV_LV5_ERROR_WITH(e, false));
+    const bool result = JSObject::DeleteIndexedMethod(obj, ctx, index, throwable, IV_LV5_ERROR(e));
     if (arg->mapping_.size() > index) {
       const Symbol mapped = arg->mapping_[index];
       if (mapped != symbol::kDummySymbol) {

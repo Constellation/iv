@@ -70,7 +70,7 @@ class TypedArrayImpl : public JSObject {
     if (desc.IsData() && !desc.IsValueAbsent()) {
       value = desc.AsDataDescriptor()->value();
     }
-    const T converted = TypedArrayTraits<T>::ToType(ctx, value, IV_LV5_ERROR_WITH(e, false));
+    const T converted = TypedArrayTraits<T>::ToType(ctx, value, IV_LV5_ERROR(e));
     buf->SetValue<T>(off, index, core::kLittleEndian, converted);
     return true;
   }

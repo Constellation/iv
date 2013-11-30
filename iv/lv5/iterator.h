@@ -30,8 +30,7 @@ inline JSObject* Iterator::Next(Context* ctx,
                                 JSVal iterator, JSVal value, Error* e) {
   const JSVal result =
       internal::Invoke(
-          ctx, iterator, symbol::next(), { value },
-          IV_LV5_ERROR_WITH(e, nullptr));
+          ctx, iterator, symbol::next(), { value }, IV_LV5_ERROR(e));
   if (result.IsObject()) {
     e->Report(Error::Type, "result of iterator.next call is not object");
     return nullptr;
@@ -44,8 +43,7 @@ inline JSVal Iterator::Value(Context* ctx, JSObject* result, Error* e) {
 }
 
 inline bool Iterator::Complete(Context* ctx, JSObject* result, Error* e) {
-  const JSVal done =
-      result->Get(ctx, symbol::done(), IV_LV5_ERROR_WITH(e, false));
+  const JSVal done = result->Get(ctx, symbol::done(), IV_LV5_ERROR(e));
   return done.ToBoolean();
 }
 

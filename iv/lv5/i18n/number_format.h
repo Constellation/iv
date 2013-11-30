@@ -15,7 +15,8 @@ class JSNumberFormatHolder : public JSObject {
   typedef GCHandle<core::i18n::NumberFormat> FormatHandle;
 
   explicit JSNumberFormatHolder(Context* ctx, JSString* currency)
-    : JSObject(Map::NewUniqueMap(ctx, ctx->global_data()->object_prototype(), false)),
+    : JSObject(Map::NewUniqueMap(ctx, ctx->global_data()->object_prototype(),
+                                 false)),
       format_(new FormatHandle()),
       currency_(currency),
       bound_(nullptr) { }
@@ -208,8 +209,10 @@ inline JSFunction* JSNumberFormatHolder::Bound(Context* ctx, Error* e) {
 inline JSObject* InitializeNumberFormat(Context* ctx,
                                         JSObject* format,
                                         JSVal locales, JSVal op, Error* e) {
-  if (format->HasOwnProperty(ctx, ctx->i18n()->symbols().initializedIntlObject())) {
-    e->Report(Error::Type, "object has been already initialized as Intl group object");
+  if (format->HasOwnProperty(
+          ctx, ctx->i18n()->symbols().initializedIntlObject())) {
+    e->Report(Error::Type,
+              "object has been already initialized as Intl group object");
     return nullptr;
   }
 
@@ -217,15 +220,16 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
       ctx,
       ctx->i18n()->symbols().initializedIntlObject(),
       DataDescriptor(JSTrue, ATTR::N),
-      false, IV_LV5_ERROR_WITH(e, nullptr));
+      false, IV_LV5_ERROR(e));
 
-  JSVector* requested_locales = CanonicalizeLocaleList(ctx, locales, IV_LV5_ERROR_WITH(e, nullptr));
+  JSVector* requested_locales =
+      CanonicalizeLocaleList(ctx, locales, IV_LV5_ERROR(e));
 
   JSObject* o = nullptr;
   if (op.IsUndefined()) {
     o = JSObject::New(ctx);
   } else {
-    o = op.ToObject(ctx, IV_LV5_ERROR_WITH(e, nullptr));
+    o = op.ToObject(ctx, IV_LV5_ERROR(e));
   }
 
   NumberOptions options(o);
@@ -235,13 +239,15 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
     "lookup",
     "best fit"
   } };
-  JSString* matcher = options.GetString(ctx, symbol::localeMatcher(), k7.begin(), k7.end(), "best fit", IV_LV5_ERROR_WITH(e, nullptr));
+  JSString* matcher =
+      options.GetString(ctx, symbol::localeMatcher(),
+                        k7.begin(), k7.end(), "best fit", IV_LV5_ERROR(e));
 
   opt->DefineOwnProperty(
       ctx,
       symbol::localeMatcher(),
       DataDescriptor(matcher, ATTR::N),
-      false, IV_LV5_ERROR_WITH(e, nullptr));
+      false, IV_LV5_ERROR(e));
 
   const core::i18n::LookupResult result =
       detail_i18n::ResolveLocale(
@@ -250,7 +256,7 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
           core::i18n::NumberFormat::AvailableLocales().end(),
           requested_locales,
           opt,
-          IV_LV5_ERROR_WITH(e, nullptr));
+          IV_LV5_ERROR(e));
 
   const core::i18n::NumberFormat::Data* locale =
       core::i18n::NumberFormat::Lookup(result.locale());
@@ -284,7 +290,9 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
       "currency"
     } };
     JSString* s =
-        options.GetString(ctx, symbol::style(), k15.begin(), k15.end(), "decimal", IV_LV5_ERROR_WITH(e, nullptr));
+        options.GetString(
+            ctx, symbol::style(),
+            k15.begin(), k15.end(), "decimal", IV_LV5_ERROR(e));
 
     if (s->compare("decimal") == 0) {
       style = core::i18n::NumberFormat::DECIMAL;
@@ -296,9 +304,10 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
 
     // currency option
     JSString* currency  =
-        options.GetString(ctx, symbol::currency(),
-                          static_cast<const char**>(nullptr),
-                          static_cast<const char**>(nullptr), nullptr, IV_LV5_ERROR_WITH(e, nullptr));
+        options.GetString(
+            ctx, symbol::currency(),
+            static_cast<const char**>(nullptr),
+            static_cast<const char**>(nullptr), nullptr, IV_LV5_ERROR(e));
     if (currency) {
       if (!core::i18n::IsWellFormedCurrencyCode(currency->begin(), currency->end())) {
         e->Report(Error::Range, "invalid currency code");
@@ -313,7 +322,8 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
 
     if (style == core::i18n::NumberFormat::CURRENCY) {
       JSStringBuilder builder;
-      for (JSString::const_iterator it = currency->begin(), last = currency->end();
+      for (JSString::const_iterator it = currency->begin(),
+           last = currency->end();
            it != last; ++it) {
         if (core::character::IsASCII(*it)) {
           builder.Append(core::character::ToUpperCase(*it));
@@ -321,8 +331,9 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
           builder.Append(*it);
         }
       }
-      c = builder.Build(ctx, false, IV_LV5_ERROR_WITH(e, nullptr));
-      currency_data = core::i18n::Currency::Lookup(std::string(c->begin(), c->end()));
+      c = builder.Build(ctx, false, IV_LV5_ERROR(e));
+      currency_data =
+          core::i18n::Currency::Lookup(std::string(c->begin(), c->end()));
     }
 
     // currencyDisplay option
@@ -332,7 +343,8 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
       "name"
     } };
     JSString* cd =
-        options.GetString(ctx, symbol::currencyDisplay(), kd.begin(), kd.end(), "symbol", IV_LV5_ERROR_WITH(e, nullptr));
+        options.GetString(ctx, symbol::currencyDisplay(),
+                          kd.begin(), kd.end(), "symbol", IV_LV5_ERROR(e));
     display =
         (cd->compare("code") == 0) ?
           core::i18n::Currency::CODE :
@@ -345,7 +357,7 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
                         symbol::minimumIntegerDigits(),
                         1,
                         21,
-                        1, IV_LV5_ERROR_WITH(e, nullptr));
+                        1, IV_LV5_ERROR(e));
 
   const int32_t minimum_fraction_digits_default =
       (style != core::i18n::NumberFormat::CURRENCY) ? 0 :
@@ -356,7 +368,7 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
                         0,
                         20,
                         minimum_fraction_digits_default,
-                        IV_LV5_ERROR_WITH(e, nullptr));
+                        IV_LV5_ERROR(e));
 
   const int32_t maximum_fraction_digits_default =
       (style == core::i18n::NumberFormat::CURRENCY) ?
@@ -371,7 +383,7 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
                         minimum_fraction_digits,
                         20,
                         maximum_fraction_digits_default,
-                        IV_LV5_ERROR_WITH(e, nullptr));
+                        IV_LV5_ERROR(e));
 
   int32_t minimum_significant_digits = core::i18n::NumberFormat::kUnspecified;
   int32_t maximum_significant_digits = core::i18n::NumberFormat::kUnspecified;
@@ -382,18 +394,18 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
                           symbol::minimumSignificantDigits(),
                           1,
                           21,
-                          1, IV_LV5_ERROR_WITH(e, nullptr));
+                          1, IV_LV5_ERROR(e));
 
     maximum_significant_digits =
         options.GetNumber(ctx,
                           symbol::maximumSignificantDigits(),
                           minimum_significant_digits,
                           21,
-                          21, IV_LV5_ERROR_WITH(e, nullptr));
+                          21, IV_LV5_ERROR(e));
   }
 
   const bool use_grouping =
-      options.GetBoolean(ctx, symbol::useGrouping(), true, IV_LV5_ERROR_WITH(e, nullptr));
+      options.GetBoolean(ctx, symbol::useGrouping(), true, IV_LV5_ERROR(e));
 
   JSObject* f =
       JSNumberFormatHolder::New(
@@ -416,7 +428,7 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
       ctx,
       ctx->i18n()->symbols().initializedNumberFormat(),
       DataDescriptor(f, ATTR::N),
-      false, IV_LV5_ERROR_WITH(e, nullptr));
+      false, IV_LV5_ERROR(e));
 
   return format;
 }

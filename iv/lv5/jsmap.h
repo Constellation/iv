@@ -81,8 +81,8 @@ class JSMap : public core::AllStatic {
     JSObject* iterable = nullptr;
     JSFunction* adder = nullptr;
     if (!it.IsUndefined()) {
-      iterable = it.ToObject(ctx, IV_LV5_ERROR_WITH(e, nullptr));
-      JSVal val = obj->Get(ctx, symbol::set(), IV_LV5_ERROR_WITH(e, nullptr));
+      iterable = it.ToObject(ctx, IV_LV5_ERROR(e));
+      JSVal val = obj->Get(ctx, symbol::set(), IV_LV5_ERROR(e));
       if (!val.IsCallable()) {
         e->Report(Error::Type, "MapInitialize adder, `obj.set` is not callable");
         return nullptr;
@@ -96,7 +96,7 @@ class JSMap : public core::AllStatic {
       ctx,
       symbol(),
       DataDescriptor(JSVal::Cell(data), ATTR::W | ATTR::E | ATTR::C),
-      false, IV_LV5_ERROR_WITH(e, nullptr));
+      false, IV_LV5_ERROR(e));
 
     if (iterable) {
       // TODO(Constellation) iv / lv5 doesn't have iterator system
@@ -106,16 +106,16 @@ class JSMap : public core::AllStatic {
            it = collector.names().begin(),
            last = collector.names().end();
            it != last; ++it) {
-        const JSVal v = iterable->Get(ctx, (*it), IV_LV5_ERROR_WITH(e, nullptr));
-        JSObject* item = v.ToObject(ctx, IV_LV5_ERROR_WITH(e, nullptr));
+        const JSVal v = iterable->Get(ctx, (*it), IV_LV5_ERROR(e));
+        JSObject* item = v.ToObject(ctx, IV_LV5_ERROR(e));
         const JSVal key =
-            item->Get(ctx, symbol::MakeSymbolFromIndex(0), IV_LV5_ERROR_WITH(e, nullptr));
+            item->Get(ctx, symbol::MakeSymbolFromIndex(0), IV_LV5_ERROR(e));
         const JSVal value =
-            item->Get(ctx, symbol::MakeSymbolFromIndex(1), IV_LV5_ERROR_WITH(e, nullptr));
-        ScopedArguments arg_list(ctx, 2, IV_LV5_ERROR_WITH(e, nullptr));
+            item->Get(ctx, symbol::MakeSymbolFromIndex(1), IV_LV5_ERROR(e));
+        ScopedArguments arg_list(ctx, 2, IV_LV5_ERROR(e));
         arg_list[0] = key;
         arg_list[1] = value;
-        adder->Call(&arg_list, obj, IV_LV5_ERROR_WITH(e, nullptr));
+        adder->Call(&arg_list, obj, IV_LV5_ERROR(e));
       }
     }
 

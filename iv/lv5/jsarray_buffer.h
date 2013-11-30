@@ -85,7 +85,7 @@ class JSArrayBuffer : public JSObject {
         NewPlain(
             ctx, len,
             ctx->global_data()->array_buffer_map(),
-            IV_LV5_ERROR_WITH(e, nullptr));
+            IV_LV5_ERROR(e));
     obj->set_cls(GetClass());
     return obj;
   }

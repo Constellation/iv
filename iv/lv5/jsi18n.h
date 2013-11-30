@@ -27,14 +27,13 @@ inline JSVector* LookupSupportedLocales(Context* ctx,
   for (JSVector::const_iterator i = requested->begin(),
        iz = requested->end(); i != iz; ++i) {
     const JSVal res = *i;
-    JSString* str = res.ToString(ctx, IV_LV5_ERROR_WITH(e, nullptr));
+    JSString* str = res.ToString(ctx, IV_LV5_ERROR(e));
     const std::string locale(
         core::i18n::LanguageTagScanner::RemoveExtension(str->begin(),
                                                         str->end()));
     const AvailIter t = ctx->i18n()->BestAvailableLocale(it, last, locale);
     if (t != last) {
-      JSString* str =
-          JSString::NewAsciiString(ctx, locale, IV_LV5_ERROR_WITH(e, nullptr));
+      JSString* str = JSString::NewAsciiString(ctx, locale, IV_LV5_ERROR(e));
       subset->push_back(str);
     }
   }
@@ -54,12 +53,11 @@ inline JSArray* SupportedLocales(Context* ctx,
                                  JSVector* requested, JSVal options, Error* e) {
   bool best_fit = true;
   if (!options.IsUndefined()) {
-    JSObject* opt = options.ToObject(ctx, IV_LV5_ERROR_WITH(e, nullptr));
+    JSObject* opt = options.ToObject(ctx, IV_LV5_ERROR(e));
     const JSVal matcher =
-        opt->Get(ctx, ctx->Intern("localeMatcher"),
-                 IV_LV5_ERROR_WITH(e, nullptr));
+        opt->Get(ctx, ctx->Intern("localeMatcher"), IV_LV5_ERROR(e));
     if (!matcher.IsUndefined()) {
-      JSString* str = matcher.ToString(ctx, IV_LV5_ERROR_WITH(e, nullptr));
+      JSString* str = matcher.ToString(ctx, IV_LV5_ERROR(e));
       const std::string res = str->GetUTF8();
       if (res == "lookup") {
         best_fit = false;
@@ -71,12 +69,12 @@ inline JSArray* SupportedLocales(Context* ctx,
       (best_fit)
       ? BestFitSupportedLocales(ctx, it, last, requested, e)
       : LookupSupportedLocales(ctx, it, last, requested, e);
-  IV_LV5_ERROR_GUARD_WITH(e, nullptr);
+  IV_LV5_ERROR_GUARD(e);
 
   JSArray* result = subset->ToJSArray();
-  ScopedArguments arguments(ctx, 1, IV_LV5_ERROR_WITH(e, nullptr));
+  ScopedArguments arguments(ctx, 1, IV_LV5_ERROR(e));
   arguments[0] = result;
-  runtime::ObjectFreeze(arguments, IV_LV5_ERROR_WITH(e, nullptr));
+  runtime::ObjectFreeze(arguments, IV_LV5_ERROR(e));
   result->ChangeExtensible(ctx, true);
   return result;
 }
@@ -112,15 +110,11 @@ inline core::i18n::LookupResult ResolveLocale(Context* ctx,
                                               JSVal options, Error* e) {
   bool best_fit = true;
   if (!options.IsUndefined()) {
-    JSObject* opt = options.ToObject(
-        ctx, IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
+    JSObject* opt = options.ToObject(ctx, IV_LV5_ERROR(e));
     const JSVal matcher =
-        opt->Get(ctx, ctx->Intern("localeMatcher"),
-                 IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
+        opt->Get(ctx, ctx->Intern("localeMatcher"), IV_LV5_ERROR(e));
     if (!matcher.IsUndefined()) {
-      JSString* str = matcher.ToString(
-          ctx,
-          IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
+      JSString* str = matcher.ToString(ctx, IV_LV5_ERROR(e));
       const std::string res = str->GetUTF8();
       if (res == "lookup") {
         best_fit = false;
@@ -132,9 +126,7 @@ inline core::i18n::LookupResult ResolveLocale(Context* ctx,
   {
     for (JSVector::const_iterator it = requested->begin(),
          last = requested->end(); it != last; ++it) {
-      JSString* str = it->ToString(
-          ctx,
-          IV_LV5_ERROR_WITH(e, core::i18n::LookupResult()));
+      JSString* str = it->ToString(ctx, IV_LV5_ERROR(e));
       locales.push_back(str->GetUTF8());
     }
   }
@@ -208,9 +200,9 @@ class NumberOptions : public lv5::detail_i18n::Options {
                     int32_t minimum,
                     int32_t maximum, int32_t fallback, Error* e) {
     const JSVal value =
-        options()->Get(ctx, property, IV_LV5_ERROR_WITH(e, 0));
+        options()->Get(ctx, property, IV_LV5_ERROR(e));
     if (!value.IsNullOrUndefined()) {
-      const double res = value.ToNumber(ctx, IV_LV5_ERROR_WITH(e, 0));
+      const double res = value.ToNumber(ctx, IV_LV5_ERROR(e));
       if (core::math::IsNaN(res) || res < minimum || res > maximum) {
         e->Report(Error::Range, "number option out of range");
         return 0;
@@ -227,7 +219,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx,
   if (op.IsUndefined()) {
     options = JSObject::New(ctx);
   } else {
-    options = op.ToObject(ctx, IV_LV5_ERROR_WITH(e, nullptr));
+    options = op.ToObject(ctx, IV_LV5_ERROR(e));
   }
 
   // create Object that have options as [[Prototype]]
@@ -247,7 +239,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx,
     for (DateProperties::const_iterator it = kDateProperties.begin(),
          last = kDateProperties.end(); it != last; ++it) {
       const Symbol name = ctx->Intern(*it);
-      const JSVal res = options->Get(ctx, name, IV_LV5_ERROR_WITH(e, nullptr));
+      const JSVal res = options->Get(ctx, name, IV_LV5_ERROR(e));
       if (!res.IsUndefined()) {
         need_default = false;
       }
@@ -262,7 +254,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx,
     for (TimeProperties::const_iterator it = kTimeProperties.begin(),
          last = kTimeProperties.end(); it != last; ++it) {
       const Symbol name = ctx->Intern(*it);
-      const JSVal res = options->Get(ctx, name, IV_LV5_ERROR_WITH(e, nullptr));
+      const JSVal res = options->Get(ctx, name, IV_LV5_ERROR(e));
       if (!res.IsUndefined()) {
         need_default = false;
       }
@@ -285,7 +277,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx,
           DataDescriptor(
               JSString::NewAsciiString(ctx, "numeric", e),
               ATTR::W | ATTR::E | ATTR::C),
-          true, IV_LV5_ERROR_WITH(e, nullptr));
+          true, IV_LV5_ERROR(e));
     }
   }
 
@@ -299,7 +291,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx,
           DataDescriptor(
               JSString::NewAsciiString(ctx, "numeric", e),
               ATTR::W | ATTR::E | ATTR::C),
-          true, IV_LV5_ERROR_WITH(e, nullptr));
+          true, IV_LV5_ERROR(e));
     }
   }
 

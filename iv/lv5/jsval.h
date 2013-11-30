@@ -734,7 +734,7 @@ inline JSString* JSLayout::ToString(Context* ctx, Error* e) const {
   } else {
     assert(IsObject());
     JSLayout prim =
-        object()->DefaultValue(ctx, Hint::STRING, IV_LV5_ERROR_WITH(e, nullptr));
+        object()->DefaultValue(ctx, Hint::STRING, IV_LV5_ERROR(e));
     return prim.ToString(ctx, e);
   }
 }
@@ -784,9 +784,7 @@ inline Symbol JSLayout::ToSymbol(Context* ctx, Error* e) const {
   JSObject* obj = object();
 
   const JSLayout prim =
-      object()->DefaultValue(
-          ctx, Hint::STRING,
-          IV_LV5_ERROR_WITH(e, symbol::kDummySymbol));
+      object()->DefaultValue(ctx, Hint::STRING, IV_LV5_ERROR(e));
   return prim.ToSymbol(ctx, e);
 }
 
@@ -821,9 +819,7 @@ inline core::UString JSLayout::ToUString(Context* ctx, Error* e) const {
   } else {
     assert(IsObject());
     const JSLayout prim =
-        object()->DefaultValue(
-            ctx, Hint::STRING,
-            IV_LV5_ERROR_WITH(e, core::UString()));
+        object()->DefaultValue(ctx, Hint::STRING, IV_LV5_ERROR(e));
     return prim.ToUString(ctx, e);
   }
 }
@@ -848,8 +844,7 @@ inline double JSLayout::ToNumber(Context* ctx, Error* e) const {
     return core::kNaN;
   } else {
     assert(IsObject());
-    JSLayout prim =
-        object()->DefaultValue(ctx, Hint::NUMBER, IV_LV5_ERROR_WITH(e, 0.0));
+    JSLayout prim = object()->DefaultValue(ctx, Hint::NUMBER, IV_LV5_ERROR(e));
     return prim.ToNumber(ctx, e);
   }
 }
@@ -879,8 +874,7 @@ inline JSVal JSVal::ToNumberValue(Context* ctx, Error* e) const {
   } else {
     assert(IsObject());
     const JSVal prim =
-        object()->DefaultValue(ctx, Hint::NUMBER,
-                               IV_LV5_ERROR_WITH(e, JSVal::Int32(0)));
+        object()->DefaultValue(ctx, Hint::NUMBER, IV_LV5_ERROR(e));
     return prim.ToNumber(ctx, e);
   }
 }
@@ -962,7 +956,7 @@ inline void JSLayout::CheckObjectCoercible(Error* e) const {
   }
 }
 
-#define CHECK IV_LV5_ERROR_WITH(e, false)
+#define CHECK IV_LV5_ERROR(e)
 inline bool JSVal::AbstractEqual(Context* ctx,
                                  this_type lhs,
                                  this_type rhs, Error* e) {
@@ -1033,15 +1027,11 @@ inline CompareResult JSVal::Compare(Context* ctx,
   JSVal px;
   JSVal py;
   if (LeftFirst) {
-    px = lhs.ToPrimitive(ctx, Hint::NUMBER,
-                         IV_LV5_ERROR_WITH(e, CMP_UNDEFINED));
-    py = rhs.ToPrimitive(ctx, Hint::NUMBER,
-                         IV_LV5_ERROR_WITH(e, CMP_UNDEFINED));
+    px = lhs.ToPrimitive(ctx, Hint::NUMBER, IV_LV5_ERROR(e));
+    py = rhs.ToPrimitive(ctx, Hint::NUMBER, IV_LV5_ERROR(e));
   } else {
-    py = rhs.ToPrimitive(ctx, Hint::NUMBER,
-                         IV_LV5_ERROR_WITH(e, CMP_UNDEFINED));
-    px = lhs.ToPrimitive(ctx, Hint::NUMBER,
-                         IV_LV5_ERROR_WITH(e, CMP_UNDEFINED));
+    py = rhs.ToPrimitive(ctx, Hint::NUMBER, IV_LV5_ERROR(e));
+    px = lhs.ToPrimitive(ctx, Hint::NUMBER, IV_LV5_ERROR(e));
   }
 
   // fast case
@@ -1051,7 +1041,7 @@ inline CompareResult JSVal::Compare(Context* ctx,
     // step 4
     return (*(px.string()) < *(py.string())) ? CMP_TRUE : CMP_FALSE;
   } else {
-    const double nx = px.ToNumber(ctx, IV_LV5_ERROR_WITH(e, CMP_UNDEFINED));
+    const double nx = px.ToNumber(ctx, IV_LV5_ERROR(e));
     return NumberCompare(nx, py.ToNumber(ctx, e));
   }
 }

@@ -68,7 +68,7 @@ inline Map* JSFunction::construct_map(Context* ctx, Error* e) {
     return construct_map_;
   }
   Slot slot;
-  const JSVal res = GetNonIndexedSlot(ctx, symbol::prototype(), &slot, IV_LV5_ERROR_WITH(e, nullptr));
+  const JSVal res = GetNonIndexedSlot(ctx, symbol::prototype(), &slot, IV_LV5_ERROR(e));
 
   Map* map = Map::New(ctx, res.IsObject() ? res.object() : ctx->global_data()->object_prototype(), false);
   // no side effect and own prototype

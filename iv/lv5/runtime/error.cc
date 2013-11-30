@@ -22,7 +22,7 @@ static inline JSString* ErrorMessageString(const Arguments& args, Error* e) {
   if (msg.IsUndefined()) {
     return nullptr;
   }
-  return msg.ToString(args.ctx(), IV_LV5_ERROR_WITH(e, nullptr));
+  return msg.ToString(args.ctx(), IV_LV5_ERROR(e));
 }
 
 }  // namespace detail
