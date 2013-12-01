@@ -93,37 +93,29 @@ class Compiler {
     asm_->ready();
 
     // link entry points
-    for (EntryPointMap::const_iterator it = entry_points_.begin(),
-         last = entry_points_.end(); it != last; ++it) {
-      it->first->set_executable(asm_->GainExecutableByOffset(it->second));
+    for (const auto& pair : entry_points_) {
+      pair.first->set_executable(asm_->GainExecutableByOffset(pair.second));
     }
 
     // Repatch phase
     // link jump subroutine
-    for (UnresolvedAddressMap::const_iterator
-         it = unresolved_address_map_.begin(),
-         last = unresolved_address_map_.end();
-         it != last; ++it) {
+    for (const auto& pair : unresolved_address_map_) {
       uint64_t ptr =
-          core::BitCast<uint64_t>(asm_->GainExecutableByOffset(it->first));
+          core::BitCast<uint64_t>(asm_->GainExecutableByOffset(pair.first));
       assert(ptr % 2 == 0);
       // encode ptr value to JSVal invalid number
       // double offset value is
       // 1000000000000000000000000000000000000000000000000
       ptr += 0x1;
       const uint64_t result = RotateLeft64(ptr, kEncodeRotateN);
-      it->second.Repatch(asm_, result);
+      pair.second.Repatch(asm_, result);
     }
 
     // link exception handlers
-    for (Codes::const_iterator it = codes_.begin(),
-         last = codes_.end(); it != last; ++it) {
-      railgun::Code* code = *it;
+    for (railgun::Code* code : codes_) {
       const Instruction* first_instr = code->begin();
       railgun::ExceptionTable& table = code->exception_table();
-      for (railgun::ExceptionTable::iterator it = table.begin(),
-           last = table.end(); it != last; ++it) {
-        railgun::Handler& handler = *it;
+      for (railgun::Handler& handler : table) {
         const Instruction* begin = first_instr + handler.begin();
         const Instruction* end = first_instr + handler.end();
         assert(handler_links_.find(begin) != handler_links_.end());
@@ -179,10 +171,8 @@ class Compiler {
 
     // and handlers table
     const r::ExceptionTable& table = code_->exception_table();
-    for (r::ExceptionTable::const_iterator it = table.begin(),
-         last = table.end(); it != last; ++it) {
+    for (const railgun::Handler& handler : table) {
       // should override (because handled option is true)
-      const r::Handler& handler = *it;
       jump_map_[handler.begin()] = JumpInfo(counter_++, true);
       jump_map_[handler.end()] = JumpInfo(counter_++, true);
     }
@@ -3047,9 +3037,8 @@ class Compiler {
 
 inline void CompileInternal(Compiler* compiler, railgun::Code* code) {
   compiler->Compile(code);
-  for (railgun::Code::Codes::const_iterator it = code->codes().begin(),
-       last = code->codes().end(); it != last; ++it) {
-    CompileInternal(compiler, *it);
+  for (railgun::Code* code : code->codes()) {
+    CompileInternal(compiler, code);
   }
 }
 
