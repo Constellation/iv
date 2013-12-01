@@ -1,12 +1,9 @@
 #ifndef IV_LV5_JSITERATOR_RESULT_H_
 #define IV_LV5_JSITERATOR_RESULT_H_
 #include <iv/lv5/error_check.h>
-#include <iv/lv5/property.h>
 #include <iv/lv5/jsval.h>
-#include <iv/lv5/jsobject_fwd.h>
+#include <iv/lv5/jsobject.h>
 #include <iv/lv5/map.h>
-#include <iv/lv5/slot.h>
-#include <iv/lv5/class.h>
 #include <iv/lv5/context.h>
 namespace iv {
 namespace lv5 {

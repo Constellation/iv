@@ -82,6 +82,7 @@ class GlobalData : public GlobalSymbols {
       set_iterator_map_(Map::New(ctx, static_cast<JSObject*>(nullptr), true)),
       array_buffer_map_(nullptr),
       data_view_map_(nullptr),
+      iterator_map_(nullptr),
       iterator_result_map_(nullptr),
       typed_array_maps_(),
       normal_arguments_map_(nullptr),
@@ -151,6 +152,17 @@ class GlobalData : public GlobalSymbols {
   }
 
   void InitNormalObjectMaps(Context* ctx) {
+    // Iterator Map
+    uint32_t next_offset;
+    iterator_map_ =
+        empty_object_map()
+          ->AddPropertyTransition(
+              ctx,
+              symbol::next(),
+              ATTR::Object::Data(),
+              &next_offset
+          );
+
     // IteratorResult Map
     uint32_t value_offset, done_offset;
     iterator_result_map_ =
@@ -278,6 +290,7 @@ class GlobalData : public GlobalSymbols {
   Map* set_iterator_map() const { return set_iterator_map_; }
   Map* array_buffer_map() const { return array_buffer_map_; }
   Map* data_view_map() const { return data_view_map_; }
+  Map* iterator_map() const { return iterator_map_; }
   Map* iterator_result_map() const { return iterator_result_map_; }
   Map* typed_array_map(TypedCode::Code code) const { return typed_array_maps_[code]; }
   Map* normal_arguments_map() const { return normal_arguments_map_; }
@@ -456,6 +469,7 @@ class GlobalData : public GlobalSymbols {
   Map* set_iterator_map_;
   Map* array_buffer_map_;
   Map* data_view_map_;
+  Map* iterator_map_;
   Map* iterator_result_map_;
   TypedArrayMaps typed_array_maps_;
   Map* normal_arguments_map_;
