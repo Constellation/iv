@@ -102,7 +102,7 @@ class DefaultSymbolProvider : public core::Singleton<DefaultSymbolProvider> {
     : default_symbols_() {
 #define V(sym)\
   const core::StringPiece sym##_target(#sym);\
-  sym##_ = detail::MakeSymbol(\
+  sym##_ = symbol::MakeSymbol(\
       new core::UString(sym##_target.begin(), sym##_target.end()));\
   default_symbols_.insert(sym##_);
     IV_DEFAULT_SYMBOLS(V)

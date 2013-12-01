@@ -107,8 +107,8 @@ class JSSet : public core::AllStatic {
   }
 
   static Symbol symbol() {
-    static const core::UString kSetData = core::ToUString("[[SetData]]");
-    return core::detail::MakePrivateSymbol(&kSetData);
+    static const char* const key = "[[SetData]]";
+    return symbol::MakePrivateSymbol(key);
   }
 };
 

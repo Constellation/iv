@@ -123,8 +123,8 @@ class JSMap : public core::AllStatic {
   }
 
   static Symbol symbol() {
-    static const core::UString kMapData = core::ToUString("[[MapData]]");
-    return core::detail::MakePrivateSymbol(&kMapData);
+    static const char* const key = "[[MapData]]";
+    return symbol::MakePrivateSymbol(key);
   }
 };
 

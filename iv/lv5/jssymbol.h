@@ -3,7 +3,7 @@
 #include <iv/ustring.h>
 #include <iv/lv5/jsval_fwd.h>
 #include <iv/lv5/jsobject_fwd.h>
-#include <iv/lv5/private_symbol.h>
+#include <iv/lv5/symbol.h>
 #include <iv/lv5/map.h>
 #include <iv/lv5/class.h>
 namespace iv {
@@ -30,7 +30,7 @@ class JSSymbol : public JSCell {
  private:
   JSSymbol(Context* ctx, JSVal description)
     : JSCell(radio::SYMBOL, ctx->global_data()->primitive_symbol_map(), nullptr),
-      symbol_(symbol::MakeGCPrivateSymbol(ctx, this)),
+      symbol_(symbol::MakePublicSymbol(ctx, this)),
       description_(description) { }
 
   Symbol symbol_;

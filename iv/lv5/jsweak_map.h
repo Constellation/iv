@@ -273,8 +273,8 @@ class JSWeakMap : public core::AllStatic {
   }
 
   static Symbol symbol() {
-    static const core::UString kMapData = core::ToUString("[[WeakMapData]]");
-    return core::detail::MakePrivateSymbol(&kMapData);
+    static const char* const key = "[[WeakMapData]]";
+    return symbol::MakePrivateSymbol(key);
   }
 };
 

@@ -12,12 +12,10 @@
 #include <iv/platform.h>
 namespace iv {
 namespace core {
-namespace detail {
+namespace symbol {
 
 template<std::size_t PointerSize, bool IsLittle>
 struct SymbolLayout;
-
-static const uint32_t kSymbolIsIndex = 0xFFFF;
 
 template<>
 struct SymbolLayout<4, true> {
@@ -83,16 +81,11 @@ struct SymbolLayout<8, false> {
 
 typedef SymbolLayout<core::Size::kPointerSize, core::kLittleEndian> Symbol;
 
+static const uint32_t kSymbolIsIndex = 0xFFFF;
+
 inline Symbol MakeSymbol(const core::UString* str) {
   Symbol symbol = { };
   symbol.str_.str_ = (reinterpret_cast<uintptr_t>(str) | 0x1);
-  return symbol;
-}
-
-template<typename T>
-inline Symbol MakePrivateSymbol(T* str) {
-  Symbol symbol = { };
-  symbol.str_.str_ = reinterpret_cast<uintptr_t>(str);
   return symbol;
 }
 
@@ -100,6 +93,19 @@ inline Symbol MakeSymbol(uint32_t index) {
   Symbol symbol;
   symbol.index_.high_ = index;
   symbol.index_.low_ = kSymbolIsIndex;
+  return symbol;
+}
+
+template<typename T>
+inline Symbol MakePublicSymbol(T* str) {
+  Symbol symbol = { };
+  symbol.str_.str_ = reinterpret_cast<uintptr_t>(str);
+  return symbol;
+}
+
+inline Symbol MakePrivateSymbol(uintptr_t str) {
+  Symbol symbol = { };
+  symbol.str_.str_ = (str | 0x2);
   return symbol;
 }
 
@@ -127,25 +133,17 @@ inline bool operator>=(Symbol x, Symbol y) {
   return x.bytes_ >= y.bytes_;
 }
 
-}  // namespace detail
-
-typedef detail::Symbol Symbol;
-
-#if defined(IV_COMPILER_GCC) && (IV_COMPILER_GCC >= 40300)
 static_assert(std::is_pod<Symbol>::value, "Symbol should be POD");
-#endif
-
-namespace symbol {
 
 static const uint32_t kMaxSize = INT32_MAX;
 
 inline bool IsIndexSymbol(Symbol sym) {
-  return sym.index_.low_ == detail::kSymbolIsIndex;
+  return sym.index_.low_ == kSymbolIsIndex;
 }
 
 inline bool IsArrayIndexSymbol(Symbol sym) {
   return
-      (sym.index_.low_ == detail::kSymbolIsIndex) &&
+      (sym.index_.low_ == kSymbolIsIndex) &&
       (sym.index_.high_ < UINT32_MAX);
 }
 
@@ -154,11 +152,15 @@ inline bool IsStringSymbol(Symbol sym) {
 }
 
 inline bool IsPrivateSymbol(Symbol sym) {
-  return !IsIndexSymbol(sym) && !IsStringSymbol(sym);
+  return !IsIndexSymbol(sym) && (sym.str_.str_ & 0x2);
+}
+
+inline bool IsPublicSymbol(Symbol sym) {
+  return !IsIndexSymbol(sym) && !(sym.str_.str_ & 0x3);
 }
 
 inline Symbol MakeSymbolFromIndex(uint32_t index) {
-  return detail::MakeSymbol(index);
+  return MakeSymbol(index);
 }
 
 inline const core::UString* GetStringFromSymbol(Symbol sym) {
@@ -196,9 +198,6 @@ inline T* GetPtrFromSymbol(Symbol sym) {
   return reinterpret_cast<T*>(sym.str_.str_);
 }
 
-}  // namespace symbol
-namespace detail {
-
 inline std::ostream& operator<<(std::ostream& o, Symbol symbol) {
   if (symbol::IsIndexSymbol(symbol)) {
     return o << symbol::GetIndexFromSymbol(symbol);
@@ -217,7 +216,11 @@ inline std::ostream& operator<<(std::ostream& o, Symbol symbol) {
   return o;
 }
 
-} } }  // namespace iv::core::detail
+}  // namespace iv::core::symbol
+
+typedef symbol::Symbol Symbol;
+
+} }  // namespace iv::core
 namespace IV_HASH_NAMESPACE_START {
 
 // template specialization for Symbol in std::unordered_map

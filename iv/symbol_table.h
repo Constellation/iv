@@ -116,7 +116,7 @@ class SymbolTable {
          last = set_.end(); it != last; ++it) {
       if (!insert_default_symbol() ||
           !symbol::DefaultSymbolProvider::Instance()->IsDefaultSymbol(
-              detail::MakeSymbol(it->pointer()))) {
+              symbol::MakeSymbol(it->pointer()))) {
         delete it->pointer();
       }
     }
@@ -137,11 +137,11 @@ class SymbolTable {
     const SymbolHolder target(str);
     typename Set::const_iterator it = set_.find(target);
     if (it != set_.end()) {
-      return detail::MakeSymbol(it->pointer());
+      return symbol::MakeSymbol(it->pointer());
     } else {
       const UString* res = new UString(str.begin(), str.end());
       set_.insert(res);
-      return detail::MakeSymbol(res);
+      return symbol::MakeSymbol(res);
     }
   }
 

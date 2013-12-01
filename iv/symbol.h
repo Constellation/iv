@@ -11,7 +11,7 @@ typedef const core::UString* StringSymbol;
 namespace symbol {
 
 static const Symbol kDummySymbol =
-    detail::MakeSymbol(static_cast<core::UString*>(nullptr));
+    MakeSymbol(static_cast<core::UString*>(nullptr));
 
 // Symbol key traits for QHashMap
 struct KeyTraits {

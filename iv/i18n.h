@@ -190,7 +190,8 @@ class I18N {
       last_order_ = 0;  // suppress warning
     }
 
-#define IV_V(name) Symbol name() const { return detail::MakePrivateSymbol(&name##_); }
+#define IV_V(name) Symbol name() const {\
+  return symbol::MakePrivateSymbol(reinterpret_cast<uintptr_t>(&name##_)); }
     IV_I18N_LOCALE_SYMBOLS(IV_V)
 #undef IV_V
 
