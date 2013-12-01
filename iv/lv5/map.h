@@ -355,6 +355,9 @@ class Map : public radio::HeapObject<radio::POINTER> {
         if (symbol::IsPrivateSymbol(it->first)) {
           continue;
         }
+        if (symbol::IsPublicSymbol(it->first)) {
+          continue;
+        }
         if (include || it->second.attributes.IsEnumerable()) {
           collector->Add(it->first, it->second.offset);
         }
