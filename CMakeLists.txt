@@ -8,11 +8,13 @@ if(COMMAND cmake_policy)
     cmake_policy(SET CMP0015 NEW)  # convert relative link paths to absolute
 endif(COMMAND cmake_policy)
 
+set(CMAKE_OSX_ARCHITECTURES "x86_64")
+add_subdirectory(third_party/gc)
+
 include_directories(
     .
     iv/third_party
-    /usr/local/include
-    /opt/local/include
+    third_party/gc/
     )
 
 macro(include_if_exists directory)
@@ -36,8 +38,6 @@ include_if_exists(/opt/local/include)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     # using Visual Studio C++
-    include_directories(win/gc)
-    link_directories(win/gc)
 else()
     add_definitions("-pipe")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-operator-names")

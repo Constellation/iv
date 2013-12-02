@@ -81,13 +81,7 @@ endmacro(link_iv)
 
 macro(link_lv5 target)
     link_iv(${target})
-
-    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-        find_library(LIB_GC NAMES gc HINTS ${PROJECT_SOURCE_DIR}/win/gc)
-    else()
-        find_library(LIB_GC gc)
-    endif()
-    target_link_libraries(${target} ${LIB_GC})
+    target_link_libraries(${target} gc-lib)
 endmacro(link_lv5)
 
 link_lv5(lv5)
