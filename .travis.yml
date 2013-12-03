@@ -1,0 +1,13 @@
+language: cpp
+compiler:
+    - clang
+    - gcc
+before_script:
+    - cmake -H. -Bout -DCMAKE_BUILD_TYPE=Debug
+script: make -C out && ./out/test/iv_unit_tests && ./out/test/lv5/lv5_unit_tests
+notifications:
+    recipients:
+        - utatane.tea@gmail.com
+    email:
+        on_success: change
+        on_failure: always
