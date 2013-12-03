@@ -84,7 +84,7 @@ TEST(AeroParserCase, MainTest) {
   }
   {
     space.Clear();
-    std::array<uint16_t, 2> l = { { 92, 99 } };
+    std::array<char16_t, 2> l = { { 92, 99 } };
     iv::core::UString str(l.begin(), l.end());
     iv::aero::Parser<iv::core::UStringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;

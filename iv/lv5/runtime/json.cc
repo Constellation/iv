@@ -170,7 +170,7 @@ JSVal JSONStringify(const Arguments& args, Error* e) {
     const double sp = std::min<double>(10.0,
                                        core::DoubleToInteger(space.number()));
     if (sp > 0) {
-      gap.assign(core::DoubleToUInt32(sp), static_cast<uint16_t>(' '));
+      gap.assign(core::DoubleToUInt32(sp), static_cast<char16_t>(' '));
     }
   } else if (space.IsString()) {
     JSString* sp = space.string();

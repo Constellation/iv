@@ -84,7 +84,7 @@ class SymbolTable {
    private:
     union Representation {
       const char* rep8_;
-      const uint16_t* rep16_;
+      const char16_t* rep16_;
     } rep_;
     std::size_t size_;
     bool is_8bit_;

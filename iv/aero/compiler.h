@@ -190,10 +190,10 @@ class Compiler : private Visitor {
     EmitCharacter(atom->character());
   }
 
-  void EmitCharacter(uint16_t ch) {
+  void EmitCharacter(char16_t ch) {
     if (IsIgnoreCase()) {
-      const uint16_t uu = core::character::ToUpperCase(ch);
-      const uint16_t lu = core::character::ToLowerCase(ch);
+      const char16_t uu = core::character::ToUpperCase(ch);
+      const char16_t lu = core::character::ToLowerCase(ch);
       if (!(uu == lu && uu == ch)) {
         if (uu == ch || lu == ch) {
           Emit<OP::CHECK_2CHAR_OR>();
@@ -211,7 +211,7 @@ class Compiler : private Visitor {
     EmitCharacterRaw(ch);
   }
 
-  void EmitCharacterRaw(uint16_t ch) {
+  void EmitCharacterRaw(char16_t ch) {
     if (ch > 0xFF) {
       Emit<OP::CHECK_2BYTE_CHAR>();
       Emit2(ch);

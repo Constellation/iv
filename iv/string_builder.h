@@ -84,7 +84,7 @@ class BasicStringBuilder : protected std::vector<CharT> {
 };
 
 typedef BasicStringBuilder<char> StringBuilder;
-typedef BasicStringBuilder<uint16_t> UStringBuilder;
+typedef BasicStringBuilder<char16_t> UStringBuilder;
 
 } }  // namespace iv::core
 #endif  // IV_STRING_BUILDER_H_

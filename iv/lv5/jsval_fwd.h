@@ -2,11 +2,10 @@
 #define IV_LV5_JSVAL_FWD_H_
 #include <cmath>
 #include <algorithm>
+#include <type_traits>
 #include <iv/detail/cstdint.h>
-#include <iv/detail/type_traits.h>
 #include <iv/detail/cinttypes.h>
 #include <iv/byteorder.h>
-#include <iv/enable_if.h>
 #include <iv/platform.h>
 #include <iv/platform_math.h>
 #include <iv/canonicalized_nan.h>
@@ -456,7 +455,8 @@ class JSVal : public JSLayout {
   //
   //  so not provide implicit constructor with bool.
   template<typename T>
-  JSVal(T val, typename enable_if<std::is_same<bool, T> >::type* = 0) {
+  JSVal(T val,
+        typename std::enable_if<std::is_same<bool, T>::value>::type* = 0) {
     static_assert(!(std::is_same<bool, T>::value), "T should be bool");
   }
 
@@ -475,34 +475,42 @@ class JSVal : public JSLayout {
 
   template<typename T>
   static inline JSVal Signed(T val,
-      typename enable_if_c<std::is_same<int32_t, T>::value || std::is_same<int16_t, T>::value || std::is_same<int8_t, T>::value>::type* = 0) {
+      typename std::enable_if<std::is_same<int32_t, T>::value ||
+                              std::is_same<int16_t, T>::value ||
+                              std::is_same<int8_t, T>::value>::type* = 0) {
     return JSVal(val, detail::Int32Tag());
   }
 
   template<typename T>
   static inline JSVal UnSigned(T val,
-      typename enable_if_c<std::is_same<uint32_t, T>::value || std::is_same<uint16_t, T>::value || std::is_same<uint8_t, T>::value>::type* = 0) {
+      typename std::enable_if<std::is_same<uint32_t, T>::value ||
+                              std::is_same<uint16_t, T>::value ||
+                              std::is_same<uint8_t, T>::value  ||
+                              std::is_same<char16_t, T>::value ||
+                              std::is_same<char32_t, T>::value>::type* = 0) {
     return JSVal(val, detail::UInt32Tag());
   }
 
   template<typename T>
   static inline JSVal UInt32(
       T val,
-      typename enable_if<std::is_same<uint32_t, T> >::type* = 0) {
+      typename std::enable_if<std::is_same<uint32_t, T>::value ||
+                              std::is_same<char32_t, T>::value >::type* = 0) {
     return JSVal(val, detail::UInt32Tag());
   }
 
   template<typename T>
   static inline JSVal UInt16(
       T val,
-      typename enable_if<std::is_same<uint16_t, T> >::type* = 0) {
+      typename std::enable_if<std::is_same<uint16_t, T>::value ||
+                              std::is_same<char16_t, T>::value >::type* = 0) {
     return JSVal(val, detail::UInt16Tag());
   }
 
   template<typename T>
   static inline JSVal Int32(
       T val,
-      typename enable_if<std::is_same<int32_t, T> >::type* = 0) {
+      typename std::enable_if<std::is_same<int32_t, T>::value>::type* = 0) {
     return JSVal(val, detail::Int32Tag());
   }
 

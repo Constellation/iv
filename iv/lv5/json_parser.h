@@ -157,7 +157,7 @@ class JSONParser : private core::Noncopyable<> {
 
   JSVal ParseJSONString(Error* e) {
     assert(token_ == Token::TK_STRING);
-    const std::vector<uint16_t>& vec = lexer_.Buffer();
+    const std::vector<char16_t>& vec = lexer_.Buffer();
     JSString* string = JSString::New(ctx_, vec.begin(), vec.end(), false, CHECK);
     Next();
     return string;
@@ -170,7 +170,7 @@ class JSONParser : private core::Noncopyable<> {
     return number;
   }
 
-  Symbol ParseSymbol(const std::vector<uint16_t>& range) {
+  Symbol ParseSymbol(const std::vector<char16_t>& range) {
     const Symbol res =
         ctx_->Intern(core::UStringPiece(range.data(), range.size()));
     Next();

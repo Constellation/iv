@@ -16,13 +16,13 @@ namespace core {
 namespace character {
 namespace code {
 
-static const uint16_t CR = 0x000D;
-static const uint16_t LF = 0x000A;
-static const uint16_t ZWNJ = 0x200C;
-static const uint16_t ZWJ = 0x200D;
-static const uint16_t BOM = 0xFEFF;
-static const uint16_t LINE_SEPARATOR = 0x2028;
-static const uint16_t PARAGRAPH_SEPARATOR = 0x2029;
+static const char16_t CR = 0x000D;
+static const char16_t LF = 0x000A;
+static const char16_t ZWNJ = 0x200C;
+static const char16_t ZWJ = 0x200D;
+static const char16_t BOM = 0xFEFF;
+static const char16_t LINE_SEPARATOR = 0x2028;
+static const char16_t PARAGRAPH_SEPARATOR = 0x2029;
 static const uint64_t REMOVE = UINT64_C(0xFFFFFFFFFFFFFFFF);
 static const int DEFAULT = -1;
 
@@ -39,8 +39,8 @@ enum Locale {
 
 }  // namespace locale
 
-static const uint16_t kMinValue = 0;
-static const uint16_t kMaxValue = 0xFFFF;
+static const char16_t kMinValue = 0;
+static const char16_t kMaxValue = 0xFFFF;
 
 static const int kMinRadix = 2;
 static const int kMaxRadix = 36;
@@ -204,7 +204,7 @@ static const CategoryCache kCategoryCache = { {
    2,  3,  2,  3,  2,  3,  2,  3
 } };
 
-typedef std::array<uint16_t, 1421> CategoryKeys;
+typedef std::array<char16_t, 1421> CategoryKeys;
 static const CategoryKeys kCategoryKeys = { {
 0x03E8, 0x03EF, 0x03F4, 0x03F6, 0x03F8, 0x03F9, 0x03FB, 0x03FD,
 0x0430, 0x0460, 0x0482, 0x0483, 0x0488, 0x048A, 0x04C0, 0x04C2,
@@ -386,7 +386,7 @@ static const CategoryKeys kCategoryKeys = { {
 0xFFED, 0xFFEF, 0xFFF9, 0xFFFC, 0xFFFE
 } };
 
-typedef std::array<uint16_t, 2842> CategoryValues;
+typedef std::array<char16_t, 2842> CategoryValues;
 static const CategoryValues kCategoryValues = { {
 0x03EE, 0x0302, 0x03F3, 0x0003, 0x03F5, 0x0302, 0x03F7, 0x021A,
 0x03F8, 0x0003, 0x03FA, 0x0002, 0x03FC, 0x0003, 0x042F, 0x0002,
@@ -801,7 +801,7 @@ UINT64_C(0x0000000003A90342), UINT64_C(0x000003A903420399),
 UINT64_C(0x0000000003A90399)
 } };
 
-static const std::array<uint16_t, 1000 - 0xC0> kLowerCaseCache = { {
+static const std::array<char16_t, 1000 - 0xC0> kLowerCaseCache = { {
 0x00E0, 0x00E1, 0x00E2, 0x00E3, 0x00E4, 0x00E5, 0x00E6, 0x00E7,
 0x00E8, 0x00E9, 0x00EA, 0x00EB, 0x00EC, 0x00ED, 0x00EE, 0x00EF,
 0x00F0, 0x00F1, 0x00F2, 0x00F3, 0x00F4, 0x00F5, 0x00F6, 0x00D7,
@@ -905,7 +905,7 @@ static const std::array<uint16_t, 1000 - 0xC0> kLowerCaseCache = { {
 0x03E1, 0x03E1, 0x03E3, 0x03E3, 0x03E5, 0x03E5, 0x03E7, 0x03E7
 } };
 
-typedef std::array<uint16_t, 151> LowerCaseKeys;
+typedef std::array<char16_t, 151> LowerCaseKeys;
 static const LowerCaseKeys kLowerCaseKeys = { {
 0x0041, 0x00C0, 0x00D8, 0x0100, 0x0130, 0x0132, 0x0139, 0x014A,
 0x0178, 0x0179, 0x0181, 0x0182, 0x0186, 0x0187, 0x0189, 0x018B,
@@ -928,7 +928,7 @@ static const LowerCaseKeys kLowerCaseKeys = { {
 0xA77E, 0xA78B, 0xA78D, 0xA790, 0xA7A0, 0xA7AA, 0xFF21
 } };
 
-typedef std::array<uint16_t, 302> LowerCaseValues;
+typedef std::array<char16_t, 302> LowerCaseValues;
 static const LowerCaseValues kLowerCaseValues = { {
 0x005A, 0x0020, 0x00D6, 0x0020, 0x00DE, 0x0020, 0x812E, 0x0001,
 0x0013, 0x0000, 0x8136, 0x0001, 0x8147, 0x0001, 0x8176, 0x0001,
@@ -970,7 +970,7 @@ static const LowerCaseValues kLowerCaseValues = { {
 0x27A8, 0x0001, 0xA7AA, 0x5ABC, 0xFF3A, 0x0020
 } };
 
-typedef std::array<uint16_t, 1000 - 0xB5> UpperCaseCache;
+typedef std::array<char16_t, 1000 - 0xB5> UpperCaseCache;
 static const UpperCaseCache kUpperCaseCache = { {
 0x039C, 0x00B6, 0x00B7, 0x00B8, 0x00B9, 0x00BA, 0x00BB, 0x00BC,
 0x00BD, 0x00BE, 0x00BF, 0x00C0, 0x00C1, 0x00C2, 0x00C3, 0x00C4,
@@ -1077,7 +1077,7 @@ static const UpperCaseCache kUpperCaseCache = { {
 0x03E4, 0x03E6, 0x03E6
 } };
 
-typedef std::array<uint16_t, 260> UpperCaseKeys;
+typedef std::array<char16_t, 260> UpperCaseKeys;
 static const UpperCaseKeys kUpperCaseKeys = { {
 0x0061, 0x00B5, 0x00DF, 0x00E0, 0x00F8, 0x00FF, 0x0101, 0x0131,
 0x0133, 0x013A, 0x0149, 0x014B, 0x017A, 0x017F, 0x0180, 0x0183,
@@ -1114,7 +1114,7 @@ static const UpperCaseKeys kUpperCaseKeys = { {
 0xFB15, 0xFB16, 0xFB17, 0xFF41
 } };
 
-typedef std::array<uint16_t, 520> UpperCaseValues;
+typedef std::array<char16_t, 520> UpperCaseValues;
 static const UpperCaseValues kUpperCaseValues = { {
 0x007A, 0xFFE0, 0x00B5, 0x02E7, 0x0005, 0x0000, 0x00F6, 0xFFE0,
 0x00FE, 0xFFE0, 0x80FF, 0x0079, 0x812F, 0xFFFF, 0x8131, 0xFF18,
@@ -1183,7 +1183,7 @@ static const UpperCaseValues kUpperCaseValues = { {
 0x000F, 0x0000, 0x0010, 0x0000, 0x0011, 0x0000, 0xFF5A, 0xFFE0
 } };
 
-inline uint32_t GetCategory(uint16_t c) {
+inline uint32_t GetCategory(char16_t c) {
   if (c < 1000) {
     return kCategoryCache[c];
   }
@@ -1203,80 +1203,80 @@ inline uint32_t GetCategory(uint16_t c) {
   return UNASSIGNED;
 }
 
-inline bool IsASCII(uint16_t c) {
+inline bool IsASCII(char16_t c) {
   return !(c & ~0x7F);
 }
 
-inline bool IsASCIIAlpha(uint16_t c) {
+inline bool IsASCIIAlpha(char16_t c) {
   return (c | 0x20) >= 'a' && (c | 0x20) <= 'z';
 }
 
-inline bool IsDecimalDigit(uint16_t c) {
+inline bool IsDecimalDigit(char16_t c) {
   return c >= '0' && c <= '9';
 }
 
-inline bool IsOctalDigit(uint16_t c) {
+inline bool IsOctalDigit(char16_t c) {
   return c >= '0' && c <= '7';
 }
 
-inline bool IsHexDigit(uint16_t c) {
+inline bool IsHexDigit(char16_t c) {
   return IsDecimalDigit(c) || ((c | 0x20) >= 'a' && (c | 0x20) <= 'f');
 }
 
-inline bool IsDigit(uint16_t c) {
+inline bool IsDigit(char16_t c) {
   return IsDecimalDigit(c) ||
       (c > 1631 && GetCategory(c) == DECIMAL_DIGIT_NUMBER);
 }
 
-inline bool IsASCIIAlphanumeric(uint16_t c) {
+inline bool IsASCIIAlphanumeric(char16_t c) {
   return IsDecimalDigit(c) || IsASCIIAlpha(c);
 }
 
-inline bool IsNonASCIIIdentifierStart(uint16_t c) {
+inline bool IsNonASCIIIdentifierStart(char16_t c) {
   return (1U << GetCategory(c)) & (Lu | Ll | Lt | Lm | Lo | Nl);
 }
 
-inline bool IsNonASCIIIdentifierPart(uint16_t c) {
+inline bool IsNonASCIIIdentifierPart(char16_t c) {
   return
       ((1U << GetCategory(c)) &
        (Lu | Ll | Lt | Lm | Lo | Mn | Mc | Nd | Pc | Nl)) ||
       c == code::ZWNJ || c == code::ZWJ;
 }
 
-inline bool IsSeparatorSpace(uint16_t c) {
+inline bool IsSeparatorSpace(char16_t c) {
   return GetCategory(c) == SPACE_SEPARATOR;
 }
 
-inline bool IsWhiteSpace(uint16_t c) {
+inline bool IsWhiteSpace(char16_t c) {
   return IsASCII(c) ?
       (c == ' ' || c == '\t' || c == 0xB || c == 0xC) :
       c == 0x00A0 || c == 0xFEFF || IsSeparatorSpace(c);
 }
 
-inline bool IsLineTerminator(uint16_t c) {
+inline bool IsLineTerminator(char16_t c) {
   return
       c == code::CR ||
       c == code::LF ||
       (c & ~1) == 0x2028;  // 0x2028 or 0x2029
 }
 
-inline bool IsLineOrParagraphSeparator(uint16_t c) {
+inline bool IsLineOrParagraphSeparator(char16_t c) {
   return (c & ~1) == 0x2028;  // 0x2028 or 0x2029
 }
 
-inline bool IsIdentifierStart(uint16_t c) {
+inline bool IsIdentifierStart(char16_t c) {
   return IsASCII(c) ? c == '$'  || c == '_' ||
                       c == '\\' || IsASCIIAlpha(c) :
                       IsNonASCIIIdentifierStart(c);
 }
 
-inline bool IsIdentifierPart(uint16_t c) {
+inline bool IsIdentifierPart(char16_t c) {
   return IsASCII(c) ? c == '$'  || c == '_' ||
                       c == '\\' || IsASCIIAlphanumeric(c) :
                       IsNonASCIIIdentifierPart(c);
 }
 
-inline uint64_t ToLowerCase(uint16_t c) {
+inline uint64_t ToLowerCase(char16_t c) {
   if ('A' <= c && c <= 'Z') {
     return c + ('a' - 'A');
   }
@@ -1291,7 +1291,7 @@ inline uint64_t ToLowerCase(uint16_t c) {
     const std::size_t index = c - 0xC0;
     if (index < kLowerCaseCache.size()) {
       assert(index < kLowerCaseCache.size());
-      const uint16_t res = kLowerCaseCache[index];
+      const char16_t res = kLowerCaseCache[index];
       if (res != 0) {
         return res;
       }
@@ -1305,9 +1305,9 @@ inline uint64_t ToLowerCase(uint16_t c) {
   assert(result < static_cast<int>(kLowerCaseKeys.size()));
   if (result >= 0) {
     bool by2 = false;
-    const uint16_t start = kLowerCaseKeys[result];
-    uint16_t end = kLowerCaseValues[result * 2];
-    const uint16_t mapping = kLowerCaseValues[result * 2 + 1];
+    const char16_t start = kLowerCaseKeys[result];
+    char16_t end = kLowerCaseValues[result * 2];
+    const char16_t mapping = kLowerCaseValues[result * 2 + 1];
     if (mapping == 0) {
       // special casing
       if (start == c) {
@@ -1322,7 +1322,7 @@ inline uint64_t ToLowerCase(uint16_t c) {
         if (by2 && (c & 1) != (start & 1)) {
           return c;
         }
-        return static_cast<uint16_t>(c + mapping);
+        return static_cast<char16_t>(c + mapping);
       }
     }
   }
@@ -1331,7 +1331,7 @@ inline uint64_t ToLowerCase(uint16_t c) {
 
 // if target character is removed, return code::REMOVE
 inline uint64_t ToLocaleLowerCase(locale::Locale locale,
-                                  uint16_t c,
+                                  char16_t c,
                                   int prev = code::DEFAULT,
                                   int next = code::DEFAULT) {
   switch (locale) {
@@ -1414,7 +1414,7 @@ inline uint64_t ToLocaleLowerCase(locale::Locale locale,
   return ToLowerCase(c);
 }
 
-inline uint64_t ToUpperCase(uint16_t c) {
+inline uint64_t ToUpperCase(char16_t c) {
   if ('a' <= c && c <= 'z') {
     return c - ('a' - 'A');
   }
@@ -1428,7 +1428,7 @@ inline uint64_t ToUpperCase(uint16_t c) {
     const std::size_t index = c - 0xB5;
     if (index < kUpperCaseCache.size()) {
       assert(index < kUpperCaseCache.size());
-      const uint16_t res = kUpperCaseCache[index];
+      const char16_t res = kUpperCaseCache[index];
       if (res != 0) {
         return res;
       }
@@ -1442,9 +1442,9 @@ inline uint64_t ToUpperCase(uint16_t c) {
   assert(result < static_cast<int>(kUpperCaseKeys.size()));
   if (result >= 0) {
     bool by2 = false;
-    const uint16_t start = *it;
-    uint16_t end = kUpperCaseValues[result * 2];
-    const uint16_t mapping = kUpperCaseValues[result * 2 + 1];
+    const char16_t start = *it;
+    char16_t end = kUpperCaseValues[result * 2];
+    const char16_t mapping = kUpperCaseValues[result * 2 + 1];
     if (mapping == 0) {
       // special casing
       if (start == c) {
@@ -1459,7 +1459,7 @@ inline uint64_t ToUpperCase(uint16_t c) {
         if (by2 && (c & 1) != (start & 1)) {
           return c;
         }
-        return static_cast<uint16_t>(c + mapping);
+        return static_cast<char16_t>(c + mapping);
       }
     }
   }
@@ -1469,7 +1469,7 @@ inline uint64_t ToUpperCase(uint16_t c) {
 // if target character is removed, return code::REMOVE
 // prev is character that is not uppercased yet.
 inline uint64_t ToLocaleUpperCase(locale::Locale locale,
-                                  uint16_t c,
+                                  char16_t c,
                                   int prev = code::DEFAULT,
                                   int next = code::DEFAULT) {
   switch (locale) {

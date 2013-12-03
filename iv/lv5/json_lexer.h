@@ -12,17 +12,17 @@ namespace iv {
 namespace lv5 {
 namespace detail {
 
-inline bool IsJSONWhiteSpace(uint16_t c) {
+inline bool IsJSONWhiteSpace(char16_t c) {
   return (c == ' ' || c == '\n' || c == '\t' || c == '\r');
 }
 
 template<bool AcceptLineTerminator>
-inline bool IsAcceptedChar(uint16_t c) {
+inline bool IsAcceptedChar(char16_t c) {
   return c > 0x001F;
 }
 
 template<>
-inline bool IsAcceptedChar<false>(uint16_t c) {
+inline bool IsAcceptedChar<false>(char16_t c) {
   return c > 0x001F && !core::character::IsLineTerminator(c);
 }
 
@@ -112,7 +112,7 @@ class JSONLexer : private core::Noncopyable<> {
     }
   }
 
-  inline const std::vector<uint16_t>& Buffer() const {
+  inline const std::vector<char16_t>& Buffer() const {
     return buffer16_;
   }
 
@@ -275,7 +275,7 @@ class JSONLexer : private core::Noncopyable<> {
         break;
       case 'u' : {
         Advance();
-        uint16_t uc = '\0';
+        char16_t uc = '\0';
         for (int i = 0; i < 4; ++i) {
           const int d = core::HexValue(c_);
           if (d < 0) {
@@ -296,7 +296,7 @@ class JSONLexer : private core::Noncopyable<> {
 
   const Source& source_;
   std::vector<char> buffer8_;
-  std::vector<uint16_t> buffer16_;
+  std::vector<char16_t> buffer16_;
   double numeric_;
   std::size_t pos_;
   const std::size_t end_;

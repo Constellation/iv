@@ -73,30 +73,27 @@ inline CharT Mask(CharT ch) {
   return BitMask<N, uint32_t>::lower & ch;
 }
 
-template<typename uint16_t>
-inline bool IsHighSurrogate(uint16_t uc) {
+inline bool IsHighSurrogate(char16_t uc) {
   return (static_cast<uint32_t>(uc) & ~kHighSurrogateMask) == kHighSurrogateMin;
 }
 
-template<typename uint16_t>
-inline bool IsLowSurrogate(uint16_t uc) {
+inline bool IsLowSurrogate(char16_t uc) {
   return (static_cast<uint32_t>(uc) & ~kLowSurrogateMask) == kLowSurrogateMin;
 }
 
-template<typename uint16_t>
-inline bool IsSurrogate(uint16_t uc) {
+inline bool IsSurrogate(char16_t uc) {
   return (static_cast<uint32_t>(uc) & ~kSurrogateMask) == kSurrogateMin;
 }
 
-inline uint16_t ToHighSurrogate(uint32_t uc) {
-  return static_cast<uint16_t>((uc >> kSurrogateBits) + kHighSurrogateOffset);
+inline char16_t ToHighSurrogate(uint32_t uc) {
+  return static_cast<char16_t>((uc >> kSurrogateBits) + kHighSurrogateOffset);
 }
 
-inline uint16_t ToLowSurrogate(uint32_t uc) {
-  return static_cast<uint16_t>((uc & kLowSurrogateMask) + kLowSurrogateMin);
+inline char16_t ToLowSurrogate(uint32_t uc) {
+  return static_cast<char16_t>((uc & kLowSurrogateMask) + kLowSurrogateMin);
 }
 
-inline uint32_t DecodeSurrogatePair(uint16_t high, uint16_t low) {
+inline uint32_t DecodeSurrogatePair(char16_t high, char16_t low) {
   return (static_cast<uint32_t>(high & kHighSurrogateMask) << kSurrogateBits) +
       static_cast<uint32_t>(low & kLowSurrogateMask) + 0x10000;
 }
@@ -414,7 +411,7 @@ inline UTF16OutputIter CodePointToUTF16(
     *result++ = ToHighSurrogate(point);
     *result++ = ToLowSurrogate(point);
   } else {
-    *result++ = static_cast<uint16_t>(point);
+    *result++ = static_cast<char16_t>(point);
   }
   return result;
 }

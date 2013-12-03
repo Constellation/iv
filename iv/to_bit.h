@@ -17,7 +17,7 @@ struct Rep<1> {
 
 template<>
 struct Rep<2> {
-  typedef uint16_t type;
+  typedef char16_t type;
 };
 
 template<>

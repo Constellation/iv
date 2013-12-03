@@ -2,8 +2,7 @@
 #define IV_MAYBE_H_
 #include <cassert>
 #include <algorithm>
-#include <iv/detail/type_traits.h>
-#include <iv/enable_if.h>
+#include <type_traits>
 
 // Maybe nullptr pointer wrapper class
 // not have ownership
@@ -22,7 +21,7 @@ class Maybe {
 
   template<class U>
   Maybe(const Maybe<U>& rhs,
-        typename enable_if<std::is_convertible<U*, T*> >::type* = 0)
+        typename std::enable_if<std::is_convertible<U*, T*>::value>::type* = 0)
     : ptr_(rhs.get_address_maybe_null()) {
   }
 

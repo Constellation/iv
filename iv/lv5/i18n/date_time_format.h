@@ -157,7 +157,7 @@ inline JSObject* InitializeDateTimeFormat(Context* ctx,
         options.options()->Get(ctx, symbol::timeZone(), IV_LV5_ERROR(e));
     if (!time_zone.IsUndefined()) {
       JSString* str = time_zone.ToString(ctx, IV_LV5_ERROR(e));
-      std::vector<uint16_t> vec;
+      std::vector<char16_t> vec;
       for (JSString::const_iterator it = str->begin(),
            last = str->end(); it != last; ++it) {
         vec.push_back(core::i18n::ToLocaleIdentifierUpperCase(*it));

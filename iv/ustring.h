@@ -5,37 +5,24 @@
 #include <iv/detail/cstdint.h>
 #include <iv/stringpiece.h>
 #include <iv/conversions.h>
+#include <iv/unicode_character.h>
 namespace iv {
 namespace core {
 
-typedef std::basic_string<uint16_t> UString;
+typedef std::u16string UString;
 
 inline UString ToUString(const StringPiece& piece) {
-  return UString(piece.begin(), piece.end());
+  return UString(reinterpret_cast<const uc8*>(piece.data()),
+                 reinterpret_cast<const uc8*>(piece.data() + piece.size()));
 }
 
 inline UString ToUString(const UStringPiece& piece) {
   return UString(piece.begin(), piece.end());
 }
 
-inline UString ToUString(uint16_t ch) {
+inline UString ToUString(char16_t ch) {
   return UString(&ch, &ch + 1);
 }
 
 } }  // namespace iv::core
-
-namespace IV_HASH_NAMESPACE_START {
-
-// template specialization for UString in std::unordered_map
-// allowed in section 17.4.3.1
-template<>
-struct hash<iv::core::UString>
-  : public std::unary_function<iv::core::UString, std::size_t> {
-  result_type operator()(const argument_type& x) const {
-    return iv::core::Hash::StringToHash(x);
-  }
-};
-
-} IV_HASH_NAMESPACE_END  // namespace std
-
 #endif  // IV_USTRING_H_

@@ -27,7 +27,7 @@ class RangeBuilder : private core::Noncopyable<RangeBuilder> {
 
   bool IsIgnoreCase() const { return ignore_case_; }
 
-  void AddRange(uint16_t start, uint16_t last, bool ignore_case) {
+  void AddRange(char16_t start, char16_t last, bool ignore_case) {
     if (start == last) {
       Add(start, ignore_case);
     } else {
@@ -42,7 +42,7 @@ class RangeBuilder : private core::Noncopyable<RangeBuilder> {
     }
   }
 
-  void AddOrEscaped(uint16_t escaped, uint16_t ch) {
+  void AddOrEscaped(char16_t escaped, char16_t ch) {
     if (escaped == 0) {
       Add(ch, true);
     } else {
@@ -50,7 +50,7 @@ class RangeBuilder : private core::Noncopyable<RangeBuilder> {
     }
   }
 
-  void Add(uint16_t ch, bool ignore_case) {
+  void Add(char16_t ch, bool ignore_case) {
     if (IsIgnoreCase() && ignore_case) {
       AddCharacterIgnoreCase(ch);
     } else {
@@ -58,7 +58,7 @@ class RangeBuilder : private core::Noncopyable<RangeBuilder> {
     }
   }
 
-  const Ranges& GetEscapedRange(uint16_t ch) {
+  const Ranges& GetEscapedRange(char16_t ch) {
     Clear();
     AddEscape(ch);
     return Finish();
@@ -84,11 +84,11 @@ class RangeBuilder : private core::Noncopyable<RangeBuilder> {
     return ranges_;
   }
 
-  static bool IsValidRange(uint16_t start, uint16_t last) {
+  static bool IsValidRange(char16_t start, char16_t last) {
     return start <= last;
   }
  private:
-  void AddEscape(uint16_t escaped) {
+  void AddEscape(char16_t escaped) {
     switch (escaped) {
       case 'd': {
         AddRanges(kDigitRanges.begin(), kDigitRanges.end());
@@ -126,9 +126,9 @@ class RangeBuilder : private core::Noncopyable<RangeBuilder> {
     }
   }
 
-  void AddCharacterIgnoreCase(uint16_t ch) {
-    const uint16_t lu = core::character::ToLowerCase(ch);
-    const uint16_t uu = core::character::ToUpperCase(ch);
+  void AddCharacterIgnoreCase(char16_t ch) {
+    const char16_t lu = core::character::ToLowerCase(ch);
+    const char16_t uu = core::character::ToUpperCase(ch);
     if (lu == uu && lu == ch) {
       sorted_.push_back(std::make_pair(ch, ch));
     } else {
@@ -140,7 +140,7 @@ class RangeBuilder : private core::Noncopyable<RangeBuilder> {
 
   template<typename Iter>
   void AddInvertedRanges(Iter it, Iter last) {
-    uint16_t start = 0x0000;
+    char16_t start = 0x0000;
     for (; it != last; ++it) {
       AddRange(start, it->first - 1, false);
       start = it->second + 1;
