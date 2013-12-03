@@ -66,6 +66,7 @@ target_link_libraries(lv5 liblv5)
 
 macro(link_iv target)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        set(LIB_CXX "")
         find_library(LIB_CXX c++)
         if (NOT "${LIB_CXX}" STREQUAL "NOTFOUND")
             target_link_libraries(${target} ${LIB_CXX})
