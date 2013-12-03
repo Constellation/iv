@@ -3037,8 +3037,8 @@ class Compiler {
 
 inline void CompileInternal(Compiler* compiler, railgun::Code* code) {
   compiler->Compile(code);
-  for (railgun::Code* code : code->codes()) {
-    CompileInternal(compiler, code);
+  for (railgun::Code* sub : code->codes()) {
+    CompileInternal(compiler, sub);
   }
 }
 
