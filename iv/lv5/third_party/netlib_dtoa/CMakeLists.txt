@@ -6,6 +6,7 @@ else()
     add_definitions(
         "-Wno-unused-function"
         "-Wno-sign-compare"
+        "-Werror=uninitialized"
         )
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
