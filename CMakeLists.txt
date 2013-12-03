@@ -85,11 +85,10 @@ else()
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         # using Clang
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
         add_definitions(
             "-ferror-limit=1000"
             "-fcolor-diagnostics"
-            "-stdlib=libc++"
             "-Wno-nested-anon-types"
             )
     elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
