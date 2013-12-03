@@ -75,7 +75,7 @@ class BasicAstFactory {
   }
 
 
-  StringLiteral* NewStringLiteral(const std::vector<uint16_t>& buffer,
+  StringLiteral* NewStringLiteral(const std::vector<char16_t>& buffer,
                                   std::size_t begin,
                                   std::size_t end,
                                   std::size_t line_number) {
@@ -96,8 +96,8 @@ class BasicAstFactory {
           lhs->line_number());
   }
 
-  RegExpLiteral* NewRegExpLiteral(const std::vector<uint16_t>& content,
-                                  const std::vector<uint16_t>& flags,
+  RegExpLiteral* NewRegExpLiteral(const std::vector<char16_t>& content,
+                                  const std::vector<char16_t>& flags,
                                   std::size_t begin,
                                   std::size_t end,
                                   std::size_t line_number) {

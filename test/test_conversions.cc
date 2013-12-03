@@ -369,7 +369,7 @@ TEST(ConversionsCase, JSONQuote) {
     "\\u001f"
   } };
   std::vector<char> res;
-  for (uint16_t i = 0; i < 32; ++i) {
+  for (char16_t i = 0; i < 32; ++i) {
     res.clear();
     iv::core::JSONQuote(&i, &i + 1, std::back_inserter(res));
     res.push_back('\0');

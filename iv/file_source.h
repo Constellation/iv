@@ -22,7 +22,7 @@ class FileSource {
     ParseMagicComment(str);
   }
 
-  inline uint16_t operator[](std::size_t pos) const {
+  inline char16_t operator[](std::size_t pos) const {
     assert(pos < size());
     return source_[pos];
   }

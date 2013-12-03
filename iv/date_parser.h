@@ -78,7 +78,7 @@ class KeywordChecker : private core::Noncopyable<> {
 
   class Finder {
    public:
-    typedef std::array<uint16_t, 4> buf_type;
+    typedef std::array<char16_t, 4> buf_type;
     Finder(const buf_type& buf, std::size_t len)
       : buf_(buf), len_(len) { }
 
@@ -100,7 +100,7 @@ class KeywordChecker : private core::Noncopyable<> {
   template<typename Iter>
   static const Keyword& Lookup(Iter* it, Iter last) {
     // fill buffer 4 chars
-    std::array<uint16_t, 4> buf = { { } };
+    std::array<char16_t, 4> buf = { { } };
     std::size_t i = 0;
     for (;
          (*it != last) &&

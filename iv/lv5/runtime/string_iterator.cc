@@ -47,12 +47,12 @@ JSVal StringIteratorNext(const Arguments& args, Error* e) {
     return JSIteratorResult::New(ctx, JSUndefined, true);
   }
 
-  const uint16_t first = s->At(index);
+  const char16_t first = s->At(index);
   JSString* result = nullptr;
   if (first < 0xD800U || first > 0xDBFFU || index + 1 == len) {
     result = JSString::NewSingle(ctx, first);
   } else {
-    const uint16_t second = s->At(index + 1);
+    const char16_t second = s->At(index + 1);
     if (second < 0xDC00U || second > 0xDFFFU) {
       result = JSString::NewSingle(ctx, first);
     } else {

@@ -5,7 +5,7 @@
 namespace iv {
 namespace lv5 {
 
-class JSStringBuilder : public core::BasicStringBuilder<uint16_t> {
+class JSStringBuilder : public core::BasicStringBuilder<char16_t> {
  public:
   JSString* Build(Context* ctx, bool is_8bit, Error* e) const {
     return JSString::New(ctx,

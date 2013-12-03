@@ -1,7 +1,7 @@
 //
 // + FiberSlot
 //   + FiberBase
-//     + Fiber<uint16_t | char>
+//     + Fiber<char16_t | char>
 //         have string content
 //         this class is published to world
 //   + Cons (in JSString)
@@ -70,7 +70,7 @@ template<typename CharT, typename ExportCharT>
 class Fiber;
 
 typedef Fiber<uint8_t,  char>     Fiber8;
-typedef Fiber<uint16_t, uint16_t> Fiber16;
+typedef Fiber<char16_t, char16_t> Fiber16;
 
 class FiberBase : public FiberSlot {
  public:
@@ -80,14 +80,14 @@ class FiberBase : public FiberSlot {
   friend class JSString;
   template<typename T>
   class iterator_base
-    : public std::iterator<std::random_access_iterator_tag, uint16_t> {
+    : public std::iterator<std::random_access_iterator_tag, char16_t> {
    public:
     typedef iterator_base<T> this_type;
     typedef std::iterator<std::random_access_iterator_tag, T> super_type;
     typedef typename super_type::pointer pointer;
     typedef const typename super_type::pointer const_pointer;
-    typedef uint16_t reference;
-    typedef uint16_t const_reference;
+    typedef char16_t reference;
+    typedef char16_t const_reference;
     typedef typename super_type::difference_type difference_type;
     typedef iterator_base<typename std::remove_const<T>::type> iterator;
     typedef iterator_base<typename std::add_const<T>::type> const_iterator;
@@ -210,7 +210,7 @@ class FiberBase : public FiberSlot {
   template<typename OutputIter>
   inline OutputIter Copy(OutputIter out) const;
 
-  inline uint16_t operator[](size_type n) const;
+  inline char16_t operator[](size_type n) const;
 
   inline int compare(const this_type& x) const;
 
@@ -265,7 +265,7 @@ class Fiber : public FiberBase {
   typedef typename std::iterator_traits<iterator>::difference_type difference_type;  // NOLINT
   typedef std::size_t size_type;
 
-  static const uint32_t k8BitFlag = std::is_same<CharT, uint16_t>::value ?
+  static const uint32_t k8BitFlag = std::is_same<CharT, char16_t>::value ?
       FiberSlot::NONE : FiberSlot::IS_8BIT;
 
   static std::size_t GetControlSize() {
@@ -451,7 +451,7 @@ OutputIter FiberBase::Copy(OutputIter out) const {
   }
 }
 
-uint16_t FiberBase::operator[](size_type n) const {
+char16_t FiberBase::operator[](size_type n) const {
   if (Is8Bit()) {
     return (*As8Bit())[n];
   } else {

@@ -1,6 +1,5 @@
 #include <algorithm>
-#include <iv/detail/type_traits.h>
-#include <iv/enable_if.h>
+#include <type_traits>
 #include <iv/ustring.h>
 #include <iv/ustringpiece.h>
 #include <iv/lv5/error_check.h>

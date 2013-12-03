@@ -31,7 +31,7 @@ class AsciiSource {
   }
   ~AsciiSource() { }
 
-  inline uc16 Get(std::size_t pos) const {
+  inline char16_t Get(std::size_t pos) const {
     assert(pos < size());
     return source_[pos];
   }
@@ -60,7 +60,7 @@ class UTF16Source {
   }
   ~UTF16Source() { }
 
-  inline uc16 Get(std::size_t pos) const {
+  inline char16_t Get(std::size_t pos) const {
     assert(pos < size());
     return *(buf_ + pos);
   }
@@ -90,7 +90,7 @@ class UTF16LESource {
   }
   ~UTF16LESource() { }
 
-  inline uc16 Get(std::size_t pos) const {
+  inline char16_t Get(std::size_t pos) const {
     assert(pos < size());
     return (*(buf_ + pos*2)) | (*(buf_ + pos*2 + 1) << 8);
   }
@@ -120,7 +120,7 @@ class UTF16BESource {
   }
   ~UTF16BESource() { }
 
-  inline uc16 Get(std::size_t pos) const {
+  inline char16_t Get(std::size_t pos) const {
     assert(pos < size());
     return (*(buf_ + pos*2) << 8) | (*(buf_ + pos*2 + 1));
   }

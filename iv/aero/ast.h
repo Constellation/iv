@@ -138,11 +138,11 @@ class BackReferenceAtom : public Atom {
 
 class CharacterAtom : public Atom {
  public:
-  explicit CharacterAtom(uint16_t ch) : character_(ch) { }
-  uint16_t character() const { return character_; }
+  explicit CharacterAtom(char16_t ch) : character_(ch) { }
+  char16_t character() const { return character_; }
   DECLARE_DERIVED_NODE_TYPE(CharacterAtom)
  private:
-  uint16_t character_;
+  char16_t character_;
 };
 
 class RangeAtom : public Atom {

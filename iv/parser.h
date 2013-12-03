@@ -3,11 +3,11 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <type_traits>
 #include <iv/detail/cstdint.h>
 #include <iv/detail/cinttypes.h>
 #include <iv/detail/unordered_map.h>
 #include <iv/detail/unordered_set.h>
-#include <iv/detail/type_traits.h>
 #include <iv/detail/array.h>
 #include <iv/maybe.h>
 #include <iv/ast.h>
@@ -17,7 +17,6 @@
 #include <iv/noncopyable.h>
 #include <iv/utils.h>
 #include <iv/ustring.h>
-#include <iv/enable_if.h>
 #include <iv/none.h>
 #include <iv/environment.h>
 #include <iv/symbol_table.h>
@@ -1142,7 +1141,7 @@ class Parser : private Noncopyable<> {
 
   template<bool Use>
   Statement* ParseFunctionStatement(bool *res,
-                                    typename enable_if_c<Use>::type* = 0) {
+                                    typename std::enable_if<Use>::type* = 0) {
     assert(token_ == Token::TK_FUNCTION);
     if (strict_) {
       IV_RAISE("function statement not allowed in strict code");
@@ -1166,7 +1165,7 @@ class Parser : private Noncopyable<> {
 
   template<bool Use>
   Statement* ParseFunctionStatement(bool *res,
-                                    typename disable_if_c<Use>::type* = 0) {
+                                    typename std::enable_if<!Use>::type* = 0) {
     // FunctionStatement is not Standard
     // so, if template parameter UseFunctionStatement is false,
     // this parser reject FunctionStatement
@@ -1401,10 +1400,11 @@ class Parser : private Noncopyable<> {
   }
 
   template<bool Reduce>
-  Expression* ReduceBinaryOperation(Token::Type op,
-                                    Expression* left,
-                                    Expression* right,
-                                    typename enable_if_c<Reduce>::type* = 0) {
+  Expression* ReduceBinaryOperation(
+      Token::Type op,
+      Expression* left,
+      Expression* right,
+      typename std::enable_if<Reduce>::type* = 0) {
     assert(left && right);
     if (left->AsNumberLiteral() && right->AsNumberLiteral()) {
       const double l_val = left->AsNumberLiteral()->value();
@@ -1483,10 +1483,11 @@ class Parser : private Noncopyable<> {
   }
 
   template<bool Reduce>
-  Expression* ReduceBinaryOperation(Token::Type op,
-                                    Expression* left,
-                                    Expression* right,
-                                    typename enable_if_c<!Reduce>::type* = 0) {
+  Expression* ReduceBinaryOperation(
+      Token::Type op,
+      Expression* left,
+      Expression* right,
+      typename std::enable_if<!Reduce>::type* = 0) {
     assert(left && right);
     return factory_->NewBinaryOperation(op, left, right);
   }
@@ -1836,7 +1837,7 @@ class Parser : private Noncopyable<> {
   Expression* ParseRegExpLiteral(bool contains_eq, bool *res) {
     assert(token_ == Token::TK_DIV || token_ == Token::TK_ASSIGN_DIV);
     if (lexer_.ScanRegExpLiteral(contains_eq)) {
-      const std::vector<uint16_t> content(lexer_.Buffer());
+      const std::vector<char16_t> content(lexer_.Buffer());
       if (!lexer_.ScanRegExpFlags()) {
         IV_RAISE("invalid regular expression flag");
       }

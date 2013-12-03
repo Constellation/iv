@@ -33,7 +33,7 @@ class JITCode {
 
   JITExecutable<char>::Executable Compile8(const Code* code);
 
-  JITExecutable<uint16_t>::Executable Compile16(const Code* code);
+  JITExecutable<char16_t>::Executable Compile16(const Code* code);
 
   int Execute(VM* vm, Code* code, const core::StringPiece& subject,
               int* captures, std::size_t current_position);
@@ -45,7 +45,7 @@ class JITCode {
   Xbyak::CodeGenerator* jit8_;
   Xbyak::CodeGenerator* jit16_;
   JITExecutable<char>::Executable exec8_;
-  JITExecutable<uint16_t>::Executable exec16_;
+  JITExecutable<char16_t>::Executable exec16_;
 };
 
 } }  // namespace iv::aero

@@ -58,10 +58,10 @@ inline void QuickCheck::Visit(BackReferenceAtom* atom) {
 
 inline void QuickCheck::Visit(CharacterAtom* atom) {
   const FilterCheck check(this);
-  const uint16_t ch = atom->character();
+  const char16_t ch = atom->character();
   if (compiler_->IsIgnoreCase()) {
-    const uint16_t uu = core::character::ToUpperCase(ch);
-    const uint16_t lu = core::character::ToLowerCase(ch);
+    const char16_t uu = core::character::ToUpperCase(ch);
+    const char16_t lu = core::character::ToLowerCase(ch);
     if (!(uu == lu && uu == ch)) {
       if (uu == ch || lu == ch) {
         Emit(uu);

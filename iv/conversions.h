@@ -258,7 +258,7 @@ inline double DoubleToInteger(double d) {
 template<typename Iter>
 inline bool ConvertToUInt32(Iter it, const Iter last, uint32_t* value) {
   static const uint32_t uint32_t_max = std::numeric_limits<uint32_t>::max();
-  uint16_t ch;
+  char16_t ch;
   *value = 0;
   if (it != last && *it == '0') {
     if (it + 1 != last) {
@@ -669,7 +669,7 @@ inline double StringToDouble(const UStringPiece& str, bool parse_float) {
 
 template<typename U16OutputIter>
 inline U16OutputIter UnicodeSequenceEscape(U16OutputIter out,
-                                           uint16_t val,
+                                           char16_t val,
                                            const StringPiece& prefix = "\\u") {
   std::array<char, 4> buf = { { } };
   out = std::copy(prefix.begin(), prefix.end(), out);
@@ -681,7 +681,7 @@ inline U16OutputIter UnicodeSequenceEscape(U16OutputIter out,
 }
 
 template<typename U16OutputIter>
-inline U16OutputIter JSONQuote(U16OutputIter out, uint16_t ch) {
+inline U16OutputIter JSONQuote(U16OutputIter out, char16_t ch) {
   if (ch == '"' || ch == '\\') {
     *out++ = '\\';
     *out++ = ch;
@@ -736,7 +736,7 @@ inline U16OutputIter JSONQuote(U8OrU16InputIter it,
 
 template<typename U16OutputIter>
 inline U16OutputIter RegExpEscape(U16OutputIter out,
-                                  uint16_t ch, bool previous_is_backslash) {
+                                  char16_t ch, bool previous_is_backslash) {
   // not handling '\' and handling \u2028 or \u2029 to unicode escape sequence
   if (character::IsLineOrParagraphSeparator(ch)) {
     return UnicodeSequenceEscape(out,
@@ -769,7 +769,7 @@ inline U16OutputIter RegExpEscape(U8OrU16InputIter it,
   bool character_in_brack = false;
   bool previous_is_backslash = false;
   for (; it != last; ++it) {
-    const uint16_t ch = *it;
+    const char16_t ch = *it;
     if (!previous_is_backslash) {
       if (character_in_brack) {
         if (ch == ']') {

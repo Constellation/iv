@@ -47,7 +47,7 @@ class AstFactory : public core::Space<2> {
     return NULL;
   }
 
-  StringLiteral* NewStringLiteral(const std::vector<uc16>& buffer,
+  StringLiteral* NewStringLiteral(const std::vector<char16_t>& buffer,
                                   std::size_t begin,
                                   std::size_t end) {
     StringLiteral* str = new (this) StringLiteral(buffer, this);
@@ -55,8 +55,8 @@ class AstFactory : public core::Space<2> {
     return str;
   }
 
-  RegExpLiteral* NewRegExpLiteral(const std::vector<uc16>& content,
-                                  const std::vector<uc16>& flags,
+  RegExpLiteral* NewRegExpLiteral(const std::vector<char16_t>& content,
+                                  const std::vector<char16_t>& flags,
                                   std::size_t begin,
                                   std::size_t end) {
 //    OnigErrorInfo einfo;

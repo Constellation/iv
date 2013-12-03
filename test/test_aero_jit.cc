@@ -22,7 +22,7 @@ TEST(AeroJITCase, MainTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
-    iv::aero::JIT<uint16_t> jit(*code.get());
+    iv::aero::JIT<char16_t> jit(*code.get());
     jit.Compile();
   }
 

@@ -38,7 +38,7 @@ struct NumberingSystemConstants {
 struct NumberingSystemData {
   const char* name;
   NumberingSystemConstants::Type type;
-  uint16_t mapping[10];
+  char16_t mapping[10];
 };
 
 typedef std::array<NumberingSystemData, 20> NumberingSystemDataArray;

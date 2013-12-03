@@ -25,7 +25,7 @@ inline InputIterator SplitFiber(Context* ctx,
 template<typename FiberType>
 inline uint32_t SplitFiberWithOneChar(Context* ctx,
                                       JSArray* ary,
-                                      uint16_t ch,
+                                      char16_t ch,
                                       JSStringBuilder* builder,
                                       const FiberType* fiber,
                                       uint32_t index,
@@ -53,7 +53,7 @@ inline uint32_t SplitFiberWithOneChar(Context* ctx,
 
 }  // namespace detail
 
-inline JSString* JSString::NewSingle(Context* ctx, uint16_t ch) {
+inline JSString* JSString::NewSingle(Context* ctx, char16_t ch) {
   if (this_type* res = ctx->global_data()->GetSingleString(ch)) {
     return res;
   }
@@ -96,7 +96,7 @@ inline JSString::JSString(Context* ctx, const FiberType* fiber, std::size_t from
 }
 
 // single char string
-inline JSString::JSString(Context* ctx, uint16_t ch)
+inline JSString::JSString(Context* ctx, char16_t ch)
   : JSCell(radio::STRING, ctx->global_data()->primitive_string_map(), nullptr),
     size_(1),
     is_8bit_(core::character::IsASCII(ch)),
@@ -259,7 +259,7 @@ JSArray* JSString::Split(Context* ctx,
 }
 
 JSArray* JSString::Split(Context* ctx,
-                         uint16_t ch, uint32_t limit, Error* e) const {
+                         char16_t ch, uint32_t limit, Error* e) const {
   JSStringBuilder builder;
   JSArray* ary = JSArray::New(ctx);
   uint32_t index = 0;
