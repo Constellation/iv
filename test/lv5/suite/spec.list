@@ -50,6 +50,7 @@ spec/global-registers/global-registers-writable.js
 spec/function/function-type-error.js
 spec/to-string.js
 spec/regress/object-indexed-initializer.js
+spec/regress/string-substring.js
 spec/function-prototype-cache.js
 spec/symbol/constructor.js
 spec/symbol/properties.js

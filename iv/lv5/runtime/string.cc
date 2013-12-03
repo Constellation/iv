@@ -1030,7 +1030,7 @@ JSVal StringSubstring(const Arguments& args, Error* e) {
   } else {
     const double pos = arg0.ToInteger(ctx, IV_LV5_ERROR(e));
     if (pos > 0.0) {
-      start = (std::min<uint32_t>)(len, pos);
+      start = (pos > len) ? len : pos;
     }
   }
 
@@ -1043,7 +1043,7 @@ JSVal StringSubstring(const Arguments& args, Error* e) {
   } else {
     const double pos = arg1.ToInteger(ctx, IV_LV5_ERROR(e));
     if (pos > 0.0) {
-      end = (std::min<uint32_t>)(len, pos);
+      end = (pos > len) ? len : pos;
     }
   }
 
