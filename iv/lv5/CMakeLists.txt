@@ -1,6 +1,8 @@
 # liblv5 & lv5
 
 # prelude
+set(CMAKE_OSX_ARCHITECTURES "x86_64")
+add_subdirectory(third_party/gc)
 add_subdirectory(third_party/netlib_dtoa)
 add_subdirectory(third_party/v8_dtoa)
 

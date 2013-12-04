@@ -8,13 +8,10 @@ if(COMMAND cmake_policy)
     cmake_policy(SET CMP0015 NEW)  # convert relative link paths to absolute
 endif(COMMAND cmake_policy)
 
-set(CMAKE_OSX_ARCHITECTURES "x86_64")
-add_subdirectory(third_party/gc)
-
 include_directories(
     .
     iv/third_party
-    third_party/gc/
+    iv/lv5/third_party/gc/
     )
 
 macro(include_if_exists directory)
