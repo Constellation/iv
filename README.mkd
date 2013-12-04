@@ -15,6 +15,10 @@ lv5 is ECMA262 5.1 engine
 
 for more information, see [lv5 README](https://github.com/Constellation/iv/tree/master/iv/lv5) and [lv5 wiki](https://github.com/Constellation/iv/wiki/lv5)
 
+### Build Instruction
+
+see [lv5 README](https://github.com/Constellation/iv/tree/master/iv/lv5)
+
 ### iv / lv5 / railgun
 
 iv / lv5 / railgun is Register VM and Compiler.
