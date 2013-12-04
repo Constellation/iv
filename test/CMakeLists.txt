@@ -15,6 +15,8 @@ if (NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC"))
         )
 endif()
 
+setup_compiler_definitions()
+
 add_subdirectory(gtest)
 
 add_executable(iv_unit_tests
