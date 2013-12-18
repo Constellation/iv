@@ -4,33 +4,21 @@
 namespace iv {
 namespace core {
 
+#define IV_NONCOPYABLE(name)\
+    name(const name&) = delete;\
+    name& operator=(const name&) = delete;
+
 // guard from ADL
 // see http://ml.tietew.jp/cppll/cppll_novice/thread_articles/1652
 namespace noncopyable_ {
 
 template<class T = void>
 class Noncopyable {
- protected:
-  Noncopyable() {}
-  ~Noncopyable() {}
-
- private:
-  Noncopyable(const Noncopyable&);
-  const T& operator=(const T&);
+ public:
+  Noncopyable() = default;
+  Noncopyable(const Noncopyable&) = delete;
+  const Noncopyable& operator=(const Noncopyable&) = delete;
 };
-
-template<>
-class Noncopyable<void> {
- protected:
-  Noncopyable() {}
-  ~Noncopyable() {}
-
- private:
-  Noncopyable(const Noncopyable&);
-  void operator=(const Noncopyable&);
-};
-
-
 
 }  // namespace iv::core::noncopyable_
 
