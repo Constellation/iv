@@ -18,7 +18,7 @@ class SymbolTable {
         size_(piece.size()),
         is_8bit_(false),
         pointer_(nullptr) {
-      rep_.rep16_ = piece.data();
+      rep_.rep16 = piece.data();
     }
 
     SymbolHolder(const StringPiece& piece)  // NOLINT
@@ -26,7 +26,7 @@ class SymbolTable {
         size_(piece.size()),
         is_8bit_(true),
         pointer_(nullptr) {
-      rep_.rep8_ = piece.data();
+      rep_.rep8 = piece.data();
     }
 
     SymbolHolder(const UString* str)  // NOLINT
@@ -35,7 +35,7 @@ class SymbolTable {
         is_8bit_(false),
         pointer_(str),
         hash_(Hash::StringToHash(*str)) {
-      rep_.rep16_ = str->data();
+      rep_.rep16 = str->data();
     }
 
     std::size_t hash() const {
@@ -43,36 +43,41 @@ class SymbolTable {
         return hash_;
       }
       if (is_8bit_) {
-        return Hash::StringToHash(StringPiece(rep_.rep8_, size_));
+        return Hash::StringToHash(StringPiece(rep_.rep8, size_));
       } else {
-        return Hash::StringToHash(UStringPiece(rep_.rep16_, size_));
+        return Hash::StringToHash(UStringPiece(rep_.rep16, size_));
       }
     }
 
-    friend bool operator==(const SymbolHolder& lhs,
-                           const SymbolHolder& rhs) {
+    friend bool operator==(const SymbolHolder& lhs, const SymbolHolder& rhs) {
       if (lhs.is_8bit_ == rhs.is_8bit_) {
         if (lhs.is_8bit_) {
           // 8bits
           return
-              StringPiece(lhs.rep_.rep8_, lhs.size_) ==
-              StringPiece(rhs.rep_.rep8_, rhs.size_);
+              StringPiece(lhs.rep_.rep8, lhs.size_) ==
+              StringPiece(rhs.rep_.rep8, rhs.size_);
         }
         return
-            UStringPiece(lhs.rep_.rep16_, lhs.size_) ==
-            UStringPiece(rhs.rep_.rep16_, rhs.size_);
+            UStringPiece(lhs.rep_.rep16, lhs.size_) ==
+            UStringPiece(rhs.rep_.rep16, rhs.size_);
       } else {
         if (lhs.size_ != rhs.size_) {
           return false;
         }
         if (lhs.is_8bit_) {
           return CompareIterators(
-              lhs.rep_.rep8_, lhs.rep_.rep8_ + lhs.size_,
-              rhs.rep_.rep16_, rhs.rep_.rep16_ + rhs.size_) == 0;
+              reinterpret_cast<const uint8_t*>(lhs.rep_.rep8),
+              reinterpret_cast<const uint8_t*>(lhs.rep_.rep8) + lhs.size_,
+              rhs.rep_.rep16,
+              rhs.rep_.rep16 + rhs.size_
+              ) == 0;
         } else {
           return CompareIterators(
-              lhs.rep_.rep16_, lhs.rep_.rep16_ + lhs.size_,
-              rhs.rep_.rep8_, rhs.rep_.rep8_ + rhs.size_) == 0;
+              lhs.rep_.rep16,
+              lhs.rep_.rep16 + lhs.size_,
+              reinterpret_cast<const uint8_t*>(rhs.rep_.rep8),
+              reinterpret_cast<const uint8_t*>(rhs.rep_.rep8) + rhs.size_
+              ) == 0;
         }
       }
     }
@@ -83,8 +88,8 @@ class SymbolTable {
 
    private:
     union Representation {
-      const char* rep8_;
-      const char16_t* rep16_;
+      const char* rep8;
+      const char16_t* rep16;
     } rep_;
     std::size_t size_;
     bool is_8bit_;
@@ -124,7 +129,6 @@ class SymbolTable {
 
   template<class CharT>
   inline Symbol Lookup(const CharT* str) {
-    using std::char_traits;
     return Lookup(BasicStringPiece<CharT>(str));
   }
 
