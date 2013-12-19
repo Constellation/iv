@@ -16,7 +16,6 @@
 #include <iv/lv5/fpu.h>
 #include <iv/lv5/program.h>
 #include <iv/lv5/railgun/railgun.h>
-#include <iv/lv5/teleporter/teleporter.h>
 #include <iv/lv5/breaker/breaker.h>
 #include <iv/lv5/radio/radio.h>
 #include <iv/lv5/jsobject.h>

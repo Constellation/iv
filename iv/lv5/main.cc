@@ -8,7 +8,6 @@
 #include <iv/about.h>
 #include <iv/cmdline.h>
 #include <iv/lv5/lv5.h>
-#include <iv/lv5/teleporter/interactive.h>
 #include <iv/lv5/railgun/command.h>
 #include <iv/lv5/railgun/interactive.h>
 #include <iv/lv5/breaker/command.h>
@@ -137,31 +136,6 @@ int DisAssemble(const iv::core::StringPiece& data,
   }
   iv::lv5::railgun::OutputDisAssembler dis(&ctx, stdout);
   dis.DisAssembleGlobal(*code);
-  return EXIT_SUCCESS;
-}
-
-int Interpret(const iv::core::StringPiece& data, const std::string& filename) {
-  iv::core::FileSource src(data, filename);
-  iv::lv5::teleporter::Context ctx;
-  iv::lv5::AstFactory factory(&ctx);
-  iv::core::Parser<iv::lv5::AstFactory,
-                   iv::core::FileSource> parser(&factory,
-                                                src, ctx.symbol_table());
-  const iv::lv5::FunctionLiteral* const global = parser.ParseProgram();
-
-  if (!global) {
-    std::fprintf(stderr, "%s\n", parser.error().c_str());
-    return EXIT_FAILURE;
-  }
-  ctx.DefineFunction<&iv::lv5::Print, 1>("print");
-  ctx.DefineFunction<&iv::lv5::Quit, 1>("quit");
-  ctx.DefineFunction<&iv::lv5::HiResTime, 0>("HiResTime");
-  iv::lv5::teleporter::JSScript* const script =
-      iv::lv5::teleporter::JSGlobalScript::New(&ctx, global, &factory, &src);
-  if (ctx.Run(script)) {
-    ctx.error()->Dump(&ctx, stderr);
-    return EXIT_FAILURE;
-  }
   return EXIT_SUCCESS;
 }
 
@@ -306,8 +280,6 @@ int main(int argc, char **argv) {
       return Ast(src, filename);
     } else if (cmd.Exist("dis")) {
       return DisAssemble(src, filename);
-    } else if (cmd.Exist("interp")) {
-      return Interpret(src, filename);
     } else if (cmd.Exist("railgun")) {
       return RailgunExecute(src, filename, cmd.Exist("statistics"));
     } else {
@@ -319,13 +291,8 @@ int main(int argc, char **argv) {
     }
   } else {
     // Interactive Shell Mode
-    if (cmd.Exist("interp")) {
-      iv::lv5::teleporter::Interactive shell;
-      return shell.Run();
-    } else {
-      iv::lv5::railgun::Interactive shell(cmd.Exist("dis"));
-      return shell.Run();
-    }
+    iv::lv5::railgun::Interactive shell(cmd.Exist("dis"));
+    return shell.Run();
   }
   return 0;
 }
