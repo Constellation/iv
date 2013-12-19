@@ -102,5 +102,7 @@ macro(setup_compiler_definitions)
   endif()
 endmacro()
 
+OPTION(accelerator "enable accelerator low level interpreter." OFF)
+
 add_subdirectory(iv/lv5)
 add_subdirectory(test)

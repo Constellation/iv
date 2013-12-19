@@ -1,5 +1,7 @@
 # liblv5 & lv5
 
+enable_language(ASM)
+
 # prelude
 set(CMAKE_OSX_ARCHITECTURES "x86_64")
 add_subdirectory(third_party/gc)
@@ -27,7 +29,16 @@ endif()
 
 # liblv5
 
-add_library(liblv5 STATIC
+set(ACCELERATOR_SOURCE)
+
+if (accelerator)
+  set(ACCELERATOR_SOURCE
+      accelerator/vm.x64.S
+      )
+endif()
+
+set(LIBLV5_SOURCE
+    ${ACCELERATOR_SOURCE}
     context.cc
     global_symbols.cc
     runtime/array.cc
@@ -57,6 +68,8 @@ add_library(liblv5 STATIC
     radio/block_control.cc
     radio/core.cc
     )
+
+add_library(liblv5 STATIC ${LIBLV5_SOURCE})
 set_target_properties(liblv5 PROPERTIES PREFIX "")
 
 target_link_libraries(liblv5 netlib_dtoa v8_dtoa)
