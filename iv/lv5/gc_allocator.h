@@ -1,6 +1,7 @@
 // C++11 compatible gc allocator
 #ifndef IV_LV5_GC_ALLOCATOR_H_
 #define IV_LV5_GC_ALLOCATOR_H_
+#include <new>
 #include <gc/gc.h>
 #include <gc/gc_allocator.h>
 namespace iv {
@@ -33,7 +34,9 @@ class GCAllocator {
 
   template<class U, class... Args>
   void construct(U* p, Args&&... args) {
-    new (p) U(std::forward<Args>(args)...);
+    // FIXME(Yusuke Suzuki): This cast is needed to build lv5 on FreeBSD 10.0.
+    new (const_cast<void*>(reinterpret_cast<const void*>(p)))
+        U(std::forward<Args>(args)...);
   }
 
   template< class U >
