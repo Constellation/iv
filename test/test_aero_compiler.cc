@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
+#include <memory>
 #include <iv/alloc.h>
 #include <iv/ustring.h>
 #include <iv/unicode.h>
-#include <iv/scoped_ptr.h>
 #include <iv/aero/aero.h>
 
 TEST(AeroCompilerCase, MainTest) {
@@ -16,7 +16,7 @@ TEST(AeroCompilerCase, MainTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
   }
   {
     space.Clear();
@@ -26,7 +26,7 @@ TEST(AeroCompilerCase, MainTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
   }
   {
     space.Clear();
@@ -36,7 +36,7 @@ TEST(AeroCompilerCase, MainTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
   }
   {
     space.Clear();
@@ -46,7 +46,7 @@ TEST(AeroCompilerCase, MainTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
   }
   {
     space.Clear();
@@ -56,7 +56,7 @@ TEST(AeroCompilerCase, MainTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
   }
   {
     space.Clear();
@@ -66,7 +66,7 @@ TEST(AeroCompilerCase, MainTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
   }
   {
     space.Clear();
@@ -77,7 +77,7 @@ TEST(AeroCompilerCase, MainTest) {
     ASSERT_FALSE(error);
     ASSERT_TRUE(data.pattern());
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
     EXPECT_EQ(3, code->captures());
   }
 }

@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
+#include <memory>
 #include <iv/detail/cstdint.h>
-#include <iv/scoped_ptr.h>
 #include <iv/alloc.h>
 
 TEST(SpaceCase, AllocateMemoryAlignemntTest) {
-  iv::core::ScopedPtr<iv::core::Space> space(new iv::core::Space());
+  std::unique_ptr<iv::core::Space> space(new iv::core::Space());
   {
     uintptr_t mem = reinterpret_cast<uintptr_t>(space->New(3));
     ASSERT_EQ(0u, mem % iv::core::Arena::kAlignment);

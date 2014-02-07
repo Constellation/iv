@@ -2,10 +2,10 @@
 #define IV_AERO_VM_H_
 #include <vector>
 #include <algorithm>
+#include <memory>
 #include <iv/platform.h>
 #include <iv/noncopyable.h>
 #include <iv/ustringpiece.h>
-#include <iv/scoped_ptr.h>
 #include <iv/os_allocator.h>
 #include <iv/aero/code.h>
 #include <iv/aero/character.h>

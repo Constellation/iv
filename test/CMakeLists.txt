@@ -53,7 +53,6 @@ add_executable(iv_unit_tests
     test_os_allocator.cc
     test_parser.cc
     test_ref_counted.cc
-    test_scoped_ptr.cc
     test_segmented_vector.cc
     test_singleton.cc
     test_sip_hash.cc

@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
 #include <vector>
 #include <algorithm>
+#include <memory>
 #include <iv/alloc.h>
 #include <iv/ustring.h>
 #include <iv/unicode.h>
-#include <iv/scoped_ptr.h>
 #include <iv/aero/aero.h>
 #include "test_aero.h"
 
@@ -27,7 +27,7 @@ TEST(AeroIncompleteCase, MainTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
   }
   {
@@ -39,7 +39,7 @@ TEST(AeroIncompleteCase, MainTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
   }
 }
@@ -69,7 +69,7 @@ TEST(AeroIncompleteCase, UnicodeEscapeSequenceTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
     ASSERT_TRUE(vm.Execute(code.get(), it->second, vec.data(), 0));
   }
 }
@@ -96,7 +96,7 @@ TEST(AeroIncompleteCase, BadQuantifierRangeTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
     ASSERT_TRUE(vm.Execute(code.get(), it->second, vec.data(), 0));
   }
 }
@@ -135,7 +135,7 @@ TEST(AeroIncompleteCase, ClassEscapeTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error) << std::distance(kMatchers.begin(), it) << "TEST";
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
     ASSERT_TRUE(vm.Execute(code.get(), it->second, vec.data(), 0)) << std::distance(kMatchers.begin(), it) << "TEST";
   }
 }
@@ -154,7 +154,7 @@ TEST(AeroIncompleteCase, CounterTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
   }
 }
@@ -195,7 +195,7 @@ TEST(AeroIncompleteCase, EscapeMissTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error) << std::distance(kMatchers.begin(), it) << "TEST";
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
     ASSERT_TRUE(vm.Execute(code.get(), it->second, vec.data(), 0)) << std::distance(kMatchers.begin(), it) << "TEST";
   }
 }
@@ -225,7 +225,7 @@ TEST(AeroIncompleteCase, EscapeMissFailTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
     ASSERT_FALSE(vm.Execute(code.get(), it->second, vec.data(), 0));
   }
 }

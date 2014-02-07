@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 #include <vector>
+#include <memory>
 #include <iv/alloc.h>
 #include <iv/ustring.h>
 #include <iv/unicode.h>
-#include <iv/scoped_ptr.h>
 #include <iv/aero/aero.h>
 #include "test_aero.h"
 
@@ -21,7 +21,7 @@ TEST(AeroVMCase, MainTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
     ASSERT_TRUE(vm.Execute(code.get(), str, vec.data(), 0));
   }
   {
@@ -33,7 +33,7 @@ TEST(AeroVMCase, MainTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
     ASSERT_TRUE(vm.Execute(code.get(), str, vec.data(), 0));
   }
   {
@@ -45,7 +45,7 @@ TEST(AeroVMCase, MainTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
     ASSERT_TRUE(vm.Execute(code.get(), str, vec.data(), 0));
   }
   {
@@ -57,7 +57,7 @@ TEST(AeroVMCase, MainTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
     ASSERT_TRUE(vm.Execute(code.get(), str, vec.data(), 0));
   }
   {
@@ -69,7 +69,7 @@ TEST(AeroVMCase, MainTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::MULTILINE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
     ASSERT_TRUE(vm.Execute(code.get(), str, vec.data(), 0));
   }
   {
@@ -81,7 +81,7 @@ TEST(AeroVMCase, MainTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     ASSERT_TRUE(vm.Execute(code.get(), str, vec.data(), 0));
   }
   {
@@ -93,7 +93,7 @@ TEST(AeroVMCase, MainTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     ASSERT_TRUE(vm.Execute(code.get(), str, vec.data(), 0));
   }
   {
@@ -111,7 +111,7 @@ TEST(AeroVMCase, MainTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     ASSERT_FALSE(vm.Execute(code.get(), str1, vec.data(), 0));
     ASSERT_TRUE(vm.Execute(code.get(), str2, vec.data(), 0));
     ASSERT_TRUE(vm.Execute(code.get(), str3, vec.data(), 0));
@@ -135,7 +135,7 @@ TEST(AeroVMCase, MainTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     ASSERT_TRUE(vm.Execute(code.get(), str2, vec.data(), 0));
     ASSERT_TRUE(vm.Execute(code.get(), str3, vec.data(), 0));
@@ -159,7 +159,7 @@ TEST(AeroVMCase, MainTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     ASSERT_TRUE(vm.Execute(code.get(), str2, vec.data(), 0));
     ASSERT_TRUE(vm.Execute(code.get(), str3, vec.data(), 0));
@@ -190,7 +190,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(*code.get());
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
@@ -225,7 +225,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
@@ -244,7 +244,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
@@ -259,7 +259,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0,  vec[0]);
@@ -280,7 +280,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
@@ -295,7 +295,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
@@ -310,7 +310,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
@@ -325,7 +325,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
@@ -352,7 +352,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
@@ -369,7 +369,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
@@ -386,7 +386,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
@@ -403,7 +403,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
   }
@@ -416,7 +416,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
@@ -431,7 +431,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
@@ -446,7 +446,7 @@ TEST(AeroVMCase, CaptureTest) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
@@ -468,7 +468,7 @@ TEST(AeroVMCase, CaptureTest2) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0,  vec[0]);
@@ -493,7 +493,7 @@ TEST(AeroVMCase, CaptureTest2) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
@@ -510,7 +510,7 @@ TEST(AeroVMCase, CaptureTest2) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     // disasm.DisAssemble(code);
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
     EXPECT_EQ(0, vec[0]);
@@ -539,7 +539,7 @@ TEST(AeroVMCase, CaptureTest2) {
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
-    iv::core::ScopedPtr<iv::aero::Code> code(compiler.Compile(data));;
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
     disasm.DisAssemble(*code);
     EXPECT_EQ(1, code->captures());
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
