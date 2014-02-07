@@ -20,16 +20,27 @@
 #include <list>
 #include <string>
 #include <algorithm>
-#if (__cplusplus >= 201103) || (_MSC_VER >= 1500) || defined(__GXX_EXPERIMENTAL_CXX0X__) || (__clang_major__ >= 5)
+
+// This covers -std=(gnu|c)++(0x|11|1y), -stdlib=libc++, and modern Microsoft.
+#if ((defined(_MSC_VER) && (_MSC_VER >= 1600)) || defined(_LIBCPP_VERSION) ||\
+	 			 ((__cplusplus >= 201103) || defined(__GXX_EXPERIMENTAL_CXX0X__)))
 	#include <unordered_map>
-	#if defined(_MSC_VER) && (_MSC_VER < 1600)
-		#define XBYAK_USE_TR1_UNORDERED_MAP
-	#else
-		#define XBYAK_USE_UNORDERED_MAP
-	#endif
-#elif (__GNUC__ >= 4 && __GNUC_MINOR__ >= 5) || (__clang_major__ >= 3)
+	#define XBYAK_USE_UNORDERED_MAP
+
+// Clang/llvm-gcc and ICC-EDG in 'GCC-mode' always claim to be GCC 4.2, using
+// libstdcxx 20070719 (from GCC 4.2.1, the last GPL 2 version).
+// These headers have been expanded/fixed in various forks.
+// In F.S.F. 'real' GCC, issues with the tr headers were resolved in GCC 4.5.
+#elif defined(__GNUC__) && (__GNUC__ >= 4) && ((__GNUC_MINOR__ >= 5) || \
+								 ((__GLIBCXX__ >= 20070719) && (__GNUC_MINOR__ >= 2) && \
+									(defined(__INTEL_COMPILER) || defined(__llvm__))))
 	#include <tr1/unordered_map>
 	#define XBYAK_USE_TR1_UNORDERED_MAP
+
+#elif defined(_MSC_VER) && (_MSC_VER >= 1500) && (_MSC_VER < 1600)
+	#include <unordered_map>
+	#define XBYAK_USE_TR1_UNORDERED_MAP
+
 #else
 	#include <map>
 #endif
@@ -72,7 +83,7 @@ namespace Xbyak {
 
 enum {
 	DEFAULT_MAX_CODE_SIZE = 4096,
-	VERSION = 0x4210 /* 0xABCD = A.BC(D) */
+	VERSION = 0x4300 /* 0xABCD = A.BC(D) */
 };
 
 #ifndef MIE_INTEGER_TYPE_DEFINED
@@ -129,6 +140,7 @@ enum {
 	ERR_BAD_PNUM,
 	ERR_BAD_TNUM,
 	ERR_BAD_VSIB_ADDRESSING,
+	ERR_CANT_CONVERT,
 	ERR_INTERNAL
 };
 
@@ -145,7 +157,7 @@ public:
 	operator int() const { return err_; }
 	const char *what() const throw()
 	{
-		static const char errTbl[][40] = {
+		static const char *errTbl[] = {
 			"none",
 			"bad addressing",
 			"code is too big",
@@ -174,6 +186,7 @@ public:
 			"bad pNum",
 			"bad tNum",
 			"bad vsib addressing",
+			"can't convert",
 			"internal error",
 		};
 		assert((size_t)err_ < sizeof(errTbl) / sizeof(*errTbl));
@@ -308,10 +321,10 @@ public:
 		const int idx = getIdx();
 		if (kind_ == REG) {
 			if (isExt8bit()) {
-				static const char tbl[4][4] = { "spl", "bpl", "sil", "dil" };
+				static const char *tbl[4] = { "spl", "bpl", "sil", "dil" };
 				return tbl[idx - 4];
 			}
-			static const char tbl[4][16][5] = {
+			static const char *tbl[4][16] = {
 				{ "al", "cl", "dl", "bl", "ah", "ch", "dh", "bh", "r8b", "r9b", "r10b",  "r11b", "r12b", "r13b", "r14b", "r15b" },
 				{ "ax", "cx", "dx", "bx", "sp", "bp", "si", "di", "r8w", "r9w", "r10w",  "r11w", "r12w", "r13w", "r14w", "r15w" },
 				{ "eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi", "r8d", "r9d", "r10d",  "r11d", "r12d", "r13d", "r14d", "r15d" },
@@ -319,16 +332,16 @@ public:
 			};
 			return tbl[bit_ == 8 ? 0 : bit_ == 16 ? 1 : bit_ == 32 ? 2 : 3][idx];
 		} else if (isYMM()) {
-			static const char tbl[16][5] = { "ym0", "ym1", "ym2", "ym3", "ym4", "ym5", "ym6", "ym7", "ym8", "ym9", "ym10", "ym11", "ym12", "ym13", "ym14", "ym15" };
+			static const char *tbl[16] = { "ym0", "ym1", "ym2", "ym3", "ym4", "ym5", "ym6", "ym7", "ym8", "ym9", "ym10", "ym11", "ym12", "ym13", "ym14", "ym15" };
 			return tbl[idx];
 		} else if (isXMM()) {
-			static const char tbl[16][5] = { "xm0", "xm1", "xm2", "xm3", "xm4", "xm5", "xm6", "xm7", "xm8", "xm9", "xm10", "xm11", "xm12", "xm13", "xm14", "xm15" };
+			static const char *tbl[16] = { "xm0", "xm1", "xm2", "xm3", "xm4", "xm5", "xm6", "xm7", "xm8", "xm9", "xm10", "xm11", "xm12", "xm13", "xm14", "xm15" };
 			return tbl[idx];
 		} else if (isMMX()) {
-			static const char tbl[8][4] = { "mm0", "mm1", "mm2", "mm3", "mm4", "mm5", "mm6", "mm7" };
+			static const char *tbl[8] = { "mm0", "mm1", "mm2", "mm3", "mm4", "mm5", "mm6", "mm7" };
 			return tbl[idx];
 		} else if (isFPU()) {
-			static const char tbl[8][4] = { "st0", "st1", "st2", "st3", "st4", "st5", "st6", "st7" };
+			static const char *tbl[8] = { "st0", "st1", "st2", "st3", "st4", "st5", "st6", "st7" };
 			return tbl[idx];
 		}
 		throw Error(ERR_INTERNAL);
@@ -337,6 +350,12 @@ public:
 	bool operator!=(const Operand& rhs) const { return !operator==(rhs); }
 };
 
+struct Reg8;
+struct Reg16;
+struct Reg32;
+#ifdef XBYAK64
+struct Reg64;
+#endif
 class Reg : public Operand {
 	bool hasRex() const { return isExt8bit() | isREG(64) | isExtIdx(); }
 public:
@@ -348,6 +367,12 @@ public:
 	{
 		return (hasRex() || base.hasRex()) ? uint8(0x40 | ((isREG(64) | base.isREG(64)) ? 8 : 0) | (isExtIdx() ? 4 : 0)| (base.isExtIdx() ? 1 : 0)) : 0;
 	}
+	Reg8 cvt8() const;
+	Reg16 cvt16() const;
+	Reg32 cvt32() const;
+#ifdef XBYAK64
+	Reg64 cvt64() const;
+#endif
 };
 
 struct Reg8 : public Reg {
@@ -394,6 +419,39 @@ struct RegRip {
 		return RegRip(r.disp_ - disp);
 	}
 };
+#endif
+
+inline Reg8 Reg::cvt8() const
+{
+	const int idx = getIdx();
+	if (isBit(8)) return Reg8(idx, isExt8bit());
+#ifdef XBYAK32
+	if (idx >= 4) throw Error(ERR_CANT_CONVERT);
+#endif
+	return Reg8(idx, 4 <= idx && idx < 8);
+}
+
+inline Reg16 Reg::cvt16() const
+{
+	const int idx = getIdx();
+	if (isBit(8) && (4 <= idx && idx < 8) && !isExt8bit()) throw Error(ERR_CANT_CONVERT);
+	return Reg16(idx);
+}
+
+inline Reg32 Reg::cvt32() const
+{
+	const int idx = getIdx();
+	if (isBit(8) && (4 <= idx && idx < 8) && !isExt8bit()) throw Error(ERR_CANT_CONVERT);
+	return Reg32(idx);
+}
+
+#ifdef XBYAK64
+inline Reg64 Reg::cvt64() const
+{
+	const int idx = getIdx();
+	if (isBit(8) && (4 <= idx && idx < 8) && !isExt8bit()) throw Error(ERR_CANT_CONVERT);
+	return Reg64(idx);
+}
 #endif
 
 class RegExp {
