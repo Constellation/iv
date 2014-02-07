@@ -17,7 +17,7 @@ class Check : public iv::core::ThreadSafeRefCounted<Check> {
 TEST(ThreadSafeRefCountedCase, ThreadSafeRefCountedTest) {
   bool target = false;
   Check* check = new Check(&target);
-  EXPECT_EQ(check->RetainCount(), 1);
+  EXPECT_EQ(check->RetainCount(), 1u);
   check->Release();
   EXPECT_TRUE(target);
 }
