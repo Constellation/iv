@@ -7,6 +7,7 @@
 #include <iv/ustringpiece.h>
 #include <iv/about.h>
 #include <iv/cmdline.h>
+#include <iv/platform_io.h>
 #include <iv/lv5/lv5.h>
 #include <iv/lv5/railgun/command.h>
 #include <iv/lv5/railgun/interactive.h>
@@ -58,7 +59,7 @@ int BreakerExecuteFiles(const std::vector<std::string>& filenames) {
   std::vector<char> res;
   for (std::vector<std::string>::const_iterator it = filenames.begin(),
        last = filenames.end(); it != last; ++it) {
-    if (!iv::core::ReadFile(*it, &res)) {
+    if (!iv::core::io::ReadFile(*it, &res)) {
       return EXIT_FAILURE;
     }
     std::shared_ptr<iv::core::FileSource>
@@ -106,7 +107,7 @@ int RailgunExecuteFiles(const std::vector<std::string>& filenames) {
   std::vector<char> res;
   for (std::vector<std::string>::const_iterator it = filenames.begin(),
        last = filenames.end(); it != last; ++it) {
-    if (!iv::core::ReadFile(*it, &res)) {
+    if (!iv::core::io::ReadFile(*it, &res)) {
       return EXIT_FAILURE;
     }
     std::shared_ptr<iv::core::FileSource>
@@ -261,7 +262,7 @@ int main(int argc, char **argv) {
       for (std::vector<std::string>::const_iterator it = vec.begin(),
            last = vec.end(); it != last; ++it, filename.push_back(' ')) {
         filename.append(*it);
-        if (!iv::core::ReadFile(*it, &res)) {
+        if (!iv::core::io::ReadFile(*it, &res)) {
           return EXIT_FAILURE;
         }
       }
@@ -271,7 +272,7 @@ int main(int argc, char **argv) {
       res.insert(res.end(), com.begin(), com.end());
     } else {
       filename = rest.front();
-      if (!iv::core::ReadFile(filename, &res)) {
+      if (!iv::core::io::ReadFile(filename, &res)) {
         return EXIT_FAILURE;
       }
     }

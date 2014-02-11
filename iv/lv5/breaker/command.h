@@ -4,6 +4,7 @@
 #include <iv/file_source.h>
 #include <iv/utils.h>
 #include <iv/date_utils.h>
+#include <iv/platform_io.h>
 #include <iv/lv5/specialized_ast.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/context_fwd.h>
@@ -52,7 +53,7 @@ inline JSVal Run(const Arguments& args, Error* e) {
   const JSString* const f = val.string();
   std::vector<char> buffer;
   const std::string filename(f->GetUTF8());
-  if (!core::ReadFile(filename, &buffer)) {
+  if (!core::io::ReadFile(filename, &buffer)) {
     return JSUndefined;
   }
 
@@ -76,7 +77,7 @@ inline JSVal Load(const Arguments& args, Error* e) {
   const JSString* const f = val.string();
   std::vector<char> buffer;
   const std::string filename(f->GetUTF8());
-  if (!core::ReadFile(filename, &buffer)) {
+  if (!core::io::ReadFile(filename, &buffer)) {
     return JSUndefined;
   }
 
