@@ -50,6 +50,11 @@ endif()
 macro(setup_compiler_definitions)
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
       # using Visual Studio C++
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4250 /wd4355 /wd4800")
+    # Suppressed warnings:
+    # C4250: 'class1' : inherits 'class2::member' via dominance
+    # C4355: 'this' : used in base member initializer list
+    # C4800: 'type' : forcing value to bool 'true' or 'false' (performance warning)
   else()
       add_definitions("-pipe")
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-operator-names")
