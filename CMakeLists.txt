@@ -64,6 +64,7 @@ macro(setup_compiler_definitions)
           "-Wwrite-strings"
           "-Wno-long-long"
           "-Wno-missing-field-initializers"
+          "-g3"
           )
       add_definitions(
           "-D__STDC_LIMIT_MACROS"
@@ -78,7 +79,7 @@ macro(setup_compiler_definitions)
       endif()
 
       if (CMAKE_BUILD_TYPE MATCHES Debug)
-          add_definitions("-Werror" "-g3")
+          add_definitions("-Werror")
       endif()
 
       if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
