@@ -9,7 +9,7 @@ if(COMMAND cmake_policy)
 endif(COMMAND cmake_policy)
 
 # setup google-test target
-add_subdirectory(third_party/gtest)
+add_subdirectory(third_party/google-test)
 
 macro(include_if_exists directory)
     if(EXISTS "${directory}/")
