@@ -14,6 +14,7 @@ link_directories(
     third_party/v8_dtoa
     )
 
+include_directories(third_party/gc)
 # link local directories
 link_directories_if_exists(/usr/local/lib)
 link_directories_if_exists(/opt/local/lib)
@@ -58,38 +59,13 @@ add_library(liblv5 STATIC
     radio/core.cc
     )
 set_target_properties(liblv5 PROPERTIES PREFIX "")
-
 target_link_libraries(liblv5 netlib_dtoa v8_dtoa)
+
+set(LV5_LIBRARIES liblv5 ${IV_LIBRARIES} gc-lib)
 
 # lv5 shell
 
 add_executable(lv5 main.cc)
+target_link_libraries(lv5 ${LV5_LIBRARIES})
 
-target_link_libraries(lv5 liblv5)
-
-# link settings
-
-macro(link_iv target)
-    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        set(LIB_CXX "")
-        find_library(LIB_CXX c++)
-        if (NOT "${LIB_CXX}" STREQUAL "NOTFOUND")
-            target_link_libraries(${target} ${LIB_CXX})
-        endif()
-    endif()
-
-    if (NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC"))
-        find_library(LIB_M m)
-        target_link_libraries(${target} ${LIB_M})
-
-        find_library(LIB_PTHREAD pthread)
-        target_link_libraries(${target} ${LIB_PTHREAD})
-    endif()
-endmacro(link_iv)
-
-macro(link_lv5 target)
-    link_iv(${target})
-    target_link_libraries(${target} gc-lib)
-endmacro(link_lv5)
-
-link_lv5(lv5)
+add_subdirectory(test)
