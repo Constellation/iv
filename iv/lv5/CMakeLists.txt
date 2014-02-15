@@ -9,14 +9,23 @@ setup_compiler_definitions()
 add_subdirectory(third_party/netlib_dtoa)
 add_subdirectory(third_party/v8_dtoa)
 
+find_package(LLVM 3.3 REQUIRED
+   all-targets bitwriter linker ipo instrumentation backend support tablegen asmparser lto ${EXTRA_LLVM_MODULES})
+math(EXPR LV5_LLVM_VER ${LLVM_VERSION_MAJOR}*100+${LLVM_VERSION_MINOR})
+
 link_directories(
     third_party/netlib_dtoa
     third_party/v8_dtoa
+    ${LLVM_LIBRARY_DIRS}
     )
-
 # link local directories
 link_directories_if_exists(/usr/local/lib)
 link_directories_if_exists(/opt/local/lib)
+
+include_directories(
+    third_party/gc
+    ${LLVM_INCLUDE_DIRS}
+    )
 
 if (NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC"))
     add_definitions(
@@ -26,6 +35,8 @@ if (NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC"))
 endif()
 
 # liblv5
+
+string(REPLACE "-Werror" "" LLVM_CXXFLAGS ${LLVM_CXXFLAGS})
 
 add_library(liblv5 STATIC
     context.cc
@@ -60,10 +71,16 @@ add_library(liblv5 STATIC
 set_target_properties(liblv5 PROPERTIES PREFIX "")
 
 target_link_libraries(liblv5 netlib_dtoa v8_dtoa)
+set_target_properties(
+  liblv5 PROPERTIES
+  COMPILE_FLAGS "${LLVM_CXXFLAGS}")
 
 # lv5 shell
 
 add_executable(lv5 main.cc)
+set_target_properties(
+  lv5 PROPERTIES
+  COMPILE_FLAGS "${LLVM_CXXFLAGS}")
 
 target_link_libraries(lv5 liblv5)
 
@@ -89,7 +106,7 @@ endmacro(link_iv)
 
 macro(link_lv5 target)
     link_iv(${target})
-    target_link_libraries(${target} gc-lib)
+    target_link_libraries(${target} gc-lib ${LLVM_LIBRARIES} "${LLVM_LDFLAGS}")
 endmacro(link_lv5)
 
 link_lv5(lv5)
