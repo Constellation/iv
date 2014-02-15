@@ -1,12 +1,7 @@
 # iv test
 
-# link local directories
-link_directories_if_exists(/usr/local/lib)
-link_directories_if_exists(/opt/local/lib)
-
-link_directories(gtest)
-
-include_directories(.)
+link_directories("${PROJECT_SOURCE_DIR}/gtest")
+include_directories("${PROJECT_SOURCE_DIR}/third_party/gtest")
 
 if (NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC"))
     add_definitions(
@@ -16,8 +11,6 @@ if (NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC"))
 endif()
 
 setup_compiler_definitions()
-
-add_subdirectory(gtest)
 
 add_executable(iv_unit_tests
     dtoa_fixed.cc
@@ -65,7 +58,4 @@ add_executable(iv_unit_tests
     test_unicode.cc
     )
 
-target_link_libraries(iv_unit_tests gtest)
-link_iv(iv_unit_tests)
-
-add_subdirectory(lv5)
+target_link_libraries(iv_unit_tests gtest ${IV_LIBRARIES})
