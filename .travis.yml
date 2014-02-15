@@ -5,7 +5,7 @@ compiler:
 before_script:
     - sudo apt-get install -y llvm-3.3-dev
     - cmake -H. -Bout -DCMAKE_BUILD_TYPE=Debug
-script: make -C out && ./out/test/iv_unit_tests && ./out/test/lv5/lv5_unit_tests
+script: make -C out && ./out/iv/test/iv_unit_tests && ./out/iv/lv5/test/lv5_unit_tests
 notifications:
     recipients:
         - utatane.tea@gmail.com
