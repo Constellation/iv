@@ -19,6 +19,6 @@ add_custom_target(sunspider
     perl
     sunspider
     --shell=${CMAKE_BINARY_DIR}/iv/lv5/lv5
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tools/sunspider-prefix/src/sunspider/
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tools/sunspider-download-prefix/src/download-sunspider/
     )
 add_dependencies(sunspider download-sunspider lv5)
