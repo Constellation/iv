@@ -68,9 +68,9 @@ TEST(SuiteCase, BreakerPassTest) {
   ctx.DefineFunction<&lv5::breaker::Run, 0>("run");
   ctx.DefineFunction<&lv5::railgun::Dis, 1>("dis");
 
-  ExecuteInBreakerContext(&ctx, "test/lv5/suite/resources/jasmine.js", &e);
+  ExecuteInBreakerContext(&ctx, "iv/lv5/test/suite/resources/jasmine.js", &e);
   ASSERT_FALSE(e);
-  ExecuteInBreakerContext(&ctx, "test/lv5/suite/resources/ConsoleReporter.js", &e);
+  ExecuteInBreakerContext(&ctx, "iv/lv5/test/suite/resources/ConsoleReporter.js", &e);
   ASSERT_FALSE(e);
   const std::vector<std::string> files = GetTests();
   for (std::vector<std::string>::const_iterator it = files.begin(),
@@ -78,7 +78,7 @@ TEST(SuiteCase, BreakerPassTest) {
     ExecuteInBreakerContext(&ctx, *it, &e);
     ASSERT_FALSE(e);
   }
-  ExecuteInBreakerContext(&ctx, "test/lv5/suite/resources/driver.js", &e);
+  ExecuteInBreakerContext(&ctx, "iv/lv5/test/suite/resources/driver.js", &e);
   EXPECT_FALSE(e);
 }
 #endif
@@ -106,9 +106,9 @@ TEST(SuiteCase, RailgunPassTest) {
   ctx.DefineFunction<&lv5::railgun::Run, 0>("run");
   ctx.DefineFunction<&lv5::railgun::Dis, 1>("dis");
 
-  ExecuteInRailgunContext(&ctx, "test/lv5/suite/resources/jasmine.js", &e);
+  ExecuteInRailgunContext(&ctx, "iv/lv5/test/suite/resources/jasmine.js", &e);
   ASSERT_FALSE(e);
-  ExecuteInRailgunContext(&ctx, "test/lv5/suite/resources/ConsoleReporter.js", &e);
+  ExecuteInRailgunContext(&ctx, "iv/lv5/test/suite/resources/ConsoleReporter.js", &e);
   ASSERT_FALSE(e);
   const std::vector<std::string> files = GetTests();
   for (std::vector<std::string>::const_iterator it = files.begin(),
@@ -116,7 +116,7 @@ TEST(SuiteCase, RailgunPassTest) {
     ExecuteInRailgunContext(&ctx, *it, &e);
     ASSERT_FALSE(e);
   }
-  ExecuteInRailgunContext(&ctx, "test/lv5/suite/resources/driver.js", &e);
+  ExecuteInRailgunContext(&ctx, "iv/lv5/test/suite/resources/driver.js", &e);
   EXPECT_FALSE(e);
 }
 
