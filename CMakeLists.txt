@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
 project(iv C CXX)
+include(ExternalProject)
 
 if(COMMAND cmake_policy)
     cmake_policy(SET CMP0003 NEW)  # don't split absolute link paths
@@ -104,3 +105,4 @@ macro(setup_compiler_definitions)
 endmacro()
 
 add_subdirectory(iv)
+add_subdirectory(tools)
