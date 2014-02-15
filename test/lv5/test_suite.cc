@@ -48,7 +48,7 @@ static void ExecuteInBreakerContext(lv5::breaker::Context* ctx,
                                     const std::string& filename,
                                     lv5::Error* e) {
   std::vector<char> res;
-  ASSERT_TRUE(core::ReadFile(filename, &res)) << filename;
+  ASSERT_TRUE(core::io::ReadFile(filename, &res)) << filename;
   std::shared_ptr<core::FileSource> src(
       new core::FileSource(core::StringPiece(res.data(), res.size()), filename));
   lv5::railgun::Code* code = Compile(ctx, src, true);
@@ -87,7 +87,7 @@ static void ExecuteInRailgunContext(lv5::railgun::Context* ctx,
                                     const std::string& filename,
                                     lv5::Error* e) {
   std::vector<char> res;
-  ASSERT_TRUE(core::ReadFile(filename, &res)) << filename;
+  ASSERT_TRUE(core::io::ReadFile(filename, &res)) << filename;
   std::shared_ptr<core::FileSource> src(
       new core::FileSource(core::StringPiece(res.data(), res.size()), filename));
   lv5::railgun::Code* code = Compile(ctx, src, false);
