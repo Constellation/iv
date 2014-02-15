@@ -2,6 +2,8 @@
 #define IV_PLATFORM_IO_H_
 #include <iv/utils.h>
 #include <iv/stringpiece.h>
+#include <vector>
+#include <string>
 namespace iv {
 namespace core {
 namespace io {
@@ -20,8 +22,8 @@ inline std::FILE* OpenFile(const std::string& filename,
 #endif
 }
 
-inline bool io::ReadFile(core::StringPiece filename,
-                     std::vector<char>* out, bool output_error = true) {
+inline bool io::ReadFile(const std::string& filename,
+                         std::vector<char>* out, bool output_error = true) {
   if (std::FILE* fp = OpenFile(filename, "rb")) {
     std::fseek(fp, 0L, SEEK_END);
     const std::size_t filesize = std::ftell(fp);
