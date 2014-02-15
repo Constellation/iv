@@ -13,6 +13,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 include_directories(
     .
     iv/third_party
+    iv/lv5/third_party/gc
     )
 
 macro(include_if_exists directory)
