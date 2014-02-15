@@ -268,6 +268,7 @@ inline void* operator new( size_t size, GC_NS_QUALIFY(GCPlacement) gcp,
                               GC_NS_QUALIFY(GCCleanUpFunc), void * );
 #endif
 
+#if 0
 #ifdef _MSC_VER
  /** This ensures that the system default operator new[] doesn't get
   *  undefined, which is what seems to happen on VC++ 6 for some reason
@@ -287,6 +288,7 @@ inline void* operator new( size_t size, GC_NS_QUALIFY(GCPlacement) gcp,
   void* operator new( size_t size, int /* nBlockUse */,
                      const char * szFileName, int nLine );
 #endif /* _MSC_VER */
+#endif
 
 #ifdef GC_OPERATOR_NEW_ARRAY
   inline void* operator new[]( size_t size, GC_NS_QUALIFY(GCPlacement) gcp,

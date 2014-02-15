@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(iv)
+project(iv C CXX)
 
 if(COMMAND cmake_policy)
     cmake_policy(SET CMP0003 NEW)  # don't split absolute link paths
@@ -11,7 +11,7 @@ endif(COMMAND cmake_policy)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 # setup google-test target
-add_subdirectory(third_party/gtest)
+add_subdirectory(third_party/google-test)
 
 macro(include_if_exists directory)
     if(EXISTS "${directory}/")

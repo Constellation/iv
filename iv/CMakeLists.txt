@@ -6,16 +6,16 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 endif()
 
 set(LIB_M "")
-set(LIB_PTHREAD "")
 if (NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC"))
     find_library(LIB_M m)
-    find_library(LIB_PTHREAD pthread)
 endif()
+
+find_package(Threads)
 
 set(IV_LIBRARIES
     ${LIB_CXX}
     ${LIB_M}
-    ${LIB_PTHREAD}
+    ${CMAKE_THREAD_LIBS_INIT}
     )
 
 include_directories(

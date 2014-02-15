@@ -2,8 +2,12 @@
 
 # prelude
 set(CMAKE_OSX_ARCHITECTURES "x86_64")
-add_subdirectory(third_party/gc)
 
+function(build_gc)
+    include_directories(third_party/gc)
+    add_subdirectory(third_party/gc)
+endfunction(build_gc)
+build_gc()
 
 setup_compiler_definitions()
 add_subdirectory(third_party/netlib_dtoa)

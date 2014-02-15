@@ -1,7 +1,7 @@
 # iv test
 
-link_directories("${PROJECT_SOURCE_DIR}/gtest")
-include_directories("${PROJECT_SOURCE_DIR}/third_party/gtest")
+link_directories("${PROJECT_SOURCE_DIR}/third_party/google-test")
+include_directories("${PROJECT_SOURCE_DIR}/third_party/google-test")
 
 if (NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC"))
     add_definitions(
@@ -58,4 +58,4 @@ add_executable(iv_unit_tests
     test_unicode.cc
     )
 
-target_link_libraries(iv_unit_tests gtest ${IV_LIBRARIES})
+target_link_libraries(iv_unit_tests google-test ${IV_LIBRARIES})

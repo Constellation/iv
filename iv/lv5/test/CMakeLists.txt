@@ -1,7 +1,7 @@
 # lv5 test
 
-link_directories("${PROJECT_SOURCE_DIR}/gtest")
-include_directories("${PROJECT_SOURCE_DIR}/third_party/gtest")
+link_directories("${PROJECT_SOURCE_DIR}/third_party/google-test")
+include_directories("${PROJECT_SOURCE_DIR}/third_party/google-test")
 
 if (NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC"))
     add_definitions("-D__STDC_FORMAT_MACROS")
@@ -15,4 +15,4 @@ add_executable(lv5_unit_tests
     test_suite.cc
     )
 
-target_link_libraries(lv5_unit_tests gtest ${LV5_LIBRARIES})
+target_link_libraries(lv5_unit_tests google-test ${LV5_LIBRARIES})
