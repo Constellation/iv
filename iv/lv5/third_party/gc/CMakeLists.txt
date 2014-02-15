@@ -31,8 +31,16 @@ ADD_DEFINITIONS("-D_CRT_SECURE_NO_DEPRECATE
                  -DALL_INTERIOR_POINTERS")
 
 IF(APPLE)
-    SET(CMAKE_OSX_ARCHITECTURES "ppc;i386;x86_64" CACHE STRING "Build architectures for Mac OS X" FORCE)
+    IF("${CMAKE_OSX_ARCHITECTURES}" STREQUAL "")
+        SET(CMAKE_OSX_ARCHITECTURES "ppc;i386;x86_64" CACHE STRING "Build architectures for Mac OS X" FORCE)
+    ENDIF()
 ENDIF(APPLE)
+
+#FIXME(Yusuke Suzuki): added
+IF(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    ADD_DEFINITIONS("-Wno-incompatible-pointer-types"
+                    "-Wno-deprecated-declarations")
+ENDIF()
 
 #LIBATOMIC #TODO
 #ADD_LIBRARY(atomic_ops STATIC )
