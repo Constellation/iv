@@ -63,9 +63,9 @@ add_library(liblv5 STATIC
     radio/core.cc
     )
 set_target_properties(liblv5 PROPERTIES PREFIX "")
-target_link_libraries(liblv5 netlib_dtoa v8_dtoa)
+target_link_libraries(liblv5 netlib_dtoa v8_dtoa gc-lib)
 
-set(LV5_LIBRARIES liblv5 ${IV_LIBRARIES} gc-lib)
+set(LV5_LIBRARIES liblv5 ${IV_LIBRARIES})
 
 # lv5 shell
 
