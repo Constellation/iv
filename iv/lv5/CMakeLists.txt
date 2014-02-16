@@ -68,11 +68,7 @@ add_library(liblv5 STATIC
     radio/core.cc
     )
 set_target_properties(liblv5 PROPERTIES PREFIX "")
-get_property(GC_LIB_PATH TARGET gc-lib PROPERTY LOCATION)
-get_property(V8_DTOA_LIB_PATH TARGET v8_dtoa PROPERTY LOCATION)
-get_property(NETLIB_DTOA_LIB_PATH TARGET netlib_dtoa PROPERTY LOCATION)
-mz_merge_static_libraries(liblv5 ALL
-  "${GC_LIB_PATH} ${V8_DTOA_LIB_PATH} ${NETLIB_DTOA_LIB_PATH}")
+mz_merge_static_libraries(liblv5 ALL gc-lib v8_dtoa netlib_dtoa)
 add_dependencies(liblv5 gc-lib v8_dtoa netlib_dtoa)
 # target_link_libraries(liblv5 gc-lib v8_dtoa netlib_dtoa)
 
