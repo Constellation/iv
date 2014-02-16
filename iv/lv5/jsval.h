@@ -20,6 +20,7 @@ namespace iv {
 namespace lv5 {
 
 #if defined(IV_64) && !defined(IV_OS_SOLARIS)
+#define IV_64BIT_JSVAL
 // 64bit version
 //
 // Pointer value is not use higher 16bits so format is like this,
@@ -249,15 +250,21 @@ inline void JSLayout::set_empty() {
   value_.bytes_ = detail::jsval64::kEmpty;
 }
 
-inline bool JSLayout::SameValue(this_type lhs, this_type rhs) {
+inline bool JSLayout::SameValueImpl(this_type lhs, this_type rhs, bool zero) {
   if (lhs.IsInt32()) {
     if (rhs.IsInt32()) {
       return lhs.int32() == rhs.int32();
     }
+    if (zero && rhs.IsNumber()) {
+      return lhs.int32() == rhs.number();
+    }
     // because +0(int32_t) and -0(double) is not the same value
     return false;
   } else if (lhs.IsNumber()) {
-    if (rhs.IsInt32() || !rhs.IsNumber()) {
+    if (!rhs.IsNumber()) {
+      return false;
+    }
+    if (!zero && rhs.IsInt32()) {
       return false;
     }
     const double lhsn = lhs.number();
@@ -302,33 +309,8 @@ inline bool JSLayout::StrictEqual(this_type lhs, this_type rhs) {
   return lhs.value_.bytes_ == rhs.value_.bytes_;
 }
 
-inline std::size_t JSLayout::Hasher::operator()(JSLayout val) const {
-  if (val.IsInt32()) {
-    return std::hash<int32_t>()(val.int32());
-  }
-
-  if (val.IsNumber()) {
-    const double d = val.number();
-    if (core::math::IsNaN(d)) {
-      return std::hash<double>()(core::kNaN);
-    }
-    return std::hash<double>()(d);
-  }
-
-  if (val.IsString()) {
-    JSString* str = val.string();
-    if (str->Is8Bit()) {
-      return core::Hash::StringToHash(*str->Get8Bit());
-    } else {
-      return core::Hash::StringToHash(*str->Get16Bit());
-    }
-  }
-
-  // Cover symbol, object and other cells.
-  return std::hash<uint64_t>()(val.value_.bytes_);
-}
-
 #else
+#define IV_32BIT_JSVAL
 // 32bit version (or 128bit JSVal in Solaris)
 //
 // NaN boxing 32bit
@@ -553,7 +535,7 @@ inline void JSLayout::set_empty() {
   value_.struct_.tag_ = detail::jsval32::kEmptyTag;
 }
 
-inline bool JSLayout::SameValue(this_type lhs, this_type rhs) {
+inline bool JSLayout::SameValueImpl(this_type lhs, this_type rhs, bool zero) {
   if (detail::jsval32::GetType(lhs) != detail::jsval32::GetType(rhs)) {
     return false;
   }
@@ -564,6 +546,9 @@ inline bool JSLayout::SameValue(this_type lhs, this_type rhs) {
     const double lhsn = lhs.number();
     const double rhsn = rhs.number();
     if (lhsn == rhsn) {
+      if (zero) {
+        return true;
+      }
       return core::math::Signbit(lhsn) == core::math::Signbit(rhsn);
     }
     return core::math::IsNaN(lhsn) && core::math::IsNaN(rhsn);
@@ -608,40 +593,6 @@ inline bool JSLayout::StrictEqual(this_type lhs, this_type rhs) {
     return lhs.symbol() == rhs.symbol();
   }
   return false;
-}
-
-inline std::size_t JSLayout::Hasher::operator()(JSLayout val) const {
-  if (val.IsInt32()) {
-    return std::hash<int32_t>()(val.int32());
-  }
-
-  if (val.IsNumber()) {
-    const double d = val.number();
-    if (core::math::IsNaN(d)) {
-      return std::hash<double>()(core::kNaN);
-    }
-    return std::hash<double>()(d);
-  }
-
-  if (val.IsString()) {
-    JSString* str = val.string();
-    if (str->Is8Bit()) {
-      return core::Hash::StringToHash(*str->Get8Bit());
-    } else {
-      return core::Hash::StringToHash(*str->Get16Bit());
-    }
-  }
-
-  // Cover symbol, object and other cells.
-  if (val.IsCell()) {
-    return std::hash<radio::Cell*>()(val.cell());
-  }
-
-  if (val.IsBoolean()) {
-    return std::hash<uint32_t>()(val.boolean());
-  }
-
-  return std::hash<uint32_t>()(detail::jsval32::GetType(val));
 }
 
 #endif  // 32 or 64 bit JSLayout ifdef
@@ -956,6 +907,47 @@ inline void JSLayout::CheckObjectCoercible(Error* e) const {
   }
 }
 
+inline std::size_t JSLayout::HashImpl(bool zero) const {
+  if (IsInt32()) {
+    return std::hash<int32_t>()(int32());
+  }
+
+  if (IsNumber()) {
+    const double d = number();
+    if (core::math::IsNaN(d)) {
+      return std::hash<double>()(core::kNaN);
+    }
+    if (zero && d == 0) {
+      return std::hash<int32_t>()(0);
+    }
+    return std::hash<double>()(d);
+  }
+
+  if (IsString()) {
+    JSString* str = string();
+    if (str->Is8Bit()) {
+      return core::Hash::StringToHash(*str->Get8Bit());
+    } else {
+      return core::Hash::StringToHash(*str->Get16Bit());
+    }
+  }
+
+  // Cover symbol, object and other cells.
+#if defined(IV_64BIT_JSVAL)
+  return std::hash<uint64_t>()(value_.bytes_);
+#else
+  if (IsCell()) {
+    return std::hash<radio::Cell*>()(cell());
+  }
+
+  if (IsBoolean()) {
+    return std::hash<uint32_t>()(boolean());
+  }
+
+  return std::hash<uint32_t>()(detail::jsval32::GetType(*this));
+#endif
+}
+
 #define CHECK IV_LV5_ERROR(e)
 inline bool JSVal::AbstractEqual(Context* ctx,
                                  this_type lhs,
@@ -1133,6 +1125,14 @@ inline bool JSLayout::BitEqual(this_type lhs, this_type rhs) {
 #else
   return lhs.value_.bytes_ == rhs.value_.bytes_;
 #endif
+}
+
+inline std::size_t JSLayout::Hasher::operator()(JSLayout val) const {
+  return val.HashImpl(false);
+}
+
+inline std::size_t JSLayout::HasherZero::operator()(JSLayout val) const {
+  return val.HashImpl(true);
 }
 
 } }  // namespace iv::lv5

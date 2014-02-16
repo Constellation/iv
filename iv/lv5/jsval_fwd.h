@@ -193,11 +193,22 @@ class JSLayout {
     std::size_t operator()(this_type val) const;
   };
 
+  // JSLayout HasherZero is used by SameValueZero algorithm
+  struct HasherZero {
+    std::size_t operator()(this_type val) const;
+  };
+
   friend struct Hasher;
 
   struct SameValueEqualer {
     bool operator()(this_type lhs, this_type rhs) const {
       return this_type::SameValue(lhs, rhs);
+    }
+  };
+
+  struct SameValueZeroEqualer {
+    bool operator()(this_type lhs, this_type rhs) const {
+      return this_type::SameValueZero(lhs, rhs);
     }
   };
 
@@ -319,6 +330,8 @@ class JSLayout {
 
   void set_empty();
 
+  std::size_t HashImpl(bool zero) const;
+
   inline const value_type& Layout() const {
     return value_;
   }
@@ -332,7 +345,15 @@ class JSLayout {
     return lhs.swap(rhs);
   }
 
-  static bool SameValue(this_type lhs, this_type rhs);
+  static bool SameValueImpl(this_type lhs, this_type rhs, bool zero);
+
+  static bool SameValue(this_type lhs, this_type rhs) {
+    return SameValueImpl(lhs, rhs, false);
+  }
+
+  static bool SameValueZero(this_type lhs, this_type rhs) {
+    return SameValueImpl(lhs, rhs, true);
+  }
 
   static bool StrictEqual(this_type lhs, this_type rhs);
 
@@ -524,6 +545,10 @@ class JSVal : public JSLayout {
 
   static inline bool SameValue(this_type lhs, this_type rhs) {
     return JSLayout::SameValue(lhs, rhs);
+  }
+
+  static inline bool SameValueZero(this_type lhs, this_type rhs) {
+    return JSLayout::SameValueZero(lhs, rhs);
   }
 
   static inline bool StrictEqual(this_type lhs, this_type rhs) {

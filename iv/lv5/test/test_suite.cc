@@ -29,7 +29,7 @@ lv5::railgun::Code* Compile(lv5::railgun::Context* ctx,
 }
 
 static std::vector<std::string> GetTests() {
-  const std::string prefix("test/lv5/suite/");
+  const std::string prefix("iv/lv5/test/suite/");
   std::vector<std::string> vec;
   std::ifstream stream((prefix + "spec.list").c_str());
   std::string line;

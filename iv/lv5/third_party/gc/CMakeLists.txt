@@ -49,6 +49,7 @@ ENDIF()
 #TODO(Yusuke Suzuki): workaround
 # we need to implement own GC library
 SET(CMAKE_USE_PTHREADS_INIT)
+SET(CMAKE_USE_WIN32_THREADS_INIT)
 
 #LIBGC
 
