@@ -1,8 +1,8 @@
 #ifndef IV_SINGLETON_H_
 #define IV_SINGLETON_H_
 #include <cstdlib>
+#include <mutex>
 #include <iv/noncopyable.h>
-#include <iv/callonce.h>
 namespace iv {
 namespace core {
 
@@ -10,8 +10,8 @@ template<class T>
 class Singleton : private core::Noncopyable<T> {
  public:
   static T* Instance() {
-    static thread::Once once = IV_ONCE_INIT;
-    thread::CallOnce(&once, &Singleton<T>::Initialize);
+    static std::once_flag flag;
+    std::call_once(flag, &Singleton<T>::Initialize);
     return instance_;
   }
 
