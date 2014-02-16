@@ -23,7 +23,8 @@ class JSMap : public core::AllStatic {
   class Data : public radio::HeapObject<> {
    public:
     typedef GCHashMap<JSVal, JSVal,
-                      JSVal::Hasher, JSVal::SameValueEqualer>::type Mapping;
+                      JSVal::HasherZero,
+                      JSVal::SameValueZeroEqualer>::type Mapping;
     Data() : data_() { }
 
     bool Delete(JSVal val) {
@@ -84,7 +85,8 @@ class JSMap : public core::AllStatic {
       iterable = it.ToObject(ctx, IV_LV5_ERROR(e));
       JSVal val = obj->Get(ctx, symbol::set(), IV_LV5_ERROR(e));
       if (!val.IsCallable()) {
-        e->Report(Error::Type, "MapInitialize adder, `obj.set` is not callable");
+        e->Report(
+            Error::Type, "MapInitialize adder, `obj.set` is not callable");
         return nullptr;
       }
       adder = static_cast<JSFunction*>(val.object());

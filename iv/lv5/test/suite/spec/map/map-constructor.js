@@ -23,7 +23,8 @@ describe("Map", function() {
       expect(map.has(0)).toBe(true);
       expect(map.has(-0)).toBe(true);
       expect(map.has('0')).toBe(true);
-      expect(map.get(0)).toBe(0);
+      // Since 0 and -0 are not distinguished (SameValueZero)
+      expect(map.get(0)).toBe(1);
       expect(map.get(-0)).toBe(1);
       expect(map.get('0')).toBe(2);
     });

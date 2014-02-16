@@ -70,7 +70,6 @@ add_library(liblv5 STATIC
 set_target_properties(liblv5 PROPERTIES PREFIX "")
 mz_merge_static_libraries(liblv5 ALL gc-lib v8_dtoa netlib_dtoa)
 add_dependencies(liblv5 gc-lib v8_dtoa netlib_dtoa)
-# target_link_libraries(liblv5 gc-lib v8_dtoa netlib_dtoa)
 
 set(LV5_LIBRARIES ${IV_LIBRARIES} liblv5)
 
@@ -78,5 +77,63 @@ set(LV5_LIBRARIES ${IV_LIBRARIES} liblv5)
 
 add_executable(lv5 main.cc)
 target_link_libraries(lv5 ${LV5_LIBRARIES})
+
+# build & link backward to lv5 shell
+set(BACKWARD_LIBRARIES)
+set(BACKWARD_DEFINITIONS)
+function(build_and_link_backward)
+    if (NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC"))
+        set(STACK_DETAILS_DW FALSE)
+        find_library(LIB_DW dw)
+        if (NOT ("${LIB_DW}" STREQUAL "LIB_DW-NOTFOUND"))
+            set(STACK_DETAILS_DW TRUE)
+            LIST(APPEND BACKWARD_LIBRARIES "${LIB_DW}")
+        endif()
+        set(STACK_DETAILS_BFD FALSE)
+        find_library(LIB_BFD bfd)
+        if (NOT ("${LIB_BFD}" STREQUAL "LIB_BFD-NOTFOUND"))
+            set(STACK_DETAILS_BFD TRUE)
+            LIST(APPEND BACKWARD_LIBRARIES "${LIB_BFD}")
+        endif()
+
+        ###############################################################################
+        # COMPILER FLAGS
+        ###############################################################################
+
+        if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_COMPILER_IS_GNUCXX)
+          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic-errors")
+          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+        endif()
+
+        ###############################################################################
+        # CONFIGS
+        ###############################################################################
+
+        set(STACK_DETAILS_BACKTRACE_SYMBOL TRUE CACHE BOOL "Use backtrace symbol")
+        set(STACK_DETAILS_DW FALSE CACHE BOOL "Use libdw")
+        set(STACK_DETAILS_BFD FALSE CACHE BOOL "Use libbfd")
+
+        set(STACK_WALKING_UNWIND TRUE CACHE BOOL "Use unwind for stack walking")
+        set(STACK_WALKING_BACKTRACE FALSE CACHE BOOL "Use backtrace for stack walking")
+
+        macro(map_definitions var_prefix define_prefix)
+          foreach(def ${ARGV})
+            if (${${var_prefix}${def}})
+              LIST(APPEND BACKWARD_DEFINITIONS "${define_prefix}${def}=1")
+            endif()
+          endforeach()
+        endmacro()
+
+        map_definitions("STACK_DETAILS_" "BACKWARD_HAS_" BACKTRACE_SYMBOL DW BFD)
+        map_definitions("STACK_WALKING_" "BACKWARD_HAS_" UNWIND BACKTRACE)
+
+        foreach(def ${BACKWARD_DEFINITIONS})
+          message(STATUS "${def}")
+        endforeach()
+        add_library(backward STATIC third_party/backward/backward.cpp)
+        target_link_libraries(lv5 backward ${BACKWARD_LIBRARIES})
+    endif()
+endfunction(build_and_link_backward)
+build_and_link_backward()
 
 add_subdirectory(test)
