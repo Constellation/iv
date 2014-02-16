@@ -1,6 +1,0 @@
-
-int autoformat()
-{
-    // dummy symbol to silence ranlib on OS X
-    return 0;
-}

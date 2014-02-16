@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 2.8)
 
 project(iv C CXX)
 
-# load mz-cmaketools
-include(third_party/mz-cmaketools/global.cmake)
+# load minimized mz-cmaketools (but partially)
+include(third_party/mz-cmaketools/load.cmake)
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_PATH} ${PROJECT_SOURCE_DIR}/third_party/mz-cmaketools/Modules)
 include(ExternalProject)
 
 if(COMMAND cmake_policy)
