@@ -21,7 +21,9 @@ class JSSet : public core::AllStatic {
 
   class Data : public radio::HeapObject<> {
    public:
-    typedef GCHashSet<JSVal, JSVal::Hasher, JSVal::SameValueEqualer>::type Set;
+    typedef GCHashSet<JSVal,
+                      JSVal::HasherZero,
+                      JSVal::SameValueZeroEqualer>::type Set;
     Data() : data_() { }
 
     bool Delete(JSVal val) {
