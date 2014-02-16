@@ -28,6 +28,8 @@ link_directories(
 link_directories_if_exists(/usr/local/lib)
 link_directories_if_exists(/opt/local/lib)
 
+add_definitions("-DGC_NOT_DLL")
+
 if (NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC"))
     add_definitions(
         "-fno-strict-aliasing"
