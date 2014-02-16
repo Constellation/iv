@@ -60,7 +60,7 @@ if(NOT HAS_MZ_GLOBAL)
   
   # macros
   include("${MZ_TOOLS_PATH}/macros.cmake")
-  include("${MZ_TOOLS_PATH}/autoformat.cmake")
+  # include("${MZ_TOOLS_PATH}/autoformat.cmake")
 
 # EOF: global.cmake
 endif() 

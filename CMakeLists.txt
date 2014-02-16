@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(iv C CXX)
 
-# load mz-cmaketools
+# load mz-cmaketools (but partially)
 include(third_party/mz-cmaketools/global.cmake)
 include(ExternalProject)
 
