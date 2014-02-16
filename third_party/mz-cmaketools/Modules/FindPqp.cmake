@@ -1,0 +1,33 @@
+FIND_PATH(
+	PQP_INCLUDE_DIRS
+	NAMES
+	PQP.h
+	HINTS
+	$ENV{HOME}/include
+	/usr/local/include
+	/usr/include
+	$ENV{ProgramFiles}/PQP/include
+)
+
+FIND_LIBRARY(
+	PQP_LIBRARIES
+	NAMES
+	PQP
+	HINTS
+	$ENV{HOME}/lib
+	/usr/local/lib
+	/usr/lib
+	$ENV{ProgramFiles}/PQP/lib
+)
+
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(
+	PQP
+	DEFAULT_MSG
+	PQP_INCLUDE_DIRS
+	PQP_LIBRARIES
+)
+
+MARK_AS_ADVANCED(
+	PQP_INCLUDE_DIRS
+	PQP_LIBRARIES
+) 

@@ -1,10 +1,10 @@
 # liblv5 & lv5
 
 # prelude
+include(MergeStaticLibraries)
 set(CMAKE_OSX_ARCHITECTURES "x86_64")
 
 function(build_gc)
-    include_directories(third_party/gc)
     add_subdirectory(third_party/gc)
 endfunction(build_gc)
 build_gc()
@@ -13,13 +13,18 @@ setup_compiler_definitions()
 add_subdirectory(third_party/netlib_dtoa)
 add_subdirectory(third_party/v8_dtoa)
 
+# include directories
+include_directories(
+    third_party
+    third_party/gc
+    )
+
+# link directories
 link_directories(
     third_party/netlib_dtoa
     third_party/v8_dtoa
+    third_party/gc
     )
-
-include_directories(third_party/gc)
-# link local directories
 link_directories_if_exists(/usr/local/lib)
 link_directories_if_exists(/opt/local/lib)
 
@@ -63,9 +68,15 @@ add_library(liblv5 STATIC
     radio/core.cc
     )
 set_target_properties(liblv5 PROPERTIES PREFIX "")
-target_link_libraries(liblv5 netlib_dtoa v8_dtoa)
+get_property(GC_LIB_PATH TARGET gc-lib PROPERTY LOCATION)
+get_property(V8_DTOA_LIB_PATH TARGET v8_dtoa PROPERTY LOCATION)
+get_property(NETLIB_DTOA_LIB_PATH TARGET netlib_dtoa PROPERTY LOCATION)
+mz_merge_static_libraries(liblv5 ALL
+  "${GC_LIB_PATH} ${V8_DTOA_LIB_PATH} ${NETLIB_DTOA_LIB_PATH}")
+add_dependencies(liblv5 gc-lib v8_dtoa netlib_dtoa)
+# target_link_libraries(liblv5 gc-lib v8_dtoa netlib_dtoa)
 
-set(LV5_LIBRARIES liblv5 ${IV_LIBRARIES} gc-lib)
+set(LV5_LIBRARIES ${IV_LIBRARIES} liblv5)
 
 # lv5 shell
 
