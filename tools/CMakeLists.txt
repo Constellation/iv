@@ -1,4 +1,4 @@
-# Add gtest
+# SunSpider
 ExternalProject_Add(
     download-sunspider
     SVN_REPOSITORY http://svn.webkit.org/repository/webkit/trunk/PerformanceTests/SunSpider
@@ -15,10 +15,13 @@ ExternalProject_Add(
     LOG_CONFIGURE OFF
     LOG_BUILD OFF)
 
+externalproject_get_property(download-sunspider source_dir)
+set(SUNSPIDER_SOURCE_DIR ${source_dir})
+get_property(SUNSPIDER_SHELL TARGET lv5 PROPERTY LOCATION)
 add_custom_target(sunspider
     perl
     sunspider
-    --shell=${CMAKE_BINARY_DIR}/iv/lv5/lv5
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tools/download-sunspider-prefix/src/download-sunspider/
+    --shell=${SUNSPIDER_SHELL}
+    WORKING_DIRECTORY ${SUNSPIDER_SOURCE_DIR}
     )
 add_dependencies(sunspider download-sunspider lv5)
