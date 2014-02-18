@@ -88,7 +88,7 @@ set_target_properties(
   COMPILE_FLAGS "${LLVM_CXXFLAGS}")
 mz_merge_static_libraries(liblv5 ALL gc-lib v8_dtoa netlib_dtoa)
 add_dependencies(liblv5 gc-lib v8_dtoa netlib_dtoa)
-set(LV5_LIBRARIES ${IV_LIBRARIES} liblv5 ${LLVM_LIBRARIES})
+set(LV5_LIBRARIES ${IV_LIBRARIES} liblv5 "${LLVM_LDFLAGS}" ${LLVM_LIBRARIES})
 
 # lv5 shell
 
