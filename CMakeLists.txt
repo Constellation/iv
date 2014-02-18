@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 2.8)
 
 project(iv C CXX)
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
 # load minimized mz-cmaketools (but partially)
 include(third_party/mz-cmaketools/load.cmake)
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_PATH} ${PROJECT_SOURCE_DIR}/third_party/mz-cmaketools/Modules)
