@@ -1,6 +1,7 @@
 # liblv5 & lv5
 
 # prelude
+set(CMAKE_BUILD_TYPE None)
 include(MergeStaticLibraries)
 set(CMAKE_OSX_ARCHITECTURES "x86_64")
 
