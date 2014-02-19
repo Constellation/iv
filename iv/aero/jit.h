@@ -358,7 +358,7 @@ IV_AERO_OPCODES(V)
       jmp(jit_detail::kFailureLabel, T_NEAR);
     } else {
       // one char check and bloom filter path
-      if (kASCII && !core::character::IsASCII(filter)) {
+      if (code_.IsQuickCheckOneChar() && kASCII && !core::character::IsASCII(filter)) {
         jmp(jit_detail::kFailureLabel, T_NEAR);
         L(jit_detail::kQuickCheckNextLabel);
         return;

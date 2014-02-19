@@ -129,7 +129,7 @@ TEST(AeroExecCase, CounterTest) {
   {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("[\\0\\xa0]");
-    iv::core::UString str1 = iv::core::ToUString("\0");
+    iv::core::UString str1 = iv::core::ToUString('\0');
     iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
