@@ -125,4 +125,17 @@ TEST(AeroExecCase, CounterTest) {
     ASSERT_TRUE(vm.Execute(code.get(), str2, vec.data(), 0));
     ASSERT_FALSE(vm.Execute(code.get(), str3, vec.data(), 0));
   }
+  // Extracted from SunSpider
+  {
+    space.Clear();
+    iv::core::UString reg = iv::core::ToUString("[\\0\\xa0]");
+    iv::core::UString str1 = iv::core::ToUString('\0');
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
+    int error = 0;
+    iv::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    iv::aero::Compiler compiler(iv::aero::NONE);
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
+    ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
+  }
 }

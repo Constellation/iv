@@ -540,7 +540,7 @@ TEST(AeroVMCase, CaptureTest2) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));;
-    disasm.DisAssemble(*code);
+    // disasm.DisAssemble(*code);
     EXPECT_EQ(1, code->captures());
     ASSERT_TRUE(vm.Execute(code.get(), str1, vec.data(), 0));
   }

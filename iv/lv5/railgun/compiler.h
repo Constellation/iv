@@ -15,6 +15,7 @@
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/jsstring.h>
 #include <iv/lv5/jsregexp.h>
+#include <iv/lv5/jsglobal.h>
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/utility.h>
 #include <iv/lv5/railgun/fwd.h>

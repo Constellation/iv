@@ -5,6 +5,7 @@
 #include <iv/lv5/arguments.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/chain.h>
+#include <iv/lv5/jsglobal.h>
 #include <iv/lv5/railgun/fwd.h>
 #include <iv/lv5/railgun/instruction_fwd.h>
 namespace iv {

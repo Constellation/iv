@@ -1,5 +1,6 @@
 #ifndef IV_LV5_JSFUNCTION_H_
 #define IV_LV5_JSFUNCTION_H_
+#include <iv/lv5/slot.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/jsfunction_fwd.h>
 namespace iv {
