@@ -13,6 +13,7 @@
 #include <iv/lv5/jsarray.h>
 #include <iv/lv5/jserror.h>
 #include <iv/lv5/jsregexp.h>
+#include <iv/lv5/jsglobal.h>
 #include <iv/lv5/property.h>
 #include <iv/lv5/internal.h>
 #include <iv/lv5/slot.h>

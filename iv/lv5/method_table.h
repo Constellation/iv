@@ -3,6 +3,8 @@
 namespace iv {
 namespace lv5 {
 
+class PropertyNamesCollector;
+
 #define IV_LV5_INTERNAL_METHOD static
 
 struct MethodTable {
