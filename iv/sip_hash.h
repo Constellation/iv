@@ -151,7 +151,7 @@ class SipHash {
 
   void Dump() {
     for (int v = 0; v < 4; v++) {
-      printf("v%d: %" PRIx64 "\n", v, v_[v]);
+      printf("v%d: %lx\n", v, v_[v]);
     }
   }
 
