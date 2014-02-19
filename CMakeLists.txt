@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(iv C CXX)
 
+# We can specify Release / Debug / None
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
@@ -32,8 +33,12 @@ macro(link_directories_if_exists directory)
     endif()
 endmacro()
 
+option(JIT "enable JIT (default on)" ON)
+
 # disable jit
-# env.Append(CPPDEFINES=['IV_DISABLE_JIT'])
+if (NOT JIT)
+  add_definitions("-DIV_DISABLE_JIT")
+endif()
 
 set(CMAKE_C_FLAGS_RELEASE "")
 set(CMAKE_CXX_FLAGS_RELEASE "")
