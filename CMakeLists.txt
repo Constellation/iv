@@ -20,9 +20,6 @@ endif(COMMAND cmake_policy)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
-# setup google-test target
-add_subdirectory(third_party/google-test)
-
 macro(include_if_exists directory)
     if(EXISTS "${directory}/")
         include_directories(${directory})
@@ -36,6 +33,15 @@ macro(link_directories_if_exists directory)
 endmacro()
 
 option(JIT "enable JIT (default on)" ON)
+option(LTO "enable clang LTO - Link-Time-Optimization (default on)" OFF)
+
+# In Ubuntu environment, we can specify supc++
+if (NOT DEFINED CLANG_CXX_ABI)
+  set(CLANG_CXX_ABI "")
+endif()
+set(CLANG_CXX_ABI "${CLANG_CXX_ABI}" CACHE STRING
+    "Specify C++ ABI library to use." FORCE)
+set_property(CACHE CLANG_CXX_ABI PROPERTY STRINGS ;${CXXABIS})
 
 # disable jit
 if (NOT JIT)
@@ -46,12 +52,17 @@ set(CMAKE_C_FLAGS_RELEASE "")
 set(CMAKE_CXX_FLAGS_RELEASE "")
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O4")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O4")
+    if (LTO)
+      set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O4")
+      set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O4")
+    else()
+      set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3")
+      set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+    endif()
 else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 endif()
@@ -97,25 +108,55 @@ macro(setup_compiler_definitions)
       endif()
 
       if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-          # using Clang
-          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
-          add_definitions(
-              "-ferror-limit=1000"
-              "-fcolor-diagnostics"
-              "-Wno-nested-anon-types"
-              )
-      elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-          # using GCC
-          execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
-                          OUTPUT_VARIABLE GCC_VERSION)
-          if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
-              set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-          else()
-              set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-          endif()
+        add_definitions("-Wno-nested-anon-types")
       endif()
   endif()
 endmacro()
 
+# global libraries and compilers
+
+set(LIB_ABI)
+set(LIB_CXX)
+set(LIB_M)
+
+if (NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC"))
+    find_library(LIB_M m)
+endif()
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    # using Clang
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
+    message("clang ${CMAKE_CXX_FLAGS}")
+    add_definitions(
+        "-ferror-limit=1000"
+        "-fcolor-diagnostics"
+        )
+    if (NOT ("${CLANG_CXX_ABI}" STREQUAL ""))
+      set(LIB_ABI "-l${CLANG_CXX_ABI}")
+      message("Using special ABI library ${LIB_ABI}")
+    endif()
+    find_library(LIB_CXX c++)
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    # using GCC
+    execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
+                    OUTPUT_VARIABLE GCC_VERSION)
+    if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    else()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+    endif()
+endif()
+
+find_package(Threads)
+
+set(IV_LIBRARIES
+    ${LIB_M}
+    ${LIB_CXX}
+    ${LIB_ABI}
+    ${CMAKE_THREAD_LIBS_INIT}
+    )
+
+# setup google-test target
+add_subdirectory(third_party/google-test)
 add_subdirectory(iv)
 add_subdirectory(tools)

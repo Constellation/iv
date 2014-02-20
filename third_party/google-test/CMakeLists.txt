@@ -5,3 +5,4 @@ if (NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC"))
 endif()
 
 add_library(google-test STATIC gtest-all.cc gtest_main.cc)
+target_link_libraries(google-test ${IV_LIBRARIES})
