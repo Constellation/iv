@@ -1,0 +1,3 @@
+#ifndef IV_LV5_DIAGRAM_FWD_H_
+#define IV_LV5_DIAGRAM_FWD_H_
+#endif  // IV_LV5_DIAGRAM_FWD_H_
