@@ -149,12 +149,6 @@ class SipHash {
     return FinalInteger(digest);
   }
 
-  void Dump() {
-    for (int v = 0; v < 4; v++) {
-      printf("v%d: %lx\n", v, v_[v]);
-    }
-  }
-
   static inline uint64_t Hash24(key_type key, uint8_t *data, uint64_t len) {
     uint64_t k0, k1;
     uint64_t v0, v1, v2, v3;
