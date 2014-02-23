@@ -230,6 +230,41 @@ class Compiler : private Visitor {
         return;
       }
     }
+
+    if (!atom->inverted() && atom->counts() <= 4) {
+      // Fast path. check 4 characters
+      std::array<char16_t, 4> buffer{};
+      atom->FillBuffer(buffer.begin());
+      switch (atom->counts()) {
+        case 0:
+          break;
+        case 1:
+          EmitCharacterRaw(buffer[0]);
+          break;
+        case 2:
+          Emit<OP::CHECK_2CHAR_OR>();
+          Emit2(buffer[0]);
+          Emit2(buffer[1]);
+          break;
+        case 3:
+          Emit<OP::CHECK_3CHAR_OR>();
+          Emit2(buffer[0]);
+          Emit2(buffer[1]);
+          Emit2(buffer[2]);
+          break;
+        case 4:
+          Emit<OP::CHECK_4CHAR_OR>();
+          Emit2(buffer[0]);
+          Emit2(buffer[1]);
+          Emit2(buffer[2]);
+          Emit2(buffer[3]);
+        default:
+          UNREACHABLE();
+          break;
+      }
+      return;
+    }
+
     if (atom->inverted()) {
       Emit<OP::CHECK_RANGE_INVERTED>();
     } else {

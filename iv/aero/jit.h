@@ -278,6 +278,9 @@ class JIT : public Xbyak::CodeGenerator {
         case OP::CHECK_3CHAR_OR:
           EmitCHECK_3CHAR_OR(instr, length, offset);
           break;
+        case OP::CHECK_4CHAR_OR:
+          EmitCHECK_4CHAR_OR(instr, length, offset);
+          break;
         case OP::CHECK_RANGE:
           EmitCHECK_RANGE(instr, length, offset);
           break;
@@ -1032,6 +1035,42 @@ IV_AERO_OPCODES(V)
     }
     if (!(kASCII && !core::character::IsASCII(third))) {
       cmp(r10, third);
+      je(".SUCCESS");
+    }
+    jmp(jit_detail::kBackTrackLabel, T_NEAR);
+    L(".SUCCESS");
+    if (offset < 0) {
+      inc(cp_);
+    }
+    outLocalLabel();
+  }
+
+  void EmitCHECK_4CHAR_OR(const uint8_t* instr, uint32_t len, int offset = -1) {
+    const char16_t first = Load2Bytes(instr + 1);
+    const char16_t second = Load2Bytes(instr + 3);
+    const char16_t third = Load2Bytes(instr + 5);
+    const char16_t fourth = Load2Bytes(instr + 7);
+    inLocalLabel();
+    if (offset < 0) {
+      EmitSizeGuard();
+      movzx(r10, character[subject_ + cp_ * kCharSize]);
+    } else {
+      movzx(r10, character[rbp + offset * kCharSize]);
+    }
+    if (!(kASCII && !core::character::IsASCII(first))) {
+      cmp(r10, first);
+      je(".SUCCESS");
+    }
+    if (!(kASCII && !core::character::IsASCII(second))) {
+      cmp(r10, second);
+      je(".SUCCESS");
+    }
+    if (!(kASCII && !core::character::IsASCII(third))) {
+      cmp(r10, third);
+      je(".SUCCESS");
+    }
+    if (!(kASCII && !core::character::IsASCII(fourth))) {
+      cmp(r10, fourth);
       je(".SUCCESS");
     }
     jmp(jit_detail::kBackTrackLabel, T_NEAR);

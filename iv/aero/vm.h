@@ -353,6 +353,20 @@ inline int VM::Main(Code* code, const Piece& subject,
         BACKTRACK();
       }
 
+      DEFINE_OPCODE(CHECK_4CHAR_OR) {
+        if (current_position < subject.size()) {
+          const char16_t ch = subject[current_position];
+          if (ch == Load2Bytes(instr + 1) ||
+              ch == Load2Bytes(instr + 3) ||
+              ch == Load2Bytes(instr + 5) ||
+              ch == Load2Bytes(instr + 7)) {
+            ++current_position;
+            DISPATCH_NEXT(CHECK_4CHAR_OR);
+          }
+        }
+        BACKTRACK();
+      }
+
       DEFINE_OPCODE(STORE_SP) {
         state_[code->captures() * 2 + Load4Bytes(instr + 1)]
             = sp - stack_.data();

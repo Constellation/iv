@@ -154,6 +154,15 @@ class RangeAtom : public Atom {
     , counts_(counts)
     , ranges_(ranges) { }
   const Ranges& ranges() const { return *ranges_; }
+  template<typename Iter>
+  Iter FillBuffer(Iter it) const {
+    for (const auto& range : ranges()) {
+      for (auto current = range.first; current <= range.second; ++current) {
+        *it++ = current;
+      }
+    }
+    return it;
+  }
   bool inverted() const { return inverted_; }
   bool singles() const { return singles_; }
   uint32_t counts() const { return counts_; }
