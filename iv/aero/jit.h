@@ -90,6 +90,11 @@ class JIT : public Xbyak::CodeGenerator {
     JIT* gen_;
   };
 
+  static bool IsAvailableSSE42() {
+    static const bool result = mie::isAvailableSSE42();
+    return result;
+  }
+
   #define IV_AERO_LOCAL()\
     for (bool step = true; step;) \
       for (LocalLabel label(this); step; step = false)
@@ -581,11 +586,6 @@ IV_AERO_OPCODES(V)
     }
   }
 
-  void EmitSizeGuard() {
-    cmp(cp_, size_);
-    jge(jit_detail::kBackTrackLabel, T_NEAR);
-  }
-
   void EmitSTORE_SP(const uint8_t* instr, uint32_t len) {
     const uint32_t offset = code_.captures() * 2 + Load4Bytes(instr + 1);
     mov(dword[captures_ + kIntSize * offset], spd_);
@@ -968,15 +968,10 @@ IV_AERO_OPCODES(V)
 
   void EmitCHECK_1BYTE_CHAR(const uint8_t* instr, uint32_t len, int offset = -1) {
     const CharT ch = Load1Bytes(instr + 1);
-    if (offset < 0) {
-      EmitSizeGuard();
-      cmp(character[subject_ + cp_ * kCharSize], ch);
-      jne(jit_detail::kBackTrackLabel, T_NEAR);
-      inc(cp_);
-    } else {
-      cmp(character[rbp + offset * kCharSize], ch);
-      jne(jit_detail::kBackTrackLabel, T_NEAR);
-    }
+    EmitSizeGuard(offset);
+    cmp(LoadCode(offset), ch);
+    jne(jit_detail::kBackTrackLabel, T_NEAR);
+    IncrementCP(offset);
   }
 
   void EmitCHECK_2BYTE_CHAR(const uint8_t* instr, uint32_t len, int offset = -1) {
@@ -985,37 +980,23 @@ IV_AERO_OPCODES(V)
       return;
     }
     const char16_t ch = Load2Bytes(instr + 1);
-    if (offset < 0) {
-      EmitSizeGuard();
-      if (ch <= 0x7FFF) {  // INT16_MAX
-        cmp(character[subject_ + cp_ * kCharSize], ch);
-      } else {
-        movzx(r10, character[subject_ + cp_ * kCharSize]);
-        cmp(r10, ch);
-      }
-      jne(jit_detail::kBackTrackLabel, T_NEAR);
-      inc(cp_);
+    EmitSizeGuard(offset);
+    if (ch <= 0x7FFF) {  // INT16_MAX
+      cmp(LoadCode(offset), ch);
     } else {
-      if (ch <= 0x7FFF) {  // INT16_MAX
-        cmp(character[rbp + offset * kCharSize], ch);
-      } else {
-        movzx(r10, character[rbp + offset * kCharSize]);
-        cmp(r10, ch);
-      }
-      jne(jit_detail::kBackTrackLabel, T_NEAR);
+      movzx(r10, LoadCode(offset));
+      cmp(r10, ch);
     }
+    jne(jit_detail::kBackTrackLabel, T_NEAR);
+    IncrementCP(offset);
   }
 
   void EmitCHECK_2CHAR_OR(const uint8_t* instr, uint32_t len, int offset = -1) {
     const char16_t first = Load2Bytes(instr + 1);
     const char16_t second = Load2Bytes(instr + 3);
     inLocalLabel();
-    if (offset < 0) {
-      EmitSizeGuard();
-      movzx(r10, character[subject_ + cp_ * kCharSize]);
-    } else {
-      movzx(r10, character[rbp + offset * kCharSize]);
-    }
+    EmitSizeGuard(offset);
+    movzx(r10, LoadCode(offset));
     if (!(kASCII && !core::character::IsASCII(first))) {
       cmp(r10, first);
       je(".SUCCESS");
@@ -1026,9 +1007,7 @@ IV_AERO_OPCODES(V)
     }
     jmp(jit_detail::kBackTrackLabel, T_NEAR);
     L(".SUCCESS");
-    if (offset < 0) {
-      inc(cp_);
-    }
+    IncrementCP(offset);
     outLocalLabel();
   }
 
@@ -1037,12 +1016,8 @@ IV_AERO_OPCODES(V)
     const char16_t second = Load2Bytes(instr + 3);
     const char16_t third = Load2Bytes(instr + 5);
     inLocalLabel();
-    if (offset < 0) {
-      EmitSizeGuard();
-      movzx(r10, character[subject_ + cp_ * kCharSize]);
-    } else {
-      movzx(r10, character[rbp + offset * kCharSize]);
-    }
+    EmitSizeGuard(offset);
+    movzx(r10, LoadCode(offset));
     if (!(kASCII && !core::character::IsASCII(first))) {
       cmp(r10, first);
       je(".SUCCESS");
@@ -1057,9 +1032,7 @@ IV_AERO_OPCODES(V)
     }
     jmp(jit_detail::kBackTrackLabel, T_NEAR);
     L(".SUCCESS");
-    if (offset < 0) {
-      inc(cp_);
-    }
+    IncrementCP(offset);
     outLocalLabel();
   }
 
@@ -1069,12 +1042,8 @@ IV_AERO_OPCODES(V)
     const char16_t third = Load2Bytes(instr + 5);
     const char16_t fourth = Load2Bytes(instr + 7);
     inLocalLabel();
-    if (offset < 0) {
-      EmitSizeGuard();
-      movzx(r10, character[subject_ + cp_ * kCharSize]);
-    } else {
-      movzx(r10, character[rbp + offset * kCharSize]);
-    }
+    EmitSizeGuard(offset);
+    movzx(r10, LoadCode(offset));
     if (!(kASCII && !core::character::IsASCII(first))) {
       cmp(r10, first);
       je(".SUCCESS");
@@ -1093,63 +1062,97 @@ IV_AERO_OPCODES(V)
     }
     jmp(jit_detail::kBackTrackLabel, T_NEAR);
     L(".SUCCESS");
-    if (offset < 0) {
-      inc(cp_);
-    }
+    IncrementCP(offset);
     outLocalLabel();
   }
 
   void EmitCHECK_RANGE(const uint8_t* instr, uint32_t len, int offset = -1) {
     const uint32_t length = Load4Bytes(instr + 1);
     const uint32_t counts = Load4Bytes(instr + 5);
-    if (mie::isAvailableSSE42() && counts <= 8) {
+
+    // If counts is less than or equal 8 and SSE4.2 is enabled,
+    // we create mask from candidate characters and apply pcmpestri.
+    // TODO(Yusuke Suzuki):
+    // When target character is ascii, we can compare 16 characters at once.
+    if (IsAvailableSSE42() && counts <= 8) {
+      union {
+        std::array<uint16_t, 8> b16;
+        std::array<uint64_t, 2> b64;
+      } buffer{};
+      auto it = buffer.b16.begin();
+      for (std::size_t i = 0; i < length; i += 4) {
+        const char16_t finish = Load2Bytes(instr + 5 + 4 + i + 2);
+        for (char16_t cur = Load2Bytes(instr + 5 + 4 + i);
+             cur <= finish; ++cur) {
+          *it++ = cur;
+        }
+      }
+      EmitSizeGuard(offset);
+      movzx(eax, LoadCode(offset));
+      movd(xm0, eax);
+
+      mov(rax, buffer.b64[0]);
+      pinsrq(xm1, rax, 0);
+      if (counts > 4) {
+        mov(rax, buffer.b64[1]);
+        pinsrq(xm1, rax, 1);
+      }
+
+      mov(eax, 1);  // 1(u16)
+      mov(edx, counts);  // counts(u16)
+      pcmpestri(xm0, xm1, 0x1);
+      jnc(jit_detail::kBackTrackLabel, T_NEAR);
+      IncrementCP(offset);
+      return;
+    }
+
+    const std::size_t ranges = length / 4;
+    // Generate range check code with SSE4.2
+    // TODO(Yusuke Suzuki):
+    // When target character is ascii, we can compare 8 ranges at once.
+    if (IsAvailableSSE42() && ranges >= 4) {
       IV_AERO_LOCAL() {
-        union {
-          std::array<uint16_t, 8> b16;
-          std::array<uint64_t, 2> b64;
-        } buffer{};
-        auto it = buffer.b16.begin();
-        for (std::size_t i = 0; i < length; i += 4) {
-          const char16_t finish = Load2Bytes(instr + 5 + 4 + i + 2);
-          for (char16_t cur = Load2Bytes(instr + 5 + 4 + i);
-               cur <= finish; ++cur) {
-            *it++ = cur;
+        EmitSizeGuard(offset);
+        movzx(eax, LoadCode(offset));
+        movd(xm1, eax);
+        mov(edx, 1);  // 1(u16)
+        const std::size_t ranges = length / 4;
+        // We can check 4 ranges at once.
+        for (std::size_t base = 0; base < ranges; base += 4) {
+          union {
+            std::array<uint16_t, 8> b16;
+            std::array<uint64_t, 2> b64;
+          } buffer{};
+          const std::size_t counts =
+              (std::min<std::size_t>)(4, (ranges - base));
+          for (std::size_t i = 0; i < counts; ++i) {
+            const std::size_t range = (i + base) * 4;
+            const char16_t start = Load2Bytes(instr + 5 + 4 + range);
+            const char16_t finish = Load2Bytes(instr + 5 + 4 + range + 2);
+            buffer.b16[i * 2] = start;
+            buffer.b16[i * 2 + 1] = finish;
           }
+          mov(r10, buffer.b64[0]);
+          pinsrq(xm0, r10, 0);
+          if (counts > 2) {
+            mov(r10, buffer.b64[1]);
+            pinsrq(xm0, r10, 1);
+          }
+          mov(eax, (counts * 2));  // (pair * 2) (u16)
+          pcmpestri(xm0, xm1, 0x1 + 0x4);
+          jc(".SUCCESS", T_NEAR);
         }
-        // filled with 0
-        if (offset < 0) {
-          EmitSizeGuard();
-          movzx(eax, character[subject_ + cp_ * kCharSize]);
-        } else {
-          movzx(eax, character[rbp + offset * kCharSize]);
-        }
-        movd(xm0, eax);
-
-        mov(rax, buffer.b64[0]);
-        pinsrq(xm1, rax, 0);
-        if (counts > 4) {
-          mov(rax, buffer.b64[1]);
-          pinsrq(xm1, rax, 1);
-        }
-
-        mov(eax, 1);
-        mov(edx, counts);
-        pcmpestri(xm0, xm1, 0x1);
-        jnc(jit_detail::kBackTrackLabel, T_NEAR);
-        if (offset < 0) {
-          inc(cp_);
-        }
+        jmp(jit_detail::kBackTrackLabel, T_NEAR);
+        L(".SUCCESS");
+        IncrementCP(offset);
       }
       return;
     }
-    IV_AERO_LOCAL() {
-      if (offset < 0) {
-        EmitSizeGuard();
-        movzx(r10, character[subject_ + cp_ * kCharSize]);
-      } else {
-        movzx(r10, character[rbp + offset * kCharSize]);
-      }
 
+    // Normal path.
+    IV_AERO_LOCAL() {
+      EmitSizeGuard(offset);
+      movzx(r10, LoadCode(offset));
       for (std::size_t i = 0; i < length; i += 4) {
         const char16_t start = Load2Bytes(instr + 5 + 4 + i);
         const char16_t finish = Load2Bytes(instr + 5 + 4 + i + 2);
@@ -1169,20 +1172,14 @@ IV_AERO_OPCODES(V)
       }
       jmp(jit_detail::kBackTrackLabel, T_NEAR);
       L(".SUCCESS");
-      if (offset < 0) {
-        inc(cp_);
-      }
+      IncrementCP(offset);
     }
   }
 
   void EmitCHECK_RANGE_INVERTED(const uint8_t* instr, uint32_t len, int offset = -1) {
     inLocalLabel();
-    if (offset < 0) {
-      EmitSizeGuard();
-      movzx(r10, character[subject_ + cp_ * kCharSize]);
-    } else {
-      movzx(r10, character[rbp + offset * kCharSize]);
-    }
+    EmitSizeGuard(offset);
+    movzx(r10, LoadCode(offset));
     const uint32_t length = Load4Bytes(instr + 1);
     const uint32_t counts = Load4Bytes(instr + 5);
     for (std::size_t i = 0; i < length; i += 4) {
@@ -1203,9 +1200,7 @@ IV_AERO_OPCODES(V)
       jle(jit_detail::kBackTrackLabel, T_NEAR);
     }
     L(".SUCCESS");
-    if (offset < 0) {
-      inc(cp_);
-    }
+    IncrementCP(offset);
     outLocalLabel();
   }
 
@@ -1246,6 +1241,27 @@ IV_AERO_OPCODES(V)
 
   void Jump(uint32_t num) {
     jmp(JIT::MakeLabel(num).c_str(), T_NEAR);
+  }
+
+  void IncrementCP(int offset) {
+    if (offset < 0) {
+      inc(cp_);
+    }
+  }
+
+  Xbyak::Address LoadCode(int offset) {
+    if (offset < 0) {
+      return character[subject_ + cp_ * kCharSize];
+    } else {
+      return character[rbp + offset * kCharSize];
+    }
+  }
+
+  void EmitSizeGuard(int offset) {
+    if (offset < 0) {
+      cmp(cp_, size_);
+      jge(jit_detail::kBackTrackLabel, T_NEAR);
+    }
   }
 
   const Code& code_;
