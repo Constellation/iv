@@ -442,11 +442,11 @@ inline int VM::Main(Code* code, const Piece& subject,
           const uint16_t counts = Load2Bytes(instr + 5);
           bool in_range = false;
           for (std::size_t i = 0; i < length; i += 4) {
-            const char16_t start = Load2Bytes(instr + 5 + 2 + i);
+            const char16_t start = Load2Bytes(instr + 5 + 4 + i);
             if (ch < start) {
               break;
             }
-            const char16_t finish = Load2Bytes(instr + 5 + 2 + i + 2);
+            const char16_t finish = Load2Bytes(instr + 5 + 4 + i + 2);
             if (ch <= finish) {
               in_range = true;
               break;
@@ -467,11 +467,11 @@ inline int VM::Main(Code* code, const Piece& subject,
           const uint16_t counts = Load2Bytes(instr + 5);
           bool in_range = false;
           for (std::size_t i = 0; i < length; i += 4) {
-            const char16_t start = Load2Bytes(instr + 5 + 2 + i);
+            const char16_t start = Load2Bytes(instr + 5 + 4 + i);
             if (ch < start) {
               break;
             }
-            const char16_t finish = Load2Bytes(instr + 5 + 2 + i + 2);
+            const char16_t finish = Load2Bytes(instr + 5 + 4 + i + 2);
             if (ch <= finish) {
               in_range = true;
               break;

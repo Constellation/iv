@@ -506,17 +506,15 @@ class Parser {
       }
     }
     EXPECT(']');
-    bool singles = true;
-    uint16_t counts = 0;
-    const auto& ranges = NewRange(ranges_.Finish(&singles, &counts));
-    return new(factory_)RangeAtom(invert, singles, counts, ranges);
+    uint32_t counts = 0;
+    const auto& ranges = NewRange(ranges_.Finish(&counts));
+    return new(factory_)RangeAtom(invert, counts, ranges);
   }
 
   RangeAtom* NewEscapedRangeAtom(const char16_t code) {
-    bool singles = true;
-    uint16_t counts = 0;
-    const auto& ranges = ranges_.GetEscapedRange(code, &singles, &counts);
-    return new(factory_)RangeAtom(false, singles, counts, NewRange(ranges));
+    uint32_t counts = 0;
+    const auto& ranges = ranges_.GetEscapedRange(code, &counts);
+    return new(factory_)RangeAtom(false, counts, NewRange(ranges));
   }
 
   char16_t ParseClassAtom(char16_t* ranged, int* e) {

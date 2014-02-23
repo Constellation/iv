@@ -21,6 +21,8 @@ ipch/
 Release/
 Debug/
 out/
+debug/
+release/
 
 .DS_Store
 i*.swp

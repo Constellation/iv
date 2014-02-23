@@ -237,7 +237,8 @@ class Compiler : private Visitor {
       Emit<OP::CHECK_RANGE>();
     }
     Emit4(len);
-    Emit2(atom->counts());
+    assert(atom->counts() != 0);
+    Emit4(atom->counts());
     for (Ranges::const_iterator it = atom->ranges().begin(),
          last = atom->ranges().end(); it != last; ++it) {
       Emit2(it->first);

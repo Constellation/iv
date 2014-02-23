@@ -58,14 +58,13 @@ class RangeBuilder : private core::Noncopyable<RangeBuilder> {
     }
   }
 
-  const Ranges& GetEscapedRange(char16_t ch, bool* singles, uint16_t* counts) {
+  const Ranges& GetEscapedRange(char16_t ch, uint32_t* counts) {
     Clear();
     AddEscape(ch);
-    return Finish(singles, counts);
+    return Finish(counts);
   }
 
-  const Ranges& Finish(bool* singles, uint16_t* counts) {
-    *singles = true;
+  const Ranges& Finish(uint32_t* counts) {
     *counts = 0;
     if (sorted_.empty()) {
       return ranges_;
@@ -78,16 +77,10 @@ class RangeBuilder : private core::Noncopyable<RangeBuilder> {
       if ((current.second + 1) >= it->first) {
         current.second = std::max(current.second, it->second);
       } else {
-        if (current.first != current.second) {
-          *singles = false;
-        }
         *counts += current.second - current.first + 1;
         ranges_.push_back(current);
         current = *it;
       }
-    }
-    if (current.first != current.second) {
-      *singles = false;
     }
     *counts += current.second - current.first + 1;
     ranges_.push_back(current);

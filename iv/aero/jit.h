@@ -1101,7 +1101,7 @@ IV_AERO_OPCODES(V)
 
   void EmitCHECK_RANGE(const uint8_t* instr, uint32_t len, int offset = -1) {
     const uint32_t length = Load4Bytes(instr + 1);
-    const uint16_t counts = Load2Bytes(instr + 5);
+    const uint32_t counts = Load4Bytes(instr + 5);
     if (mie::isAvailableSSE42() && counts <= 8) {
       IV_AERO_LOCAL() {
         union {
@@ -1110,8 +1110,8 @@ IV_AERO_OPCODES(V)
         } buffer{};
         auto it = buffer.b16.begin();
         for (std::size_t i = 0; i < length; i += 4) {
-          const char16_t finish = Load2Bytes(instr + 5 + 2 + i + 2);
-          for (char16_t cur = Load2Bytes(instr + 5 + 2 + i);
+          const char16_t finish = Load2Bytes(instr + 5 + 4 + i + 2);
+          for (char16_t cur = Load2Bytes(instr + 5 + 4 + i);
                cur <= finish; ++cur) {
             *it++ = cur;
           }
@@ -1151,8 +1151,8 @@ IV_AERO_OPCODES(V)
       }
 
       for (std::size_t i = 0; i < length; i += 4) {
-        const char16_t start = Load2Bytes(instr + 5 + 2 + i);
-        const char16_t finish = Load2Bytes(instr + 5 + 2 + i + 2);
+        const char16_t start = Load2Bytes(instr + 5 + 4 + i);
+        const char16_t finish = Load2Bytes(instr + 5 + 4 + i + 2);
         if (kASCII && (!core::character::IsASCII(start))) {
           jmp(jit_detail::kBackTrackLabel, T_NEAR);
           break;
@@ -1186,8 +1186,8 @@ IV_AERO_OPCODES(V)
     const uint32_t length = Load4Bytes(instr + 1);
     const uint16_t counts = Load2Bytes(instr + 5);
     for (std::size_t i = 0; i < length; i += 4) {
-      const char16_t start = Load2Bytes(instr + 5 + 2 + i);
-      const char16_t finish = Load2Bytes(instr + 5 + 2 + i + 2);
+      const char16_t start = Load2Bytes(instr + 5 + 4 + i);
+      const char16_t finish = Load2Bytes(instr + 5 + 4 + i + 2);
       if (kASCII && (!core::character::IsASCII(start))) {
         jmp(".SUCCESS", T_NEAR);
         break;
