@@ -158,5 +158,6 @@ set(IV_LIBRARIES
 
 # setup google-test target
 add_subdirectory(third_party/google-test)
+add_subdirectory(third_party/google-benchmark)
 add_subdirectory(iv)
 add_subdirectory(tools)

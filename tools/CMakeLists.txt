@@ -18,10 +18,32 @@ ExternalProject_Add(
 externalproject_get_property(download-sunspider source_dir)
 set(SUNSPIDER_SOURCE_DIR ${source_dir})
 get_property(SUNSPIDER_SHELL TARGET lv5 PROPERTY LOCATION)
+
 add_custom_target(sunspider
     perl
     sunspider
     --shell=${SUNSPIDER_SHELL}
+    --runs=30
     WORKING_DIRECTORY ${SUNSPIDER_SOURCE_DIR}
     )
 add_dependencies(sunspider download-sunspider lv5)
+
+add_custom_target(v8-suite
+    perl
+    sunspider
+    --shell=${SUNSPIDER_SHELL}
+    --runs=30
+    --v8-suite
+    WORKING_DIRECTORY ${SUNSPIDER_SOURCE_DIR}
+    )
+add_dependencies(v8-suite download-sunspider lv5)
+
+add_custom_target(ubench
+    perl
+    sunspider
+    --shell=${SUNSPIDER_SHELL}
+    --runs=30
+    --ubench
+    WORKING_DIRECTORY ${SUNSPIDER_SOURCE_DIR}
+    )
+add_dependencies(v8-suite download-sunspider lv5)

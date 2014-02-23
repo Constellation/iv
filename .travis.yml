@@ -4,8 +4,18 @@ compiler:
     - gcc
 before_script:
     - sudo apt-get install -y llvm-3.3-dev libdw-dev libbfd-dev
-    - cmake -H. -Bout -DCMAKE_BUILD_TYPE=Debug
-script: make -C out && ./out/iv/test/iv_unit_tests && ./out/iv/lv5/test/lv5_unit_tests && make -C out sunspider
+    - cmake -H. -Bdebug -DCMAKE_BUILD_TYPE=Debug
+    - cmake -H. -Brelease -DCMAKE_BUILD_TYPE=Release
+script:
+    - make -C debug
+    - make -C release
+after_script:
+    - debug/iv/test/iv_unit_tests
+    - release/iv/test/iv_unit_tests
+    - debug/iv/lv5/test/lv5_unit_tests
+    - release/iv/lv5/test/lv5_unit_tests
+    - release/iv/test/benchmarks/aero_benchmarks --benchmark_iterations=100
+    - make -C release sunspider
 notifications:
     recipients:
         - utatane.tea@gmail.com

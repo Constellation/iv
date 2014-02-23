@@ -185,9 +185,7 @@ class Parser {
         case '.': {
           // Atom
           Advance();
-          target = new(factory_)RangeAtom(
-              false,
-              NewRange(ranges_.GetEscapedRange('.')));
+          target = NewEscapedRangeAtom('.');
           atom = true;
           break;
         }
@@ -305,33 +303,27 @@ class Parser {
       }
       case 'd': {
         Advance();
-        return new(factory_)RangeAtom(false,
-                                      NewRange(ranges_.GetEscapedRange('d')));
+        return NewEscapedRangeAtom('d');
       }
       case 'D': {
         Advance();
-        return new(factory_)RangeAtom(false,
-                                      NewRange(ranges_.GetEscapedRange('D')));
+        return NewEscapedRangeAtom('D');
       }
       case 's': {
         Advance();
-        return new(factory_)RangeAtom(false,
-                                      NewRange(ranges_.GetEscapedRange('s')));
+        return NewEscapedRangeAtom('s');
       }
       case 'S': {
         Advance();
-        return new(factory_)RangeAtom(false,
-                                      NewRange(ranges_.GetEscapedRange('S')));
+        return NewEscapedRangeAtom('S');
       }
       case 'w': {
         Advance();
-        return new(factory_)RangeAtom(false,
-                                      NewRange(ranges_.GetEscapedRange('w')));
+        return NewEscapedRangeAtom('w');
       }
       case 'W': {
         Advance();
-        return new(factory_)RangeAtom(false,
-                                      NewRange(ranges_.GetEscapedRange('W')));
+        return NewEscapedRangeAtom('W');
       }
       case '0': {
         // maybe octal
@@ -514,7 +506,15 @@ class Parser {
       }
     }
     EXPECT(']');
-    return new(factory_)RangeAtom(invert, NewRange(ranges_.Finish()));
+    uint32_t counts = 0;
+    const auto& ranges = NewRange(ranges_.Finish(&counts));
+    return new(factory_)RangeAtom(invert, counts, ranges);
+  }
+
+  RangeAtom* NewEscapedRangeAtom(const char16_t code) {
+    uint32_t counts = 0;
+    const auto& ranges = ranges_.GetEscapedRange(code, &counts);
+    return new(factory_)RangeAtom(false, counts, NewRange(ranges));
   }
 
   char16_t ParseClassAtom(char16_t* ranged, int* e) {

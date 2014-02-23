@@ -147,13 +147,29 @@ class CharacterAtom : public Atom {
 
 class RangeAtom : public Atom {
  public:
-  explicit RangeAtom(bool inverted, Ranges* ranges)
-    : inverted_(inverted), ranges_(ranges) { }
+  explicit RangeAtom(bool inverted,
+                     uint32_t counts, Ranges* ranges)
+    : inverted_(inverted)
+    , counts_(counts)
+    , ranges_(ranges) {
+    assert(counts != 0);
+  }
   const Ranges& ranges() const { return *ranges_; }
+  template<typename Iter>
+  Iter FillBuffer(Iter it) const {
+    for (const auto& range : ranges()) {
+      for (auto current = range.first; current <= range.second; ++current) {
+        *it++ = current;
+      }
+    }
+    return it;
+  }
   bool inverted() const { return inverted_; }
+  uint32_t counts() const { return counts_; }
   DECLARE_DERIVED_NODE_TYPE(RangeAtom)
  private:
   bool inverted_;
+  uint32_t counts_;
   Ranges* ranges_;
 };
 

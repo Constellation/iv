@@ -59,3 +59,4 @@ add_executable(iv_unit_tests
     )
 
 target_link_libraries(iv_unit_tests google-test ${IV_LIBRARIES})
+add_subdirectory(benchmarks)

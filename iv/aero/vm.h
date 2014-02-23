@@ -353,6 +353,20 @@ inline int VM::Main(Code* code, const Piece& subject,
         BACKTRACK();
       }
 
+      DEFINE_OPCODE(CHECK_4CHAR_OR) {
+        if (current_position < subject.size()) {
+          const char16_t ch = subject[current_position];
+          if (ch == Load2Bytes(instr + 1) ||
+              ch == Load2Bytes(instr + 3) ||
+              ch == Load2Bytes(instr + 5) ||
+              ch == Load2Bytes(instr + 7)) {
+            ++current_position;
+            DISPATCH_NEXT(CHECK_4CHAR_OR);
+          }
+        }
+        BACKTRACK();
+      }
+
       DEFINE_OPCODE(STORE_SP) {
         state_[code->captures() * 2 + Load4Bytes(instr + 1)]
             = sp - stack_.data();
@@ -425,13 +439,14 @@ inline int VM::Main(Code* code, const Piece& subject,
         if (current_position < subject.size()) {
           const char16_t ch = subject[current_position];
           const uint32_t length = Load4Bytes(instr + 1);
+          const uint16_t counts = Load2Bytes(instr + 5);
           bool in_range = false;
           for (std::size_t i = 0; i < length; i += 4) {
-            const char16_t start = Load2Bytes(instr + 1 + 4 + i);
+            const char16_t start = Load2Bytes(instr + 5 + 4 + i);
             if (ch < start) {
               break;
             }
-            const char16_t finish = Load2Bytes(instr + 1 + 4 + i + 2);
+            const char16_t finish = Load2Bytes(instr + 5 + 4 + i + 2);
             if (ch <= finish) {
               in_range = true;
               break;
@@ -449,13 +464,14 @@ inline int VM::Main(Code* code, const Piece& subject,
         if (current_position < subject.size()) {
           const char16_t ch = subject[current_position];
           const uint32_t length = Load4Bytes(instr + 1);
+          const uint16_t counts = Load2Bytes(instr + 5);
           bool in_range = false;
           for (std::size_t i = 0; i < length; i += 4) {
-            const char16_t start = Load2Bytes(instr + 1 + 4 + i);
+            const char16_t start = Load2Bytes(instr + 5 + 4 + i);
             if (ch < start) {
               break;
             }
-            const char16_t finish = Load2Bytes(instr + 1 + 4 + i + 2);
+            const char16_t finish = Load2Bytes(instr + 5 + 4 + i + 2);
             if (ch <= finish) {
               in_range = true;
               break;
