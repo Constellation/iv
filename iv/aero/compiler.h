@@ -258,6 +258,7 @@ class Compiler : private Visitor {
           Emit2(buffer[1]);
           Emit2(buffer[2]);
           Emit2(buffer[3]);
+          break;
         default:
           UNREACHABLE();
           break;
