@@ -507,14 +507,14 @@ class Parser {
     }
     EXPECT(']');
     bool singles = true;
-    uint32_t counts = 0;
+    uint16_t counts = 0;
     const auto& ranges = NewRange(ranges_.Finish(&singles, &counts));
     return new(factory_)RangeAtom(invert, singles, counts, ranges);
   }
 
   RangeAtom* NewEscapedRangeAtom(const char16_t code) {
     bool singles = true;
-    uint32_t counts = 0;
+    uint16_t counts = 0;
     const auto& ranges = ranges_.GetEscapedRange(code, &singles, &counts);
     return new(factory_)RangeAtom(false, singles, counts, NewRange(ranges));
   }

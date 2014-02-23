@@ -58,13 +58,13 @@ class RangeBuilder : private core::Noncopyable<RangeBuilder> {
     }
   }
 
-  const Ranges& GetEscapedRange(char16_t ch, bool* singles, uint32_t* counts) {
+  const Ranges& GetEscapedRange(char16_t ch, bool* singles, uint16_t* counts) {
     Clear();
     AddEscape(ch);
     return Finish(singles, counts);
   }
 
-  const Ranges& Finish(bool* singles, uint32_t* counts) {
+  const Ranges& Finish(bool* singles, uint16_t* counts) {
     *singles = true;
     *counts = 0;
     if (sorted_.empty()) {
