@@ -22,6 +22,7 @@ add_custom_target(sunspider
     perl
     sunspider
     --shell=${SUNSPIDER_SHELL}
+    --runs=30
     WORKING_DIRECTORY ${SUNSPIDER_SOURCE_DIR}
     )
 add_dependencies(sunspider download-sunspider lv5)

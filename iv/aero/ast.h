@@ -147,13 +147,21 @@ class CharacterAtom : public Atom {
 
 class RangeAtom : public Atom {
  public:
-  explicit RangeAtom(bool inverted, Ranges* ranges)
-    : inverted_(inverted), ranges_(ranges) { }
+  explicit RangeAtom(bool inverted, bool singles,
+                     uint32_t counts, Ranges* ranges)
+    : inverted_(inverted)
+    , singles_(singles)
+    , counts_(counts)
+    , ranges_(ranges) { }
   const Ranges& ranges() const { return *ranges_; }
   bool inverted() const { return inverted_; }
+  bool singles() const { return singles_; }
+  uint32_t counts() const { return counts_; }
   DECLARE_DERIVED_NODE_TYPE(RangeAtom)
  private:
   bool inverted_;
+  bool singles_;
+  uint32_t counts_;
   Ranges* ranges_;
 };
 
