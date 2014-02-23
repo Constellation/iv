@@ -439,7 +439,7 @@ inline int VM::Main(Code* code, const Piece& subject,
         if (current_position < subject.size()) {
           const char16_t ch = subject[current_position];
           const uint32_t length = Load4Bytes(instr + 1);
-          const uint16_t counts = Load2Bytes(instr + 5);
+          const uint32_t counts = Load4Bytes(instr + 5);
           bool in_range = false;
           for (std::size_t i = 0; i < length; i += 4) {
             const char16_t start = Load2Bytes(instr + 5 + 4 + i);
@@ -464,7 +464,7 @@ inline int VM::Main(Code* code, const Piece& subject,
         if (current_position < subject.size()) {
           const char16_t ch = subject[current_position];
           const uint32_t length = Load4Bytes(instr + 1);
-          const uint16_t counts = Load2Bytes(instr + 5);
+          const uint32_t counts = Load4Bytes(instr + 5);
           bool in_range = false;
           for (std::size_t i = 0; i < length; i += 4) {
             const char16_t start = Load2Bytes(instr + 5 + 4 + i);

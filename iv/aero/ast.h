@@ -152,7 +152,6 @@ class RangeAtom : public Atom {
     : inverted_(inverted)
     , counts_(counts)
     , ranges_(ranges) {
-    assert(counts != 0);
   }
   const Ranges& ranges() const { return *ranges_; }
   template<typename Iter>

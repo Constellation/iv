@@ -1184,7 +1184,7 @@ IV_AERO_OPCODES(V)
       movzx(r10, character[rbp + offset * kCharSize]);
     }
     const uint32_t length = Load4Bytes(instr + 1);
-    const uint16_t counts = Load2Bytes(instr + 5);
+    const uint32_t counts = Load4Bytes(instr + 5);
     for (std::size_t i = 0; i < length; i += 4) {
       const char16_t start = Load2Bytes(instr + 5 + 4 + i);
       const char16_t finish = Load2Bytes(instr + 5 + 4 + i + 2);
