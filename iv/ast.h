@@ -84,11 +84,9 @@ template<typename Factory>
 class Scope : public ScopeBase<Factory> {
  public:
   typedef std::pair<Assigned<Factory>*, bool> Variable;
-  typedef typename SpaceVector<Factory, Variable>::type Variables;
-  typedef typename SpaceVector<
-            Factory,
-            FunctionLiteral<Factory>*>::type FunctionLiterals;
-  typedef typename SpaceVector<Factory, Assigned<Factory>*>::type Assigneds;
+  typedef SpaceVector<Factory, Variable> Variables;
+  typedef SpaceVector<Factory, FunctionLiteral<Factory>*> FunctionLiterals;
+  typedef SpaceVector<Factory, Assigned<Factory>*> Assigneds;
   typedef Scope<Factory> this_type;
 
   explicit Scope(Factory* factory, bool is_global, Assigneds* params)
@@ -320,16 +318,12 @@ class AstNode : public AstNodeBase<Factory> {
  public:
   virtual ~AstNode() = 0;
 
-  typedef typename SpaceVector<Factory, Statement<Factory>*>::type Statements;
-  typedef typename SpaceVector<Factory, Expression<Factory>*>::type Expressions;
-  typedef typename SpaceVector<
-      Factory,
-      Maybe<Expression<Factory> > >::type MaybeExpressions;
-  typedef typename SpaceVector<Factory,
-                               Declaration<Factory>*>::type Declarations;
-  typedef typename SpaceVector<Factory,
-                               Assigned<Factory>*>::type Assigneds;
-  typedef typename SpaceVector<Factory, CaseClause<Factory>*>::type CaseClauses;
+  typedef SpaceVector<Factory, Statement<Factory>*> Statements;
+  typedef SpaceVector<Factory, Expression<Factory>*> Expressions;
+  typedef SpaceVector<Factory, Maybe<Expression<Factory>>> MaybeExpressions;
+  typedef SpaceVector<Factory, Declaration<Factory>*> Declarations;
+  typedef SpaceVector<Factory, Assigned<Factory>*> Assigneds;
+  typedef SpaceVector<Factory, CaseClause<Factory>*> CaseClauses;
 
   IV_STATEMENT_NODE_LIST(DECLARE_NODE_TYPE_BASE)
   IV_EXPRESSION_NODE_LIST(DECLARE_NODE_TYPE_BASE)
@@ -1160,7 +1154,7 @@ INHERIT(StringLiteral);
 template<typename Factory>
 class StringLiteral : public StringLiteralBase<Factory> {
  public:
-  typedef typename SpaceUString<Factory>::type value_type;
+  typedef SpaceUString<Factory> value_type;
   StringLiteral(const value_type* val, bool directive)
     : value_(val),
       directive_(directive) {
@@ -1354,7 +1348,7 @@ INHERIT(RegExpLiteral);
 template<typename Factory>
 class RegExpLiteral : public RegExpLiteralBase<Factory> {
  public:
-  typedef typename SpaceUString<Factory>::type value_type;
+  typedef SpaceUString<Factory> value_type;
   RegExpLiteral(const value_type* buffer, const value_type* flags)
     : value_(buffer),
       flags_(flags) { }
@@ -1392,7 +1386,8 @@ class ArrayLiteral : public ArrayLiteralBase<Factory> {
     }
   };
 
-  explicit ArrayLiteral(MaybeExpressions* items, bool is_primitive_constant_array)
+  explicit ArrayLiteral(MaybeExpressions* items,
+                        bool is_primitive_constant_array)
     : items_(items),
       side_effect_(
         std::find_if(items->begin(),
@@ -1431,7 +1426,7 @@ class ObjectLiteral : public ObjectLiteralBase<Factory> {
   typedef std::tuple<PropertyDescriptorType,
                      SymbolHolder,
                      Expression<Factory>*> Property;
-  typedef typename SpaceVector<Factory, Property>::type Properties;
+  typedef SpaceVector<Factory, Property> Properties;
 
   struct SideEffectFinder {
     template<typename T>
@@ -1524,7 +1519,8 @@ class FunctionLiteral : public FunctionLiteralBase<Factory> {
   inline const Scope<Factory>& scope() const { return *scope_; }
   inline bool strict() const { return strict_; }
   inline bool IsFunctionNameExposed() const {
-    return (type_ == STATEMENT || type_  == EXPRESSION) && name() && name().Address()->symbol() != symbol::arguments();
+    return (type_ == STATEMENT || type_  == EXPRESSION) &&
+        name() && name().Address()->symbol() != symbol::arguments();
   }
 
   inline std::size_t block_begin_position() const {

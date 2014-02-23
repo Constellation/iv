@@ -28,7 +28,7 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
 #define V(XS) typedef typename core::ast::AstNode<Factory>::XS XS;
   IV_AST_LIST_LIST(V)
 #undef V
-#define V(S) typedef typename core::SpaceUString<Factory>::type S;
+#define V(S) typedef typename core::SpaceUString<Factory> S;
   IV_AST_STRING(V)
 #undef V
 

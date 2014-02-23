@@ -124,8 +124,8 @@ class AstFactory : public core::Space<2> {
   }
 
   template<typename T>
-  typename core::SpaceVector<AstFactory, T>::type* NewVector() {
-    typedef typename core::SpaceVector<AstFactory, T>::type Vector;
+  typename core::SpaceVector<AstFactory, T>* NewVector() {
+    typedef typename core::SpaceVector<AstFactory, T> Vector;
     return new (New(sizeof(Vector))) Vector(typename Vector::allocator_type(this));
   }
 

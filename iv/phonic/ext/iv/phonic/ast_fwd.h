@@ -55,7 +55,7 @@ namespace phonic {
 #define V(XS) typedef core::ast::AstNode<AstFactory>::XS XS;
   AST_LIST_LIST(V)
 #undef V
-#define V(S) typedef core::SpaceUString<AstFactory>::type S;
+#define V(S) typedef core::SpaceUString<AstFactory> S;
   AST_STRING(V)
 #undef V
 typedef core::ast::AstVisitor<AstFactory>::const_type AstVisitor;
