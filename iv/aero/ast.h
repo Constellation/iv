@@ -35,9 +35,9 @@ class Expression : public core::SpaceObject {
 
 inline void Expression::Accept(Visitor* visitor) { }
 
-typedef core::SpaceVector<core::Space, Expression*> Expressions;
-typedef core::SpaceVector<core::Space, Alternative*> Alternatives;
-typedef core::SpaceVector<core::Space, Range> Ranges;
+typedef core::SpaceVector<core::Space, Expression*>::type Expressions;
+typedef core::SpaceVector<core::Space, Alternative*>::type Alternatives;
+typedef core::SpaceVector<core::Space, Range>::type Ranges;
 
 class Disjunction : public Expression {
  public:

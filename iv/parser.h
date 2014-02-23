@@ -101,7 +101,7 @@ class Parser : private Noncopyable<> {
 #define V(XS) typedef typename ast::AstNode<Factory>::XS XS;
   IV_AST_LIST_LIST(V)
 #undef V
-#define V(S) typedef SpaceUString<Factory> S;
+#define V(S) typedef typename SpaceUString<Factory>::type S;
   IV_AST_STRING(V)
 #undef V
 

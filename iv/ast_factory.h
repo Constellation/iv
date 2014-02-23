@@ -22,7 +22,7 @@ class BasicAstFactory {
 #define V(XS) typedef typename ast::AstNode<Factory>::XS XS;
   IV_AST_LIST_LIST(V)
 #undef V
-#define V(S) typedef SpaceUString<Factory> S;
+#define V(S) typedef typename SpaceUString<Factory>::type S;
   IV_AST_STRING(V)
 #undef V
 
@@ -166,8 +166,8 @@ class BasicAstFactory {
   }
 
   template<typename T>
-  SpaceVector<Factory, T>* NewVector() {
-    typedef SpaceVector<Factory, T> Vector;
+  typename SpaceVector<Factory, T>::type* NewVector() {
+    typedef typename SpaceVector<Factory, T>::type Vector;
     return new (static_cast<Factory*>(this)->New(sizeof(Vector)))
         Vector(typename Vector::allocator_type(static_cast<Factory*>(this)));
   }

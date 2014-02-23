@@ -97,7 +97,7 @@ class AstFactory;
 #define V(XS) typedef core::ast::AstNode<AstFactory>::XS XS;
   IV_AST_LIST_LIST(V)
 #undef V
-#define V(S) typedef core::SpaceUString<AstFactory> S;
+#define V(S) typedef core::SpaceUString<AstFactory>::type S;
   IV_AST_STRING(V)
 #undef V
 typedef core::ast::AstVisitor<AstFactory>::const_type AstVisitor;

@@ -121,33 +121,40 @@ bool operator!=(const SpaceAllocator<Factory, T>& lhs,
 }
 
 template<typename Factory, typename T>
-using SpaceVector = std::vector<T, SpaceAllocator<Factory, T>>;
+struct SpaceVector {
+  typedef std::vector<T, SpaceAllocator<Factory, T> > type;
+};
 
 template<typename Factory, typename T1, typename T2>
-using SpaceMap = std::map<
-                   T1,
+struct SpaceMap {
+  typedef std::map<T1,
                    T2,
                    std::less<T1>,
-                   SpaceAllocator<Factory, std::pair<const T1, T2>>>;
+                   SpaceAllocator<Factory, std::pair<const T1, T2> > > type;
+};
 
 template<typename Factory, typename T1, typename T2>
-using SpaceHashMap = std::unordered_map<
-                             T1,
+struct SpaceHashMap {
+  typedef std::unordered_map<T1,
                              T2,
                              std::hash<T1>,
                              std::equal_to<T1>,
                              SpaceAllocator<
                              Factory,
-                             std::pair<const T1, T2>>>;
+                             std::pair<const T1, T2> > > type;
+};
 
 template<typename Factory, typename T>
-using SpaceList = std::list<T, SpaceAllocator<Factory, T>>;
+struct SpaceList {
+  typedef std::list<T, SpaceAllocator<Factory, T> > type;
+};
 
 template<typename Factory>
-using SpaceUString = std::basic_string<
-      char16_t,
-      std::char_traits<char16_t>,
-      SpaceAllocator<Factory, char16_t>>;
+struct SpaceUString {
+  typedef std::basic_string<char16_t,
+                            std::char_traits<char16_t>,
+                            SpaceAllocator<Factory, char16_t> > type;
+};
 
 } }  // namespace iv::core
 

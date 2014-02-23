@@ -16,7 +16,7 @@ class AstFactory
   : public core::Space,
     public core::ast::BasicAstFactory<AstFactory> {
  public:
-  typedef core::SpaceVector<AstFactory, RegExpLiteral*> DestReqs;
+  typedef core::SpaceVector<AstFactory, RegExpLiteral*>::type DestReqs;
   explicit AstFactory(Context* ctx)
     : ctx_(ctx),
       regexps_(DestReqs::allocator_type(this)) { }
