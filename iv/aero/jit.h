@@ -13,6 +13,7 @@
 #include <iv/conversions.h>
 #include <iv/assoc_vector.h>
 #include <iv/utils.h>
+#include <iv/noncopyable.h>
 #include <iv/aero/op.h>
 #include <iv/aero/code.h>
 #include <iv/aero/utility.h>
@@ -75,6 +76,23 @@ class JIT : public Xbyak::CodeGenerator {
   typedef typename jit_detail::Reg<CharT>::type RegC;
   typedef typename JITExecutable<CharT>::Executable Executable;
   typedef typename Code::Data::const_pointer const_pointer;
+
+  class LocalLabel : private core::Noncopyable<> {
+   public:
+    explicit LocalLabel(JIT* gen)
+      : gen_(gen) {
+      gen_->inLocalLabel();
+    }
+    ~LocalLabel() {
+      gen_->outLocalLabel();
+    }
+   private:
+    JIT* gen_;
+  };
+
+  #define IV_AERO_LOCAL()\
+    for (bool step = true; step;) \
+      for (LocalLabel label(this); step; step = false)
 
   static_assert(
       std::is_same<CharT, char>::value || std::is_same<CharT, char16_t>::value,
@@ -1082,37 +1100,79 @@ IV_AERO_OPCODES(V)
   }
 
   void EmitCHECK_RANGE(const uint8_t* instr, uint32_t len, int offset = -1) {
-    inLocalLabel();
-    if (offset < 0) {
-      EmitSizeGuard();
-      movzx(r10, character[subject_ + cp_ * kCharSize]);
-    } else {
-      movzx(r10, character[rbp + offset * kCharSize]);
-    }
     const uint32_t length = Load4Bytes(instr + 1);
-    for (std::size_t i = 0; i < length; i += 4) {
-      const char16_t start = Load2Bytes(instr + 1 + 4 + i);
-      const char16_t finish = Load2Bytes(instr + 1 + 4 + i + 2);
-      if (kASCII && (!core::character::IsASCII(start))) {
-        jmp(jit_detail::kBackTrackLabel, T_NEAR);
-        break;
-      }
-      cmp(r10, start);
-      jl(jit_detail::kBackTrackLabel, T_NEAR);
+    const uint16_t counts = Load2Bytes(instr + 5);
+    if (mie::isAvailableSSE42() && counts <= 8) {
+      IV_AERO_LOCAL() {
+        union {
+          std::array<uint16_t, 8> b16;
+          std::array<uint64_t, 2> b64;
+        } buffer{};
+        auto it = buffer.b16.begin();
+        for (std::size_t i = 0; i < length; i += 4) {
+          const char16_t finish = Load2Bytes(instr + 5 + 2 + i + 2);
+          for (char16_t cur = Load2Bytes(instr + 5 + 2 + i);
+               cur <= finish; ++cur) {
+            *it++ = cur;
+          }
+        }
+        // filled with 0
+        if (offset < 0) {
+          EmitSizeGuard();
+          movzx(eax, character[subject_ + cp_ * kCharSize]);
+        } else {
+          movzx(eax, character[rbp + offset * kCharSize]);
+        }
+        movd(xm0, eax);
 
-      if (kASCII && (!core::character::IsASCII(finish))) {
-        jmp(".SUCCESS", T_NEAR);
-        break;
+        mov(rax, buffer.b64[0]);
+        pinsrq(xm1, rax, 0);
+        if (counts > 4) {
+          mov(rax, buffer.b64[1]);
+          pinsrq(xm1, rax, 1);
+        }
+
+        mov(eax, 1);
+        mov(edx, counts);
+        pcmpestri(xm0, xm1, 0x1);
+        jnc(jit_detail::kBackTrackLabel, T_NEAR);
+        if (offset < 0) {
+          inc(cp_);
+        }
       }
-      cmp(r10, finish);
-      jle(".SUCCESS", T_NEAR);
+      return;
     }
-    jmp(jit_detail::kBackTrackLabel, T_NEAR);
-    L(".SUCCESS");
-    if (offset < 0) {
-      inc(cp_);
+    IV_AERO_LOCAL() {
+      if (offset < 0) {
+        EmitSizeGuard();
+        movzx(r10, character[subject_ + cp_ * kCharSize]);
+      } else {
+        movzx(r10, character[rbp + offset * kCharSize]);
+      }
+
+      for (std::size_t i = 0; i < length; i += 4) {
+        const char16_t start = Load2Bytes(instr + 5 + 2 + i);
+        const char16_t finish = Load2Bytes(instr + 5 + 2 + i + 2);
+        if (kASCII && (!core::character::IsASCII(start))) {
+          jmp(jit_detail::kBackTrackLabel, T_NEAR);
+          break;
+        }
+        cmp(r10, start);
+        jl(jit_detail::kBackTrackLabel, T_NEAR);
+
+        if (kASCII && (!core::character::IsASCII(finish))) {
+          jmp(".SUCCESS", T_NEAR);
+          break;
+        }
+        cmp(r10, finish);
+        jle(".SUCCESS", T_NEAR);
+      }
+      jmp(jit_detail::kBackTrackLabel, T_NEAR);
+      L(".SUCCESS");
+      if (offset < 0) {
+        inc(cp_);
+      }
     }
-    outLocalLabel();
   }
 
   void EmitCHECK_RANGE_INVERTED(const uint8_t* instr, uint32_t len, int offset = -1) {
@@ -1124,9 +1184,10 @@ IV_AERO_OPCODES(V)
       movzx(r10, character[rbp + offset * kCharSize]);
     }
     const uint32_t length = Load4Bytes(instr + 1);
+    const uint16_t counts = Load2Bytes(instr + 5);
     for (std::size_t i = 0; i < length; i += 4) {
-      const char16_t start = Load2Bytes(instr + 1 + 4 + i);
-      const char16_t finish = Load2Bytes(instr + 1 + 4 + i + 2);
+      const char16_t start = Load2Bytes(instr + 5 + 2 + i);
+      const char16_t finish = Load2Bytes(instr + 5 + 2 + i + 2);
       if (kASCII && (!core::character::IsASCII(start))) {
         jmp(".SUCCESS", T_NEAR);
         break;

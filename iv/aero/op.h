@@ -38,8 +38,8 @@ V(CHECK_2BYTE_CHAR, 3)\
 V(CHECK_2CHAR_OR, 5)\
 V(CHECK_3CHAR_OR, 7)\
 V(CHECK_4CHAR_OR, 9)\
-V(CHECK_RANGE, 5)/* variadic */\
-V(CHECK_RANGE_INVERTED, 5)/* variadic */
+V(CHECK_RANGE, 7)/* variadic */\
+V(CHECK_RANGE_INVERTED, 7)/* variadic */
 
 class OP {
  public:
