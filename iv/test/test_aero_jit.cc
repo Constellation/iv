@@ -85,6 +85,41 @@ TEST(AeroJITCase, MainTest) {
 }
 
 
+TEST(AeroJITCase, SSE42) {
+  iv::core::Space space;
+  iv::aero::VM vm;
+  std::vector<int> vec(1000);
+  space.Clear();
+
+  // SSE4.2 range short
+  {
+    iv::core::UString reg = iv::core::ToUString("[abcd]");
+    iv::core::UString str1 = iv::core::ToUString('a');
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
+    int error = 0;
+    iv::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    iv::aero::Compiler compiler(iv::aero::NONE);
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
+    vm.Execute(code.get(), str1, vec.data(), 0);
+  }
+
+
+  // SSE4.2 range long
+  {
+    iv::core::UString reg = iv::core::ToUString("[a-cf-zA-FI-PT-Z]");
+    iv::core::UString str1 = iv::core::ToUString('Z');
+    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
+    int error = 0;
+    iv::aero::ParsedData data = parser.ParsePattern(&error);
+    ASSERT_FALSE(error);
+    iv::aero::Compiler compiler(iv::aero::NONE);
+    std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
+    vm.Execute(code.get(), str1, vec.data(), 0);
+  }
+}
+
+
 TEST(AeroJITCase, FailedAtTest262Test) {
   iv::core::Space space;
   iv::aero::VM vm;

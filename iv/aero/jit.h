@@ -1098,11 +1098,54 @@ IV_AERO_OPCODES(V)
         pinsrq(xm1, rax, 1);
       }
 
-      mov(eax, 1);
-      mov(edx, counts);
+      mov(eax, 1);  // 1(u16)
+      mov(edx, counts);  // counts(u16)
       pcmpestri(xm0, xm1, 0x1);
       jnc(jit_detail::kBackTrackLabel, T_NEAR);
       IncrementCP(offset);
+      return;
+    }
+
+    const std::size_t ranges = length / 4;
+    // Generate range check code with SSE4.2
+    // TODO(Yusuke Suzuki):
+    // When target character is ascii, we can compare 8 ranges at once.
+    if (IsAvailableSSE42() && ranges >= 4) {
+      IV_AERO_LOCAL() {
+        EmitSizeGuard(offset);
+        movzx(eax, LoadCode(offset));
+        movd(xm1, eax);
+        mov(edx, 1);  // 1(u16)
+        const std::size_t ranges = length / 4;
+        // We can check 4 ranges at once.
+        for (std::size_t base = 0; base < ranges; base += 4) {
+          union {
+            std::array<uint16_t, 8> b16;
+            std::array<uint64_t, 2> b64;
+          } buffer{};
+          const std::size_t counts =
+              (std::min<std::size_t>)(4, (ranges - base));
+          for (std::size_t i = 0; i < counts; ++i) {
+            const std::size_t range = (i + base) * 4;
+            const char16_t start = Load2Bytes(instr + 5 + 4 + range);
+            const char16_t finish = Load2Bytes(instr + 5 + 4 + range + 2);
+            buffer.b16[i * 2] = start;
+            buffer.b16[i * 2 + 1] = finish;
+          }
+          mov(r10, buffer.b64[0]);
+          pinsrq(xm0, r10, 0);
+          if (counts > 2) {
+            mov(r10, buffer.b64[1]);
+            pinsrq(xm0, r10, 1);
+          }
+          mov(eax, (counts * 2));  // (pair * 2) (u16)
+          pcmpestri(xm0, xm1, 0x1 + 0x4);
+          jc(".SUCCESS", T_NEAR);
+        }
+        jmp(jit_detail::kBackTrackLabel, T_NEAR);
+        L(".SUCCESS");
+        IncrementCP(offset);
+      }
       return;
     }
 
