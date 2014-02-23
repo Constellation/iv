@@ -17,7 +17,7 @@ namespace core {
 
 // A macro to disallow the copy constructor and operator= functions
 // This should be used in the private: declarations for a class
-#define DISALLOW_COPY_AND_ASSIGN(TypeName) \
+#define IV_DISALLOW_COPY_AND_ASSIGN(TypeName) \
   TypeName(const TypeName&);               \
   void operator=(const TypeName&)
 
@@ -35,12 +35,12 @@ class AlignOfImpl {
   static const std::size_t value = offsetof(Helper, b_);
 };
 
-#define AlignOf(type) ::iv::core::AlignOfImpl<type>::value
+#define IV_ALIGN_OF(type) ::iv::core::AlignOfImpl<type>::value
 
-#define AlignOffset(offset, alignment) \
+#define IV_ALIGN_OFFSET(offset, alignment) \
     ((size_t)((offset) + ((alignment) - 1)) & ~(size_t)((alignment) - 1))
 
-#define AlignType(offset, type) AlignOffset(offset, AlignOf(type))
+#define IV_ALIGN_TYPE(offset, type) IV_ALIGNED_OFFSET(offset, IV_ALIGN_OF(type))
 
 // see http://www5d.biglobe.ne.jp/~noocyte/Programming/BigAlignmentBlock.html
 #define IV_ALIGNED_SIZE(size, alignment) ((size) + (alignment) - 1)
@@ -92,12 +92,12 @@ class Size {
   static const int kPointerSize  = sizeof(void*);     // NOLINT
   static const int kIntptrSize   = sizeof(intptr_t);  // NOLINT
 
-  static const int kCharAlign    = AlignOf(char);      // NOLINT
-  static const int kShortAlign   = AlignOf(short);     // NOLINT
-  static const int kIntAlign     = AlignOf(int);       // NOLINT
-  static const int kDoubleAlign  = AlignOf(double);    // NOLINT
-  static const int kPointerAlign = AlignOf(void*);     // NOLINT
-  static const int kIntptrAlign  = AlignOf(intptr_t);  // NOLINT
+  static const int kCharAlign    = IV_ALIGN_OF(char);      // NOLINT
+  static const int kShortAlign   = IV_ALIGN_OF(short);     // NOLINT
+  static const int kIntAlign     = IV_ALIGN_OF(int);       // NOLINT
+  static const int kDoubleAlign  = IV_ALIGN_OF(double);    // NOLINT
+  static const int kPointerAlign = IV_ALIGN_OF(void*);     // NOLINT
+  static const int kIntptrAlign  = IV_ALIGN_OF(intptr_t);  // NOLINT
 };
 
 #define UNREACHABLE() assert(!"UNREACHABLE")
@@ -152,7 +152,7 @@ template<>
 inline const char* Search<const char*, const char*>(
     const char* i, const char* iz,
     const char* j, const char* jz) {
-	static const bool enabled = Xbyak::util::Cpu().has(Xbyak::util::Cpu::tSSE42);
+  static const bool enabled = mie::isAvailableSSE42();
   return enabled ? mie::findStr(i, iz, j, jz - j) : std::search(i, iz, j, jz);
 }
 #endif
