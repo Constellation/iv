@@ -16,6 +16,8 @@ after_script:
     - release/iv/lv5/test/lv5_unit_tests
     - release/iv/test/benchmarks/aero_benchmarks --benchmark_iterations=100
     - make -C release sunspider
+    - make -C release v8-suite
+    - make -C release ubench
 notifications:
     recipients:
         - utatane.tea@gmail.com
