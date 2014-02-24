@@ -463,24 +463,22 @@ IV_AERO_OPCODES(V)
 
     L(jit_detail::kStartLabel);
     {
-      inLocalLabel();
       mov(qword[rsp + k64Size * OFFSET_CP], cp_);
       // initialize sp_ to 0
       xor(sp_, sp_);
 
       // initialize captures
+      if ((size - 1) != 0) {
+        IV_AERO_LOCAL() {
+          mov(r11d, size - 1);
+          L(".LOOP_START");
+          mov(dword[captures_ + r11 * kIntSize], kUndefined);
+          sub(r11d, 1);
+          jnz(".LOOP_START");
+          L(".LOOP_END");
+        }
+      }
       mov(dword[captures_], cpd_);
-      lea(r10, ptr[captures_ + kIntSize]);
-      mov(r11, size - 1);
-      test(r11, r11);
-      jz(".LOOP_END");
-      L(".LOOP_START");
-      mov(dword[r10], kUndefined);
-      add(r10, kIntSize);
-      sub(r11, 1);
-      jnz(".LOOP_START");
-      L(".LOOP_END");
-      outLocalLabel();
     }
   }
 
@@ -818,24 +816,19 @@ IV_AERO_OPCODES(V)
     L(".ALLOCATABLE");
     LoadVM(rdi);
     mov(rdi, ptr[rdi]);
-    lea(rax, ptr[rdi + (sp_ * kIntSize) - (kIntSize * size)]);
+    lea(rsi, ptr[rdi + (sp_ * kIntSize) - (kIntSize * size)]);
 
     // copy
-    mov(r10, captures_);
-    mov(r11, size - 1);
-    mov(rsi, rax);
+    if ((size - 1) != 0) {
+      mov(r11d, size - 1);
+      L(".LOOP_START");
+      sub(r11d, 1);
+      mov(ecx, dword[captures_ + r11 * kIntSize]);
+      mov(dword[rsi + r11 * kIntSize], ecx);
+      jnz(".LOOP_START");
+      L(".LOOP_END");
+    }
 
-    test(r11, r11);
-    jz(".LOOP_END");
-
-    L(".LOOP_START");
-    mov(ecx, dword[r10]);
-    add(r10, kIntSize);
-    mov(dword[rax], ecx);
-    add(rax, kIntSize);
-    sub(r11, 1);
-    jnz(".LOOP_START");
-    L(".LOOP_END");
     mov(dword[rsi + kIntSize], cpd_);
     const int val = static_cast<int>(Load4Bytes(instr + 1));
     const BackTrackMap::const_iterator it = backtracks_.find(val);
