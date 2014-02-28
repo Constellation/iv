@@ -2393,7 +2393,7 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(rax, src);
       Int32Guard(src, rax, ".INCREMENT_SLOW");
-      asm_->inc(eax);
+      asm_->add(eax, 1);
       asm_->jo(".INCREMENT_OVERFLOW");
 
       asm_->or(rax, r15);
@@ -2457,7 +2457,7 @@ class Compiler {
       LoadVR(rsi, src);
       Int32Guard(src, rsi, ".INCREMENT_SLOW");
       asm_->mov(ptr[r13 + dst * kJSValSize], rsi);
-      asm_->inc(esi);
+      asm_->add(esi, 1);
       asm_->jo(".INCREMENT_OVERFLOW");
 
       asm_->mov(eax, esi);
