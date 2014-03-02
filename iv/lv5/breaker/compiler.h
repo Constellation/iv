@@ -3017,6 +3017,38 @@ class Compiler {
     }
   }
 
+  void LoadDouble(register_t reg,
+                  const Xbyak::Xmm& xmm,
+                  const Xbyak::Reg64& scratch,
+                  const char* label) {
+    const TypeEntry entry = type_record_.Get(reg);
+    const Xbyak::Reg32 scratch32(scratch.getIdx());
+    if (entry.IsConstantDouble()) {
+      const double value = entry.constant().number();
+      asm_->mov(scratch, core::BitCast<uint64_t>(value));
+      asm_->movq(xmm, scratch);
+    } else if (entry.IsConstantInt32()) {
+      const int32_t value = entry.constant().int32();
+      asm_->mov(scratch32, value);
+      asm_->cvtsi2sd(xmm, scratch32);
+    } else {
+      // Ensure reg is number (int32 OR double)
+      LoadVR(scratch, reg);
+      NumberGuard(reg, scratch, label);
+      const Assembler::LocalLabelScope scope(asm_); {
+        Int32Guard(reg, scratch, ".IS_DOUBLE");
+        // now scratch32 is int32
+        asm_->cvtsi2sd(xmm, scratch32);
+        asm_->jmp(".DONE");
+        asm_->L(".IS_DOUBLE");
+        // now scratch is number jsval
+        asm_->add(scratch, r15);
+        asm_->movq(xmm, scratch);
+        asm_->L(".DONE");
+      }
+    }
+  }
+
   Context* ctx_;
   railgun::Code* top_;
   railgun::Code* code_;

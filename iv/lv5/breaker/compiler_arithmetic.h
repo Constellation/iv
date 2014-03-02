@@ -102,51 +102,8 @@ inline void Compiler::EmitBINARY_DIVIDE(const Instruction* instr) {
 
   const Assembler::LocalLabelScope scope(asm_);
 
-  if (lhs_type_entry.IsConstantDouble()) {
-    const double lhs_value = lhs_type_entry.constant().number();
-    asm_->mov(rsi, core::BitCast<uint64_t>(lhs_value));
-    asm_->movq(xmm0, rsi);
-  } else if (lhs_type_entry.IsConstantInt32()) {
-    const int32_t lhs_value = lhs_type_entry.constant().int32();
-    asm_->mov(esi, lhs_value);
-    asm_->cvtsi2sd(xmm0, esi);
-  } else {
-    // Ensure lhs is number (int32 OR double)
-    LoadVR(rsi, lhs);
-    NumberGuard(lhs, rsi, ".ARITHMETIC_GENERIC");
-    Int32Guard(lhs, rsi, ".LHS_IS_DOUBLE");
-    // now esi is int32
-    asm_->cvtsi2sd(xmm0, esi);
-    asm_->jmp(".LHS_DONE");
-    asm_->L(".LHS_IS_DOUBLE");
-    // now rsi is number jsval
-    asm_->add(rsi, r15);
-    asm_->movq(xmm0, rsi);
-    asm_->L(".LHS_DONE");
-  }
-
-  if (rhs_type_entry.IsConstantDouble()) {
-    const double rhs_value = rhs_type_entry.constant().number();
-    asm_->mov(rsi, core::BitCast<uint64_t>(rhs_value));
-    asm_->movq(xmm1, rsi);
-  } else if (rhs_type_entry.IsConstantInt32()) {
-    const int32_t rhs_value = rhs_type_entry.constant().int32();
-    asm_->mov(esi, rhs_value);
-    asm_->cvtsi2sd(xmm1, esi);
-  } else {
-    // Ensure rhs is number (int32 OR double)
-    LoadVR(rsi, rhs);
-    NumberGuard(rhs, rsi, ".ARITHMETIC_GENERIC");
-    Int32Guard(rhs, rsi, ".RHS_IS_DOUBLE");
-    // now esi is int32
-    asm_->cvtsi2sd(xmm1, esi);
-    asm_->jmp(".RHS_DONE");
-    asm_->L(".RHS_IS_DOUBLE");
-    // now rsi is number jsval
-    asm_->add(rsi, r15);
-    asm_->movq(xmm1, rsi);
-    asm_->L(".RHS_DONE");
-  }
+  LoadDouble(lhs, xmm0, rsi, ".ARITHMETIC_GENERIC");
+  LoadDouble(rhs, xmm1, rsi, ".ARITHMETIC_GENERIC");
 
   asm_->divsd(xmm0, xmm1);
 
