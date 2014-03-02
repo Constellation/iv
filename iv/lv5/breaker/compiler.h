@@ -1270,7 +1270,7 @@ class Compiler {
     const register_t src = Reg(instr[1].i32[0]);
     const TypeEntry src_type_entry = type_record_.Get(src);
 
-    if (src_type_entry.type().IsNumber()) {
+    if (src_type_entry.IsNumber()) {
       // no effect
       return;
     }
@@ -1286,7 +1286,7 @@ class Compiler {
     const TypeEntry src_type_entry = type_record_.Get(src);
     const TypeEntry dst_type_entry = TypeEntry::ToPrimitiveAndToString(src_type_entry);
 
-    if (src_type_entry.type().IsString()) {
+    if (src_type_entry.IsString()) {
       // no effect
       type_record_.Put(src, dst_type_entry);
       return;
@@ -1457,10 +1457,9 @@ class Compiler {
 
     TypeEntry dst_entry = TypeEntry(Type::Unknown());
     if (name == symbol::length()) {
-      if (base_entry.type().IsArray() ||
-          base_entry.type().IsFunction()) {
+      if (base_entry.IsArray() || base_entry.IsFunction()) {
         dst_entry = TypeEntry(Type::Number());
-      } else if (base_entry.type().IsString()) {
+      } else if (base_entry.IsString()) {
         if (base_entry.IsConstant()) {
           const int32_t length = base_entry.constant().string()->size();
           dst_entry = TypeEntry(length);
@@ -2826,7 +2825,7 @@ class Compiler {
                   const Xbyak::Reg64& target,
                   const char* label,
                   Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
-    if (type_record_.Get(reg).type().IsInt32()) {
+    if (type_record_.Get(reg).IsInt32()) {
       // no check
       return;
     }
@@ -2838,7 +2837,7 @@ class Compiler {
                    const Xbyak::Reg64& target,
                    const char* label,
                    Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
-    if (type_record_.Get(reg).type().IsNumber()) {
+    if (type_record_.Get(reg).IsNumber()) {
       // no check
       return;
     }
@@ -2898,7 +2897,7 @@ class Compiler {
                             const Xbyak::Reg64& tmp) {
     static const char* message = "null or undefined has no properties";
     const TypeEntry type = type_record_.Get(reg);
-    if (type.type().IsNotUndefined() && type.type().IsNotNull()) {
+    if (type.IsNotUndefined() && type.IsNotNull()) {
       // no check
       return;
     }
@@ -2929,7 +2928,7 @@ class Compiler {
 
     const TypeEntry type_entry = type_record_.Get(base);
 
-    if (!type_entry.type().IsSomeObject()) {
+    if (!type_entry.IsSomeObject()) {
       // check target is Cell
       asm_->mov(tmp, detail::jsval64::kValueMask);
       asm_->test(tmp, target);
@@ -2938,7 +2937,7 @@ class Compiler {
 
     // target is guaranteed as cell
     // load Class tag from object and check it is Array
-    if (!type_entry.type().IsArray()) {
+    if (!type_entry.IsArray()) {
       const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
       asm_->mov(tmp, qword[target + offset]);
       asm_->test(tmp, tmp);  // class is nullptr => String...

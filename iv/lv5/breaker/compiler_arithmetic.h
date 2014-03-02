@@ -23,8 +23,8 @@ inline void Compiler::EmitBINARY_MULTIPLY(const Instruction* instr) {
   }
 
   // lhs or rhs is not int32_t
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32()) {
+  if (lhs_type_entry.IsNotInt32() ||
+      rhs_type_entry.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_MULTIPLY);
@@ -156,8 +156,8 @@ inline void Compiler::EmitBINARY_ADD(const Instruction* instr) {
   }
 
   // lhs or rhs are not int32_t
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32()) {
+  if (lhs_type_entry.IsNotInt32() ||
+      rhs_type_entry.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_ADD);
@@ -242,8 +242,8 @@ inline void Compiler::EmitBINARY_MODULO(const Instruction* instr) {
   // lhs is >= 0 and rhs is > 0 because example like
   //   -1 % -1
   // should return -0.0, so this value is double
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32() ||
+  if (lhs_type_entry.IsNotInt32() ||
+      rhs_type_entry.IsNotInt32() ||
       (rhs_type_entry.IsConstantInt32() &&
        rhs_type_entry.constant().int32() <= 0) ||
       (lhs_type_entry.IsConstantInt32() &&
@@ -328,8 +328,8 @@ inline void Compiler::EmitBINARY_LSHIFT(const Instruction* instr) {
   }
 
   // lhs or rhs are not int32_t
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32()) {
+  if (lhs_type_entry.IsNotInt32() ||
+      rhs_type_entry.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_LSHIFT);
@@ -388,8 +388,8 @@ inline void Compiler::EmitBINARY_RSHIFT(const Instruction* instr) {
   }
 
   // lhs or rhs are not int32_t
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32()) {
+  if (lhs_type_entry.IsNotInt32() ||
+      rhs_type_entry.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_RSHIFT);
@@ -447,8 +447,8 @@ inline void Compiler::EmitBINARY_RSHIFT_LOGICAL(const Instruction* instr) {
   }
 
   // lhs or rhs are not int32_t
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32()) {
+  if (lhs_type_entry.IsNotInt32() ||
+      rhs_type_entry.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_RSHIFT_LOGICAL);
@@ -597,8 +597,8 @@ inline void Compiler::EmitCompare(const Instruction* instr, OP::Type fused) {
   }
 
   // lhs or rhs are not int32_t
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32()) {
+  if (lhs_type_entry.IsNotInt32() ||
+      rhs_type_entry.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(Traits::kStub);
@@ -715,8 +715,8 @@ inline void Compiler::EmitBINARY_SUBTRACT(const Instruction* instr) {
   }
 
   // lhs or rhs are not int32_t
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32()) {
+  if (lhs_type_entry.IsNotInt32() ||
+      rhs_type_entry.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_SUBTRACT);
@@ -803,8 +803,8 @@ inline void Compiler::EmitBINARY_BIT_AND(const Instruction* instr,
   }
 
   // lhs or rhs are not int32_t
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32()) {
+  if (lhs_type_entry.IsNotInt32() ||
+      rhs_type_entry.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_BIT_AND);
@@ -905,8 +905,8 @@ inline void Compiler::EmitBINARY_BIT_XOR(const Instruction* instr) {
   }
 
   // lhs or rhs is not int32_t
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32()) {
+  if (lhs_type_entry.IsNotInt32() ||
+      rhs_type_entry.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_BIT_XOR);
@@ -970,8 +970,8 @@ inline void Compiler::EmitBINARY_BIT_OR(const Instruction* instr) {
   }
 
   // lhs or rhs is not int32_t
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32()) {
+  if (lhs_type_entry.IsNotInt32() ||
+      rhs_type_entry.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_BIT_OR);
