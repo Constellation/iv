@@ -3019,7 +3019,8 @@ class Compiler {
   void LoadDouble(register_t reg,
                   const Xbyak::Xmm& xmm,
                   const Xbyak::Reg64& scratch,
-                  const char* label) {
+                  const char* label,
+                  Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
     const TypeEntry entry = type_record_.Get(reg);
     const Xbyak::Reg32 scratch32(scratch.getIdx());
     if (entry.IsConstantDouble()) {
@@ -3033,7 +3034,7 @@ class Compiler {
     } else {
       // Ensure reg is number (int32 OR double)
       LoadVR(scratch, reg);
-      NumberGuard(reg, scratch, label);
+      NumberGuard(reg, scratch, label, type);
       const Assembler::LocalLabelScope scope(asm_); {
         Int32Guard(reg, scratch, ".IS_DOUBLE");
         // now scratch32 is int32
