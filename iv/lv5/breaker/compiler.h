@@ -2808,10 +2808,12 @@ class Compiler {
   }
 
   // NaN is not handled
-  void ConvertNotNaNDoubleToJSVal(const Xbyak::Reg64& target,
-                                  const Xbyak::Reg64& tmp) {
-    asm_->mov(tmp, detail::jsval64::kDoubleOffset);
-    asm_->add(target, tmp);
+  void ConvertNotNaNDoubleToJSVal(const Xbyak::Reg64& target) {
+    // Adding double offset is equivalent to subtracting number mask.
+    static_assert(
+        detail::jsval64::kDoubleOffset + detail::jsval64::kNumberMask == 0,
+        "double offset + number mask should be 0");
+    asm_->sub(target, r15);
   }
 
   void ConvertBooleanToJSVal(const Xbyak::Reg8& cond,
@@ -2831,6 +2833,18 @@ class Compiler {
     }
     asm_->cmp(target, r15);
     asm_->jb(label, type);
+  }
+
+  void NumberGuard(register_t reg,
+                   const Xbyak::Reg64& target,
+                   const char* label,
+                   Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
+    if (type_record_.Get(reg).type().IsNumber()) {
+      // no check
+      return;
+    }
+    asm_->test(target, r15);
+    asm_->jz(label, type);
   }
 
   void LoadCellTag(const Xbyak::Reg64& target, const Xbyak::Reg32& out) {

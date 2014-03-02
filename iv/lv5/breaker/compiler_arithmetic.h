@@ -68,7 +68,7 @@ inline void Compiler::EmitBINARY_MULTIPLY(const Instruction* instr) {
   asm_->cvtsi2sd(xmm1, edx);
   asm_->mulsd(xmm0, xmm1);
   asm_->movq(rax, xmm0);
-  ConvertNotNaNDoubleToJSVal(rax, rcx);
+  ConvertNotNaNDoubleToJSVal(rax);
   asm_->jmp(".ARITHMETIC_EXIT");
 
   asm_->L(".ARITHMETIC_GENERIC");
@@ -164,7 +164,7 @@ inline void Compiler::EmitBINARY_ADD(const Instruction* instr) {
   asm_->add(rax, rdx);
   asm_->cvtsi2sd(xmm0, rax);
   asm_->movq(rax, xmm0);
-  ConvertNotNaNDoubleToJSVal(rax, rcx);
+  ConvertNotNaNDoubleToJSVal(rax);
   asm_->jmp(".ARITHMETIC_EXIT");
 
   asm_->L(".ARITHMETIC_GENERIC");
@@ -446,7 +446,7 @@ inline void Compiler::EmitBINARY_RSHIFT_LOGICAL(const Instruction* instr) {
   asm_->L(".ARITHMETIC_DOUBLE");
   asm_->cvtsi2sd(xmm0, rax);
   asm_->movq(rax, xmm0);
-  ConvertNotNaNDoubleToJSVal(rax, rcx);
+  ConvertNotNaNDoubleToJSVal(rax);
   asm_->jmp(".ARITHMETIC_EXIT");
 
   asm_->L(".ARITHMETIC_GENERIC");
@@ -720,7 +720,7 @@ inline void Compiler::EmitBINARY_SUBTRACT(const Instruction* instr) {
   asm_->sub(rax, rdx);
   asm_->cvtsi2sd(xmm0, rax);
   asm_->movq(rax, xmm0);
-  ConvertNotNaNDoubleToJSVal(rax, rcx);
+  ConvertNotNaNDoubleToJSVal(rax);
   asm_->jmp(".ARITHMETIC_EXIT");
 
   asm_->L(".ARITHMETIC_GENERIC");
