@@ -66,19 +66,7 @@ inline void Compiler::EmitBINARY_MULTIPLY(const Instruction* instr) {
   LoadDouble(rhs, xmm1, rsi, ".GENERIC", Xbyak::CodeGenerator::T_NEAR);
 
   asm_->mulsd(xmm0, xmm1);
-
-  asm_->cvttsd2si(eax, xmm0);
-  asm_->cvtsi2sd(xmm1, eax);
-  asm_->ucomisd(xmm0, xmm1);
-  asm_->jp(".FAST_DOUBLE");
-  asm_->jne(".FAST_DOUBLE");
-  // target is int32
-  asm_->or(rax, r15);
-  asm_->jmp(".EXIT");
-  asm_->L(".FAST_DOUBLE");
-  // target is double
-  asm_->movq(rax, xmm0);
-  ConvertDoubleToJSVal(rax);
+  BoxDouble(xmm0, xmm1, rax);
   asm_->jmp(".EXIT");
 
   kill_last_used();
@@ -118,19 +106,7 @@ inline void Compiler::EmitBINARY_DIVIDE(const Instruction* instr) {
   LoadDouble(rhs, xmm1, rsi, ".GENERIC");
 
   asm_->divsd(xmm0, xmm1);
-
-  asm_->cvttsd2si(eax, xmm0);
-  asm_->cvtsi2sd(xmm1, eax);
-  asm_->ucomisd(xmm0, xmm1);
-  asm_->jp(".FAST_DOUBLE");
-  asm_->jne(".FAST_DOUBLE");
-  // target is int32
-  asm_->or(rax, r15);
-  asm_->jmp(".EXIT");
-  asm_->L(".FAST_DOUBLE");
-  // target is double
-  asm_->movq(rax, xmm0);
-  ConvertDoubleToJSVal(rax);
+  BoxDouble(xmm0, xmm1, rax);
   asm_->jmp(".EXIT");
 
   kill_last_used();
@@ -209,19 +185,7 @@ inline void Compiler::EmitBINARY_ADD(const Instruction* instr) {
   LoadDouble(rhs, xmm1, rsi, ".GENERIC", Xbyak::CodeGenerator::T_NEAR);
 
   asm_->addsd(xmm0, xmm1);
-
-  asm_->cvttsd2si(eax, xmm0);
-  asm_->cvtsi2sd(xmm1, eax);
-  asm_->ucomisd(xmm0, xmm1);
-  asm_->jp(".FAST_DOUBLE");
-  asm_->jne(".FAST_DOUBLE");
-  // target is int32
-  asm_->or(rax, r15);
-  asm_->jmp(".EXIT");
-  asm_->L(".FAST_DOUBLE");
-  // target is double
-  asm_->movq(rax, xmm0);
-  ConvertDoubleToJSVal(rax);
+  BoxDouble(xmm0, xmm1, rax);
   asm_->jmp(".EXIT");
 
   kill_last_used();
@@ -773,19 +737,7 @@ inline void Compiler::EmitBINARY_SUBTRACT(const Instruction* instr) {
   LoadDouble(rhs, xmm1, rsi, ".GENERIC", Xbyak::CodeGenerator::T_NEAR);
 
   asm_->subsd(xmm0, xmm1);
-
-  asm_->cvttsd2si(eax, xmm0);
-  asm_->cvtsi2sd(xmm1, eax);
-  asm_->ucomisd(xmm0, xmm1);
-  asm_->jp(".FAST_DOUBLE");
-  asm_->jne(".FAST_DOUBLE");
-  // target is int32
-  asm_->or(rax, r15);
-  asm_->jmp(".EXIT");
-  asm_->L(".FAST_DOUBLE");
-  // target is double
-  asm_->movq(rax, xmm0);
-  ConvertDoubleToJSVal(rax);
+  BoxDouble(xmm0, xmm1, rax);
   asm_->jmp(".EXIT");
 
   kill_last_used();
