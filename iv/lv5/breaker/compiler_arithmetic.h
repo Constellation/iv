@@ -68,7 +68,7 @@ inline void Compiler::EmitBINARY_MULTIPLY(const Instruction* instr) {
   asm_->cvtsi2sd(xmm1, edx);
   asm_->mulsd(xmm0, xmm1);
   asm_->movq(rax, xmm0);
-  ConvertNotNaNDoubleToJSVal(rax);
+  ConvertDoubleToJSVal(rax);
   asm_->jmp(".ARITHMETIC_EXIT");
 
   asm_->L(".ARITHMETIC_GENERIC");
@@ -87,16 +87,97 @@ inline void Compiler::EmitBINARY_DIVIDE(const Instruction* instr) {
   const register_t dst = Reg(instr[1].i16[0]);
   const register_t lhs = Reg(instr[1].i16[1]);
   const register_t rhs = Reg(instr[1].i16[2]);
-  {
-    asm_->mov(rdi, r14);
-    LoadVR(rsi, lhs);
-    LoadVR(rdx, rhs);
-    asm_->Call(&stub::BINARY_DIVIDE);
-    asm_->mov(qword[r13 + dst * kJSValSize], rax);
-    set_last_used_candidate(dst);
+
+  const TypeEntry lhs_type_entry = type_record_.Get(lhs);
+  const TypeEntry rhs_type_entry = type_record_.Get(rhs);
+  const TypeEntry dst_type_entry =
+      TypeEntry::Divide(lhs_type_entry, rhs_type_entry);
+
+  // dst is constant
+  if (dst_type_entry.IsConstant()) {
+    EmitConstantDest(dst_type_entry, dst);
+    type_record_.Put(dst, dst_type_entry);
+    return;
   }
 
-  type_record_.Put(dst, TypeEntry::Divide(type_record_.Get(lhs), type_record_.Get(rhs)));
+  const Assembler::LocalLabelScope scope(asm_);
+
+  if (lhs_type_entry.IsConstantDouble()) {
+    const double lhs_value = lhs_type_entry.constant().number();
+    asm_->mov(rsi, core::BitCast<uint64_t>(lhs_value));
+    asm_->movq(xmm0, rsi);
+  } else if (lhs_type_entry.IsConstantInt32()) {
+    const int32_t lhs_value = lhs_type_entry.constant().int32();
+    asm_->mov(esi, lhs_value);
+    asm_->cvtsi2sd(xmm0, esi);
+  } else {
+    // Ensure lhs is number (int32 OR double)
+    LoadVR(rsi, lhs);
+    NumberGuard(lhs, rsi, ".ARITHMETIC_GENERIC");
+    Int32Guard(lhs, rsi, ".LHS_IS_DOUBLE");
+    // now esi is int32
+    asm_->cvtsi2sd(xmm0, esi);
+    asm_->jmp(".LHS_DONE");
+    asm_->L(".LHS_IS_DOUBLE");
+    // now rsi is number jsval
+    asm_->add(rsi, r15);
+    asm_->movq(xmm0, rsi);
+    asm_->L(".LHS_DONE");
+  }
+
+  if (rhs_type_entry.IsConstantDouble()) {
+    const double rhs_value = rhs_type_entry.constant().number();
+    asm_->mov(rsi, core::BitCast<uint64_t>(rhs_value));
+    asm_->movq(xmm1, rsi);
+  } else if (rhs_type_entry.IsConstantInt32()) {
+    const int32_t rhs_value = rhs_type_entry.constant().int32();
+    asm_->mov(esi, rhs_value);
+    asm_->cvtsi2sd(xmm1, esi);
+  } else {
+    // Ensure rhs is number (int32 OR double)
+    LoadVR(rsi, rhs);
+    NumberGuard(rhs, rsi, ".ARITHMETIC_GENERIC");
+    Int32Guard(rhs, rsi, ".RHS_IS_DOUBLE");
+    // now esi is int32
+    asm_->cvtsi2sd(xmm1, esi);
+    asm_->jmp(".RHS_DONE");
+    asm_->L(".RHS_IS_DOUBLE");
+    // now rsi is number jsval
+    asm_->add(rsi, r15);
+    asm_->movq(xmm1, rsi);
+    asm_->L(".RHS_DONE");
+  }
+
+  asm_->divsd(xmm0, xmm1);
+
+  asm_->cvttsd2si(eax, xmm0);
+  asm_->cvtsi2sd(xmm1, eax);
+  asm_->ucomisd(xmm0, xmm1);
+  asm_->jp(".ARITHMETIC_FAST_DOUBLE");
+  asm_->jne(".ARITHMETIC_FAST_DOUBLE");
+  // target is int32
+  asm_->or(rax, r15);
+  asm_->jmp(".ARITHMETIC_EXIT");
+  asm_->L(".ARITHMETIC_FAST_DOUBLE");
+  // target is double
+  asm_->movq(rax, xmm0);
+  ConvertDoubleToJSVal(rax);
+  asm_->jmp(".ARITHMETIC_EXIT");
+
+  kill_last_used();
+
+  asm_->L(".ARITHMETIC_GENERIC");
+  {
+    LoadVRs(rsi, lhs, rdx, rhs);
+    asm_->mov(rdi, r14);
+    asm_->Call(&stub::BINARY_DIVIDE);
+  }
+
+
+  asm_->L(".ARITHMETIC_EXIT");
+  asm_->mov(qword[r13 + dst * kJSValSize], rax);
+  set_last_used_candidate(dst);
+  type_record_.Put(dst, dst_type_entry);
 }
 
 // opcode | (dst | lhs | rhs)
@@ -164,7 +245,7 @@ inline void Compiler::EmitBINARY_ADD(const Instruction* instr) {
   asm_->add(rax, rdx);
   asm_->cvtsi2sd(xmm0, rax);
   asm_->movq(rax, xmm0);
-  ConvertNotNaNDoubleToJSVal(rax);
+  ConvertDoubleToJSVal(rax);
   asm_->jmp(".ARITHMETIC_EXIT");
 
   asm_->L(".ARITHMETIC_GENERIC");
@@ -446,7 +527,7 @@ inline void Compiler::EmitBINARY_RSHIFT_LOGICAL(const Instruction* instr) {
   asm_->L(".ARITHMETIC_DOUBLE");
   asm_->cvtsi2sd(xmm0, rax);
   asm_->movq(rax, xmm0);
-  ConvertNotNaNDoubleToJSVal(rax);
+  ConvertDoubleToJSVal(rax);
   asm_->jmp(".ARITHMETIC_EXIT");
 
   asm_->L(".ARITHMETIC_GENERIC");
@@ -720,7 +801,7 @@ inline void Compiler::EmitBINARY_SUBTRACT(const Instruction* instr) {
   asm_->sub(rax, rdx);
   asm_->cvtsi2sd(xmm0, rax);
   asm_->movq(rax, xmm0);
-  ConvertNotNaNDoubleToJSVal(rax);
+  ConvertDoubleToJSVal(rax);
   asm_->jmp(".ARITHMETIC_EXIT");
 
   asm_->L(".ARITHMETIC_GENERIC");

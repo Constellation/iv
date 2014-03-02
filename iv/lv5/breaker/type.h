@@ -197,6 +197,15 @@ class TypeEntry {
     return IsConstant() && constant().IsInt32();
   }
 
+  bool IsConstantDouble() const {
+    return IsConstant() && constant().IsNumber() && !constant().IsInt32();
+  }
+
+  double ExtractConstantDouble() const {
+    assert(IsConstantDouble());
+    return constant().number();
+  }
+
   int32_t ExtractConstantInt32() const {
     assert(IsConstantInt32());
     return constant().int32();
