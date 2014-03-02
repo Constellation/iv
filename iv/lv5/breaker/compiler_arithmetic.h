@@ -731,51 +731,64 @@ inline void Compiler::EmitBINARY_SUBTRACT(const Instruction* instr) {
     return;
   }
 
-  // lhs or rhs are not int32_t
-  if (lhs_type_entry.IsNotInt32() || rhs_type_entry.IsNotInt32()) {
-    LoadVRs(rsi, lhs, rdx, rhs);
-    asm_->mov(rdi, r14);
-    asm_->Call(&stub::BINARY_SUBTRACT);
-    asm_->mov(qword[r13 + dst * kJSValSize], rax);
-    set_last_used_candidate(dst);
-    type_record_.Put(dst, dst_type_entry);
-    return;
-  }
-
   const Assembler::LocalLabelScope scope(asm_);
 
-  if (rhs_type_entry.IsConstantInt32()) {
-    const int32_t rhs_value = rhs_type_entry.constant().int32();
-    LoadVR(rax, lhs);
-    Int32Guard(lhs, rax, ".GENERIC");
-    asm_->sub(eax, rhs_value);
-    asm_->jo(".OVERFLOW");
-  } else {
+  if (!(lhs_type_entry.IsNotInt32() || rhs_type_entry.IsNotInt32())) {
+    if (rhs_type_entry.IsConstantInt32()) {
+      const int32_t rhs_value = rhs_type_entry.constant().int32();
+      LoadVR(rax, lhs);
+      Int32Guard(lhs, rax, ".DOUBLE");
+      asm_->sub(eax, rhs_value);
+      asm_->jo(".OVERFLOW");
+    } else {
+      LoadVRs(rax, lhs, rdx, rhs);
+      Int32Guard(lhs, rax, ".DOUBLE");
+      Int32Guard(rhs, rdx, ".DOUBLE");
+      asm_->sub(eax, edx);
+      asm_->jo(".OVERFLOW");
+    }
+    // boxing
+    asm_->or(rax, r15);
+    asm_->jmp(".EXIT", Xbyak::CodeGenerator::T_NEAR);
+
+    kill_last_used();
+
+    // lhs and rhs are always int32 (but overflow)
+    // So we just sub as int64_t and convert to double,
+    // because INT32_MIN - INT32_MIN is in int64_t range, and convert to
+    // double makes no error.
+    asm_->L(".OVERFLOW");
     LoadVRs(rax, lhs, rdx, rhs);
-    Int32Guard(lhs, rax, ".GENERIC");
-    Int32Guard(rhs, rdx, ".GENERIC");
-    asm_->sub(eax, edx);
-    asm_->jo(".OVERFLOW");
+    asm_->movsxd(rax, eax);
+    asm_->movsxd(rdx, edx);
+    asm_->sub(rax, rdx);
+    asm_->cvtsi2sd(xmm0, rax);
+    asm_->movq(rax, xmm0);
+    ConvertDoubleToJSVal(rax);
+    asm_->jmp(".EXIT", Xbyak::CodeGenerator::T_NEAR);
   }
-  // boxing
+
+  asm_->L(".DOUBLE");
+  LoadDouble(lhs, xmm0, rsi, ".GENERIC", Xbyak::CodeGenerator::T_NEAR);
+  LoadDouble(rhs, xmm1, rsi, ".GENERIC", Xbyak::CodeGenerator::T_NEAR);
+
+  asm_->subsd(xmm0, xmm1);
+
+  asm_->cvttsd2si(eax, xmm0);
+  asm_->cvtsi2sd(xmm1, eax);
+  asm_->ucomisd(xmm0, xmm1);
+  asm_->jp(".FAST_DOUBLE");
+  asm_->jne(".FAST_DOUBLE");
+  // target is int32
   asm_->or(rax, r15);
   asm_->jmp(".EXIT");
-
-  kill_last_used();
-
-  // lhs and rhs are always int32 (but overflow)
-  // So we just sub as int64_t and convert to double,
-  // because INT32_MIN - INT32_MIN is in int64_t range, and convert to
-  // double makes no error.
-  asm_->L(".OVERFLOW");
-  LoadVRs(rax, lhs, rdx, rhs);
-  asm_->movsxd(rax, eax);
-  asm_->movsxd(rdx, edx);
-  asm_->sub(rax, rdx);
-  asm_->cvtsi2sd(xmm0, rax);
+  asm_->L(".FAST_DOUBLE");
+  // target is double
   asm_->movq(rax, xmm0);
   ConvertDoubleToJSVal(rax);
   asm_->jmp(".EXIT");
+
+  kill_last_used();
 
   asm_->L(".GENERIC");
   LoadVRs(rsi, lhs, rdx, rhs);
