@@ -2807,8 +2807,7 @@ class Compiler {
     type_record_.Put(dst, TypeEntry(Type::Arguments()));
   }
 
-  // NaN is not handled
-  void ConvertNotNaNDoubleToJSVal(const Xbyak::Reg64& target) {
+  void ConvertDoubleToJSVal(const Xbyak::Reg64& target) {
     // Adding double offset is equivalent to subtracting number mask.
     static_assert(
         detail::jsval64::kDoubleOffset + detail::jsval64::kNumberMask == 0,
