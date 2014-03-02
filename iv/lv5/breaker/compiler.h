@@ -855,21 +855,7 @@ class Compiler {
   void EmitBINARY_MULTIPLY(const Instruction* instr);
 
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_DIVIDE(const Instruction* instr) {
-    const register_t dst = Reg(instr[1].i16[0]);
-    const register_t lhs = Reg(instr[1].i16[1]);
-    const register_t rhs = Reg(instr[1].i16[2]);
-    {
-      asm_->mov(rdi, r14);
-      LoadVR(rsi, lhs);
-      LoadVR(rdx, rhs);
-      asm_->Call(&stub::BINARY_DIVIDE);
-      asm_->mov(qword[r13 + dst * kJSValSize], rax);
-      set_last_used_candidate(dst);
-    }
-
-    type_record_.Put(dst, TypeEntry::Divide(type_record_.Get(lhs), type_record_.Get(rhs)));
-  }
+  void EmitBINARY_DIVIDE(const Instruction* instr);
 
   // opcode | (dst | lhs | rhs)
   void EmitBINARY_MODULO(const Instruction* instr);
