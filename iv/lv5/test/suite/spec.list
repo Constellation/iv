@@ -25,6 +25,7 @@ spec/number-isinteger.js
 spec/number-toint.js
 spec/lhs-assignment.js
 spec/rhs-assignment.js
+spec/arith-div.js
 spec/arith-mod.js
 spec/string/string-repeat.js
 spec/string/string-startswith.js

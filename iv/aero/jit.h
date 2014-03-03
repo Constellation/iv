@@ -378,7 +378,7 @@ IV_AERO_OPCODES(V)
       L(".QUICK_CHECK_NORMAL_START");
       jmp(jit_detail::kStartLabel, T_NEAR);
       L(jit_detail::kQuickCheckNextLabel);
-      inc(cp_);
+      add(cp_, 1);
       cmp(cp_, size_);
       jle(".QUICK_CHECK_NORMAL_START");
       jmp(jit_detail::kFailureLabel, T_NEAR);
@@ -403,7 +403,7 @@ IV_AERO_OPCODES(V)
       jne(jit_detail::kQuickCheckNextLabel, T_NEAR);
       jmp(jit_detail::kStartLabel, T_NEAR);
       L(jit_detail::kQuickCheckNextLabel);
-      inc(cp_);
+      add(cp_, 1);
       jmp(".QUICK_CHECK_SPECIAL_START");
     }
     outLocalLabel();
@@ -792,7 +792,7 @@ IV_AERO_OPCODES(V)
     const int max = static_cast<int>(Load4Bytes(instr + 5));
     const uint32_t counter = code_.captures() * 2 + Load4Bytes(instr + 1);
     mov(r10d, dword[captures_ + kIntSize * counter]);
-    inc(r10d);
+    add(r10d, 1);
     mov(dword[captures_ + kIntSize * counter], r10d);
     cmp(r10d, max);
     jl(JIT::MakeLabel(Load4Bytes(instr + 9)).c_str(), T_NEAR);
@@ -1238,7 +1238,7 @@ IV_AERO_OPCODES(V)
 
   void IncrementCP(int offset) {
     if (offset < 0) {
-      inc(cp_);
+      add(cp_, 1);
     }
   }
 

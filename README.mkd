@@ -4,6 +4,8 @@ iv is ECMA262 5.1 lexer and parser and engine project written in C++ / JS
 
 a lot of inspired from V8, SpiderMonkey, JavaScriptCore
 
+Gitter: [![Gitter chat](https://badges.gitter.im/Constellation/iv.png)](https://gitter.im/Constellation/iv)
+
 ## License
 
 under New BSD License
@@ -18,6 +20,13 @@ for more information, see [lv5 README](https://github.com/Constellation/iv/tree/
 ### Build Instruction
 
 see [lv5 README](https://github.com/Constellation/iv/tree/master/iv/lv5)
+
+#### example
+```bash
+cmake -H. -Brelease -DCMAKE_BUILD_TYPE=Release
+make -C release lv5
+cp release/iv/lv5/lv5 lv5
+```
 
 ### iv / lv5 / railgun
 

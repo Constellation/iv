@@ -18,6 +18,7 @@ script:
     - release/iv/lv5/test/lv5_unit_tests
     - release/iv/test/benchmarks/aero_benchmarks --benchmark_iterations=100
     - make -C release sunspider
+    - TZ=GST+8 python release/tools/download-test262-prefix/src/download-test262/tools/packaging/test262.py --tests=release/tools/download-test262-prefix/src/download-test262 --command=release/iv/lv5/lv5 --summary
 notifications:
     recipients:
         - utatane.tea@gmail.com
