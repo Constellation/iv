@@ -44,6 +44,7 @@ add_library(liblv5 STATIC
     context.cc
     global_symbols.cc
     global_data.cc
+    breaker/compiler_equals.cc
     runtime/array.cc
     runtime/array_buffer.cc
     runtime/array_iterator.cc
