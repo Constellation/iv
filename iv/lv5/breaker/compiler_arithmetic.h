@@ -10,29 +10,28 @@ inline void Compiler::EmitBINARY_MULTIPLY(const Instruction* instr) {
   const register_t lhs = Reg(instr[1].i16[1]);
   const register_t rhs = Reg(instr[1].i16[2]);
 
-  const TypeEntry lhs_type_entry = type_record_.Get(lhs);
-  const TypeEntry rhs_type_entry = type_record_.Get(rhs);
-  const TypeEntry dst_type_entry =
-      TypeEntry::Multiply(lhs_type_entry, rhs_type_entry);
+  const TypeEntry lhs_type = type_record_.Get(lhs);
+  const TypeEntry rhs_type = type_record_.Get(rhs);
+  const TypeEntry dst_type = TypeEntry::Multiply(lhs_type, rhs_type);
 
   // dst is constant
-  if (dst_type_entry.IsConstant()) {
-    EmitConstantDest(dst_type_entry, dst);
-    type_record_.Put(dst, dst_type_entry);
+  if (dst_type.IsConstant()) {
+    EmitConstantDest(dst_type, dst);
+    type_record_.Put(dst, dst_type);
     return;
   }
 
   const Assembler::LocalLabelScope scope(asm_);
 
-  if (!(lhs_type_entry.IsNotInt32() || rhs_type_entry.IsNotInt32())) {
-    if (lhs_type_entry.IsConstantInt32()) {
-      const int32_t lhs_value = lhs_type_entry.constant().int32();
+  if (!(lhs_type.IsNotInt32() || rhs_type.IsNotInt32())) {
+    if (lhs_type.IsConstantInt32()) {
+      const int32_t lhs_value = lhs_type.constant().int32();
       LoadVR(rax, rhs);
       Int32Guard(rhs, rax, ".DOUBLE");
       asm_->imul(eax, eax, lhs_value);
       asm_->jo(".OVERFLOW");
-    } else if (rhs_type_entry.IsConstantInt32()) {
-      const int32_t rhs_value = rhs_type_entry.constant().int32();
+    } else if (rhs_type.IsConstantInt32()) {
+      const int32_t rhs_value = rhs_type.constant().int32();
       LoadVR(rax, lhs);
       Int32Guard(lhs, rax, ".DOUBLE");
       asm_->imul(eax, eax, rhs_value);
@@ -79,7 +78,7 @@ inline void Compiler::EmitBINARY_MULTIPLY(const Instruction* instr) {
   asm_->L(".EXIT");
   asm_->mov(qword[r13 + dst * kJSValSize], rax);
   set_last_used_candidate(dst);
-  type_record_.Put(dst, dst_type_entry);
+  type_record_.Put(dst, dst_type);
 }
 
 // opcode | (dst | lhs | rhs)
@@ -88,15 +87,14 @@ inline void Compiler::EmitBINARY_DIVIDE(const Instruction* instr) {
   const register_t lhs = Reg(instr[1].i16[1]);
   const register_t rhs = Reg(instr[1].i16[2]);
 
-  const TypeEntry lhs_type_entry = type_record_.Get(lhs);
-  const TypeEntry rhs_type_entry = type_record_.Get(rhs);
-  const TypeEntry dst_type_entry =
-      TypeEntry::Divide(lhs_type_entry, rhs_type_entry);
+  const TypeEntry lhs_type = type_record_.Get(lhs);
+  const TypeEntry rhs_type = type_record_.Get(rhs);
+  const TypeEntry dst_type = TypeEntry::Divide(lhs_type, rhs_type);
 
   // dst is constant
-  if (dst_type_entry.IsConstant()) {
-    EmitConstantDest(dst_type_entry, dst);
-    type_record_.Put(dst, dst_type_entry);
+  if (dst_type.IsConstant()) {
+    EmitConstantDest(dst_type, dst);
+    type_record_.Put(dst, dst_type);
     return;
   }
 
@@ -119,7 +117,7 @@ inline void Compiler::EmitBINARY_DIVIDE(const Instruction* instr) {
   asm_->L(".EXIT");
   asm_->mov(qword[r13 + dst * kJSValSize], rax);
   set_last_used_candidate(dst);
-  type_record_.Put(dst, dst_type_entry);
+  type_record_.Put(dst, dst_type);
 }
 
 // opcode | (dst | lhs | rhs)
@@ -128,29 +126,28 @@ inline void Compiler::EmitBINARY_ADD(const Instruction* instr) {
   const register_t lhs = Reg(instr[1].i16[1]);
   const register_t rhs = Reg(instr[1].i16[2]);
 
-  const TypeEntry lhs_type_entry = type_record_.Get(lhs);
-  const TypeEntry rhs_type_entry = type_record_.Get(rhs);
-  const TypeEntry dst_type_entry =
-      TypeEntry::Add(lhs_type_entry, rhs_type_entry);
+  const TypeEntry lhs_type = type_record_.Get(lhs);
+  const TypeEntry rhs_type = type_record_.Get(rhs);
+  const TypeEntry dst_type = TypeEntry::Add(lhs_type, rhs_type);
 
   // dst is constant
-  if (dst_type_entry.IsConstant()) {
-    EmitConstantDest(dst_type_entry, dst);
-    type_record_.Put(dst, dst_type_entry);
+  if (dst_type.IsConstant()) {
+    EmitConstantDest(dst_type, dst);
+    type_record_.Put(dst, dst_type);
     return;
   }
 
   const Assembler::LocalLabelScope scope(asm_);
 
-  if (!(lhs_type_entry.IsNotInt32() || rhs_type_entry.IsNotInt32())) {
-    if (lhs_type_entry.IsConstantInt32()) {
-      const int32_t lhs_value = lhs_type_entry.constant().int32();
+  if (!(lhs_type.IsNotInt32() || rhs_type.IsNotInt32())) {
+    if (lhs_type.IsConstantInt32()) {
+      const int32_t lhs_value = lhs_type.constant().int32();
       LoadVR(rax, rhs);
       Int32Guard(rhs, rax, ".DOUBLE");
       asm_->add(eax, lhs_value);
       asm_->jo(".OVERFLOW");
-    } else if (rhs_type_entry.IsConstantInt32()) {
-      const int32_t rhs_value = rhs_type_entry.constant().int32();
+    } else if (rhs_type.IsConstantInt32()) {
+      const int32_t rhs_value = rhs_type.constant().int32();
       LoadVR(rax, lhs);
       Int32Guard(lhs, rax, ".DOUBLE");
       asm_->add(eax, rhs_value);
@@ -198,7 +195,7 @@ inline void Compiler::EmitBINARY_ADD(const Instruction* instr) {
   asm_->L(".EXIT");
   asm_->mov(qword[r13 + dst * kJSValSize], rax);
   set_last_used_candidate(dst);
-  type_record_.Put(dst, dst_type_entry);
+  type_record_.Put(dst, dst_type);
 }
 
 // opcode | (dst | lhs | rhs)
@@ -207,15 +204,14 @@ inline void Compiler::EmitBINARY_MODULO(const Instruction* instr) {
   const register_t lhs = Reg(instr[1].i16[1]);
   const register_t rhs = Reg(instr[1].i16[2]);
 
-  const TypeEntry lhs_type_entry = type_record_.Get(lhs);
-  const TypeEntry rhs_type_entry = type_record_.Get(rhs);
-  const TypeEntry dst_type_entry =
-      TypeEntry::Modulo(lhs_type_entry, rhs_type_entry);
+  const TypeEntry lhs_type = type_record_.Get(lhs);
+  const TypeEntry rhs_type = type_record_.Get(rhs);
+  const TypeEntry dst_type = TypeEntry::Modulo(lhs_type, rhs_type);
 
   // dst is constant
-  if (dst_type_entry.IsConstant()) {
-    EmitConstantDest(dst_type_entry, dst);
-    type_record_.Put(dst, dst_type_entry);
+  if (dst_type.IsConstant()) {
+    EmitConstantDest(dst_type, dst);
+    type_record_.Put(dst, dst_type);
     return;
   }
 
@@ -227,18 +223,16 @@ inline void Compiler::EmitBINARY_MODULO(const Instruction* instr) {
   // lhs is >= 0 and rhs is > 0 because example like
   //   -1 % -1
   // should return -0.0, so this value is double
-  if (lhs_type_entry.IsNotInt32() ||
-      rhs_type_entry.IsNotInt32() ||
-      (rhs_type_entry.IsConstantInt32() &&
-       rhs_type_entry.constant().int32() <= 0) ||
-      (lhs_type_entry.IsConstantInt32() &&
-       lhs_type_entry.constant().int32() < 0)) {
+  if (lhs_type.IsNotInt32() ||
+      rhs_type.IsNotInt32() ||
+      (rhs_type.IsConstantInt32() && rhs_type.constant().int32() <= 0) ||
+      (lhs_type.IsConstantInt32() && lhs_type.constant().int32() < 0)) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_MODULO);
     asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
-    type_record_.Put(dst, dst_type_entry);
+    type_record_.Put(dst, dst_type);
     return;
   }
 
@@ -246,18 +240,18 @@ inline void Compiler::EmitBINARY_MODULO(const Instruction* instr) {
 
   // Because LHS and RHS are not signed,
   // we should store 0 to edx
-  if (lhs_type_entry.IsConstantInt32()) {
+  if (lhs_type.IsConstantInt32()) {
     // RHS > 0
-    const int32_t lhs_value = lhs_type_entry.constant().int32();
+    const int32_t lhs_value = lhs_type.constant().int32();
     LoadVR(rcx, rhs);
     Int32Guard(rhs, rcx, ".ARITHMETIC_GENERIC");
     asm_->test(ecx, ecx);
     asm_->jle(".ARITHMETIC_GENERIC");
     asm_->xor(edx, edx);
     asm_->mov(eax, lhs_value);
-  } else if (rhs_type_entry.IsConstantInt32()) {
+  } else if (rhs_type.IsConstantInt32()) {
     // LHS >= 0
-    const int32_t rhs_value = rhs_type_entry.constant().int32();
+    const int32_t rhs_value = rhs_type.constant().int32();
     LoadVR(rax, lhs);
     Int32Guard(lhs, rax, ".ARITHMETIC_GENERIC");
     asm_->test(eax, eax);
@@ -291,7 +285,7 @@ inline void Compiler::EmitBINARY_MODULO(const Instruction* instr) {
   asm_->L(".ARITHMETIC_EXIT");
   asm_->mov(qword[r13 + dst * kJSValSize], rax);
   set_last_used_candidate(dst);
-  type_record_.Put(dst, dst_type_entry);
+  type_record_.Put(dst, dst_type);
 }
 
 // opcode | (dst | lhs | rhs)
@@ -300,33 +294,32 @@ inline void Compiler::EmitBINARY_LSHIFT(const Instruction* instr) {
   const register_t lhs = Reg(instr[1].i16[1]);
   const register_t rhs = Reg(instr[1].i16[2]);
 
-  const TypeEntry lhs_type_entry = type_record_.Get(lhs);
-  const TypeEntry rhs_type_entry = type_record_.Get(rhs);
-  const TypeEntry dst_type_entry =
-      TypeEntry::Lshift(lhs_type_entry, rhs_type_entry);
+  const TypeEntry lhs_type = type_record_.Get(lhs);
+  const TypeEntry rhs_type = type_record_.Get(rhs);
+  const TypeEntry dst_type = TypeEntry::Lshift(lhs_type, rhs_type);
 
   // dst is constant
-  if (dst_type_entry.IsConstant()) {
-    EmitConstantDest(dst_type_entry, dst);
-    type_record_.Put(dst, dst_type_entry);
+  if (dst_type.IsConstant()) {
+    EmitConstantDest(dst_type, dst);
+    type_record_.Put(dst, dst_type);
     return;
   }
 
   // lhs or rhs are not int32_t
-  if (lhs_type_entry.IsNotInt32() || rhs_type_entry.IsNotInt32()) {
+  if (lhs_type.IsNotInt32() || rhs_type.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_LSHIFT);
     asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
-    type_record_.Put(dst, dst_type_entry);
+    type_record_.Put(dst, dst_type);
     return;
   }
 
   const Assembler::LocalLabelScope scope(asm_);
 
-  if (rhs_type_entry.IsConstantInt32()) {
-    const int32_t rhs_value = rhs_type_entry.constant().int32();
+  if (rhs_type.IsConstantInt32()) {
+    const int32_t rhs_value = rhs_type.constant().int32();
     LoadVR(rax, lhs);
     Int32Guard(lhs, rax, ".ARITHMETIC_GENERIC");
     asm_->sal(eax, rhs_value & 0x1F);
@@ -350,7 +343,7 @@ inline void Compiler::EmitBINARY_LSHIFT(const Instruction* instr) {
   asm_->L(".ARITHMETIC_EXIT");
   asm_->mov(qword[r13 + dst * kJSValSize], rax);
   set_last_used_candidate(dst);
-  type_record_.Put(dst, dst_type_entry);
+  type_record_.Put(dst, dst_type);
 }
 
 // opcode | (dst | lhs | rhs)
@@ -359,33 +352,32 @@ inline void Compiler::EmitBINARY_RSHIFT(const Instruction* instr) {
   const register_t lhs = Reg(instr[1].i16[1]);
   const register_t rhs = Reg(instr[1].i16[2]);
 
-  const TypeEntry lhs_type_entry = type_record_.Get(lhs);
-  const TypeEntry rhs_type_entry = type_record_.Get(rhs);
-  const TypeEntry dst_type_entry =
-      TypeEntry::Rshift(lhs_type_entry, rhs_type_entry);
+  const TypeEntry lhs_type = type_record_.Get(lhs);
+  const TypeEntry rhs_type = type_record_.Get(rhs);
+  const TypeEntry dst_type = TypeEntry::Rshift(lhs_type, rhs_type);
 
   // dst is constant
-  if (dst_type_entry.IsConstant()) {
-    EmitConstantDest(dst_type_entry, dst);
-    type_record_.Put(dst, dst_type_entry);
+  if (dst_type.IsConstant()) {
+    EmitConstantDest(dst_type, dst);
+    type_record_.Put(dst, dst_type);
     return;
   }
 
   // lhs or rhs are not int32_t
-  if (lhs_type_entry.IsNotInt32() || rhs_type_entry.IsNotInt32()) {
+  if (lhs_type.IsNotInt32() || rhs_type.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_RSHIFT);
     asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
-    type_record_.Put(dst, dst_type_entry);
+    type_record_.Put(dst, dst_type);
     return;
   }
 
   const Assembler::LocalLabelScope scope(asm_);
 
-  if (rhs_type_entry.IsConstantInt32()) {
-    const int32_t rhs_value = rhs_type_entry.constant().int32();
+  if (rhs_type.IsConstantInt32()) {
+    const int32_t rhs_value = rhs_type.constant().int32();
     LoadVR(rax, lhs);
     Int32Guard(lhs, rax, ".ARITHMETIC_GENERIC");
     asm_->sar(eax, rhs_value & 0x1F);
@@ -409,7 +401,7 @@ inline void Compiler::EmitBINARY_RSHIFT(const Instruction* instr) {
   asm_->L(".ARITHMETIC_EXIT");
   asm_->mov(qword[r13 + dst * kJSValSize], rax);
   set_last_used_candidate(dst);
-  type_record_.Put(dst, dst_type_entry);
+  type_record_.Put(dst, dst_type);
 }
 
 inline void Compiler::EmitBINARY_RSHIFT_LOGICAL(const Instruction* instr) {
@@ -417,33 +409,32 @@ inline void Compiler::EmitBINARY_RSHIFT_LOGICAL(const Instruction* instr) {
   const register_t lhs = Reg(instr[1].i16[1]);
   const register_t rhs = Reg(instr[1].i16[2]);
 
-  const TypeEntry lhs_type_entry = type_record_.Get(lhs);
-  const TypeEntry rhs_type_entry = type_record_.Get(rhs);
-  const TypeEntry dst_type_entry =
-      TypeEntry::RshiftLogical(lhs_type_entry, rhs_type_entry);
+  const TypeEntry lhs_type = type_record_.Get(lhs);
+  const TypeEntry rhs_type = type_record_.Get(rhs);
+  const TypeEntry dst_type = TypeEntry::RshiftLogical(lhs_type, rhs_type);
 
   // dst is constant
-  if (dst_type_entry.IsConstant()) {
-    EmitConstantDest(dst_type_entry, dst);
-    type_record_.Put(dst, dst_type_entry);
+  if (dst_type.IsConstant()) {
+    EmitConstantDest(dst_type, dst);
+    type_record_.Put(dst, dst_type);
     return;
   }
 
   // lhs or rhs are not int32_t
-  if (lhs_type_entry.IsNotInt32() || rhs_type_entry.IsNotInt32()) {
+  if (lhs_type.IsNotInt32() || rhs_type.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_RSHIFT_LOGICAL);
     asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
-    type_record_.Put(dst, dst_type_entry);
+    type_record_.Put(dst, dst_type);
     return;
   }
 
   const Assembler::LocalLabelScope scope(asm_);
 
-  if (rhs_type_entry.IsConstantInt32()) {
-    const int32_t rhs_value = rhs_type_entry.constant().int32();
+  if (rhs_type.IsConstantInt32()) {
+    const int32_t rhs_value = rhs_type.constant().int32();
     LoadVR(rax, lhs);
     Int32Guard(lhs, rax, ".ARITHMETIC_GENERIC");
     asm_->shr(eax, rhs_value & 0x1F);
@@ -477,7 +468,7 @@ inline void Compiler::EmitBINARY_RSHIFT_LOGICAL(const Instruction* instr) {
   asm_->L(".ARITHMETIC_EXIT");
   asm_->mov(qword[r13 + dst * kJSValSize], rax);
   set_last_used_candidate(dst);
-  type_record_.Put(dst, dst_type_entry);
+  type_record_.Put(dst, dst_type);
 }
 
 template<Rep (*STUB)(Frame* stack, JSVal lhs, JSVal rhs)>
@@ -557,29 +548,28 @@ inline void Compiler::EmitCompare(const Instruction* instr, OP::Type fused) {
       Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
   const register_t dst = Reg(instr[1].i16[0]);
 
-  const TypeEntry lhs_type_entry = type_record_.Get(lhs);
-  const TypeEntry rhs_type_entry = type_record_.Get(rhs);
-  const TypeEntry dst_type_entry =
-      Traits::TypeAnalysis(lhs_type_entry, rhs_type_entry);
+  const TypeEntry lhs_type = type_record_.Get(lhs);
+  const TypeEntry rhs_type = type_record_.Get(rhs);
+  const TypeEntry dst_type = Traits::TypeAnalysis(lhs_type, rhs_type);
 
   // dst is constant
-  if (dst_type_entry.IsConstant()) {
+  if (dst_type.IsConstant()) {
     if (fused != OP::NOP) {
       // fused jump opcode
       const std::string label = MakeLabel(instr);
-      const bool result = dst_type_entry.constant().ToBoolean();
+      const bool result = dst_type.constant().ToBoolean();
       if ((fused == OP::IF_TRUE) == result) {
         asm_->jmp(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
       }
     } else {
-      EmitConstantDest(dst_type_entry, dst);
-      type_record_.Put(dst, dst_type_entry);
+      EmitConstantDest(dst_type, dst);
+      type_record_.Put(dst, dst_type);
     }
     return;
   }
 
   // lhs or rhs are not int32_t
-  if (lhs_type_entry.IsNotInt32() || rhs_type_entry.IsNotInt32()) {
+  if (lhs_type.IsNotInt32() || rhs_type.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(Traits::kStub);
@@ -594,15 +584,15 @@ inline void Compiler::EmitCompare(const Instruction* instr, OP::Type fused) {
     } else {
       asm_->mov(qword[r13 + dst * kJSValSize], rax);
       set_last_used_candidate(dst);
-      type_record_.Put(dst, dst_type_entry);
+      type_record_.Put(dst, dst_type);
     }
     return;
   }
 
   const Assembler::LocalLabelScope scope(asm_);
 
-  if (rhs_type_entry.IsConstantInt32()) {
-    const int32_t rhs_value = rhs_type_entry.constant().int32();
+  if (rhs_type.IsConstantInt32()) {
+    const int32_t rhs_value = rhs_type.constant().int32();
     LoadVR(rax, lhs);
     Int32Guard(lhs, rax, ".ARITHMETIC_GENERIC");
     asm_->cmp(eax, rhs_value);
@@ -653,7 +643,7 @@ inline void Compiler::EmitCompare(const Instruction* instr, OP::Type fused) {
     asm_->L(".ARITHMETIC_EXIT");
     asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
-    type_record_.Put(dst, dst_type_entry);
+    type_record_.Put(dst, dst_type);
   }
 }
 
@@ -683,23 +673,22 @@ inline void Compiler::EmitBINARY_SUBTRACT(const Instruction* instr) {
   const register_t lhs = Reg(instr[1].i16[1]);
   const register_t rhs = Reg(instr[1].i16[2]);
 
-  const TypeEntry lhs_type_entry = type_record_.Get(lhs);
-  const TypeEntry rhs_type_entry = type_record_.Get(rhs);
-  const TypeEntry dst_type_entry =
-      TypeEntry::Subtract(lhs_type_entry, rhs_type_entry);
+  const TypeEntry lhs_type = type_record_.Get(lhs);
+  const TypeEntry rhs_type = type_record_.Get(rhs);
+  const TypeEntry dst_type = TypeEntry::Subtract(lhs_type, rhs_type);
 
   // dst is constant
-  if (dst_type_entry.IsConstant()) {
-    EmitConstantDest(dst_type_entry, dst);
-    type_record_.Put(dst, dst_type_entry);
+  if (dst_type.IsConstant()) {
+    EmitConstantDest(dst_type, dst);
+    type_record_.Put(dst, dst_type);
     return;
   }
 
   const Assembler::LocalLabelScope scope(asm_);
 
-  if (!(lhs_type_entry.IsNotInt32() || rhs_type_entry.IsNotInt32())) {
-    if (rhs_type_entry.IsConstantInt32()) {
-      const int32_t rhs_value = rhs_type_entry.constant().int32();
+  if (!(lhs_type.IsNotInt32() || rhs_type.IsNotInt32())) {
+    if (rhs_type.IsConstantInt32()) {
+      const int32_t rhs_value = rhs_type.constant().int32();
       LoadVR(rax, lhs);
       Int32Guard(lhs, rax, ".DOUBLE");
       asm_->sub(eax, rhs_value);
@@ -750,7 +739,7 @@ inline void Compiler::EmitBINARY_SUBTRACT(const Instruction* instr) {
   asm_->L(".EXIT");
   asm_->mov(qword[r13 + dst * kJSValSize], rax);
   set_last_used_candidate(dst);
-  type_record_.Put(dst, dst_type_entry);
+  type_record_.Put(dst, dst_type);
 }
 
 // opcode | (dst | lhs | rhs)
@@ -762,29 +751,28 @@ inline void Compiler::EmitBINARY_BIT_AND(const Instruction* instr,
       Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
   const register_t dst = Reg(instr[1].i16[0]);
 
-  const TypeEntry lhs_type_entry = type_record_.Get(lhs);
-  const TypeEntry rhs_type_entry = type_record_.Get(rhs);
-  const TypeEntry dst_type_entry =
-      TypeEntry::BitwiseAnd(lhs_type_entry, rhs_type_entry);
+  const TypeEntry lhs_type = type_record_.Get(lhs);
+  const TypeEntry rhs_type = type_record_.Get(rhs);
+  const TypeEntry dst_type = TypeEntry::BitwiseAnd(lhs_type, rhs_type);
 
   // dst is constant
-  if (dst_type_entry.IsConstant()) {
+  if (dst_type.IsConstant()) {
     if (fused != OP::NOP) {
       // fused jump opcode
       const std::string label = MakeLabel(instr);
-      const bool result = dst_type_entry.constant().ToBoolean();
+      const bool result = dst_type.constant().ToBoolean();
       if ((fused == OP::IF_TRUE) == result) {
         asm_->jmp(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
       }
     } else {
-      EmitConstantDest(dst_type_entry, dst);
-      type_record_.Put(dst, dst_type_entry);
+      EmitConstantDest(dst_type, dst);
+      type_record_.Put(dst, dst_type);
     }
     return;
   }
 
   // lhs or rhs are not int32_t
-  if (lhs_type_entry.IsNotInt32() || rhs_type_entry.IsNotInt32()) {
+  if (lhs_type.IsNotInt32() || rhs_type.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_BIT_AND);
@@ -799,20 +787,20 @@ inline void Compiler::EmitBINARY_BIT_AND(const Instruction* instr,
     } else {
       asm_->mov(qword[r13 + dst * kJSValSize], rax);
       set_last_used_candidate(dst);
-      type_record_.Put(dst, dst_type_entry);
+      type_record_.Put(dst, dst_type);
     }
     return;
   }
 
   const Assembler::LocalLabelScope scope(asm_);
 
-  if (lhs_type_entry.IsConstantInt32()) {
-    const int32_t lhs_value = lhs_type_entry.constant().int32();
+  if (lhs_type.IsConstantInt32()) {
+    const int32_t lhs_value = lhs_type.constant().int32();
     LoadVR(rax, rhs);
     Int32Guard(rhs, rax, ".ARITHMETIC_GENERIC");
     asm_->and(eax, lhs_value);
-  } else if (rhs_type_entry.IsConstantInt32()) {
-    const int32_t rhs_value = rhs_type_entry.constant().int32();
+  } else if (rhs_type.IsConstantInt32()) {
+    const int32_t rhs_value = rhs_type.constant().int32();
     LoadVR(rax, lhs);
     Int32Guard(lhs, rax, ".ARITHMETIC_GENERIC");
     asm_->and(eax, rhs_value);
@@ -862,7 +850,7 @@ inline void Compiler::EmitBINARY_BIT_AND(const Instruction* instr,
     asm_->L(".ARITHMETIC_EXIT");
     asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
-    type_record_.Put(dst, dst_type_entry);
+    type_record_.Put(dst, dst_type);
   }
 }
 
@@ -872,38 +860,37 @@ inline void Compiler::EmitBINARY_BIT_XOR(const Instruction* instr) {
   const register_t lhs = Reg(instr[1].i16[1]);
   const register_t rhs = Reg(instr[1].i16[2]);
 
-  const TypeEntry lhs_type_entry = type_record_.Get(lhs);
-  const TypeEntry rhs_type_entry = type_record_.Get(rhs);
-  const TypeEntry dst_type_entry =
-      TypeEntry::BitwiseXor(lhs_type_entry, rhs_type_entry);
+  const TypeEntry lhs_type = type_record_.Get(lhs);
+  const TypeEntry rhs_type = type_record_.Get(rhs);
+  const TypeEntry dst_type = TypeEntry::BitwiseXor(lhs_type, rhs_type);
 
   // dst is constant
-  if (dst_type_entry.IsConstant()) {
-    EmitConstantDest(dst_type_entry, dst);
-    type_record_.Put(dst, dst_type_entry);
+  if (dst_type.IsConstant()) {
+    EmitConstantDest(dst_type, dst);
+    type_record_.Put(dst, dst_type);
     return;
   }
 
   // lhs or rhs is not int32_t
-  if (lhs_type_entry.IsNotInt32() || rhs_type_entry.IsNotInt32()) {
+  if (lhs_type.IsNotInt32() || rhs_type.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_BIT_XOR);
     asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
-    type_record_.Put(dst, dst_type_entry);
+    type_record_.Put(dst, dst_type);
     return;
   }
 
   const Assembler::LocalLabelScope scope(asm_);
 
-  if (lhs_type_entry.IsConstantInt32()) {
-    const int32_t lhs_value = lhs_type_entry.constant().int32();
+  if (lhs_type.IsConstantInt32()) {
+    const int32_t lhs_value = lhs_type.constant().int32();
     LoadVR(rax, rhs);
     Int32Guard(rhs, rax, ".ARITHMETIC_GENERIC");
     asm_->xor(eax, lhs_value);
-  } else if (rhs_type_entry.IsConstantInt32()) {
-    const int32_t rhs_value = rhs_type_entry.constant().int32();
+  } else if (rhs_type.IsConstantInt32()) {
+    const int32_t rhs_value = rhs_type.constant().int32();
     LoadVR(rax, lhs);
     Int32Guard(lhs, rax, ".ARITHMETIC_GENERIC");
     asm_->xor(eax, rhs_value);
@@ -927,7 +914,7 @@ inline void Compiler::EmitBINARY_BIT_XOR(const Instruction* instr) {
   asm_->L(".ARITHMETIC_EXIT");
   asm_->mov(qword[r13 + dst * kJSValSize], rax);
   set_last_used_candidate(dst);
-  type_record_.Put(dst, dst_type_entry);
+  type_record_.Put(dst, dst_type);
 }
 
 // opcode | (dst | lhs | rhs)
@@ -936,38 +923,37 @@ inline void Compiler::EmitBINARY_BIT_OR(const Instruction* instr) {
   const register_t lhs = Reg(instr[1].i16[1]);
   const register_t rhs = Reg(instr[1].i16[2]);
 
-  const TypeEntry lhs_type_entry = type_record_.Get(lhs);
-  const TypeEntry rhs_type_entry = type_record_.Get(rhs);
-  const TypeEntry dst_type_entry =
-      TypeEntry::BitwiseOr(lhs_type_entry, rhs_type_entry);
+  const TypeEntry lhs_type = type_record_.Get(lhs);
+  const TypeEntry rhs_type = type_record_.Get(rhs);
+  const TypeEntry dst_type = TypeEntry::BitwiseOr(lhs_type, rhs_type);
 
   // dst is constant
-  if (dst_type_entry.IsConstant()) {
-    EmitConstantDest(dst_type_entry, dst);
-    type_record_.Put(dst, dst_type_entry);
+  if (dst_type.IsConstant()) {
+    EmitConstantDest(dst_type, dst);
+    type_record_.Put(dst, dst_type);
     return;
   }
 
   // lhs or rhs is not int32_t
-  if (lhs_type_entry.IsNotInt32() || rhs_type_entry.IsNotInt32()) {
+  if (lhs_type.IsNotInt32() || rhs_type.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_BIT_OR);
     asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
-    type_record_.Put(dst, dst_type_entry);
+    type_record_.Put(dst, dst_type);
     return;
   }
 
   const Assembler::LocalLabelScope scope(asm_);
 
-  if (lhs_type_entry.IsConstantInt32()) {
-    const int32_t lhs_value = lhs_type_entry.constant().int32();
+  if (lhs_type.IsConstantInt32()) {
+    const int32_t lhs_value = lhs_type.constant().int32();
     LoadVR(rax, rhs);
     Int32Guard(rhs, rax, ".ARITHMETIC_GENERIC");
     asm_->or(rax, lhs_value);
-  } else if (rhs_type_entry.IsConstantInt32()) {
-    const int32_t rhs_value = rhs_type_entry.constant().int32();
+  } else if (rhs_type.IsConstantInt32()) {
+    const int32_t rhs_value = rhs_type.constant().int32();
     LoadVR(rax, lhs);
     Int32Guard(lhs, rax, ".ARITHMETIC_GENERIC");
     asm_->or(rax, rhs_value);
@@ -990,7 +976,7 @@ inline void Compiler::EmitBINARY_BIT_OR(const Instruction* instr) {
   asm_->L(".ARITHMETIC_EXIT");
   asm_->mov(qword[r13 + dst * kJSValSize], rax);
   set_last_used_candidate(dst);
-  type_record_.Put(dst, dst_type_entry);
+  type_record_.Put(dst, dst_type);
 }
 
 } } }  // namespace iv::lv5::breaker

@@ -1268,9 +1268,9 @@ class Compiler {
   // opcode | src
   void EmitTO_NUMBER(const Instruction* instr) {
     const register_t src = Reg(instr[1].i32[0]);
-    const TypeEntry src_type_entry = type_record_.Get(src);
+    const TypeEntry src_type = type_record_.Get(src);
 
-    if (src_type_entry.IsNumber()) {
+    if (src_type.IsNumber()) {
       // no effect
       return;
     }
@@ -1283,12 +1283,12 @@ class Compiler {
   // opcode | src
   void EmitTO_PRIMITIVE_AND_TO_STRING(const Instruction* instr) {
     const register_t src = Reg(instr[1].i32[0]);
-    const TypeEntry src_type_entry = type_record_.Get(src);
-    const TypeEntry dst_type_entry = TypeEntry::ToPrimitiveAndToString(src_type_entry);
+    const TypeEntry src_type = type_record_.Get(src);
+    const TypeEntry dst_type = TypeEntry::ToPrimitiveAndToString(src_type);
 
-    if (src_type_entry.IsString()) {
+    if (src_type.IsString()) {
       // no effect
-      type_record_.Put(src, dst_type_entry);
+      type_record_.Put(src, dst_type);
       return;
     }
 
@@ -1297,7 +1297,7 @@ class Compiler {
     asm_->Call(&stub::TO_PRIMITIVE_AND_TO_STRING);
     asm_->mov(qword[r13 + src * kJSValSize], rax);
     set_last_used_candidate(src);
-    type_record_.Put(src, dst_type_entry);
+    type_record_.Put(src, dst_type);
   }
 
   // opcode | (dst | start | count)
@@ -1330,12 +1330,12 @@ class Compiler {
   void EmitTYPEOF(const Instruction* instr) {
     const register_t dst = Reg(instr[1].i16[0]);
     const register_t src = Reg(instr[1].i16[1]);
-    const TypeEntry src_type_entry = type_record_.Get(src);
-    const TypeEntry dst_type_entry = TypeEntry::TypeOf(ctx_, src_type_entry);
+    const TypeEntry src_type = type_record_.Get(src);
+    const TypeEntry dst_type = TypeEntry::TypeOf(ctx_, src_type);
 
-    if (dst_type_entry.IsConstant()) {
-      EmitConstantDest(dst_type_entry, dst);
-      type_record_.Put(dst, dst_type_entry);
+    if (dst_type.IsConstant()) {
+      EmitConstantDest(dst_type, dst);
+      type_record_.Put(dst, dst_type);
       return;
     }
 
@@ -1344,7 +1344,7 @@ class Compiler {
     asm_->Call(&stub::TYPEOF);
     asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
-    type_record_.Put(dst, dst_type_entry);
+    type_record_.Put(dst, dst_type);
   }
 
   // opcode | (obj | item) | (index | type)
@@ -2926,9 +2926,9 @@ class Compiler {
                        Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
     static_assert(core::kLittleEndian, "System should be little endianess");
 
-    const TypeEntry type_entry = type_record_.Get(base);
+    const TypeEntry type = type_record_.Get(base);
 
-    if (!type_entry.IsSomeObject()) {
+    if (!type.IsSomeObject()) {
       // check target is Cell
       asm_->mov(tmp, detail::jsval64::kValueMask);
       asm_->test(tmp, target);
@@ -2937,7 +2937,7 @@ class Compiler {
 
     // target is guaranteed as cell
     // load Class tag from object and check it is Array
-    if (!type_entry.IsArray()) {
+    if (!type.IsArray()) {
       const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
       asm_->mov(tmp, qword[target + offset]);
       asm_->test(tmp, tmp);  // class is nullptr => String...
