@@ -1160,8 +1160,7 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(rax, src);
-      asm_->mov(rsi, rax);
-      asm_->and(rsi, r15);
+      asm_->test(rax, r15);
       asm_->jnz(".UNARY_POSITIVE_EXIT");
 
       asm_->mov(rdi, r14);
