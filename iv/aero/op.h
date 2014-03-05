@@ -39,7 +39,8 @@ V(CHECK_2CHAR_OR, 5)\
 V(CHECK_3CHAR_OR, 7)\
 V(CHECK_4CHAR_OR, 9)\
 V(CHECK_RANGE, 9)/* variadic */\
-V(CHECK_RANGE_INVERTED, 9)/* variadic */
+V(CHECK_RANGE_INVERTED, 9)/* variadic */\
+V(CHECK_N_CHARS, 5)/* variadic */
 
 class OP {
  public:
@@ -91,6 +92,9 @@ inline uint32_t OP::GetLength(Iter instr) {
   const uint32_t length = kOPLength[opcode];
   if (opcode == OP::CHECK_RANGE || opcode == OP::CHECK_RANGE_INVERTED) {
     return length + Load4Bytes(instr + 1);
+  }
+  if (opcode == OP::CHECK_N_CHARS) {
+    return length + Load4Bytes(instr + 1) * 2;
   }
   return length;
 }

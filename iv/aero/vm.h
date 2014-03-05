@@ -167,12 +167,12 @@ class VM : private core::Noncopyable<VM> {
 #define DEFINE_OPCODE(op)\
   case OP::op:
 #define DISPATCH() continue
-#define ADVANCE(len)\
+#define DISPATCH_NEXT()\
   do {\
-    instr += len;\
+    const uint32_t next = OP::GetLength(instr);\
+    instr += next;\
   } while (0);\
   DISPATCH()
-#define DISPATCH_NEXT(op) ADVANCE(OPLength<OP::op>::value)
 #define BACKTRACK() break;
 
 template<typename Piece>
@@ -203,27 +203,27 @@ inline int VM::Main(Code* code, const Piece& subject,
           // stack overflowed
           return AERO_ERROR;
         }
-        DISPATCH_NEXT(PUSH_BACKTRACK);
+        DISPATCH_NEXT();
       }
 
       DEFINE_OPCODE(START_CAPTURE) {
         const uint32_t target = Load4Bytes(instr + 1);
         state_[target * 2] = current_position;
         state_[target * 2 + 1] = kUndefined;
-        DISPATCH_NEXT(START_CAPTURE);
+        DISPATCH_NEXT();
       }
 
       DEFINE_OPCODE(END_CAPTURE) {
         const uint32_t target = Load4Bytes(instr + 1);
         state_[target * 2 + 1] = current_position;
-        DISPATCH_NEXT(END_CAPTURE);
+        DISPATCH_NEXT();
       }
 
       DEFINE_OPCODE(CLEAR_CAPTURES) {
         const uint32_t from = Load4Bytes(instr + 1);
         const uint32_t to = Load4Bytes(instr + 5);
         std::fill_n(state_.begin() + from * 2, (to - from) * 2, kUndefined);
-        DISPATCH_NEXT(CLEAR_CAPTURES);
+        DISPATCH_NEXT();
       }
 
       DEFINE_OPCODE(BACK_REFERENCE) {
@@ -247,7 +247,7 @@ inline int VM::Main(Code* code, const Piece& subject,
             BACKTRACK();
           }
         }
-        DISPATCH_NEXT(BACK_REFERENCE);
+        DISPATCH_NEXT();
       }
 
       DEFINE_OPCODE(BACK_REFERENCE_IGNORE_CASE) {
@@ -278,27 +278,27 @@ inline int VM::Main(Code* code, const Piece& subject,
             BACKTRACK();
           }
         }
-        DISPATCH_NEXT(BACK_REFERENCE_IGNORE_CASE);
+        DISPATCH_NEXT();
       }
 
       DEFINE_OPCODE(STORE_POSITION) {
         state_[code->captures() * 2 + Load4Bytes(instr + 1)] =
             static_cast<int>(current_position);
-        DISPATCH_NEXT(STORE_POSITION);
+        DISPATCH_NEXT();
       }
 
       DEFINE_OPCODE(POSITION_TEST) {
         if (current_position !=
             static_cast<std::size_t>(
                 state_[code->captures() * 2 + Load4Bytes(instr + 1)])) {
-          DISPATCH_NEXT(POSITION_TEST);
+          DISPATCH_NEXT();
         }
         BACKTRACK();
       }
 
       DEFINE_OPCODE(COUNTER_ZERO) {
         state_[code->captures() * 2 + Load4Bytes(instr + 1)] = 0;
-        DISPATCH_NEXT(COUNTER_ZERO);
+        DISPATCH_NEXT();
       }
 
       DEFINE_OPCODE(COUNTER_NEXT) {
@@ -308,14 +308,14 @@ inline int VM::Main(Code* code, const Piece& subject,
           instr = first_instr + Load4Bytes(instr + 9);
           DISPATCH();
         }
-        DISPATCH_NEXT(COUNTER_NEXT);
+        DISPATCH_NEXT();
       }
 
       DEFINE_OPCODE(CHECK_1BYTE_CHAR) {
         if (current_position < subject.size() &&
             subject[current_position] == Load1Bytes(instr + 1)) {
           ++current_position;
-          DISPATCH_NEXT(CHECK_1BYTE_CHAR);
+          DISPATCH_NEXT();
         }
         BACKTRACK();
       }
@@ -324,7 +324,7 @@ inline int VM::Main(Code* code, const Piece& subject,
         if (current_position < subject.size() &&
             subject[current_position] == Load2Bytes(instr + 1)) {
           ++current_position;
-          DISPATCH_NEXT(CHECK_2BYTE_CHAR);
+          DISPATCH_NEXT();
         }
         BACKTRACK();
       }
@@ -334,7 +334,7 @@ inline int VM::Main(Code* code, const Piece& subject,
           const char16_t ch = subject[current_position];
           if (ch == Load2Bytes(instr + 1) || ch == Load2Bytes(instr + 3)) {
             ++current_position;
-            DISPATCH_NEXT(CHECK_2CHAR_OR);
+            DISPATCH_NEXT();
           }
         }
         BACKTRACK();
@@ -347,7 +347,7 @@ inline int VM::Main(Code* code, const Piece& subject,
               ch == Load2Bytes(instr + 3) ||
               ch == Load2Bytes(instr + 5)) {
             ++current_position;
-            DISPATCH_NEXT(CHECK_3CHAR_OR);
+            DISPATCH_NEXT();
           }
         }
         BACKTRACK();
@@ -361,7 +361,7 @@ inline int VM::Main(Code* code, const Piece& subject,
               ch == Load2Bytes(instr + 5) ||
               ch == Load2Bytes(instr + 7)) {
             ++current_position;
-            DISPATCH_NEXT(CHECK_4CHAR_OR);
+            DISPATCH_NEXT();
           }
         }
         BACKTRACK();
@@ -370,7 +370,7 @@ inline int VM::Main(Code* code, const Piece& subject,
       DEFINE_OPCODE(STORE_SP) {
         state_[code->captures() * 2 + Load4Bytes(instr + 1)]
             = sp - stack_.data();
-        DISPATCH_NEXT(STORE_SP);
+        DISPATCH_NEXT();
       }
 
       DEFINE_OPCODE(ASSERTION_SUCCESS) {
@@ -391,14 +391,14 @@ inline int VM::Main(Code* code, const Piece& subject,
 
       DEFINE_OPCODE(ASSERTION_BOB) {
         if (current_position == 0) {
-          DISPATCH_NEXT(ASSERTION_BOB);
+          DISPATCH_NEXT();
         }
         BACKTRACK();
       }
 
       DEFINE_OPCODE(ASSERTION_EOB) {
         if (current_position == subject.size()) {
-          DISPATCH_NEXT(ASSERTION_EOB);
+          DISPATCH_NEXT();
         }
         BACKTRACK();
       }
@@ -406,7 +406,7 @@ inline int VM::Main(Code* code, const Piece& subject,
       DEFINE_OPCODE(ASSERTION_BOL) {
         if (current_position == 0 ||
             core::character::IsLineTerminator(subject[current_position - 1])) {
-          DISPATCH_NEXT(ASSERTION_BOL);
+          DISPATCH_NEXT();
         }
         BACKTRACK();
       }
@@ -414,7 +414,7 @@ inline int VM::Main(Code* code, const Piece& subject,
       DEFINE_OPCODE(ASSERTION_EOL) {
         if (current_position == subject.size() ||
             core::character::IsLineTerminator(subject[current_position])) {
-          DISPATCH_NEXT(ASSERTION_EOL);
+          DISPATCH_NEXT();
         }
         BACKTRACK();
       }
@@ -422,7 +422,7 @@ inline int VM::Main(Code* code, const Piece& subject,
       DEFINE_OPCODE(ASSERTION_WORD_BOUNDARY) {
         if (IsWordSeparatorPrev(subject, current_position) !=
             IsWordSeparator(subject, current_position)) {
-          DISPATCH_NEXT(ASSERTION_WORD_BOUNDARY);
+          DISPATCH_NEXT();
         }
         BACKTRACK();
       }
@@ -430,7 +430,7 @@ inline int VM::Main(Code* code, const Piece& subject,
       DEFINE_OPCODE(ASSERTION_WORD_BOUNDARY_INVERTED) {
         if (IsWordSeparatorPrev(subject, current_position) ==
             IsWordSeparator(subject, current_position)) {
-          DISPATCH_NEXT(ASSERTION_WORD_BOUNDARY_INVERTED);
+          DISPATCH_NEXT();
         }
         BACKTRACK();
       }
@@ -454,7 +454,7 @@ inline int VM::Main(Code* code, const Piece& subject,
           }
           if (in_range) {
             ++current_position;
-            ADVANCE(length + OPLength<OP::CHECK_RANGE>::value);
+            DISPATCH_NEXT();
           }
         }
         BACKTRACK();
@@ -479,7 +479,27 @@ inline int VM::Main(Code* code, const Piece& subject,
           }
           if (!in_range) {
             ++current_position;
-            ADVANCE(length + OPLength<OP::CHECK_RANGE_INVERTED>::value);
+            DISPATCH_NEXT();
+          }
+        }
+        BACKTRACK();
+      }
+
+      DEFINE_OPCODE(CHECK_N_CHARS) {
+        const uint32_t length = Load4Bytes(instr + 1);
+        assert(length > 0);
+        if (current_position + (length - 1) < subject.size()) {
+          bool fail = false;
+          for (uint32_t i = 0; i < length; ++i) {
+            if (subject[current_position + i] !=
+                Load2Bytes(instr + 5 + i * 2)) {
+              fail = true;
+              break;
+            }
+          }
+          if (!fail) {
+            current_position += length;
+            DISPATCH_NEXT();
           }
         }
         BACKTRACK();
@@ -515,7 +535,6 @@ inline int VM::Main(Code* code, const Piece& subject,
 }
 #undef DEFINE_OPCODE
 #undef DISPATCH
-#undef ADVANCE
 #undef DISPATCH_NEXT
 #undef BACKTRACK
 #endif

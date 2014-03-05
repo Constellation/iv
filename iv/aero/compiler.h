@@ -190,6 +190,20 @@ class Compiler : private Visitor {
     EmitCharacter(atom->character());
   }
 
+  void Visit(StringAtom* atom) {
+    if (IsIgnoreCase()) {
+      for (char16_t ch : atom->string()) {
+        EmitCharacter(ch);
+      }
+      return;
+    }
+    Emit<OP::CHECK_N_CHARS>();
+    Emit4(atom->string().size());
+    for (char16_t ch : atom->string()) {
+      Emit2(ch);
+    }
+  }
+
   void EmitCharacter(char16_t ch) {
     if (IsIgnoreCase()) {
       const char16_t uu = core::character::ToUpperCase(ch);

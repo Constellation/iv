@@ -102,6 +102,11 @@ class Parser {
         Alternatives(Alternatives::allocator_type(factory_));
   }
 
+  StringAtom::String* NewString() {
+    return new (factory_->New(sizeof(StringAtom::String)))
+        StringAtom::String(StringAtom::String::allocator_type(factory_));
+  }
+
   template<typename T>
   Ranges* NewRange(const T& range) {
     return new (factory_->New(sizeof(Ranges)))
@@ -127,6 +132,7 @@ class Parser {
     // Terms
     Expressions* vec = NewExpressions();
     Expression* target = nullptr;
+    StringAtom::String* str = nullptr;
     while (c_ >= 0 && c_ != '|' && c_ != END) {
       bool atom = false;
       switch (c_) {
@@ -245,9 +251,30 @@ class Parser {
         bool ok = false;
         target = ParseQuantifier(target, &ok, CHECK);
       }
+
       assert(target);
+
+      if (const CharacterAtom* atom = target->AsCharacterAtom()) {
+        if (!str) {
+          str = NewString();
+        }
+        str->push_back(atom->character());
+        continue;
+      }
+
+      if (str) {
+        vec->push_back(new(factory_)StringAtom(str));
+        str = nullptr;
+      }
       vec->push_back(target);
     }
+
+    // At last, we check there's string buffer that is not inserted as
+    // StringAtom.
+    if (str) {
+      vec->push_back(new(factory_)StringAtom(str));
+    }
+
     return new(factory_)Alternative(vec);
   }
 

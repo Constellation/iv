@@ -245,8 +245,12 @@ class JIT : public Xbyak::CodeGenerator {
     return false;
   }
 
-  static uint32_t GuardedSize(uint8_t opcode) {
+  static uint32_t GuardedSize(const_pointer instr) {
+    const uint8_t opcode = *instr;
     assert(CanOptimize(opcode));
+    if (opcode == OP::CHECK_N_CHARS) {
+      return Load4Bytes(instr + 1);
+    }
     return (opcode > OP::COUNTER_ZERO) ? 1 : 0;
   }
 
@@ -257,7 +261,7 @@ class JIT : public Xbyak::CodeGenerator {
     assert(CanOptimize(*instr));
     assert(instr != last);
 
-    uint32_t guarded = JIT::GuardedSize(*instr);
+    uint32_t guarded = JIT::GuardedSize(instr);
     const_pointer current = instr;
     std::advance(current, OP::GetLength(current));
     const const_pointer start = current;
@@ -266,7 +270,7 @@ class JIT : public Xbyak::CodeGenerator {
     while (current != last) {
       if (CanOptimize(*current) && !ReferencedByJump(current)) {
         // ok
-        guarded += JIT::GuardedSize(*current);
+        guarded += JIT::GuardedSize(current);
       } else {
         // bailout
         break;
@@ -289,6 +293,9 @@ class JIT : public Xbyak::CodeGenerator {
     while (instr != current) {
       const uint32_t length = OP::GetLength(instr);
       switch (*instr) {
+        case OP::CHECK_N_CHARS:
+          EmitCHECK_N_CHARS(instr, length, offset);
+          break;
         case OP::CHECK_1BYTE_CHAR:
           EmitCHECK_1BYTE_CHAR(instr, length, offset);
           break;
@@ -320,7 +327,7 @@ class JIT : public Xbyak::CodeGenerator {
           UNREACHABLE();
         }
       }
-      offset += JIT::GuardedSize(*instr);
+      offset += JIT::GuardedSize(instr);
       std::advance(instr, length);
     }
     *result = current;
@@ -984,6 +991,17 @@ IV_AERO_OPCODES(V)
     IncrementCP(offset);
   }
 
+  void EmitCHECK_N_CHARS(const uint8_t* instr, uint32_t len, int offset = -1) {
+    const uint32_t length = Load4Bytes(instr + 1);
+    EmitSizeGuard(offset, length);
+    for (uint32_t i = 0; i < length; ++i) {
+      const char16_t ch = Load2Bytes(instr + 5 + i * 2);
+      cmp(LoadCode(offset, i), ch);
+      jne(jit_detail::kBackTrackLabel, T_NEAR);
+    }
+    IncrementCP(offset, length);
+  }
+
   void EmitCHECK_2CHAR_OR(const uint8_t* instr, uint32_t len, int offset = -1) {
     const char16_t first = Load2Bytes(instr + 1);
     const char16_t second = Load2Bytes(instr + 3);
@@ -1236,23 +1254,33 @@ IV_AERO_OPCODES(V)
     jmp(JIT::MakeLabel(num).c_str(), T_NEAR);
   }
 
-  void IncrementCP(int offset) {
+  void IncrementCP(int offset, uint32_t length = 1) {
     if (offset < 0) {
-      add(cp_, 1);
+      add(cp_, length);
     }
   }
 
-  Xbyak::Address LoadCode(int offset) {
+  Xbyak::Address LoadCode(int offset, uint32_t i = 0) {
     if (offset < 0) {
-      return character[subject_ + cp_ * kCharSize];
+      if (i == 0) {
+        return character[subject_ + cp_ * kCharSize];
+      } else {
+        return character[subject_ + cp_ * kCharSize + kCharSize * i];
+      }
     } else {
-      return character[rbp + offset * kCharSize];
+      return character[rbp + (offset + i) * kCharSize];
     }
   }
 
-  void EmitSizeGuard(int offset) {
+  void EmitSizeGuard(int offset, uint32_t length = 1) {
     if (offset < 0) {
-      cmp(cp_, size_);
+      if (length == 1) {
+        cmp(cp_, size_);
+      } else {
+        mov(r10, cp_);
+        add(r10, length - 1);
+        cmp(r10, size_);
+      }
       jge(jit_detail::kBackTrackLabel, T_NEAR);
     }
   }

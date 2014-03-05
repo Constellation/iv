@@ -56,6 +56,27 @@ inline void QuickCheck::Visit(BackReferenceAtom* atom) {
   Fail();
 }
 
+inline void QuickCheck::Visit(StringAtom* atom) {
+  const FilterCheck check(this);
+  const char16_t ch = atom->string()[0];
+  if (compiler_->IsIgnoreCase()) {
+    const char16_t uu = core::character::ToUpperCase(ch);
+    const char16_t lu = core::character::ToLowerCase(ch);
+    if (!(uu == lu && uu == ch)) {
+      if (uu == ch || lu == ch) {
+        Emit(uu);
+        Emit(lu);
+      } else {
+        Emit(ch);
+        Emit(uu);
+        Emit(lu);
+      }
+      return;
+    }
+  }
+  Emit(ch);
+}
+
 inline void QuickCheck::Visit(CharacterAtom* atom) {
   const FilterCheck check(this);
   const char16_t ch = atom->character();
