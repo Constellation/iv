@@ -22,6 +22,7 @@ add_executable(iv_unit_tests
     test_aero_incomplete.cc
     test_aero_jit.cc
     test_aero_parser.cc
+    test_aero_simple.cc
     test_aero_source_escape.cc
     test_aero_vm.cc
     test_any.cc

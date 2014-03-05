@@ -63,21 +63,37 @@ class VM : private core::Noncopyable<VM> {
 #if defined(IV_ENABLE_JIT)
   int Execute(Code* code, const core::UStringPiece& subject,
               int* captures, int offset) {
+    // Currently disabled.
+    // if (code->simple()) {
+    //   return code->simple()->Execute(subject, captures, offset);
+    // }
     return code->jit()->Execute(this, code, subject, captures, offset);
   }
 
   int Execute(Code* code, const core::StringPiece& subject,
               int* captures, int offset) {
+    // Currently disabled.
+    // if (code->simple()) {
+    //   return code->simple()->Execute(subject, captures, offset);
+    // }
     return code->jit()->Execute(this, code, subject, captures, offset);
   }
 #else
   int Execute(Code* code, const core::UStringPiece& subject,
               int* captures, int offset) {
+    // Currently disabled.
+    // if (code->simple()) {
+    //   return code->simple()->Execute(subject, captures, offset);
+    // }
     return ExecuteImpl(code, subject, captures, offset);
   }
 
   int Execute(Code* code, const core::StringPiece& subject,
               int* captures, int offset) {
+    // Currently disabled.
+    // if (code->simple()) {
+    //   return code->simple()->Execute(subject, captures, offset);
+    // }
     return ExecuteImpl(code, subject, captures, offset);
   }
 
