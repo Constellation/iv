@@ -55,7 +55,8 @@ class JSRegExp : public JSObject {
     return reg;
   }
 
-  static JSRegExp* New(Context* ctx, JSString* value, JSString* flags, Error* e) {
+  static JSRegExp* New(Context* ctx,
+                       JSString* value, JSString* flags, Error* e) {
     JSRegExp* const reg = new JSRegExp(ctx, value, flags, IV_LV5_ERROR(e));
     reg->set_cls(JSRegExp::GetClass());
     return reg;
@@ -194,7 +195,8 @@ class JSRegExp : public JSObject {
     return builder.Build(ctx, str->Is8Bit(), e);
   }
 
-  static JSString* Escape(Context* ctx, const core::UStringPiece& str, Error* e) {
+  static JSString* Escape(Context* ctx,
+                          const core::UStringPiece& str, Error* e) {
     JSStringBuilder builder;
     builder.reserve(str.size());
     core::RegExpEscape(str.begin(), str.end(), std::back_inserter(builder));
@@ -202,7 +204,8 @@ class JSRegExp : public JSObject {
   }
 
   void InitializeProperty(Context* ctx, JSString* src) {
-    Direct(FIELD_SOURCE) = src->empty() ? ctx->global_data()->string_empty_regexp() : src;
+    Direct(FIELD_SOURCE) = src->empty() ?
+        ctx->global_data()->string_empty_regexp() : src;
     Direct(FIELD_GLOBAL) = JSVal::Bool(impl_->global());
     Direct(FIELD_IGNORE_CASE) = JSVal::Bool(impl_->ignore());
     Direct(FIELD_MULTILINE) = JSVal::Bool(impl_->multiline());
@@ -215,7 +218,6 @@ class JSRegExp : public JSObject {
     const int num_of_captures = impl_->number_of_captures();
     std::vector<int> offset_vector((num_of_captures) * 2);
     JSVector* vec = JSVector::New(ctx);
-    vec->reserve(32);
     SetLastIndex(ctx, 0, IV_LV5_ERROR(e));
     int previous_index = 0;
     const int size = fiber->size();
@@ -240,7 +242,9 @@ class JSRegExp : public JSObject {
       if (previous_index > size) {
         break;
       }
-      vec->push_back(JSString::NewWithFiber(ctx, fiber, offset_vector[0], offset_vector[1]));
+      vec->push_back(
+          JSString::NewWithFiber(
+              ctx, fiber, offset_vector[0], offset_vector[1]));
     } while (true);
 
     if (vec->empty()) {
@@ -249,16 +253,6 @@ class JSRegExp : public JSObject {
 
     // set index and input
     JSArray* ary = vec->ToJSArray();
-    ary->JSArray::DefineOwnProperty(
-        ctx,
-        symbol::index(),
-        DataDescriptor(JSVal::Int32(0), ATTR::W | ATTR::E | ATTR::C),
-        true, IV_LV5_ERROR(e));
-    ary->JSArray::DefineOwnProperty(
-        ctx,
-        symbol::input(),
-        DataDescriptor(str, ATTR::W | ATTR::E | ATTR::C),
-        true, IV_LV5_ERROR(e));
     return ary;
   }
 
