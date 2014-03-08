@@ -215,51 +215,26 @@ class JSRegExp : public JSObject {
     const int num_of_captures = impl_->number_of_captures();
     std::vector<int> offset_vector((num_of_captures) * 2);
     JSVector* vec = JSVector::New(ctx);
-    vec->reserve(32);
     SetLastIndex(ctx, 0, IV_LV5_ERROR(e));
-    int previous_index = 0;
-    const int size = fiber->size();
-    do {
-      const int res =
-          impl_->Execute(ctx, *fiber, previous_index, offset_vector.data());
-      if (res != aero::AERO_SUCCESS) {
-        break;
-      }
 
+    int res =
+        impl_->Execute(ctx, *fiber, 0, offset_vector.data());
+    while (res == aero::AERO_SUCCESS) {
+      int start = offset_vector[0];
       int last_index = offset_vector[1];
-      if (offset_vector[0] == offset_vector[1]) {
+      vec->push_back(JSString::NewWithFiber(ctx, fiber, start, last_index));
+      const int length = last_index - start;
+      if (length) {
         ++last_index;
       }
-
-      const int this_index = last_index;
-      if (previous_index == this_index) {
-        ++previous_index;
-      } else {
-        previous_index = this_index;
-      }
-      if (previous_index > size) {
-        break;
-      }
-      vec->push_back(JSString::NewWithFiber(ctx, fiber, offset_vector[0], offset_vector[1]));
-    } while (true);
+      res = impl_->Execute(ctx, *fiber, last_index, offset_vector.data());
+    }
 
     if (vec->empty()) {
       return JSNull;
     }
 
-    // set index and input
-    JSArray* ary = vec->ToJSArray();
-    ary->JSArray::DefineOwnProperty(
-        ctx,
-        symbol::index(),
-        DataDescriptor(JSVal::Int32(0), ATTR::W | ATTR::E | ATTR::C),
-        true, IV_LV5_ERROR(e));
-    ary->JSArray::DefineOwnProperty(
-        ctx,
-        symbol::input(),
-        DataDescriptor(str, ATTR::W | ATTR::E | ATTR::C),
-        true, IV_LV5_ERROR(e));
-    return ary;
+    return vec->ToJSArray();
   }
 
   template<typename FiberType>
