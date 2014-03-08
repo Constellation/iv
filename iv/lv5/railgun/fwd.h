@@ -1,6 +1,6 @@
 #ifndef IV_LV5_RAILGUN_FWD_H_
 #define IV_LV5_RAILGUN_FWD_H_
-#include <iv/lv5/jsval.h>
+#include <iv/lv5/jsval_fwd.h>
 #include <iv/lv5/arguments.h>
 #include <iv/lv5/error.h>
 namespace iv {

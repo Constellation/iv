@@ -49,6 +49,7 @@ class Code : public radio::HeapObject<radio::POINTER> {
       heap_size_(0),
       stack_size_(0),
       temporary_registers_(0),
+      hot_code_counter_(0),
       name_(),
       script_(script),
       block_begin_position_(func.block_begin_position()),
@@ -212,8 +213,11 @@ class Code : public radio::HeapObject<radio::POINTER> {
     core->MarkCell(construct_map_);
   }
 
- private:
+  inline uint32_t IncrementHotCodeCounter() {
+    return ++hot_code_counter_;
+  }
 
+ private:
   void set_start(std::size_t start) { start_ = start; }
 
   void set_end(std::size_t end) { end_ = end; }
@@ -246,6 +250,7 @@ class Code : public radio::HeapObject<radio::POINTER> {
   uint32_t stack_size_;  // locals
   uint32_t temporary_registers_;  // number of temporary registers
   uint32_t frame_size_;  // frame total size includes next frame header
+  uint32_t hot_code_counter_;  // counter for invocation and backward jumps
   Symbol name_;
   JSScript* script_;
   std::size_t block_begin_position_;

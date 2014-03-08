@@ -689,10 +689,10 @@ class Compiler {
         asm_->mov(out, rax);
       }
     } else {
-      const TypeEntry entry = type_record_.Get(offset);
-      if (entry.IsConstant()) {
+      const TypeEntry type = type_record_.Get(offset);
+      if (type.IsConstant()) {
         // constant propagation in basic block level
-        asm_->mov(out, Extract(entry.constant()));
+        asm_->mov(out, Extract(type.constant()));
         if (break_result) {
           kill_last_used();
         }
@@ -941,208 +941,16 @@ class Compiler {
   }
 
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_EQ(const Instruction* instr, OP::Type fused = OP::NOP) {
-    const register_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
-    const register_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
-    {
-      const Assembler::LocalLabelScope scope(asm_);
-      LoadVRs(rsi, lhs, rdx, rhs);
-      Int32Guard(lhs, rsi, ".BINARY_EQ_SLOW");
-      Int32Guard(rhs, rdx, ".BINARY_EQ_SLOW");
-      asm_->cmp(esi, edx);
-
-      if (fused != OP::NOP) {
-        // fused jump opcode
-        const std::string label = MakeLabel(instr);
-        if (fused == OP::IF_TRUE) {
-          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-        } else {
-          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-        }
-        asm_->jmp(".BINARY_EQ_EXIT");
-
-        asm_->L(".BINARY_EQ_SLOW");
-        asm_->mov(rdi, r14);
-        asm_->Call(&stub::BINARY_EQ);
-        asm_->cmp(rax, Extract(JSTrue));
-        if (fused == OP::IF_TRUE) {
-          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-        } else {
-          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-        }
-        asm_->L(".BINARY_EQ_EXIT");
-        return;
-      }
-
-      const register_t dst = Reg(instr[1].i16[0]);
-      asm_->sete(cl);
-      ConvertBooleanToJSVal(cl, rax);
-      asm_->jmp(".BINARY_EQ_EXIT");
-
-      asm_->L(".BINARY_EQ_SLOW");
-      asm_->mov(rdi, r14);
-      asm_->Call(&stub::BINARY_EQ);
-
-      asm_->L(".BINARY_EQ_EXIT");
-      asm_->mov(qword[r13 + dst * kJSValSize], rax);
-      set_last_used_candidate(dst);
-      type_record_.Put(dst, TypeEntry::Equal(type_record_.Get(lhs), type_record_.Get(rhs)));
-    }
-  }
+  void EmitBINARY_EQ(const Instruction* instr, OP::Type fused = OP::NOP);
 
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_STRICT_EQ(const Instruction* instr, OP::Type fused = OP::NOP) {
-    // CAUTION:(Constellation)
-    // Because stub::BINARY_STRICT_EQ is not require Frame as first argument,
-    // so register layout is different from BINARY_ other ops.
-    // BINARY_STRICT_NE too.
-    const register_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
-    const register_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
-    {
-      const Assembler::LocalLabelScope scope(asm_);
-      LoadVRs(rdi, lhs, rsi, rhs);
-      Int32Guard(lhs, rdi, ".BINARY_STRICT_EQ_SLOW");
-      Int32Guard(rhs, rsi, ".BINARY_STRICT_EQ_SLOW");
-      asm_->cmp(esi, edi);
-
-      if (fused != OP::NOP) {
-        // fused jump opcode
-        const std::string label = MakeLabel(instr);
-        if (fused == OP::IF_TRUE) {
-          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-        } else {
-          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-        }
-        asm_->jmp(".BINARY_STRICT_EQ_EXIT");
-
-        asm_->L(".BINARY_STRICT_EQ_SLOW");
-        asm_->Call(&stub::BINARY_STRICT_EQ);
-        asm_->cmp(rax, Extract(JSTrue));
-        if (fused == OP::IF_TRUE) {
-          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-        } else {
-          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-        }
-        asm_->L(".BINARY_STRICT_EQ_EXIT");
-        return;
-      }
-
-      const register_t dst = Reg(instr[1].i16[0]);
-      asm_->sete(cl);
-      ConvertBooleanToJSVal(cl, rax);
-      asm_->jmp(".BINARY_STRICT_EQ_EXIT");
-
-      asm_->L(".BINARY_STRICT_EQ_SLOW");
-      asm_->Call(&stub::BINARY_STRICT_EQ);
-
-      asm_->L(".BINARY_STRICT_EQ_EXIT");
-      asm_->mov(qword[r13 + dst * kJSValSize], rax);
-      set_last_used_candidate(dst);
-      type_record_.Put(dst, TypeEntry::StrictEqual(type_record_.Get(lhs), type_record_.Get(rhs)));
-    }
-  }
+  void EmitBINARY_STRICT_EQ(const Instruction* instr, OP::Type fused = OP::NOP);
 
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_NE(const Instruction* instr, OP::Type fused = OP::NOP) {
-    const register_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
-    const register_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
-    {
-      const Assembler::LocalLabelScope scope(asm_);
-      LoadVRs(rsi, lhs, rdx, rhs);
-      Int32Guard(lhs, rsi, ".BINARY_NE_SLOW");
-      Int32Guard(rhs, rdx, ".BINARY_NE_SLOW");
-      asm_->cmp(esi, edx);
-
-      if (fused != OP::NOP) {
-        // fused jump opcode
-        const std::string label = MakeLabel(instr);
-        if (fused == OP::IF_TRUE) {
-          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-        } else {
-          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-        }
-        asm_->jmp(".BINARY_NE_EXIT");
-
-        asm_->L(".BINARY_NE_SLOW");
-        asm_->mov(rdi, r14);
-        asm_->Call(&stub::BINARY_NE);
-        asm_->cmp(rax, Extract(JSTrue));
-        if (fused == OP::IF_TRUE) {
-          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-        } else {
-          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-        }
-        asm_->L(".BINARY_NE_EXIT");
-        return;
-      }
-
-      const register_t dst = Reg(instr[1].i16[0]);
-      asm_->setne(cl);
-      ConvertBooleanToJSVal(cl, rax);
-      asm_->jmp(".BINARY_NE_EXIT");
-
-      asm_->L(".BINARY_NE_SLOW");
-      asm_->mov(rdi, r14);
-      asm_->Call(&stub::BINARY_NE);
-
-      asm_->L(".BINARY_NE_EXIT");
-      asm_->mov(qword[r13 + dst * kJSValSize], rax);
-      set_last_used_candidate(dst);
-      type_record_.Put(dst, TypeEntry::NotEqual(type_record_.Get(lhs), type_record_.Get(rhs)));
-    }
-  }
+  void EmitBINARY_NE(const Instruction* instr, OP::Type fused = OP::NOP);
 
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_STRICT_NE(const Instruction* instr, OP::Type fused = OP::NOP) {
-    // CAUTION:(Constellation)
-    // Because stub::BINARY_STRICT_EQ is not require Frame as first argument,
-    // so register layout is different from BINARY_ other ops.
-    // BINARY_STRICT_NE too.
-    const register_t lhs = Reg((fused == OP::NOP) ? instr[1].i16[1] : instr[1].jump.i16[0]);
-    const register_t rhs = Reg((fused == OP::NOP) ? instr[1].i16[2] : instr[1].jump.i16[1]);
-    {
-      const Assembler::LocalLabelScope scope(asm_);
-      LoadVRs(rdi, lhs, rsi, rhs);
-      Int32Guard(lhs, rdi, ".BINARY_STRICT_NE_SLOW");
-      Int32Guard(rhs, rsi, ".BINARY_STRICT_NE_SLOW");
-      asm_->cmp(esi, edi);
-
-      if (fused != OP::NOP) {
-        // fused jump opcode
-        const std::string label = MakeLabel(instr);
-        if (fused == OP::IF_TRUE) {
-          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-        } else {
-          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-        }
-        asm_->jmp(".BINARY_STRICT_NE_EXIT");
-
-        asm_->L(".BINARY_STRICT_NE_SLOW");
-        asm_->Call(&stub::BINARY_STRICT_NE);
-        asm_->cmp(rax, Extract(JSTrue));
-        if (fused == OP::IF_TRUE) {
-          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-        } else {
-          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
-        }
-        asm_->L(".BINARY_STRICT_NE_EXIT");
-        return;
-      }
-
-      const register_t dst = Reg(instr[1].i16[0]);
-      asm_->setne(cl);
-      ConvertBooleanToJSVal(cl, rax);
-      asm_->jmp(".BINARY_STRICT_NE_EXIT");
-
-      asm_->L(".BINARY_STRICT_NE_SLOW");
-      asm_->Call(&stub::BINARY_STRICT_NE);
-
-      asm_->L(".BINARY_STRICT_NE_EXIT");
-      asm_->mov(qword[r13 + dst * kJSValSize], rax);
-      set_last_used_candidate(dst);
-      type_record_.Put(dst, TypeEntry::StrictNotEqual(type_record_.Get(lhs), type_record_.Get(rhs)));
-    }
-  }
+  void EmitBINARY_STRICT_NE(const Instruction* instr, OP::Type fused = OP::NOP);
 
   // opcode | (dst | lhs | rhs)
   void EmitBINARY_BIT_AND(const Instruction* instr, OP::Type fused = OP::NOP);
@@ -1160,8 +968,7 @@ class Compiler {
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(rax, src);
-      asm_->mov(rsi, rax);
-      asm_->and(rsi, r15);
+      asm_->test(rax, r15);
       asm_->jnz(".UNARY_POSITIVE_EXIT");
 
       asm_->mov(rdi, r14);
@@ -1268,9 +1075,9 @@ class Compiler {
   // opcode | src
   void EmitTO_NUMBER(const Instruction* instr) {
     const register_t src = Reg(instr[1].i32[0]);
-    const TypeEntry src_type_entry = type_record_.Get(src);
+    const TypeEntry src_type = type_record_.Get(src);
 
-    if (src_type_entry.IsNumber()) {
+    if (src_type.IsNumber()) {
       // no effect
       return;
     }
@@ -1283,12 +1090,12 @@ class Compiler {
   // opcode | src
   void EmitTO_PRIMITIVE_AND_TO_STRING(const Instruction* instr) {
     const register_t src = Reg(instr[1].i32[0]);
-    const TypeEntry src_type_entry = type_record_.Get(src);
-    const TypeEntry dst_type_entry = TypeEntry::ToPrimitiveAndToString(src_type_entry);
+    const TypeEntry src_type = type_record_.Get(src);
+    const TypeEntry dst_type = TypeEntry::ToPrimitiveAndToString(src_type);
 
-    if (src_type_entry.IsString()) {
+    if (src_type.IsString()) {
       // no effect
-      type_record_.Put(src, dst_type_entry);
+      type_record_.Put(src, dst_type);
       return;
     }
 
@@ -1297,7 +1104,7 @@ class Compiler {
     asm_->Call(&stub::TO_PRIMITIVE_AND_TO_STRING);
     asm_->mov(qword[r13 + src * kJSValSize], rax);
     set_last_used_candidate(src);
-    type_record_.Put(src, dst_type_entry);
+    type_record_.Put(src, dst_type);
   }
 
   // opcode | (dst | start | count)
@@ -1330,12 +1137,12 @@ class Compiler {
   void EmitTYPEOF(const Instruction* instr) {
     const register_t dst = Reg(instr[1].i16[0]);
     const register_t src = Reg(instr[1].i16[1]);
-    const TypeEntry src_type_entry = type_record_.Get(src);
-    const TypeEntry dst_type_entry = TypeEntry::TypeOf(ctx_, src_type_entry);
+    const TypeEntry src_type = type_record_.Get(src);
+    const TypeEntry dst_type = TypeEntry::TypeOf(ctx_, src_type);
 
-    if (dst_type_entry.IsConstant()) {
-      EmitConstantDest(dst_type_entry, dst);
-      type_record_.Put(dst, dst_type_entry);
+    if (dst_type.IsConstant()) {
+      EmitConstantDest(dst_type, dst);
+      type_record_.Put(dst, dst_type);
       return;
     }
 
@@ -1344,7 +1151,7 @@ class Compiler {
     asm_->Call(&stub::TYPEOF);
     asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
-    type_record_.Put(dst, dst_type_entry);
+    type_record_.Put(dst, dst_type);
   }
 
   // opcode | (obj | item) | (index | type)
@@ -1453,23 +1260,23 @@ class Compiler {
     const register_t base = Reg(instr[1].ssw.i16[1]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
 
-    const TypeEntry& base_entry = type_record_.Get(base);
+    const TypeEntry& base_type = type_record_.Get(base);
 
-    TypeEntry dst_entry = TypeEntry(Type::Unknown());
+    TypeEntry dst_type = TypeEntry(Type::Unknown());
     if (name == symbol::length()) {
-      if (base_entry.IsArray() || base_entry.IsFunction()) {
-        dst_entry = TypeEntry(Type::Number());
-      } else if (base_entry.IsString()) {
-        if (base_entry.IsConstant()) {
-          const int32_t length = base_entry.constant().string()->size();
-          dst_entry = TypeEntry(length);
+      if (base_type.IsArray() || base_type.IsFunction()) {
+        dst_type = TypeEntry(Type::Number());
+      } else if (base_type.IsString()) {
+        if (base_type.IsConstant()) {
+          const int32_t length = base_type.constant().string()->size();
+          dst_type = TypeEntry(length);
           asm_->mov(rax, Extract(JSVal::Int32(length)));
           asm_->mov(qword[r13 + dst * kJSValSize], rax);
           set_last_used_candidate(dst);
-          type_record_.Put(dst, dst_entry);
+          type_record_.Put(dst, dst_type);
           return;
         } else {
-          dst_entry = TypeEntry(Type::Int32());
+          dst_type = TypeEntry(Type::Int32());
         }
       }
     }
@@ -1517,7 +1324,7 @@ class Compiler {
     asm_->mov(qword[r13 + dst * kJSValSize], rax);
 
     set_last_used_candidate(dst);
-    type_record_.Put(dst, dst_entry);
+    type_record_.Put(dst, dst_type);
   }
 
   // opcode | (base | src | index) | nop | nop
@@ -1789,7 +1596,7 @@ class Compiler {
     const register_t base = Reg(instr[1].i16[1]);
     const register_t element = Reg(instr[1].i16[2]);
 
-    const TypeEntry dst_entry = TypeEntry(Type::Unknown());
+    const TypeEntry dst_type = TypeEntry(Type::Unknown());
 
     const Assembler::LocalLabelScope scope(asm_);
 
@@ -1831,7 +1638,7 @@ class Compiler {
     asm_->mov(qword[r13 + dst * kJSValSize], rax);
 
     set_last_used_candidate(dst);
-    type_record_.Put(dst, dst_entry);
+    type_record_.Put(dst, dst_type);
   }
 
   // opcode | (base | element | src)
@@ -2026,13 +1833,13 @@ class Compiler {
     const register_t dst = Reg(instr[1].ssw.i16[0]);
     const Symbol name = code_->names()[instr[1].ssw.u32];
 
-    TypeEntry dst_entry(Type::Unknown());
+    TypeEntry dst_type(Type::Unknown());
 
     // Some variables are defined as non-configurable.
     const JSGlobal::Constant constant = JSGlobal::LookupConstant(name);
     if (constant.first) {
       asm_->mov(rax, Extract(constant.second));
-      dst_entry = TypeEntry(constant.second);
+      dst_type = TypeEntry(constant.second);
     } else {
       GlobalIC* ic(new GlobalIC(code_->strict()));
       ic->CompileLoad(asm_, ctx_->global_obj(), code_, name);
@@ -2041,7 +1848,7 @@ class Compiler {
 
     asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
-    type_record_.Put(dst, dst_entry);
+    type_record_.Put(dst, dst_type);
   }
 
   // opcode | (src | name) | nop | nop
@@ -2058,12 +1865,12 @@ class Compiler {
   void EmitLOAD_GLOBAL_DIRECT(const Instruction* instr) {
     const register_t dst = Reg(instr[1].i32[0]);
     StoredSlot* slot = instr[2].slot;
-    TypeEntry dst_entry(Type::Unknown());
+    TypeEntry dst_type(Type::Unknown());
     asm_->mov(rax, core::BitCast<uint64_t>(slot));
     asm_->mov(rax, ptr[rax]);
     asm_->mov(qword[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
-    type_record_.Put(dst, dst_entry);
+    type_record_.Put(dst, dst_type);
   }
 
   // opcode | src | slot
@@ -2824,25 +2631,25 @@ class Compiler {
   void Int32Guard(register_t reg,
                   const Xbyak::Reg64& target,
                   const char* label,
-                  Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
+                  Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_AUTO) {
     if (type_record_.Get(reg).IsInt32()) {
       // no check
       return;
     }
     asm_->cmp(target, r15);
-    asm_->jb(label, type);
+    asm_->jb(label, near);
   }
 
   void NumberGuard(register_t reg,
                    const Xbyak::Reg64& target,
                    const char* label,
-                   Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
+                   Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_AUTO) {
     if (type_record_.Get(reg).IsNumber()) {
       // no check
       return;
     }
     asm_->test(target, r15);
-    asm_->jz(label, type);
+    asm_->jz(label, near);
   }
 
   void LoadCellTag(const Xbyak::Reg64& target, const Xbyak::Reg32& out) {
@@ -2865,31 +2672,31 @@ class Compiler {
 
   void EmptyGuard(const Xbyak::Reg64& target,
                   const char* label,
-                  Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
+                  Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_AUTO) {
     assert(Extract(JSEmpty) == 0);  // Because of null pointer
     asm_->test(target, target);
-    asm_->jnz(label, type);
+    asm_->jnz(label, near);
   }
 
   void NotEmptyGuard(const Xbyak::Reg64& target,
                      const char* label,
-                     Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
+                     Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_AUTO) {
     assert(Extract(JSEmpty) == 0);  // Because of null pointer
     asm_->test(target, target);
-    asm_->jz(label, type);
+    asm_->jz(label, near);
   }
 
   void NotNullOrUndefinedGuard(const Xbyak::Reg64& target,
                                const Xbyak::Reg64& tmp,
                                const char* label,
-                               Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
+                               Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_AUTO) {
     // (1000)2 = 8
     // Null is (0010)2 and Undefined is (1010)2
     // ~UINT64_C(8) value is -9
     asm_->mov(tmp, target);
     asm_->and(tmp, -9);
     asm_->cmp(tmp, detail::jsval64::kNull);
-    asm_->je(label, type);
+    asm_->je(label, near);
   }
 
   void CheckObjectCoercible(register_t reg,
@@ -2923,36 +2730,36 @@ class Compiler {
                        const Xbyak::Reg64& tmp2,
                        bool store_check,
                        const char* label,
-                       Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
+                       Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_AUTO) {
     static_assert(core::kLittleEndian, "System should be little endianess");
 
-    const TypeEntry type_entry = type_record_.Get(base);
+    const TypeEntry type = type_record_.Get(base);
 
-    if (!type_entry.IsSomeObject()) {
+    if (!type.IsSomeObject()) {
       // check target is Cell
       asm_->mov(tmp, detail::jsval64::kValueMask);
       asm_->test(tmp, target);
-      asm_->jnz(label, type);
+      asm_->jnz(label, near);
     }
 
     // target is guaranteed as cell
     // load Class tag from object and check it is Array
-    if (!type_entry.IsArray()) {
+    if (!type.IsArray()) {
       const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
       asm_->mov(tmp, qword[target + offset]);
       asm_->test(tmp, tmp);  // class is nullptr => String...
-      asm_->jz(label, type);
+      asm_->jz(label, near);
 
       const std::ptrdiff_t get_method = Class::MethodTableOffset() + IV_OFFSETOF(MethodTable, GetOwnIndexedPropertySlot);
       // tmp is class
       asm_->mov(tmp2, core::BitCast<uintptr_t>(&JSObject::GetOwnIndexedPropertySlotMethod));
       asm_->cmp(qword[tmp + get_method], tmp2);
-      asm_->jne(label, type);
+      asm_->jne(label, near);
       if (store_check) {
         const std::ptrdiff_t store_method = Class::MethodTableOffset() + IV_OFFSETOF(MethodTable, DefineOwnIndexedPropertySlot);
         asm_->mov(tmp2, core::BitCast<uintptr_t>(&JSObject::DefineOwnIndexedPropertySlotMethod));
         asm_->cmp(qword[tmp + store_method], tmp2);
-        asm_->jne(label, type);
+        asm_->jne(label, near);
       }
     }
   }
@@ -3020,21 +2827,21 @@ class Compiler {
                   const Xbyak::Xmm& xmm,
                   const Xbyak::Reg64& scratch,
                   const char* label,
-                  Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
-    const TypeEntry entry = type_record_.Get(reg);
+                  Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_AUTO) {
+    const TypeEntry type = type_record_.Get(reg);
     const Xbyak::Reg32 scratch32(scratch.getIdx());
-    if (entry.IsConstantDouble()) {
-      const double value = entry.constant().number();
+    if (type.IsConstantDouble()) {
+      const double value = type.constant().number();
       asm_->mov(scratch, core::BitCast<uint64_t>(value));
       asm_->movq(xmm, scratch);
-    } else if (entry.IsConstantInt32()) {
-      const int32_t value = entry.constant().int32();
+    } else if (type.IsConstantInt32()) {
+      const int32_t value = type.constant().int32();
       asm_->mov(scratch32, value);
       asm_->cvtsi2sd(xmm, scratch32);
     } else {
       // Ensure reg is number (int32 OR double)
       LoadVR(scratch, reg);
-      NumberGuard(reg, scratch, label, type);
+      NumberGuard(reg, scratch, label, near);
       const Assembler::LocalLabelScope scope(asm_); {
         Int32Guard(reg, scratch, ".IS_DOUBLE");
         // now scratch32 is int32

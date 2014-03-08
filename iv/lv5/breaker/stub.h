@@ -474,6 +474,7 @@ inline RepPair CALL(Frame* stack,
     if (code->empty()) {
       return Extract(Extract(JSUndefined), static_cast<uint64_t>(0));
     }
+    code->IncrementHotCodeCounter();
     railgun::Frame* new_frame = ctx->vm()->stack()->NewCodeFrame(
         ctx,
         offset,
@@ -516,6 +517,7 @@ inline RepPair EVAL(Frame* stack,
     // inline call
     JSJITFunction* vm_func = static_cast<JSJITFunction*>(func);
     railgun::Code* code = vm_func->code();
+    code->IncrementHotCodeCounter();
     if (code->empty()) {
       return Extract(Extract(JSUndefined), static_cast<uint64_t>(0));
     }
@@ -567,6 +569,7 @@ inline RepPair CONSTRUCT(Frame* stack,
     // inline call
     JSJITFunction* vm_func = static_cast<JSJITFunction*>(func);
     railgun::Code* code = vm_func->code();
+    code->IncrementHotCodeCounter();
     railgun::Frame* new_frame = ctx->vm()->stack()->NewCodeFrame(
         ctx,
         offset,

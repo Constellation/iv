@@ -1,11 +1,21 @@
-#ifndef IV_LV5_BREAKER_COMPILER_CALL_H_
-#define IV_LV5_BREAKER_COMPILER_CALL_H_
+#include <iv/debug.h>
+#include <iv/lv5/jsval.h>
+#include <iv/lv5/jsobject.h>
+#include <iv/lv5/railgun/railgun.h>
+#include <iv/lv5/railgun/instruction.h>
+#include <iv/lv5/breaker/fwd.h>
+#include <iv/lv5/breaker/helper.h>
+#include <iv/lv5/breaker/assembler.h>
+#include <iv/lv5/breaker/type.h>
+#include <iv/lv5/breaker/stub.h>
+#include <iv/lv5/breaker/compiler.h>
+#include <iv/lv5/breaker/runtime.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {
 
 // opcode | (callee | offset | argc_with_this)
-inline void Compiler::EmitCALL(const Instruction* instr) {
+void Compiler::EmitCALL(const Instruction* instr) {
   const register_t callee = Reg(instr[1].ssw.i16[0]);
   const register_t offset = Reg(instr[1].ssw.i16[1]);
   const uint32_t argc_with_this = instr[1].ssw.u32;
@@ -42,7 +52,7 @@ inline void Compiler::EmitCALL(const Instruction* instr) {
 }
 
 // opcode | (callee | offset | argc_with_this)
-inline void Compiler::EmitCONSTRUCT(const Instruction* instr) {
+void Compiler::EmitCONSTRUCT(const Instruction* instr) {
   const register_t callee = Reg(instr[1].ssw.i16[0]);
   const register_t offset = Reg(instr[1].ssw.i16[1]);
   const uint32_t argc_with_this = instr[1].ssw.u32;
@@ -93,7 +103,7 @@ inline void Compiler::EmitCONSTRUCT(const Instruction* instr) {
 }
 
 // opcode | (callee | offset | argc_with_this)
-inline void Compiler::EmitEVAL(const Instruction* instr) {
+void Compiler::EmitEVAL(const Instruction* instr) {
   const register_t callee = Reg(instr[1].ssw.i16[0]);
   const register_t offset = Reg(instr[1].ssw.i16[1]);
   const uint32_t argc_with_this = instr[1].ssw.u32;
@@ -131,4 +141,3 @@ inline void Compiler::EmitEVAL(const Instruction* instr) {
 }
 
 } } }  // namespace iv::lv5::breaker
-#endif  // IV_LV5_BREAKER_COMPILER_CALL_H_

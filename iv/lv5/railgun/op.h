@@ -4,6 +4,7 @@
 #include <iv/detail/cstdint.h>
 #include <iv/detail/array.h>
 #include <iv/detail/unordered_map.h>
+#include <iv/token.h>
 #include <iv/lv5/symbol.h>
 #include <iv/lv5/railgun/direct_threading.h>
 namespace iv {
