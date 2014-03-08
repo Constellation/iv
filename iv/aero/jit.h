@@ -1034,6 +1034,8 @@ IV_AERO_OPCODES(V)
   }
 
   void EmitCHECK_N_CHARS(const uint8_t* instr, uint32_t len, int offset = -1) {
+    // TODO(Yusuke Suzuki):
+    // This code still has room for extending it to SSE.
     const uint32_t size = Load4Bytes(instr + 1);
     EmitSizeGuard(offset, size);
 
