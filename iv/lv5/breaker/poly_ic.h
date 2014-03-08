@@ -672,7 +672,7 @@ class StoreElementIC : public ChainedPolyIC<StoreElementIC> {
         as->mov(dword[rsi + length_offset], site->index() + 1);
         as->L(".END");
       } else {
-        as->inc(ecx);
+        as->add(ecx, 1);
         as->mov(qword[rsi + size_offset], rcx);
         as->cmp(dword[rsi + length_offset], ecx);
         as->jae(".END");

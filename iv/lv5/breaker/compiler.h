@@ -855,21 +855,7 @@ class Compiler {
   void EmitBINARY_MULTIPLY(const Instruction* instr);
 
   // opcode | (dst | lhs | rhs)
-  void EmitBINARY_DIVIDE(const Instruction* instr) {
-    const register_t dst = Reg(instr[1].i16[0]);
-    const register_t lhs = Reg(instr[1].i16[1]);
-    const register_t rhs = Reg(instr[1].i16[2]);
-    {
-      asm_->mov(rdi, r14);
-      LoadVR(rsi, lhs);
-      LoadVR(rdx, rhs);
-      asm_->Call(&stub::BINARY_DIVIDE);
-      asm_->mov(qword[r13 + dst * kJSValSize], rax);
-      set_last_used_candidate(dst);
-    }
-
-    type_record_.Put(dst, TypeEntry::Divide(type_record_.Get(lhs), type_record_.Get(rhs)));
-  }
+  void EmitBINARY_DIVIDE(const Instruction* instr);
 
   // opcode | (dst | lhs | rhs)
   void EmitBINARY_MODULO(const Instruction* instr);
@@ -1284,7 +1270,7 @@ class Compiler {
     const register_t src = Reg(instr[1].i32[0]);
     const TypeEntry src_type_entry = type_record_.Get(src);
 
-    if (src_type_entry.type().IsNumber()) {
+    if (src_type_entry.IsNumber()) {
       // no effect
       return;
     }
@@ -1300,7 +1286,7 @@ class Compiler {
     const TypeEntry src_type_entry = type_record_.Get(src);
     const TypeEntry dst_type_entry = TypeEntry::ToPrimitiveAndToString(src_type_entry);
 
-    if (src_type_entry.type().IsString()) {
+    if (src_type_entry.IsString()) {
       // no effect
       type_record_.Put(src, dst_type_entry);
       return;
@@ -1471,10 +1457,9 @@ class Compiler {
 
     TypeEntry dst_entry = TypeEntry(Type::Unknown());
     if (name == symbol::length()) {
-      if (base_entry.type().IsArray() ||
-          base_entry.type().IsFunction()) {
+      if (base_entry.IsArray() || base_entry.IsFunction()) {
         dst_entry = TypeEntry(Type::Number());
-      } else if (base_entry.type().IsString()) {
+      } else if (base_entry.IsString()) {
         if (base_entry.IsConstant()) {
           const int32_t length = base_entry.constant().string()->size();
           dst_entry = TypeEntry(length);
@@ -2393,7 +2378,7 @@ class Compiler {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(rax, src);
       Int32Guard(src, rax, ".INCREMENT_SLOW");
-      asm_->inc(eax);
+      asm_->add(eax, 1);
       asm_->jo(".INCREMENT_OVERFLOW");
 
       asm_->or(rax, r15);
@@ -2457,7 +2442,7 @@ class Compiler {
       LoadVR(rsi, src);
       Int32Guard(src, rsi, ".INCREMENT_SLOW");
       asm_->mov(ptr[r13 + dst * kJSValSize], rsi);
-      asm_->inc(esi);
+      asm_->add(esi, 1);
       asm_->jo(".INCREMENT_OVERFLOW");
 
       asm_->mov(eax, esi);
@@ -2821,11 +2806,12 @@ class Compiler {
     type_record_.Put(dst, TypeEntry(Type::Arguments()));
   }
 
-  // NaN is not handled
-  void ConvertNotNaNDoubleToJSVal(const Xbyak::Reg64& target,
-                                  const Xbyak::Reg64& tmp) {
-    asm_->mov(tmp, detail::jsval64::kDoubleOffset);
-    asm_->add(target, tmp);
+  void ConvertDoubleToJSVal(const Xbyak::Reg64& target) {
+    // Adding double offset is equivalent to subtracting number mask.
+    static_assert(
+        detail::jsval64::kDoubleOffset + detail::jsval64::kNumberMask == 0,
+        "double offset + number mask should be 0");
+    asm_->sub(target, r15);
   }
 
   void ConvertBooleanToJSVal(const Xbyak::Reg8& cond,
@@ -2839,12 +2825,24 @@ class Compiler {
                   const Xbyak::Reg64& target,
                   const char* label,
                   Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
-    if (type_record_.Get(reg).type().IsInt32()) {
+    if (type_record_.Get(reg).IsInt32()) {
       // no check
       return;
     }
     asm_->cmp(target, r15);
     asm_->jb(label, type);
+  }
+
+  void NumberGuard(register_t reg,
+                   const Xbyak::Reg64& target,
+                   const char* label,
+                   Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
+    if (type_record_.Get(reg).IsNumber()) {
+      // no check
+      return;
+    }
+    asm_->test(target, r15);
+    asm_->jz(label, type);
   }
 
   void LoadCellTag(const Xbyak::Reg64& target, const Xbyak::Reg32& out) {
@@ -2899,7 +2897,7 @@ class Compiler {
                             const Xbyak::Reg64& tmp) {
     static const char* message = "null or undefined has no properties";
     const TypeEntry type = type_record_.Get(reg);
-    if (type.type().IsNotUndefined() && type.type().IsNotNull()) {
+    if (type.IsNotUndefined() && type.IsNotNull()) {
       // no check
       return;
     }
@@ -2930,7 +2928,7 @@ class Compiler {
 
     const TypeEntry type_entry = type_record_.Get(base);
 
-    if (!type_entry.type().IsSomeObject()) {
+    if (!type_entry.IsSomeObject()) {
       // check target is Cell
       asm_->mov(tmp, detail::jsval64::kValueMask);
       asm_->test(tmp, target);
@@ -2939,7 +2937,7 @@ class Compiler {
 
     // target is guaranteed as cell
     // load Class tag from object and check it is Array
-    if (!type_entry.type().IsArray()) {
+    if (!type_entry.IsArray()) {
       const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
       asm_->mov(tmp, qword[target + offset]);
       asm_->test(tmp, tmp);  // class is nullptr => String...
@@ -3015,6 +3013,71 @@ class Compiler {
   void LookupHeapEnv(const Xbyak::Reg64& target, uint32_t nest) {
     for (uint32_t i = 0; i < nest; ++i) {
       asm_->mov(target, ptr[target + JSEnv::OuterOffset()]);
+    }
+  }
+
+  void LoadDouble(register_t reg,
+                  const Xbyak::Xmm& xmm,
+                  const Xbyak::Reg64& scratch,
+                  const char* label,
+                  Xbyak::CodeGenerator::LabelType type = Xbyak::CodeGenerator::T_AUTO) {
+    const TypeEntry entry = type_record_.Get(reg);
+    const Xbyak::Reg32 scratch32(scratch.getIdx());
+    if (entry.IsConstantDouble()) {
+      const double value = entry.constant().number();
+      asm_->mov(scratch, core::BitCast<uint64_t>(value));
+      asm_->movq(xmm, scratch);
+    } else if (entry.IsConstantInt32()) {
+      const int32_t value = entry.constant().int32();
+      asm_->mov(scratch32, value);
+      asm_->cvtsi2sd(xmm, scratch32);
+    } else {
+      // Ensure reg is number (int32 OR double)
+      LoadVR(scratch, reg);
+      NumberGuard(reg, scratch, label, type);
+      const Assembler::LocalLabelScope scope(asm_); {
+        Int32Guard(reg, scratch, ".IS_DOUBLE");
+        // now scratch32 is int32
+        asm_->cvtsi2sd(xmm, scratch32);
+        asm_->jmp(".DONE");
+        asm_->L(".IS_DOUBLE");
+        // now scratch is number jsval
+        asm_->add(scratch, r15);
+        asm_->movq(xmm, scratch);
+        asm_->L(".DONE");
+      }
+    }
+  }
+
+  void BoxDouble(const Xbyak::Xmm& src,
+                 const Xbyak::Xmm& scratch,
+                 const Xbyak::Reg64& dst64) {
+    const Xbyak::Reg32 dst32(dst64.getIdx());
+    // We need to handle negative zero case.
+    const Assembler::LocalLabelScope scope(asm_); {
+      asm_->cvttsd2si(dst32, src);
+      asm_->test(dst32, dst32);
+      asm_->jz(".FAST_DOUBLE");
+      asm_->cvtsi2sd(scratch, dst32);
+      asm_->ucomisd(src, scratch);
+      asm_->jp(".FAST_DOUBLE");
+      asm_->jne(".FAST_DOUBLE");
+      // target is int32
+      asm_->or(dst64, r15);
+      asm_->jmp(".EXIT");
+
+      asm_->L(".DOUBLE_ZERO");
+      asm_->mov(dst64, r15);  // r15 is int32 +0
+      asm_->jmp(".EXIT");
+
+      asm_->L(".FAST_DOUBLE");
+      // target is double
+      asm_->movq(dst64, src);
+      asm_->test(dst64, dst64);  // Check sign (-0) case
+      asm_->jz(".DOUBLE_ZERO");
+      ConvertDoubleToJSVal(dst64);
+
+      asm_->L(".EXIT");
     }
   }
 

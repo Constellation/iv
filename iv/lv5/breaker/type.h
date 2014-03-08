@@ -176,18 +176,14 @@ class Type {
   TypeValue type_;
 };
 
-class TypeEntry {
+class TypeEntry : public Type {
  public:
   TypeEntry()
-    : type_(Type::Unknown()), constant_(JSEmpty) { }
+    : Type(Type::Unknown()), constant_(JSEmpty) { }
   explicit TypeEntry(Type type)
-    : type_(type), constant_(JSEmpty) { }
+    : Type(type), constant_(JSEmpty) { }
   explicit TypeEntry(JSVal constant)
-    : type_(Type(constant)), constant_(constant) { }
-
-  Type type() const {
-    return type_;
-  }
+    : Type(Type(constant)), constant_(constant) { }
 
   bool IsConstant() const {
     return !constant_.IsEmpty();
@@ -195,6 +191,15 @@ class TypeEntry {
 
   bool IsConstantInt32() const {
     return IsConstant() && constant().IsInt32();
+  }
+
+  bool IsConstantDouble() const {
+    return IsConstant() && constant().IsNumber() && !constant().IsInt32();
+  }
+
+  double ExtractConstantDouble() const {
+    assert(IsConstantDouble());
+    return constant().number();
   }
 
   int32_t ExtractConstantInt32() const {
@@ -211,9 +216,9 @@ class TypeEntry {
       }
     }
 
-    if (lhs.type().IsString() || rhs.type().IsString()) {
+    if (lhs.IsString() || rhs.IsString()) {
       return TypeEntry(Type::String());
-    } else if (lhs.type().IsNotString() && rhs.type().IsNotString()) {
+    } else if (lhs.IsNotString() && rhs.IsNotString()) {
       return TypeEntry(Type::Number());
     } else {
       // merged
@@ -296,7 +301,7 @@ class TypeEntry {
               core::DoubleToUInt32(lhs.constant().number()) >>
               (core::DoubleToInt32(rhs.constant().number()) & 0x1F)));
     }
-    if (lhs.type().IsInt32()) {
+    if (lhs.IsInt32()) {
       return TypeEntry(Type::Int32());
     }
     return TypeEntry(Type::Number());
@@ -441,7 +446,7 @@ class TypeEntry {
   }
 
   static TypeEntry ToPrimitiveAndToString(const TypeEntry& src) {
-    if (src.type().IsString()) {
+    if (src.IsString()) {
       return src;
     }
     return TypeEntry(Type::String());
@@ -477,19 +482,19 @@ class TypeEntry {
       return TypeEntry(src.constant().TypeOf(ctx));
     }
 
-    if (src.type().IsString()) {
+    if (src.IsString()) {
       return TypeEntry(ctx->global_data()->string_string());
-    } else if (src.type().IsNumber()) {
+    } else if (src.IsNumber()) {
       return TypeEntry(ctx->global_data()->string_number());
-    } else if (src.type().IsNull()) {
+    } else if (src.IsNull()) {
       return TypeEntry(ctx->global_data()->string_object());
-    } else if (src.type().IsUndefined()) {
+    } else if (src.IsUndefined()) {
       return TypeEntry(ctx->global_data()->string_undefined());
-    } else if (src.type().IsBoolean()) {
+    } else if (src.IsBoolean()) {
       return TypeEntry(ctx->global_data()->string_boolean());
-    } else if (src.type().IsFunction()) {
+    } else if (src.IsFunction()) {
       return TypeEntry(ctx->global_data()->string_function());
-    } else if (src.type().IsArray()) {
+    } else if (src.IsArray()) {
       return TypeEntry(ctx->global_data()->string_object());
     }
 
@@ -497,7 +502,6 @@ class TypeEntry {
   }
 
  private:
-  Type type_;
   JSVal constant_;
 };
 

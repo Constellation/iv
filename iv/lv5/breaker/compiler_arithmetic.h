@@ -22,61 +22,101 @@ inline void Compiler::EmitBINARY_MULTIPLY(const Instruction* instr) {
     return;
   }
 
-  // lhs or rhs is not int32_t
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32()) {
-    LoadVRs(rsi, lhs, rdx, rhs);
-    asm_->mov(rdi, r14);
-    asm_->Call(&stub::BINARY_MULTIPLY);
-    asm_->mov(qword[r13 + dst * kJSValSize], rax);
-    set_last_used_candidate(dst);
+  const Assembler::LocalLabelScope scope(asm_);
+
+  if (!(lhs_type_entry.IsNotInt32() || rhs_type_entry.IsNotInt32())) {
+    if (lhs_type_entry.IsConstantInt32()) {
+      const int32_t lhs_value = lhs_type_entry.constant().int32();
+      LoadVR(rax, rhs);
+      Int32Guard(rhs, rax, ".DOUBLE");
+      asm_->imul(eax, eax, lhs_value);
+      asm_->jo(".OVERFLOW");
+    } else if (rhs_type_entry.IsConstantInt32()) {
+      const int32_t rhs_value = rhs_type_entry.constant().int32();
+      LoadVR(rax, lhs);
+      Int32Guard(lhs, rax, ".DOUBLE");
+      asm_->imul(eax, eax, rhs_value);
+      asm_->jo(".OVERFLOW");
+    } else {
+      LoadVRs(rax, lhs, rdx, rhs);
+      Int32Guard(lhs, rax, ".DOUBLE");
+      Int32Guard(rhs, rdx, ".DOUBLE");
+      asm_->imul(eax, edx);
+      asm_->jo(".OVERFLOW");
+    }
+    // boxing
+    asm_->or(rax, r15);
+    asm_->jmp(".EXIT", Xbyak::CodeGenerator::T_NEAR);
+
+    kill_last_used();
+
+    // lhs and rhs are always int32 (but overflow)
+    asm_->L(".OVERFLOW");
+    LoadVRs(rax, lhs, rdx, rhs);
+    asm_->cvtsi2sd(xmm0, eax);
+    asm_->cvtsi2sd(xmm1, edx);
+    asm_->mulsd(xmm0, xmm1);
+    asm_->movq(rax, xmm0);
+    ConvertDoubleToJSVal(rax);
+    asm_->jmp(".EXIT", Xbyak::CodeGenerator::T_NEAR);
+  }
+
+  asm_->L(".DOUBLE");
+  LoadDouble(lhs, xmm0, rsi, ".GENERIC", Xbyak::CodeGenerator::T_NEAR);
+  LoadDouble(rhs, xmm1, rsi, ".GENERIC", Xbyak::CodeGenerator::T_NEAR);
+
+  asm_->mulsd(xmm0, xmm1);
+  BoxDouble(xmm0, xmm1, rax);
+  asm_->jmp(".EXIT");
+
+  kill_last_used();
+
+  asm_->L(".GENERIC");
+  LoadVRs(rsi, lhs, rdx, rhs);
+  asm_->mov(rdi, r14);
+  asm_->Call(&stub::BINARY_MULTIPLY);
+
+  asm_->L(".EXIT");
+  asm_->mov(qword[r13 + dst * kJSValSize], rax);
+  set_last_used_candidate(dst);
+  type_record_.Put(dst, dst_type_entry);
+}
+
+// opcode | (dst | lhs | rhs)
+inline void Compiler::EmitBINARY_DIVIDE(const Instruction* instr) {
+  const register_t dst = Reg(instr[1].i16[0]);
+  const register_t lhs = Reg(instr[1].i16[1]);
+  const register_t rhs = Reg(instr[1].i16[2]);
+
+  const TypeEntry lhs_type_entry = type_record_.Get(lhs);
+  const TypeEntry rhs_type_entry = type_record_.Get(rhs);
+  const TypeEntry dst_type_entry =
+      TypeEntry::Divide(lhs_type_entry, rhs_type_entry);
+
+  // dst is constant
+  if (dst_type_entry.IsConstant()) {
+    EmitConstantDest(dst_type_entry, dst);
     type_record_.Put(dst, dst_type_entry);
     return;
   }
 
   const Assembler::LocalLabelScope scope(asm_);
 
-  if (lhs_type_entry.IsConstantInt32()) {
-    const int32_t lhs_value = lhs_type_entry.constant().int32();
-    LoadVR(rax, rhs);
-    Int32Guard(rhs, rax, ".ARITHMETIC_GENERIC");
-    asm_->imul(eax, eax, lhs_value);
-    asm_->jo(".ARITHMETIC_OVERFLOW");
-  } else if (rhs_type_entry.IsConstantInt32()) {
-    const int32_t rhs_value = rhs_type_entry.constant().int32();
-    LoadVR(rax, lhs);
-    Int32Guard(lhs, rax, ".ARITHMETIC_GENERIC");
-    asm_->imul(eax, eax, rhs_value);
-    asm_->jo(".ARITHMETIC_OVERFLOW");
-  } else {
-    LoadVRs(rax, lhs, rdx, rhs);
-    Int32Guard(lhs, rax, ".ARITHMETIC_GENERIC");
-    Int32Guard(rhs, rdx, ".ARITHMETIC_GENERIC");
-    asm_->imul(eax, edx);
-    asm_->jo(".ARITHMETIC_OVERFLOW");
-  }
-  // boxing
-  asm_->or(rax, r15);
-  asm_->jmp(".ARITHMETIC_EXIT");
+  LoadDouble(lhs, xmm0, rsi, ".GENERIC");
+  LoadDouble(rhs, xmm1, rsi, ".GENERIC");
+
+  asm_->divsd(xmm0, xmm1);
+  BoxDouble(xmm0, xmm1, rax);
+  asm_->jmp(".EXIT");
 
   kill_last_used();
 
-  // lhs and rhs are always int32 (but overflow)
-  asm_->L(".ARITHMETIC_OVERFLOW");
-  LoadVRs(rax, lhs, rdx, rhs);
-  asm_->cvtsi2sd(xmm0, eax);
-  asm_->cvtsi2sd(xmm1, edx);
-  asm_->mulsd(xmm0, xmm1);
-  asm_->movq(rax, xmm0);
-  ConvertNotNaNDoubleToJSVal(rax, rcx);
-  asm_->jmp(".ARITHMETIC_EXIT");
-
-  asm_->L(".ARITHMETIC_GENERIC");
+  asm_->L(".GENERIC");
   LoadVRs(rsi, lhs, rdx, rhs);
   asm_->mov(rdi, r14);
-  asm_->Call(&stub::BINARY_MULTIPLY);
+  asm_->Call(&stub::BINARY_DIVIDE);
 
-  asm_->L(".ARITHMETIC_EXIT");
+  asm_->L(".EXIT");
   asm_->mov(qword[r13 + dst * kJSValSize], rax);
   set_last_used_candidate(dst);
   type_record_.Put(dst, dst_type_entry);
@@ -100,62 +140,62 @@ inline void Compiler::EmitBINARY_ADD(const Instruction* instr) {
     return;
   }
 
-  // lhs or rhs are not int32_t
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32()) {
-    LoadVRs(rsi, lhs, rdx, rhs);
-    asm_->mov(rdi, r14);
-    asm_->Call(&stub::BINARY_ADD);
-    asm_->mov(qword[r13 + dst * kJSValSize], rax);
-    set_last_used_candidate(dst);
-    type_record_.Put(dst, dst_type_entry);
-    return;
-  }
-
   const Assembler::LocalLabelScope scope(asm_);
 
-  if (lhs_type_entry.IsConstantInt32()) {
-    const int32_t lhs_value = lhs_type_entry.constant().int32();
-    LoadVR(rax, rhs);
-    Int32Guard(rhs, rax, ".ARITHMETIC_GENERIC");
-    asm_->add(eax, lhs_value);
-    asm_->jo(".ARITHMETIC_OVERFLOW");
-  } else if (rhs_type_entry.IsConstantInt32()) {
-    const int32_t rhs_value = rhs_type_entry.constant().int32();
-    LoadVR(rax, lhs);
-    Int32Guard(lhs, rax, ".ARITHMETIC_GENERIC");
-    asm_->add(eax, rhs_value);
-    asm_->jo(".ARITHMETIC_OVERFLOW");
-  } else {
+  if (!(lhs_type_entry.IsNotInt32() || rhs_type_entry.IsNotInt32())) {
+    if (lhs_type_entry.IsConstantInt32()) {
+      const int32_t lhs_value = lhs_type_entry.constant().int32();
+      LoadVR(rax, rhs);
+      Int32Guard(rhs, rax, ".DOUBLE");
+      asm_->add(eax, lhs_value);
+      asm_->jo(".OVERFLOW");
+    } else if (rhs_type_entry.IsConstantInt32()) {
+      const int32_t rhs_value = rhs_type_entry.constant().int32();
+      LoadVR(rax, lhs);
+      Int32Guard(lhs, rax, ".DOUBLE");
+      asm_->add(eax, rhs_value);
+      asm_->jo(".OVERFLOW");
+    } else {
+      LoadVRs(rax, lhs, rdx, rhs);
+      Int32Guard(lhs, rax, ".DOUBLE");
+      Int32Guard(rhs, rdx, ".DOUBLE");
+      asm_->add(eax, edx);
+      asm_->jo(".OVERFLOW");
+    }
+    // boxing
+    asm_->or(rax, r15);
+    asm_->jmp(".EXIT", Xbyak::CodeGenerator::T_NEAR);
+
+    kill_last_used();
+
+    // lhs and rhs are always int32 (but overflow)
+    asm_->L(".OVERFLOW");
     LoadVRs(rax, lhs, rdx, rhs);
-    Int32Guard(lhs, rax, ".ARITHMETIC_GENERIC");
-    Int32Guard(rhs, rdx, ".ARITHMETIC_GENERIC");
-    asm_->add(eax, edx);
-    asm_->jo(".ARITHMETIC_OVERFLOW");
+    asm_->movsxd(rax, eax);
+    asm_->movsxd(rdx, edx);
+    asm_->add(rax, rdx);
+    asm_->cvtsi2sd(xmm0, rax);
+    asm_->movq(rax, xmm0);
+    ConvertDoubleToJSVal(rax);
+    asm_->jmp(".EXIT", Xbyak::CodeGenerator::T_NEAR);
   }
-  // boxing
-  asm_->or(rax, r15);
-  asm_->jmp(".ARITHMETIC_EXIT");
+
+  asm_->L(".DOUBLE");
+  LoadDouble(lhs, xmm0, rsi, ".GENERIC", Xbyak::CodeGenerator::T_NEAR);
+  LoadDouble(rhs, xmm1, rsi, ".GENERIC", Xbyak::CodeGenerator::T_NEAR);
+
+  asm_->addsd(xmm0, xmm1);
+  BoxDouble(xmm0, xmm1, rax);
+  asm_->jmp(".EXIT");
 
   kill_last_used();
 
-  // lhs and rhs are always int32 (but overflow)
-  asm_->L(".ARITHMETIC_OVERFLOW");
-  LoadVRs(rax, lhs, rdx, rhs);
-  asm_->movsxd(rax, eax);
-  asm_->movsxd(rdx, edx);
-  asm_->add(rax, rdx);
-  asm_->cvtsi2sd(xmm0, rax);
-  asm_->movq(rax, xmm0);
-  ConvertNotNaNDoubleToJSVal(rax, rcx);
-  asm_->jmp(".ARITHMETIC_EXIT");
-
-  asm_->L(".ARITHMETIC_GENERIC");
+  asm_->L(".GENERIC");
   LoadVRs(rsi, lhs, rdx, rhs);
   asm_->mov(rdi, r14);
   asm_->Call(&stub::BINARY_ADD);
 
-  asm_->L(".ARITHMETIC_EXIT");
+  asm_->L(".EXIT");
   asm_->mov(qword[r13 + dst * kJSValSize], rax);
   set_last_used_candidate(dst);
   type_record_.Put(dst, dst_type_entry);
@@ -187,8 +227,8 @@ inline void Compiler::EmitBINARY_MODULO(const Instruction* instr) {
   // lhs is >= 0 and rhs is > 0 because example like
   //   -1 % -1
   // should return -0.0, so this value is double
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32() ||
+  if (lhs_type_entry.IsNotInt32() ||
+      rhs_type_entry.IsNotInt32() ||
       (rhs_type_entry.IsConstantInt32() &&
        rhs_type_entry.constant().int32() <= 0) ||
       (lhs_type_entry.IsConstantInt32() &&
@@ -273,8 +313,7 @@ inline void Compiler::EmitBINARY_LSHIFT(const Instruction* instr) {
   }
 
   // lhs or rhs are not int32_t
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32()) {
+  if (lhs_type_entry.IsNotInt32() || rhs_type_entry.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_LSHIFT);
@@ -333,8 +372,7 @@ inline void Compiler::EmitBINARY_RSHIFT(const Instruction* instr) {
   }
 
   // lhs or rhs are not int32_t
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32()) {
+  if (lhs_type_entry.IsNotInt32() || rhs_type_entry.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_RSHIFT);
@@ -392,8 +430,7 @@ inline void Compiler::EmitBINARY_RSHIFT_LOGICAL(const Instruction* instr) {
   }
 
   // lhs or rhs are not int32_t
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32()) {
+  if (lhs_type_entry.IsNotInt32() || rhs_type_entry.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_RSHIFT_LOGICAL);
@@ -429,7 +466,7 @@ inline void Compiler::EmitBINARY_RSHIFT_LOGICAL(const Instruction* instr) {
   asm_->L(".ARITHMETIC_DOUBLE");
   asm_->cvtsi2sd(xmm0, rax);
   asm_->movq(rax, xmm0);
-  ConvertNotNaNDoubleToJSVal(rax, rcx);
+  ConvertDoubleToJSVal(rax);
   asm_->jmp(".ARITHMETIC_EXIT");
 
   asm_->L(".ARITHMETIC_GENERIC");
@@ -542,8 +579,7 @@ inline void Compiler::EmitCompare(const Instruction* instr, OP::Type fused) {
   }
 
   // lhs or rhs are not int32_t
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32()) {
+  if (lhs_type_entry.IsNotInt32() || rhs_type_entry.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(Traits::kStub);
@@ -659,59 +695,59 @@ inline void Compiler::EmitBINARY_SUBTRACT(const Instruction* instr) {
     return;
   }
 
-  // lhs or rhs are not int32_t
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32()) {
-    LoadVRs(rsi, lhs, rdx, rhs);
-    asm_->mov(rdi, r14);
-    asm_->Call(&stub::BINARY_SUBTRACT);
-    asm_->mov(qword[r13 + dst * kJSValSize], rax);
-    set_last_used_candidate(dst);
-    type_record_.Put(dst, dst_type_entry);
-    return;
-  }
-
   const Assembler::LocalLabelScope scope(asm_);
 
-  if (rhs_type_entry.IsConstantInt32()) {
-    const int32_t rhs_value = rhs_type_entry.constant().int32();
-    LoadVR(rax, lhs);
-    Int32Guard(lhs, rax, ".ARITHMETIC_GENERIC");
-    asm_->sub(eax, rhs_value);
-    asm_->jo(".ARITHMETIC_OVERFLOW");
-  } else {
+  if (!(lhs_type_entry.IsNotInt32() || rhs_type_entry.IsNotInt32())) {
+    if (rhs_type_entry.IsConstantInt32()) {
+      const int32_t rhs_value = rhs_type_entry.constant().int32();
+      LoadVR(rax, lhs);
+      Int32Guard(lhs, rax, ".DOUBLE");
+      asm_->sub(eax, rhs_value);
+      asm_->jo(".OVERFLOW");
+    } else {
+      LoadVRs(rax, lhs, rdx, rhs);
+      Int32Guard(lhs, rax, ".DOUBLE");
+      Int32Guard(rhs, rdx, ".DOUBLE");
+      asm_->sub(eax, edx);
+      asm_->jo(".OVERFLOW");
+    }
+    // boxing
+    asm_->or(rax, r15);
+    asm_->jmp(".EXIT", Xbyak::CodeGenerator::T_NEAR);
+
+    kill_last_used();
+
+    // lhs and rhs are always int32 (but overflow)
+    // So we just sub as int64_t and convert to double,
+    // because INT32_MIN - INT32_MIN is in int64_t range, and convert to
+    // double makes no error.
+    asm_->L(".OVERFLOW");
     LoadVRs(rax, lhs, rdx, rhs);
-    Int32Guard(lhs, rax, ".ARITHMETIC_GENERIC");
-    Int32Guard(rhs, rdx, ".ARITHMETIC_GENERIC");
-    asm_->sub(eax, edx);
-    asm_->jo(".ARITHMETIC_OVERFLOW");
+    asm_->movsxd(rax, eax);
+    asm_->movsxd(rdx, edx);
+    asm_->sub(rax, rdx);
+    asm_->cvtsi2sd(xmm0, rax);
+    asm_->movq(rax, xmm0);
+    ConvertDoubleToJSVal(rax);
+    asm_->jmp(".EXIT", Xbyak::CodeGenerator::T_NEAR);
   }
-  // boxing
-  asm_->or(rax, r15);
-  asm_->jmp(".ARITHMETIC_EXIT");
+
+  asm_->L(".DOUBLE");
+  LoadDouble(lhs, xmm0, rsi, ".GENERIC", Xbyak::CodeGenerator::T_NEAR);
+  LoadDouble(rhs, xmm1, rsi, ".GENERIC", Xbyak::CodeGenerator::T_NEAR);
+
+  asm_->subsd(xmm0, xmm1);
+  BoxDouble(xmm0, xmm1, rax);
+  asm_->jmp(".EXIT");
 
   kill_last_used();
 
-  // lhs and rhs are always int32 (but overflow)
-  // So we just sub as int64_t and convert to double,
-  // because INT32_MIN - INT32_MIN is in int64_t range, and convert to
-  // double makes no error.
-  asm_->L(".ARITHMETIC_OVERFLOW");
-  LoadVRs(rax, lhs, rdx, rhs);
-  asm_->movsxd(rax, eax);
-  asm_->movsxd(rdx, edx);
-  asm_->sub(rax, rdx);
-  asm_->cvtsi2sd(xmm0, rax);
-  asm_->movq(rax, xmm0);
-  ConvertNotNaNDoubleToJSVal(rax, rcx);
-  asm_->jmp(".ARITHMETIC_EXIT");
-
-  asm_->L(".ARITHMETIC_GENERIC");
+  asm_->L(".GENERIC");
   LoadVRs(rsi, lhs, rdx, rhs);
   asm_->mov(rdi, r14);
   asm_->Call(&stub::BINARY_SUBTRACT);
 
-  asm_->L(".ARITHMETIC_EXIT");
+  asm_->L(".EXIT");
   asm_->mov(qword[r13 + dst * kJSValSize], rax);
   set_last_used_candidate(dst);
   type_record_.Put(dst, dst_type_entry);
@@ -748,8 +784,7 @@ inline void Compiler::EmitBINARY_BIT_AND(const Instruction* instr,
   }
 
   // lhs or rhs are not int32_t
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32()) {
+  if (lhs_type_entry.IsNotInt32() || rhs_type_entry.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_BIT_AND);
@@ -850,8 +885,7 @@ inline void Compiler::EmitBINARY_BIT_XOR(const Instruction* instr) {
   }
 
   // lhs or rhs is not int32_t
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32()) {
+  if (lhs_type_entry.IsNotInt32() || rhs_type_entry.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_BIT_XOR);
@@ -915,8 +949,7 @@ inline void Compiler::EmitBINARY_BIT_OR(const Instruction* instr) {
   }
 
   // lhs or rhs is not int32_t
-  if (lhs_type_entry.type().IsNotInt32() ||
-      rhs_type_entry.type().IsNotInt32()) {
+  if (lhs_type_entry.IsNotInt32() || rhs_type_entry.IsNotInt32()) {
     LoadVRs(rsi, lhs, rdx, rhs);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_BIT_OR);
