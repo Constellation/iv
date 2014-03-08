@@ -333,7 +333,7 @@ class Fiber : public FiberBase {
   }
 
   static this_type* New(const this_type* original, uint32_t from, uint32_t to) {
-    return new (GC_MALLOC_ATOMIC(sizeof(this_type))) Fiber(original, from, to);
+    return new (GC_MALLOC(sizeof(this_type))) Fiber(original, from, to);
   }
 
   operator core::BasicStringPiece<ExportCharT>() const {
