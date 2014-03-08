@@ -1276,6 +1276,22 @@ inline bool IsIdentifierPart(char16_t c) {
                       IsNonASCIIIdentifierPart(c);
 }
 
+inline char16_t ToASCIILowerCase(char16_t c) {
+  assert(IsASCII(c));
+  if ('A' <= c && c <= 'Z') {
+    return c + ('a' - 'A');
+  }
+  return c;
+}
+
+inline char16_t ToASCIIUpperCase(char16_t c) {
+  assert(IsASCII(c));
+  if ('a' <= c && c <= 'z') {
+    return c - ('a' - 'A');
+  }
+  return c;
+}
+
 inline uint64_t ToLowerCase(char16_t c) {
   if ('A' <= c && c <= 'Z') {
     return c + ('a' - 'A');

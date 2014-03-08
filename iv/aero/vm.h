@@ -47,7 +47,7 @@ class VM : private core::Noncopyable<VM> {
       ,
       state_()
 #endif
-      {
+  {
     stack_base_pointer_for_jit_ = stack_.data();
   }
 
@@ -182,14 +182,14 @@ class VM : private core::Noncopyable<VM> {
 
 #define DEFINE_OPCODE(op)\
   case OP::op:
-#define DISPATCH() continue
+#define DISPATCH() goto aero_main_loop;
 #define DISPATCH_NEXT()\
   do {\
     const uint32_t next = OP::GetLength(instr);\
     instr += next;\
   } while (0);\
   DISPATCH()
-#define BACKTRACK() break;
+#define BACKTRACK() goto aero_backtrack;
 
 template<typename Piece>
 inline int VM::Main(Code* code, const Piece& subject,
@@ -207,6 +207,7 @@ inline int VM::Main(Code* code, const Piece& subject,
 
   for (;;) {
     // fetch opcode
+    aero_main_loop:
     switch (instr[0]) {
       DEFINE_OPCODE(PUSH_BACKTRACK) {
         if ((sp = NewState((sp - stack_.data()) + size))) {
@@ -287,10 +288,6 @@ inline int VM::Main(Code* code, const Piece& subject,
                 current == core::character::ToLowerCase(*it)) {
               continue;
             }
-            matched = false;
-            break;
-          }
-          if (!matched) {
             BACKTRACK();
           }
         }
@@ -456,7 +453,6 @@ inline int VM::Main(Code* code, const Piece& subject,
           const char16_t ch = subject[current_position];
           const uint32_t length = Load4Bytes(instr + 1);
           const uint32_t counts = Load4Bytes(instr + 5);
-          bool in_range = false;
           for (std::size_t i = 0; i < length; i += 4) {
             const char16_t start = Load2Bytes(instr + 5 + 4 + i);
             if (ch < start) {
@@ -464,13 +460,9 @@ inline int VM::Main(Code* code, const Piece& subject,
             }
             const char16_t finish = Load2Bytes(instr + 5 + 4 + i + 2);
             if (ch <= finish) {
-              in_range = true;
-              break;
+              ++current_position;
+              DISPATCH_NEXT();
             }
-          }
-          if (in_range) {
-            ++current_position;
-            DISPATCH_NEXT();
           }
         }
         BACKTRACK();
@@ -481,7 +473,6 @@ inline int VM::Main(Code* code, const Piece& subject,
           const char16_t ch = subject[current_position];
           const uint32_t length = Load4Bytes(instr + 1);
           const uint32_t counts = Load4Bytes(instr + 5);
-          bool in_range = false;
           for (std::size_t i = 0; i < length; i += 4) {
             const char16_t start = Load2Bytes(instr + 5 + 4 + i);
             if (ch < start) {
@@ -489,14 +480,11 @@ inline int VM::Main(Code* code, const Piece& subject,
             }
             const char16_t finish = Load2Bytes(instr + 5 + 4 + i + 2);
             if (ch <= finish) {
-              in_range = true;
-              break;
+              BACKTRACK();
             }
           }
-          if (!in_range) {
-            ++current_position;
-            DISPATCH_NEXT();
-          }
+          ++current_position;
+          DISPATCH_NEXT();
         }
         BACKTRACK();
       }
@@ -505,18 +493,24 @@ inline int VM::Main(Code* code, const Piece& subject,
         const uint32_t length = Load4Bytes(instr + 1);
         assert(length > 0);
         if (current_position + (length - 1) < subject.size()) {
-          bool fail = false;
           for (uint32_t i = 0; i < length; ++i) {
-            if (subject[current_position + i] !=
-                Load2Bytes(instr + 5 + i * 2)) {
-              fail = true;
-              break;
+            const auto current subject[current_position + i];
+            const char16_t target = Load2Bytes(instr + 5 + i * 2);
+            if (current == target) {
+              continue;
             }
+
+            if (code->IsIgnoreCase()) {
+              const char16_t uu = core::character::ToUpperCase(target);
+              const char16_t lu = core::character::ToLowerCase(target);
+              if (current == uu || current == lu) {
+                continue;
+              }
+            }
+            BACKTRACK();
           }
-          if (!fail) {
-            current_position += length;
-            DISPATCH_NEXT();
-          }
+          current_position += length;
+          DISPATCH_NEXT();
         }
         BACKTRACK();
       }
@@ -537,7 +531,9 @@ inline int VM::Main(Code* code, const Piece& subject,
         DISPATCH();
       }
     }
+
     // backtrack stack unwind
+    aero_backtrack:
     if (sp > stack_.data()) {
       sp -= size;
       std::copy(sp, sp + size, state_.begin());

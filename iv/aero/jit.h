@@ -991,15 +991,172 @@ IV_AERO_OPCODES(V)
     IncrementCP(offset);
   }
 
-  void EmitCHECK_N_CHARS(const uint8_t* instr, uint32_t len, int offset = -1) {
-    const uint32_t length = Load4Bytes(instr + 1);
-    EmitSizeGuard(offset, length);
-    for (uint32_t i = 0; i < length; ++i) {
-      const char16_t ch = Load2Bytes(instr + 5 + i * 2);
-      cmp(LoadCode(offset, i), ch);
-      jne(jit_detail::kBackTrackLabel, T_NEAR);
+  void EmitB(uint64_t mask, uint64_t ignore_case_mask,
+             int offset, std::size_t base, std::size_t advance) {
+    movzx(r10d, LoadCodeDirect(byte, offset, base + advance));
+    if ((ignore_case_mask >> (advance * 8)) & 0xFFULL) {
+      or(r10d, (ignore_case_mask >> (advance * 8)) & 0xFFULL);
     }
-    IncrementCP(offset, length);
+    cmp(r10d, (mask >> (advance * 8)) & 0xFFULL);
+    jne(jit_detail::kBackTrackLabel, T_NEAR);
+  }
+
+  void EmitW(uint64_t mask, uint64_t ignore_case_mask,
+             int offset, std::size_t base, std::size_t advance) {
+    movzx(r10d, LoadCodeDirect(word, offset, base + advance));
+    if ((ignore_case_mask >> (advance * 8)) & 0xFFFFULL) {
+      or(r10d, (ignore_case_mask >> (advance * 8)) & 0xFFFFULL);
+    }
+    cmp(r10d, (mask >> (advance * 8)) & 0xFFFFULL);
+    jne(jit_detail::kBackTrackLabel, T_NEAR);
+  }
+
+  void EmitD(uint64_t mask, uint64_t ignore_case_mask,
+             int offset, std::size_t base, std::size_t advance) {
+    mov(r10d, LoadCodeDirect(dword, offset, base + advance));
+    if ((ignore_case_mask >> (advance * 8)) & 0xFFFFFFFFULL) {
+      or(r10d, (ignore_case_mask >> (advance * 8)) & 0xFFFFFFFFULL);
+    }
+    cmp(r10d, (mask >> (advance * 8)) & 0xFFFFFFFFULL);
+    jne(jit_detail::kBackTrackLabel, T_NEAR);
+  }
+
+  void EmitQ(uint64_t mask, uint64_t ignore_case_mask,
+             int offset, std::size_t base, std::size_t advance) {
+    mov(r10, LoadCodeDirect(qword, offset, base + advance));
+    if (ignore_case_mask) {
+      mov(r11, ignore_case_mask);
+      or(r10, r11);
+    }
+    mov(r11, mask);
+    cmp(r10, r11);
+    jne(jit_detail::kBackTrackLabel, T_NEAR);
+  }
+
+  void EmitCHECK_N_CHARS(const uint8_t* instr, uint32_t len, int offset = -1) {
+    const uint32_t size = Load4Bytes(instr + 1);
+    EmitSizeGuard(offset, size);
+
+    const uint32_t compare_at_once = (k64Size / kCharSize);
+    const uint32_t shift = kCharSize * 8;
+    uint32_t index = 0;
+    do {
+      uint64_t ignore_case_mask = 0;
+      uint64_t mask = 0;
+      const uint32_t start = index;
+      bool ignore_case_slow_case = false;
+      uint32_t i = 0;
+      for (; i < compare_at_once && index < size; ++i, ++index) {
+        const char16_t ch = Load2Bytes(instr + 5 + index * 2);
+        const uint64_t shift_amount = shift * i;
+
+        if (kASCII && !core::character::IsASCII(ch)) {
+          // Fail without check.
+          jmp(jit_detail::kBackTrackLabel, T_NEAR);
+          return;
+        }
+
+        if (!code_.IsIgnoreCase()) {
+          mask |= static_cast<uint64_t>(ch) << (shift_amount);
+          continue;
+        }
+
+        if (kASCII) {
+          const char16_t uu = core::character::ToASCIIUpperCase(ch);
+          const char16_t lu = core::character::ToASCIILowerCase(ch);
+          if (ch == uu && uu == lu) {
+            // Ignore case has no effect.
+            mask |= static_cast<uint64_t>(ch) << (shift_amount);
+            continue;
+          }
+
+          // Here, uu & lu is limited to [a-zA-Z].
+          mask |= static_cast<uint64_t>(lu) << (shift_amount);
+          ignore_case_mask |= (0x20ULL) << (shift_amount);
+          continue;
+        }
+
+        const char16_t uu = core::character::ToUpperCase(ch);
+        const char16_t lu = core::character::ToLowerCase(ch);
+
+        if (ch == uu && uu == lu) {
+          // Ignore case has no effect.
+          mask |= static_cast<uint64_t>(ch) << (shift_amount);
+          continue;
+        }
+
+        // Give up. compare with each characters.
+        ignore_case_slow_case = true;
+        break;
+      }
+
+      const std::size_t base = kCharSize * start;
+      if (i != 0) {
+        const uint32_t width = (kASCII) ? i : i * 2;
+        switch (width) {
+          case 8:
+            EmitQ(mask, ignore_case_mask, offset, base, 0);
+            break;
+          case 7:
+            EmitD(mask, ignore_case_mask, offset, base, 0);
+            EmitW(mask, ignore_case_mask, offset, base, 4);
+            EmitB(mask, ignore_case_mask, offset, base, 6);
+            break;
+          case 6:
+            EmitD(mask, ignore_case_mask, offset, base, 0);
+            EmitW(mask, ignore_case_mask, offset, base, 4);
+            break;
+          case 5:
+            EmitD(mask, ignore_case_mask, offset, base, 0);
+            EmitB(mask, ignore_case_mask, offset, base, 4);
+            break;
+          case 4:
+            EmitD(mask, ignore_case_mask, offset, base, 0);
+            break;
+          case 3:
+            EmitW(mask, ignore_case_mask, offset, base, 0);
+            EmitB(mask, ignore_case_mask, offset, base, 2);
+            break;
+          case 2:
+            EmitW(mask, ignore_case_mask, offset, base, 0);
+            break;
+          case 1:
+            EmitB(mask, ignore_case_mask, offset, base, 0);
+            break;
+        }
+      }
+
+      // Slow case for ignore case handling.
+      if (ignore_case_slow_case) {
+        const char16_t ch = Load2Bytes(instr + 5 + index * 2);
+        const char16_t uu = core::character::ToUpperCase(ch);
+        const char16_t lu = core::character::ToLowerCase(ch);
+
+        IV_AERO_LOCAL() {
+          assert(!(uu == lu && uu == ch));
+          if (uu == ch || lu == ch) {
+            movzx(r10, LoadCode(offset, index));
+            cmp(r10d, uu);
+            je(".SUCCESS");
+            cmp(r10d, lu);
+            je(".SUCCESS");
+            jmp(jit_detail::kBackTrackLabel, T_NEAR);
+          } else {
+            movzx(r10, LoadCode(offset, index));
+            cmp(r10d, ch);
+            je(".SUCCESS");
+            cmp(r10d, uu);
+            je(".SUCCESS");
+            cmp(r10d, lu);
+            je(".SUCCESS");
+            jmp(jit_detail::kBackTrackLabel, T_NEAR);
+          }
+          L(".SUCCESS");
+        }
+        ++index;
+      }
+    } while (index < size);
+    IncrementCP(offset, size);
   }
 
   void EmitCHECK_2CHAR_OR(const uint8_t* instr, uint32_t len, int offset = -1) {
@@ -1240,7 +1397,8 @@ IV_AERO_OPCODES(V)
     jmp(jit_detail::kSuccessLabel, T_NEAR);
   }
 
-  static std::string MakeLabel(uint32_t num, const std::string& prefix = "AERO_") {
+  static std::string MakeLabel(uint32_t num,
+                               const std::string& prefix = "AERO_") {
     std::string str(prefix);
     core::UInt32ToString(num, std::back_inserter(str));
     return str;
@@ -1261,14 +1419,19 @@ IV_AERO_OPCODES(V)
   }
 
   Xbyak::Address LoadCode(int offset, uint32_t i = 0) {
+    return LoadCodeDirect(character, offset, i * kCharSize);
+  }
+
+  Xbyak::Address LoadCodeDirect(const Xbyak::AddressFrame& frame,
+                                int offset, std::size_t more) {
     if (offset < 0) {
-      if (i == 0) {
-        return character[subject_ + cp_ * kCharSize];
+      if (more == 0) {
+        return frame[subject_ + cp_ * kCharSize];
       } else {
-        return character[subject_ + cp_ * kCharSize + kCharSize * i];
+        return frame[subject_ + cp_ * kCharSize + more];
       }
     } else {
-      return character[rbp + (offset + i) * kCharSize];
+      return frame[rbp + (offset * kCharSize + more)];
     }
   }
 

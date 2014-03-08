@@ -4,6 +4,7 @@
 #include <string>
 #include <iv/platform.h>
 #include <iv/aero/jit_fwd.h>
+#include <iv/aero/flags.h>
 namespace iv {
 namespace aero {
 
@@ -16,9 +17,11 @@ class Code {
   friend class VM;
   typedef std::vector<uint8_t> Data;
   Code(const std::vector<uint8_t>& vec,
+       int flags,
        int captures, int counters, uint16_t filter, bool one_char,
        std::shared_ptr<SimpleCase> simple)
     : bytes_(vec),
+      flags_(flags),
       captures_(captures),
       counters_(counters),
       filter_(filter),
@@ -44,8 +47,13 @@ class Code {
 
   const SimpleCase* simple() const { return simple_.get(); }
 
+  bool IsIgnoreCase() const { return flags_ & IGNORE_CASE; }
+
+  bool IsMultiline() const { return flags_ & MULTILINE; }
+
  private:
   Data bytes_;
+  int flags_;
   int captures_;
   int counters_;
   uint16_t filter_;

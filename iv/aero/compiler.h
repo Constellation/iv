@@ -51,6 +51,7 @@ class Compiler : private Visitor {
     const bool one_char = filter && ret.second == 1;
     return new Code(
         code_,
+        flags_,
         max_captures_,
         counters_size_,
         filter,
@@ -191,12 +192,6 @@ class Compiler : private Visitor {
   }
 
   void Visit(StringAtom* atom) {
-    if (IsIgnoreCase()) {
-      for (char16_t ch : atom->string()) {
-        EmitCharacter(ch);
-      }
-      return;
-    }
     Emit<OP::CHECK_N_CHARS>();
     Emit4(atom->string().size());
     for (char16_t ch : atom->string()) {
