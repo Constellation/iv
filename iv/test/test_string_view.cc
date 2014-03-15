@@ -58,8 +58,8 @@ TEST(string_viewCase, EqualTest) {
   EXPECT_NE(string_view("OKK"), string_view("OK"));
 
   {
-    const iv::core::UString s1 = iv::core::ToUString('0');
-    const iv::core::UString s2 = iv::core::ToUString('+');
+    const std::u16string s1 = iv::core::ToU16String('0');
+    const std::u16string s2 = iv::core::ToU16String('+');
     EXPECT_FALSE(iv::core::u16string_view(s1) == iv::core::u16string_view(s2));
   }
 }

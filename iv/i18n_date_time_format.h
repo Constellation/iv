@@ -209,10 +209,10 @@ class DateTimeFormat : public DateTimeFormatConstants {
   }
 
   // section 12.3.2 Intl.DateTimeFormat.prototype.format
-  UString Format(double x) const {
+  std::u16string Format(double x) const {
     assert(core::math::IsFinite(x));
     // const double res = ToLocalTime(x, calendar(), tz());
-    return UString();
+    return std::u16string();
   }
 
   static double ToLocalTime(double date, Calendar::Type calendar, TimeZone::Type time_zone) {

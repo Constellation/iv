@@ -10,7 +10,7 @@ TEST(AeroCompilerCase, MainTest) {
   iv::aero::OutputDisAssembler disasm(stdout);
   {
     space.Clear();
-    iv::core::UString str = iv::core::ToUString("a*?");
+    std::u16string str = iv::core::ToU16String("a*?");
     iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
@@ -20,7 +20,7 @@ TEST(AeroCompilerCase, MainTest) {
   }
   {
     space.Clear();
-    iv::core::UString str = iv::core::ToUString("t+");
+    std::u16string str = iv::core::ToU16String("t+");
     iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::IGNORE_CASE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
@@ -30,7 +30,7 @@ TEST(AeroCompilerCase, MainTest) {
   }
   {
     space.Clear();
-    iv::core::UString str = iv::core::ToUString("[\\u0000-\\uFFFF]");
+    std::u16string str = iv::core::ToU16String("[\\u0000-\\uFFFF]");
     iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::IGNORE_CASE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
@@ -40,7 +40,7 @@ TEST(AeroCompilerCase, MainTest) {
   }
   {
     space.Clear();
-    iv::core::UString reg = iv::core::ToUString("[^]]*]([^]]+])*]+");
+    std::u16string reg = iv::core::ToU16String("[^]]*]([^]]+])*]+");
     iv::aero::Parser<iv::core::u16string_view> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
@@ -50,7 +50,7 @@ TEST(AeroCompilerCase, MainTest) {
   }
   {
     space.Clear();
-    iv::core::UString reg = iv::core::ToUString("\\u10");
+    std::u16string reg = iv::core::ToU16String("\\u10");
     iv::aero::Parser<iv::core::u16string_view> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
@@ -60,7 +60,7 @@ TEST(AeroCompilerCase, MainTest) {
   }
   {
     space.Clear();
-    iv::core::UString reg = iv::core::ToUString("\\u");
+    std::u16string reg = iv::core::ToU16String("\\u");
     iv::aero::Parser<iv::core::u16string_view> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
@@ -70,7 +70,7 @@ TEST(AeroCompilerCase, MainTest) {
   }
   {
     space.Clear();
-    iv::core::UString str = iv::core::ToUString("(?=\\d)(\\d{3})(\\d{3})+$");
+    std::u16string str = iv::core::ToU16String("(?=\\d)(\\d{3})(\\d{3})+$");
     iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);

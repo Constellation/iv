@@ -15,7 +15,7 @@ class Error {
  public:
   typedef Error this_type;
   typedef void (Error::*bool_type)() const;
-  typedef std::vector<core::UString> Stack;
+  typedef std::vector<std::u16string> Stack;
 
   class Dummy;
   class Standard;
@@ -65,7 +65,7 @@ class Error {
     data_ = ((data_ & (~kCodeMask)) | c);
   }
 
-  virtual core::UString detail() const { return core::UString(); }
+  virtual std::u16string detail() const { return std::u16string(); }
 
   virtual JSVal value() const { return JSUndefined; }
 
@@ -150,7 +150,7 @@ class Error::Standard : public Error {
     stack_.reset();
   }
 
-  virtual core::UString detail() const { return detail_; }
+  virtual std::u16string detail() const { return detail_; }
 
   virtual JSVal value() const { return value_; }
 
@@ -171,7 +171,7 @@ class Error::Standard : public Error {
 
  private:
   JSVal value_;
-  core::UString detail_;
+  std::u16string detail_;
   std::shared_ptr<Stack> stack_;
 };
 

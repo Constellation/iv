@@ -13,7 +13,7 @@ namespace iv {
 namespace lv5 {
 namespace detail {
 
-static const core::UString kEmptyPattern = core::ToUString("(?:)");
+static const std::u16string kEmptyPattern = core::ToU16String("(?:)");
 
 }  // namespace detail
 

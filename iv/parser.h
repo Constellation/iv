@@ -81,7 +81,7 @@ namespace iv {
 namespace core {
 namespace detail {
 
-static const UString kUseStrict = ToUString("use strict");
+static const std::u16string kUseStrict = ToU16String("use strict");
 
 }  // namespace iv::core::detail
 

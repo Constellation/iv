@@ -176,7 +176,7 @@ inline JSVal Error::Standard::Detail(Context* ctx) {
   };
   assert(error);
   if (!error->HasProperty(ctx, symbol::stack())) {
-    core::UString dump;
+    std::u16string dump;
     if (stack()) {
       for (Stack::const_iterator it = stack()->begin(),
            last = stack()->end(); it != last; ++it) {
@@ -207,7 +207,7 @@ inline JSVal Error::Standard::Detail(Context* ctx) {
 
 inline void Error::Standard::Dump(Context* ctx, FILE* out) {
   assert(*this);
-  core::UString dump;
+  std::u16string dump;
   if (stack()) {
     for (Stack::const_iterator it = stack()->begin(),
          last = stack()->end(); it != last; ++it) {

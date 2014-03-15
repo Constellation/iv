@@ -29,7 +29,7 @@ class SymbolTable {
       rep_.rep8 = piece.data();
     }
 
-    SymbolHolder(const UString* str)  // NOLINT
+    SymbolHolder(const std::u16string* str)  // NOLINT
       : rep_(),
         size_(str->size()),
         is_8bit_(false),
@@ -82,7 +82,7 @@ class SymbolTable {
       }
     }
 
-    const UString* pointer() const { return pointer_; }
+    const std::u16string* pointer() const { return pointer_; }
 
     std::size_t size() const { return size_; }
 
@@ -93,7 +93,7 @@ class SymbolTable {
     } rep_;
     std::size_t size_;
     bool is_8bit_;
-    const UString* pointer_;
+    const std::u16string* pointer_;
     std::size_t hash_;
   };
 
@@ -143,7 +143,7 @@ class SymbolTable {
     if (it != set_.end()) {
       return symbol::MakeSymbol(it->pointer());
     } else {
-      const UString* res = new UString(str.begin(), str.end());
+      const std::u16string* res = new std::u16string(str.begin(), str.end());
       set_.insert(res);
       return symbol::MakeSymbol(res);
     }

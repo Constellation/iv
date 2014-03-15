@@ -22,7 +22,7 @@ class ConstantPool {
  public:
   static const uint32_t kEmpty = UINT32_MAX;
 
-  typedef std::unordered_map<core::UString, int32_t> JSStringToIndexMap;
+  typedef std::unordered_map<std::u16string, int32_t> JSStringToIndexMap;
   typedef std::unordered_map<
       double,
       int32_t,
@@ -91,7 +91,7 @@ class ConstantPool {
     return empty_index_;
   }
 
-  uint32_t string_index(const core::UString& str) {
+  uint32_t string_index(const std::u16string& str) {
     const JSStringToIndexMap::const_iterator it =
         jsstring_to_index_map_.find(str);
 
@@ -113,15 +113,15 @@ class ConstantPool {
   }
 
   uint32_t string_index(const StringLiteral* str) {
-    return string_index(core::ToUString(str->value()));
+    return string_index(core::ToU16String(str->value()));
   }
 
   uint32_t string_index(const core::string_view& str) {
-    return string_index(core::ToUString(str));
+    return string_index(core::ToU16String(str));
   }
 
   uint32_t string_index(const core::u16string_view& str) {
-    return string_index(core::UString(str));
+    return string_index(std::u16string(str));
   }
 
   uint32_t number_index(double val) {

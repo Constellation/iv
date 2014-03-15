@@ -182,7 +182,7 @@ class I18N {
    public:
     Symbols()
       :
-#define IV_V(name) name##_(ToUString(#name)),
+#define IV_V(name) name##_(ToU16String(#name)),
         IV_I18N_LOCALE_SYMBOLS(IV_V)
 #undef IV_V
         last_order_() {
@@ -195,7 +195,7 @@ class I18N {
 #undef IV_V
 
    private:
-#define IV_V(name) const core::UString name##_;
+#define IV_V(name) const std::u16string name##_;
     IV_I18N_LOCALE_SYMBOLS(IV_V)
 #undef IV_V
     int last_order_;

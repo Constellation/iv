@@ -740,39 +740,39 @@ inline Symbol JSLayout::ToSymbol(Context* ctx, Error* e) const {
   return prim.ToSymbol(ctx, e);
 }
 
-inline core::UString JSLayout::ToUString(Context* ctx, Error* e) const {
+inline std::u16string JSLayout::ToU16String(Context* ctx, Error* e) const {
   if (IsString()) {
     JSString* str = string();
-    return core::UString(str->begin(), str->end());
+    return std::u16string(str->begin(), str->end());
   } else if (IsNumber()) {
     // int32 short cut
     if (IsInt32()) {
       std::array<char, 15> buffer;
       char* end = core::Int32ToString(int32(), buffer.data());
-      return core::UString(buffer.data(), end);
+      return std::u16string(buffer.data(), end);
     } else {
       std::array<char, 80> buffer;
       const char* const str =
           core::DoubleToCString(number(), buffer.data(), buffer.size());
-      return core::UString(str, str + std::strlen(str));
+      return std::u16string(str, str + std::strlen(str));
     }
   } else if (IsBoolean()) {
     const char* str = (boolean()) ? "true" : "false";
-    return core::UString(str, str + std::strlen(str));
+    return std::u16string(str, str + std::strlen(str));
   } else if (IsNull()) {
     const char* str = "null";
-    return core::UString(str, str + std::strlen(str));
+    return std::u16string(str, str + std::strlen(str));
   } else if (IsUndefined()) {
     const char* str = "undefined";
-    return core::UString(str, str + std::strlen(str));
+    return std::u16string(str, str + std::strlen(str));
   } else if (IsSymbol()) {
     e->Report(Error::Type, "Cannot perform ToString operation on Symbols");
-    return core::UString();
+    return std::u16string();
   } else {
     assert(IsObject());
     const JSLayout prim =
         object()->DefaultValue(ctx, Hint::STRING, IV_LV5_ERROR(e));
-    return prim.ToUString(ctx, e);
+    return prim.ToU16String(ctx, e);
   }
 }
 

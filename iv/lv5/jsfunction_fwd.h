@@ -54,13 +54,13 @@ class JSFunction : public JSObject {
   virtual JSAPI NativeFunction() const { return nullptr; }
 
   virtual core::u16string_view GetSource() const {
-    static const core::UString kBlock =
-        core::ToUString("() { \"[native code]\" }");
+    static const std::u16string kBlock =
+        core::ToU16String("() { \"[native code]\" }");
     return kBlock;
   }
 
-  virtual core::UString GetName() const {
-    return core::UString();
+  virtual std::u16string GetName() const {
+    return std::u16string();
   }
 
   bool strict() const { return strict_; }

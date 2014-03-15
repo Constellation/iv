@@ -118,7 +118,7 @@ class FileSource {
     return current;
   }
 
-  core::UString source_;
+  std::u16string source_;
   std::string filename_;
 };
 

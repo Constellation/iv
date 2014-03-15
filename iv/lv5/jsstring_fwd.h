@@ -309,8 +309,8 @@ class JSString : public JSCell {
     }
   }
 
-  core::UString GetUString() const {
-    core::UString str;
+  std::u16string GetUString() const {
+    std::u16string str;
     str.resize(size());
     Copy(str.begin());
     return str;
@@ -495,7 +495,7 @@ class JSString : public JSCell {
       return New(ctx, buffer.data(), end, true, &dummy);
     } else {
       assert(!symbol::IsIndexSymbol(sym));
-      const core::UString* str = symbol::GetStringFromSymbol(sym);
+      const std::u16string* str = symbol::GetStringFromSymbol(sym);
       if (str->empty()) {
         return NewEmptyString(ctx);
       }

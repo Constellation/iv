@@ -33,7 +33,7 @@ class EvalSource : public core::Noncopyable<> {
   }
 
  private:
-  core::UString source_;
+  std::u16string source_;
 };
 
 }  // namespace lv5

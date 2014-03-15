@@ -11,7 +11,7 @@ namespace aero {
 class Dumper : public Visitor {
  public:
   Dumper() : builder_() { }
-  core::UString Dump(Expression* node) {
+  std::u16string Dump(Expression* node) {
     builder_.clear();
     node->Accept(this);
     return builder_.Build();
