@@ -19,7 +19,8 @@ struct LTTraits : public CompareTraits<LTTraits, stub::BINARY_LT> {
     return TypeEntry::LT(lhs, rhs);
   }
 
-  static void JumpInt(Assembler* assembler, bool if_true, const char* label) {
+  static void JumpInt(Assembler* assembler,
+                      bool if_true, const std::string& label) {
     if (if_true) {
       assembler->jl(label, Xbyak::CodeGenerator::T_NEAR);
     } else {
@@ -57,7 +58,8 @@ struct LTETraits : public CompareTraits<LTETraits, stub::BINARY_LTE> {
     return TypeEntry::LTE(lhs, rhs);
   }
 
-  static void JumpInt(Assembler* assembler, bool if_true, const char* label) {
+  static void JumpInt(Assembler* assembler,
+                      bool if_true, const std::string& label) {
     if (if_true) {
       assembler->jle(label, Xbyak::CodeGenerator::T_NEAR);
     } else {
@@ -95,7 +97,8 @@ struct GTTraits : public CompareTraits<GTTraits, stub::BINARY_GT> {
     return TypeEntry::GT(lhs, rhs);
   }
 
-  static void JumpInt(Assembler* assembler, bool if_true, const char* label) {
+  static void JumpInt(Assembler* assembler,
+                      bool if_true, const std::string& label) {
     if (if_true) {
       assembler->jg(label, Xbyak::CodeGenerator::T_NEAR);
     } else {
@@ -133,7 +136,8 @@ struct GTETraits : public CompareTraits<GTETraits, stub::BINARY_GTE> {
     return TypeEntry::GTE(lhs, rhs);
   }
 
-  static void JumpInt(Assembler* assembler, bool if_true, const char* label) {
+  static void JumpInt(Assembler* assembler,
+                      bool if_true, const std::string& label) {
     if (if_true) {
       assembler->jge(label, Xbyak::CodeGenerator::T_NEAR);
     } else {
@@ -188,7 +192,7 @@ inline void Compiler::EmitCompare(const Instruction* instr, OP::Type fused) {
       // fused jump opcode
       const bool result = dst_type.constant().ToBoolean();
       if (jump_if_true == result) {
-        asm_->jmp(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->jmp(label, Xbyak::CodeGenerator::T_NEAR);
       }
     } else {
       EmitConstantDest(dst_type, dst);
@@ -221,7 +225,7 @@ inline void Compiler::EmitCompare(const Instruction* instr, OP::Type fused) {
 
     // Compare int32s.
     if (fused != OP::NOP) {
-      Traits::JumpInt(asm_, jump_if_true, label.c_str());
+      Traits::JumpInt(asm_, jump_if_true, label);
     } else {
       // set flag & boxing
       Traits::SetFlagInt(asm_, cl);
@@ -259,9 +263,9 @@ inline void Compiler::EmitCompare(const Instruction* instr, OP::Type fused) {
     if (fused != OP::NOP) {
       asm_->cmp(rax, Extract(JSTrue));
       if (jump_if_true) {
-        asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->je(label, Xbyak::CodeGenerator::T_NEAR);
       } else {
-        asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->jne(label, Xbyak::CodeGenerator::T_NEAR);
       }
     } else {
       // Do nothing.

@@ -185,7 +185,7 @@ class Compiler {
     if (it != jump_map_.end()) {
       // this opcode is jump target
       // split basic block
-      asm_->L(MakeLabel(it->second.counter).c_str());
+      asm_->L(MakeLabel(it->second.counter));
       if (it->second.exception_handled) {
         // store handler range
         handler_links_.insert(std::make_pair(instr, asm_->size()));
@@ -898,9 +898,9 @@ class Compiler {
         const std::string label = MakeLabel(instr);
         asm_->cmp(rax, Extract(JSTrue));
         if (fused == OP::IF_TRUE) {
-          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+          asm_->je(label, Xbyak::CodeGenerator::T_NEAR);
         } else {
-          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+          asm_->jne(label, Xbyak::CodeGenerator::T_NEAR);
         }
         return;
       }
@@ -926,9 +926,9 @@ class Compiler {
         const std::string label = MakeLabel(instr);
         asm_->cmp(rax, Extract(JSTrue));
         if (fused == OP::IF_TRUE) {
-          asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+          asm_->je(label, Xbyak::CodeGenerator::T_NEAR);
         } else {
-          asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+          asm_->jne(label, Xbyak::CodeGenerator::T_NEAR);
         }
         return;
       }
@@ -2345,17 +2345,17 @@ class Compiler {
 
       // boolean and int32_t zero fast cases
       asm_->cmp(rdi, r15);
-      asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+      asm_->je(label, Xbyak::CodeGenerator::T_NEAR);
 
       asm_->cmp(rdi, detail::jsval64::kFalse);
-      asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+      asm_->je(label, Xbyak::CodeGenerator::T_NEAR);
 
       asm_->cmp(rdi, detail::jsval64::kTrue);
       asm_->je(".IF_FALSE_EXIT");
 
       asm_->Call(&stub::TO_BOOLEAN);
       asm_->test(eax, eax);
-      asm_->jz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+      asm_->jz(label, Xbyak::CodeGenerator::T_NEAR);
 
       asm_->L(".IF_FALSE_EXIT");
     }
@@ -2378,11 +2378,11 @@ class Compiler {
       asm_->je(".IF_TRUE_EXIT");
 
       asm_->cmp(rdi, detail::jsval64::kTrue);
-      asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+      asm_->je(label, Xbyak::CodeGenerator::T_NEAR);
 
       asm_->Call(&stub::TO_BOOLEAN);
       asm_->test(eax, eax);
-      asm_->jnz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+      asm_->jnz(label, Xbyak::CodeGenerator::T_NEAR);
 
       asm_->L(".IF_TRUE_EXIT");
     }
@@ -2402,7 +2402,7 @@ class Compiler {
     asm_->mov(qword[r13 + addr * kJSValSize], rax);
     asm_->mov(rax, layout);
     asm_->mov(qword[r13 + flag * kJSValSize], rax);
-    asm_->jmp(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+    asm_->jmp(label, Xbyak::CodeGenerator::T_NEAR);
 
     asm_->align(2);
     // Now, LSB of ptr to this place is 0
@@ -2417,7 +2417,7 @@ class Compiler {
     const register_t enumerable = Reg(instr[1].jump.i16[1]);
     const std::string label = MakeLabel(instr);
     LoadVR(rsi, enumerable);
-    NotNullOrUndefinedGuard(rsi, rdi, label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+    NotNullOrUndefinedGuard(rsi, rdi, label, Xbyak::CodeGenerator::T_NEAR);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::FORIN_SETUP);
     asm_->mov(ptr[r13 + iterator * kJSValSize], rax);
@@ -2433,7 +2433,7 @@ class Compiler {
     LoadVR(rsi, iterator);
     asm_->Call(&stub::FORIN_ENUMERATE);
     asm_->test(rax, rax);
-    asm_->jz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+    asm_->jz(label, Xbyak::CodeGenerator::T_NEAR);
     asm_->mov(ptr[r13 + dst * kJSValSize], rax);
     set_last_used_candidate(dst);
     type_record_.Put(dst, TypeEntry(Type::String()));
@@ -2630,7 +2630,7 @@ class Compiler {
 
   void Int32Guard(register_t reg,
                   const Xbyak::Reg64& target,
-                  const char* label,
+                  const std::string& label,
                   Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_AUTO) {
     if (type_record_.Get(reg).IsInt32()) {
       // no check
@@ -2642,7 +2642,7 @@ class Compiler {
 
   void NumberGuard(register_t reg,
                    const Xbyak::Reg64& target,
-                   const char* label,
+                   const std::string& label,
                    Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_AUTO) {
     if (type_record_.Get(reg).IsNumber()) {
       // no check
@@ -2671,7 +2671,7 @@ class Compiler {
   }
 
   void EmptyGuard(const Xbyak::Reg64& target,
-                  const char* label,
+                  const std::string& label,
                   Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_AUTO) {
     assert(Extract(JSEmpty) == 0);  // Because of null pointer
     asm_->test(target, target);
@@ -2679,7 +2679,7 @@ class Compiler {
   }
 
   void NotEmptyGuard(const Xbyak::Reg64& target,
-                     const char* label,
+                     const std::string& label,
                      Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_AUTO) {
     assert(Extract(JSEmpty) == 0);  // Because of null pointer
     asm_->test(target, target);
@@ -2688,7 +2688,7 @@ class Compiler {
 
   void NotNullOrUndefinedGuard(const Xbyak::Reg64& target,
                                const Xbyak::Reg64& tmp,
-                               const char* label,
+                               const std::string& label,
                                Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_AUTO) {
     // (1000)2 = 8
     // Null is (0010)2 and Undefined is (1010)2
@@ -2729,7 +2729,7 @@ class Compiler {
                        const Xbyak::Reg64& tmp,
                        const Xbyak::Reg64& tmp2,
                        bool store_check,
-                       const char* label,
+                       const std::string& label,
                        Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_AUTO) {
     static_assert(core::kLittleEndian, "System should be little endianess");
 
@@ -2788,7 +2788,7 @@ class Compiler {
   void Jump(const Instruction* instr) {
     assert(OP::IsJump(instr->GetOP()));
     const std::string label = MakeLabel(instr);
-    asm_->jmp(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+    asm_->jmp(label, Xbyak::CodeGenerator::T_NEAR);
   }
 
   inline const Instruction* previous_instr() const { return previous_instr_; }
@@ -2826,7 +2826,7 @@ class Compiler {
   void LoadDouble(register_t reg,
                   const Xbyak::Xmm& xmm,
                   const Xbyak::Reg64& scratch,
-                  const char* label,
+                  const std::string& label,
                   Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_AUTO) {
     const TypeEntry type = type_record_.Get(reg);
     const Xbyak::Reg32 scratch32(scratch.getIdx());

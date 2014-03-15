@@ -795,7 +795,7 @@ IV_AERO_OPCODES(V)
     add(r10d, 1);
     mov(dword[captures_ + kIntSize * counter], r10d);
     cmp(r10d, max);
-    jl(JIT::MakeLabel(Load4Bytes(instr + 9)).c_str(), T_NEAR);
+    jl(JIT::MakeLabel(Load4Bytes(instr + 9)), T_NEAR);
   }
 
   void EmitPUSH_BACKTRACK(const uint8_t* instr, uint32_t len) {
@@ -1229,11 +1229,11 @@ IV_AERO_OPCODES(V)
   }
 
   void DefineLabel(uint32_t num) {
-    L(JIT::MakeLabel(num).c_str());
+    L(JIT::MakeLabel(num));
   }
 
   void Jump(uint32_t num) {
-    jmp(JIT::MakeLabel(num).c_str(), T_NEAR);
+    jmp(JIT::MakeLabel(num), T_NEAR);
   }
 
   void IncrementCP(int offset) {

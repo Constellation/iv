@@ -215,7 +215,7 @@ void Compiler::EmitBINARY_BIT_AND(const Instruction* instr, OP::Type fused) {
       const std::string label = MakeLabel(instr);
       const bool result = dst_type.constant().ToBoolean();
       if ((fused == OP::IF_TRUE) == result) {
-        asm_->jmp(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->jmp(label, Xbyak::CodeGenerator::T_NEAR);
       }
     } else {
       EmitConstantDest(dst_type, dst);
@@ -233,9 +233,9 @@ void Compiler::EmitBINARY_BIT_AND(const Instruction* instr, OP::Type fused) {
       const std::string label = MakeLabel(instr);
       asm_->test(eax, eax);
       if (fused == OP::IF_TRUE) {
-        asm_->jnz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->jnz(label, Xbyak::CodeGenerator::T_NEAR);
       } else {
-        asm_->jz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->jz(label, Xbyak::CodeGenerator::T_NEAR);
       }
     } else {
       asm_->mov(qword[r13 + dst * kJSValSize], rax);
@@ -268,9 +268,9 @@ void Compiler::EmitBINARY_BIT_AND(const Instruction* instr, OP::Type fused) {
     // fused jump opcode
     const std::string label = MakeLabel(instr);
     if (fused == OP::IF_TRUE) {
-      asm_->jnz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+      asm_->jnz(label, Xbyak::CodeGenerator::T_NEAR);
     } else {
-      asm_->jz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+      asm_->jz(label, Xbyak::CodeGenerator::T_NEAR);
     }
     asm_->jmp(".EXIT");
 
@@ -283,9 +283,9 @@ void Compiler::EmitBINARY_BIT_AND(const Instruction* instr, OP::Type fused) {
 
     asm_->test(eax, eax);
     if (fused == OP::IF_TRUE) {
-      asm_->jnz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+      asm_->jnz(label, Xbyak::CodeGenerator::T_NEAR);
     } else {
-      asm_->jz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+      asm_->jz(label, Xbyak::CodeGenerator::T_NEAR);
     }
     asm_->L(".EXIT");
   } else {
