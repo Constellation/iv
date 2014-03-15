@@ -2,6 +2,7 @@
 #define IV_LV5_CONTEXT_H_
 #include <cstddef>
 #include <iv/stringpiece.h>
+#include <iv/ustringpiece.h>
 #include <iv/noncopyable.h>
 #include <iv/space.h>
 #include <iv/i18n.h>
@@ -78,7 +79,7 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
   }
 
   Symbol Intern(const core::StringPiece& str);
-  Symbol Intern(const core::U16StringPiece& str);
+  Symbol Intern(const core::UStringPiece& str);
   Symbol Intern(const JSString* str);
   Symbol Intern(uint32_t index);
   Symbol Intern(double number);

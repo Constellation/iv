@@ -1,10 +1,11 @@
 #ifndef IV_LV5_GLOBAL_DATA_H_
 #define IV_LV5_GLOBAL_DATA_H_
-#include <string>
 #include <iv/detail/array.h>
 #include <iv/dtoa.h>
 #include <iv/conversions.h>
 #include <iv/stringpiece.h>
+#include <iv/ustringpiece.h>
+#include <iv/ustring.h>
 #include <iv/xorshift.h>
 #include <iv/random_generator.h>
 #include <iv/symbol_table.h>
@@ -38,7 +39,7 @@ class GlobalData : public GlobalSymbols {
     return symbol_table_.Lookup(str);
   }
 
-  Symbol Intern(const core::U16StringPiece& str) {
+  Symbol Intern(const core::UStringPiece& str) {
     return symbol_table_.Lookup(str);
   }
 

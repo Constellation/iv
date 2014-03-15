@@ -1,6 +1,6 @@
 #ifndef IV_LV5_BREAKER_JSFUNCTION_H_
 #define IV_LV5_BREAKER_JSFUNCTION_H_
-#include <iv/stringpiece.h>
+#include <iv/ustringpiece.h>
 #include <iv/lv5/arguments.h>
 #include <iv/lv5/jsenv.h>
 #include <iv/lv5/jsscript.h>

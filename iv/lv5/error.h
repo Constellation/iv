@@ -1,9 +1,9 @@
 #ifndef IV_LV5_ERROR_H_
 #define IV_LV5_ERROR_H_
-#include <cstdio>
 #include <algorithm>
-#include <string>
+#include <cstdio>
 #include <iv/detail/memory.h>
+#include <iv/ustring.h>
 #include <iv/noncopyable.h>
 #include <iv/stringpiece.h>
 #include <iv/lv5/jsval_fwd.h>
@@ -15,7 +15,7 @@ class Error {
  public:
   typedef Error this_type;
   typedef void (Error::*bool_type)() const;
-  typedef std::vector<std::u16string> Stack;
+  typedef std::vector<core::UString> Stack;
 
   class Dummy;
   class Standard;
@@ -49,7 +49,7 @@ class Error {
     set_code(code);
   }
 
-  virtual void Report(Code code, const core::U16StringPiece& str) {
+  virtual void Report(Code code, const core::UStringPiece& str) {
     set_code(code);
   }
 
@@ -65,7 +65,7 @@ class Error {
     data_ = ((data_ & (~kCodeMask)) | c);
   }
 
-  virtual std::u16string detail() const { return std::u16string(); }
+  virtual core::UString detail() const { return core::UString(); }
 
   virtual JSVal value() const { return JSUndefined; }
 
@@ -135,7 +135,7 @@ class Error::Standard : public Error {
     detail_.assign(str.begin(), str.end());
   }
 
-  virtual void Report(Code code, const core::U16StringPiece& str) {
+  virtual void Report(Code code, const core::UStringPiece& str) {
     Error::Report(code, str);
     detail_.assign(str.begin(), str.end());
   }
@@ -150,7 +150,7 @@ class Error::Standard : public Error {
     stack_.reset();
   }
 
-  virtual std::u16string detail() const { return detail_; }
+  virtual core::UString detail() const { return detail_; }
 
   virtual JSVal value() const { return value_; }
 
@@ -171,7 +171,7 @@ class Error::Standard : public Error {
 
  private:
   JSVal value_;
-  std::u16string detail_;
+  core::UString detail_;
   std::shared_ptr<Stack> stack_;
 };
 

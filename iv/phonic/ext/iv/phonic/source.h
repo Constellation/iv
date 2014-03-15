@@ -5,6 +5,7 @@
 #include <string>
 #include <tr1/cstdint>
 #include <iv/stringpiece.h>
+#include <iv/ustring.h>
 #include <iv/none.h>
 namespace iv {
 namespace phonic {
@@ -40,9 +41,9 @@ class AsciiSource {
   inline const std::string& filename() const {
     return FilenameData::kFilename;
   }
-  inline core::U16StringPiece SubString(
+  inline core::UStringPiece SubString(
       std::size_t n, std::size_t len = std::string::npos) const {
-    return core::U16StringPiece();
+    return core::UStringPiece();
   }
 
  private:
@@ -69,9 +70,9 @@ class UTF16Source {
   inline const std::string& filename() const {
     return FilenameData::kFilename;
   }
-  inline core::U16StringPiece SubString(
+  inline core::UStringPiece SubString(
       std::size_t n, std::size_t len = std::string::npos) const {
-    return core::U16StringPiece();
+    return core::UStringPiece();
   }
 
  private:
@@ -99,9 +100,9 @@ class UTF16LESource {
   inline const std::string& filename() const {
     return FilenameData::kFilename;
   }
-  inline core::U16StringPiece SubString(
+  inline core::UStringPiece SubString(
       std::size_t n, std::size_t len = std::string::npos) const {
-    return core::U16StringPiece();
+    return core::UStringPiece();
   }
 
  private:
@@ -129,9 +130,9 @@ class UTF16BESource {
   inline const std::string& filename() const {
     return FilenameData::kFilename;
   }
-  inline core::U16StringPiece SubString(
+  inline core::UStringPiece SubString(
       std::size_t n, std::size_t len = std::string::npos) const {
-    return core::U16StringPiece();
+    return core::UStringPiece();
   }
 
  private:

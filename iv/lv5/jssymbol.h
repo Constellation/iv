@@ -1,6 +1,6 @@
 #ifndef IV_LV5_JSSYMBOL_H_
 #define IV_LV5_JSSYMBOL_H_
-#include <string>
+#include <iv/ustring.h>
 #include <iv/lv5/jsval_fwd.h>
 #include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/symbol.h>

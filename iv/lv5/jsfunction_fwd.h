@@ -1,8 +1,7 @@
 #ifndef IV_LV5_JSFUNCTION_FWD_H_
 #define IV_LV5_JSFUNCTION_FWD_H_
 #include <algorithm>
-#include <iv/stringpiece.h>
-#include <iv/string.h>
+#include <iv/ustringpiece.h>
 #include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/class.h>
@@ -54,14 +53,14 @@ class JSFunction : public JSObject {
 
   virtual JSAPI NativeFunction() const { return nullptr; }
 
-  virtual core::U16StringPiece GetSource() const {
-    static const std::u16string kBlock =
-        core::ToU16String("() { \"[native code]\" }");
+  virtual core::UStringPiece GetSource() const {
+    static const core::UString kBlock =
+        core::ToUString("() { \"[native code]\" }");
     return kBlock;
   }
 
-  virtual std::u16string GetName() const {
-    return std::u16string();
+  virtual core::UString GetName() const {
+    return core::UString();
   }
 
   bool strict() const { return strict_; }

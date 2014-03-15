@@ -2,6 +2,7 @@
 #define IV_AERO_JIT_FWD_H_
 #include <iv/platform.h>
 #include <iv/stringpiece.h>
+#include <iv/ustringpiece.h>
 #if defined(IV_ENABLE_JIT)
 #include <iv/third_party/xbyak/xbyak.h>
 namespace iv {
@@ -37,7 +38,7 @@ class JITCode {
   int Execute(VM* vm, Code* code, const core::StringPiece& subject,
               int* captures, std::size_t current_position);
 
-  int Execute(VM* vm, Code* code, const core::U16StringPiece& subject,
+  int Execute(VM* vm, Code* code, const core::UStringPiece& subject,
               int* captures, std::size_t current_position);
 
  private:

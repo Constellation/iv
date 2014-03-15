@@ -688,7 +688,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   }
 
   void EmitReferenceError(Symbol name) {
-    core::U16StringBuilder builder;
+    core::UStringBuilder builder;
     builder.Append('"');
     builder.Append(symbol::GetSymbolString(name));
     builder.Append("\" not defined");
@@ -696,7 +696,7 @@ class Compiler : private core::Noncopyable<Compiler>, public AstVisitor {
   }
 
   void EmitImmutableError(Symbol name) {
-    core::U16StringBuilder builder;
+    core::UStringBuilder builder;
     builder.Append("mutating immutable binding \"");
     builder.Append(symbol::GetSymbolString(name));
     builder.Append("\" not allowed in strict mode");

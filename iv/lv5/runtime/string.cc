@@ -2,9 +2,9 @@
 #include <vector>
 #include <limits>
 #include <utility>
-#include <string>
 #include <iv/detail/tuple.h>
-#include <iv/stringpiece.h>
+#include <iv/ustring.h>
+#include <iv/ustringpiece.h>
 #include <iv/character.h>
 #include <iv/conversions.h>
 #include <iv/platform_math.h>

@@ -1,5 +1,5 @@
-#include <string>
 #include <iv/alloc.h>
+#include <iv/ustring.h>
 #include <iv/unicode.h>
 #include <iv/aero/aero.h>
 #include <iv/aero/jit.h>

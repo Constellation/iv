@@ -3,12 +3,13 @@
 #include <cstdio>
 #include <ostream>  // NOLINT
 #include <sstream>
-#include <string>
 #include <iv/detail/tuple.h>
 #include <iv/detail/cstdint.h>
 #include <iv/ast.h>
 #include <iv/ast_visitor.h>
+#include <iv/ustring.h>
 #include <iv/stringpiece.h>
+#include <iv/ustringpiece.h>
 #include <iv/string_builder.h>
 #include <iv/conversions.h>
 namespace iv {
@@ -32,7 +33,7 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
 #undef V
 
   AstSerializer() : builder_() { }
-  inline std::u16string out() const {
+  inline UString out() const {
     return builder_.Build();
   }
 
@@ -505,14 +506,14 @@ class AstSerializer: public AstVisitor<Factory>::const_type {
 
   void Write(Symbol name) {
     builder_.Append('"');
-    const std::u16string str(symbol::GetSymbolString(name));
+    const core::UString str(symbol::GetSymbolString(name));
     JSONQuote(str.begin(), str.end(),
               std::back_inserter(builder_));
     builder_.Append('"');
   }
 
  private:
-  U16StringBuilder builder_;
+  UStringBuilder builder_;
 };
 
 } } }  // namespace iv::core::ast

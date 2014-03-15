@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <iv/stringpiece.h>
+#include <iv/ustringpiece.h>
 #include <iv/about.h>
 #include <iv/cmdline.h>
 #include <iv/platform_io.h>
@@ -154,7 +155,7 @@ int Ast(const iv::core::StringPiece& data, const std::string& filename) {
   }
   iv::core::ast::AstSerializer<iv::lv5::AstFactory> ser;
   ser.Visit(global);
-  const std::u16string str = ser.out();
+  const iv::core::UString str = ser.out();
   iv::core::unicode::FPutsUTF16(stdout, str.begin(), str.end());
   return EXIT_SUCCESS;
 }

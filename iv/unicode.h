@@ -16,6 +16,7 @@
 #include <iv/detail/cstdint.h>
 #include <iv/detail/array.h>
 #include <iv/stringpiece.h>
+#include <iv/ustringpiece.h>
 namespace iv {
 namespace core {
 namespace unicode {
@@ -482,7 +483,7 @@ inline UTF8Error UTF16ToUTF8(UTF16InputIter it,
 }
 
 template<typename UC8OutputIter>
-inline UTF8Error UTF16ToUTF8(const U16StringPiece& piece, UC8OutputIter result) {
+inline UTF8Error UTF16ToUTF8(const UStringPiece& piece, UC8OutputIter result) {
   return UTF16ToUTF8(piece.begin(), piece.end(), result);
 }
 
@@ -494,7 +495,7 @@ inline int FPutsUTF16(FILE* file, UTF16InputIter it, UTF16InputIter last) {
   return std::fputs(str.c_str(), file);
 }
 
-inline int FPutsUTF16(FILE* file, const U16StringPiece& piece) {
+inline int FPutsUTF16(FILE* file, const UStringPiece& piece) {
   return FPutsUTF16(file, piece.begin(), piece.end());
 }
 
@@ -508,7 +509,7 @@ inline std::ostream& OutputUTF16(std::ostream& os,  // NOLINT
 }
 
 inline std::ostream& OutputUTF16(std::ostream& os,  // NOLINT
-                                 const U16StringPiece& piece) {
+                                 const UStringPiece& piece) {
   std::string str;
   str.reserve(piece.size());
   UTF16ToUTF8(piece.begin(), piece.end(), std::back_inserter(str));

@@ -6,7 +6,7 @@ extern "C" {
 #include <ruby/oniguruma.h>
 }
 #include <iv/alloc.h>
-#include <iv/stringpiece.h>
+#include <iv/ustringpiece.h>
 #include <iv/space.h>
 #include "encoding.h"
 #include "ast_fwd.h"

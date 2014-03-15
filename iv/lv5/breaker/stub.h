@@ -303,7 +303,7 @@ inline Rep THROW_WITH_TYPE_AND_MESSAGE(
 }
 
 inline void RaiseReferenceError(Symbol name, Error* e) {
-  core::U16StringBuilder builder;
+  core::UStringBuilder builder;
   builder.Append('"');
   builder.Append(symbol::GetSymbolString(name));
   builder.Append("\" not defined");

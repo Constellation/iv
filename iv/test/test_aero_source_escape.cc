@@ -1,9 +1,8 @@
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <iterator>
-#include <string>
 #include <iv/alloc.h>
-#include <iv/string.h>
+#include <iv/ustring.h>
 #include <iv/stringpiece.h>
 #include <iv/conversions.h>
 #include <iv/aero/aero.h>
@@ -14,10 +13,10 @@ namespace {
 template<typename T>
 bool ExpectEqual(T reg,
                  const iv::core::StringPiece& expected) {
-  const std::u16string r = iv::core::ToU16String(reg);
-  std::u16string res;
+  const iv::core::UString r = iv::core::ToUString(reg);
+  iv::core::UString res;
   iv::core::RegExpEscape(r.begin(), r.end(), std::back_inserter(res));
-  return res == iv::core::ToU16String(expected);
+  return res == iv::core::ToUString(expected);
 }
 
 }  // namespace anonymous
@@ -40,14 +39,14 @@ TEST(AeroSourceEscapeCase, LineTerminatorTest) {
   EXPECT_TRUE(ExpectEqual("\\\r", "\\r")) << "\\\\r code => \\r";
   EXPECT_TRUE(ExpectEqual(0x2028, "\\u2028")) << "2028 code => \\u2028";
   {
-    std::u16string str;
+    iv::core::UString str;
     str.push_back('\\');
     str.push_back(0x2028);
     EXPECT_TRUE(ExpectEqual(str, "\\u2028")) << "\\2028 code => \\u2028";
   }
   EXPECT_TRUE(ExpectEqual(0x2029, "\\u2029")) << "2029 code => \\u2029";
   {
-    std::u16string str;
+    iv::core::UString str;
     str.push_back('\\');
     str.push_back(0x2029);
     EXPECT_TRUE(ExpectEqual(str, "\\u2029")) << "\\2029 code => \\u2029";
@@ -60,14 +59,14 @@ TEST(AeroSourceEscapeCase, LineTerminatorInBrackTest) {
   EXPECT_TRUE(ExpectEqual("[\r]", "[\\r]")) << "[\\r] => [\\r]";
   EXPECT_TRUE(ExpectEqual("[\\\r]", "[\\r]")) << "[\\\\r code] => [\\r]";
   {
-    std::u16string str;
+    iv::core::UString str;
     str.push_back('[');
     str.push_back(0x2028);
     str.push_back(']');
     EXPECT_TRUE(ExpectEqual(str, "[\\u2028]")) << "[\\2028 code] => [\\u2028]";
   }
   {
-    std::u16string str;
+    iv::core::UString str;
     str.push_back('[');
     str.push_back('\\');
     str.push_back(0x2028);
@@ -75,14 +74,14 @@ TEST(AeroSourceEscapeCase, LineTerminatorInBrackTest) {
     EXPECT_TRUE(ExpectEqual(str, "[\\u2028]")) << "[\\\\2028 code] => [\\u2028]";
   }
   {
-    std::u16string str;
+    iv::core::UString str;
     str.push_back('[');
     str.push_back(0x2029);
     str.push_back(']');
     EXPECT_TRUE(ExpectEqual(str, "[\\u2029]")) << "[\\2029 code] => [\\u2029]";
   }
   {
-    std::u16string str;
+    iv::core::UString str;
     str.push_back('[');
     str.push_back('\\');
     str.push_back(0x2029);
@@ -98,21 +97,21 @@ TEST(AeroSourceEscapeCase, SpecialCharactersTest) {
 TEST(AeroSourceEscapeCase, OneCharTest) {
   iv::core::Space space;
   for (uint32_t ch = 0; ch <= 0xFFFF; ++ch) {
-    std::u16string str = iv::core::ToU16String(ch);
+    iv::core::UString str = iv::core::ToUString(ch);
     {
       space.Clear();
-      iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
+      iv::aero::Parser<iv::core::UStringPiece> parser(&space, str, iv::aero::NONE);
       int error = 0;
       parser.ParsePattern(&error);
       if (error) {  // invalid, like '['
         continue;
       }
     }
-    std::u16string res;
+    iv::core::UString res;
     iv::core::RegExpEscape(str.begin(), str.end(), std::back_inserter(res));
     {
       space.Clear();
-      iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
+      iv::aero::Parser<iv::core::UStringPiece> parser(&space, str, iv::aero::NONE);
       int error = 0;
       iv::aero::ParsedData data = parser.ParsePattern(&error);
       EXPECT_FALSE(error);

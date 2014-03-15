@@ -1,15 +1,15 @@
 #ifndef IV_SYMBOL_FWD_H_
 #define IV_SYMBOL_FWD_H_
 #include <functional>
-#include <string>
 #include <iv/detail/cstdint.h>
 #include <iv/detail/cinttypes.h>
 #include <iv/detail/functional.h>
-#include <iv/platform.h>
-#include <iv/byteorder.h>
+#include <iv/ustring.h>
 #include <iv/unicode.h>
+#include <iv/ustringpiece.h>
 #include <iv/stringpiece.h>
-#include <iv/conversions.h>
+#include <iv/byteorder.h>
+#include <iv/platform.h>
 namespace iv {
 namespace core {
 namespace symbol {
@@ -83,7 +83,7 @@ typedef SymbolLayout<core::Size::kPointerSize, core::kLittleEndian> Symbol;
 
 static const uint32_t kSymbolIsIndex = 0xFFFF;
 
-inline Symbol MakeSymbol(const std::u16string* str) {
+inline Symbol MakeSymbol(const core::UString* str) {
   Symbol symbol = { };
   symbol.str_.str_ = (reinterpret_cast<uintptr_t>(str) | 0x1);
   return symbol;
@@ -163,9 +163,9 @@ inline Symbol MakeSymbolFromIndex(uint32_t index) {
   return MakeSymbol(index);
 }
 
-inline const std::u16string* GetStringFromSymbol(Symbol sym) {
+inline const core::UString* GetStringFromSymbol(Symbol sym) {
   assert(IsStringSymbol(sym));
-  return reinterpret_cast<const std::u16string*>(
+  return reinterpret_cast<const core::UString*>(
       sym.str_.str_ & ~static_cast<uintptr_t>(1));
 }
 
@@ -174,21 +174,21 @@ inline uint32_t GetIndexFromSymbol(Symbol sym) {
   return sym.index_.high_;
 }
 
-inline std::u16string GetIndexStringFromSymbol(Symbol sym) {
+inline core::UString GetIndexStringFromSymbol(Symbol sym) {
   assert(IsIndexSymbol(sym));
   const uint32_t index = GetIndexFromSymbol(sym);
   std::array<char, 15> buffer;
   char* end = core::UInt32ToString(index, buffer.data());
-  return std::u16string(buffer.data(), end);
+  return core::UString(buffer.data(), end);
 }
 
-inline std::u16string GetSymbolString(Symbol sym) {
+inline core::UString GetSymbolString(Symbol sym) {
   if (IsIndexSymbol(sym)) {
     return GetIndexStringFromSymbol(sym);
   } else if (IsStringSymbol(sym)) {
     return *GetStringFromSymbol(sym);
   } else {
-    return std::u16string();
+    return core::UString();
   }
 }
 
@@ -202,7 +202,7 @@ inline std::ostream& operator<<(std::ostream& o, Symbol symbol) {
   if (symbol::IsIndexSymbol(symbol)) {
     return o << symbol::GetIndexFromSymbol(symbol);
   } else {
-    const std::u16string* str = symbol::GetStringFromSymbol(symbol);
+    const UString* str = symbol::GetStringFromSymbol(symbol);
     if (str) {
       std::string utf8;
       utf8.reserve(str->size());

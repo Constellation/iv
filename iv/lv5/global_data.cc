@@ -1,9 +1,10 @@
 #include <ctime>
-#include <string>
 #include <iv/detail/array.h>
 #include <iv/dtoa.h>
 #include <iv/conversions.h>
 #include <iv/stringpiece.h>
+#include <iv/ustringpiece.h>
+#include <iv/ustring.h>
 #include <iv/xorshift.h>
 #include <iv/random_generator.h>
 #include <iv/symbol_table.h>

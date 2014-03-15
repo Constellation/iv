@@ -6,12 +6,12 @@
 namespace iv {
 namespace core {
 
-typedef const std::u16string* StringSymbol;
+typedef const core::UString* StringSymbol;
 
 namespace symbol {
 
 static const Symbol kDummySymbol =
-    MakeSymbol(static_cast<std::u16string*>(nullptr));
+    MakeSymbol(static_cast<core::UString*>(nullptr));
 
 // Symbol key traits for QHashMap
 struct KeyTraits {

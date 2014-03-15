@@ -1,7 +1,7 @@
 #ifndef IV_LV5_JSEXCEPTION_H_
 #define IV_LV5_JSEXCEPTION_H_
 #include <cassert>
-#include <string>
+#include <iv/ustring.h>
 #include <iv/unicode.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsobject_fwd.h>
@@ -176,7 +176,7 @@ inline JSVal Error::Standard::Detail(Context* ctx) {
   };
   assert(error);
   if (!error->HasProperty(ctx, symbol::stack())) {
-    std::u16string dump;
+    core::UString dump;
     if (stack()) {
       for (Stack::const_iterator it = stack()->begin(),
            last = stack()->end(); it != last; ++it) {
@@ -207,7 +207,7 @@ inline JSVal Error::Standard::Detail(Context* ctx) {
 
 inline void Error::Standard::Dump(Context* ctx, FILE* out) {
   assert(*this);
-  std::u16string dump;
+  core::UString dump;
   if (stack()) {
     for (Stack::const_iterator it = stack()->begin(),
          last = stack()->end(); it != last; ++it) {

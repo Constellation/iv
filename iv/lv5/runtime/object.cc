@@ -24,8 +24,8 @@ namespace detail {
 inline void DefinePropertiesHelper(Context* ctx, JSObject* obj,
                                    JSObject* props, Error* e);
 
-std::unordered_set<std::u16string> CreateNativeBrandSet();
-const std::unordered_set<std::u16string>& NativeBrandSet();
+std::unordered_set<core::UString> CreateNativeBrandSet();
+const std::unordered_set<core::UString>& NativeBrandSet();
 
 }  // namespace detail
 
@@ -356,25 +356,25 @@ JSVal ObjectIs(const Arguments& args, Error* e) {
   return JSVal::Bool(JSVal::SameValue(args.At(0), args.At(1)));
 }
 
-std::unordered_set<std::u16string> detail::CreateNativeBrandSet() {
-  std::unordered_set<std::u16string> set;
-  set.insert(core::ToU16String("Arguments"));
-  set.insert(core::ToU16String("Array"));
-  set.insert(core::ToU16String("Boolean"));
-  set.insert(core::ToU16String("Date"));
-  set.insert(core::ToU16String("Error"));
-  set.insert(core::ToU16String("Function"));
-  set.insert(core::ToU16String("JSON"));
-  set.insert(core::ToU16String("Math"));
-  set.insert(core::ToU16String("Number"));
-  set.insert(core::ToU16String("Object"));
-  set.insert(core::ToU16String("RegExp"));
-  set.insert(core::ToU16String("String"));
+std::unordered_set<core::UString> detail::CreateNativeBrandSet() {
+  std::unordered_set<core::UString> set;
+  set.insert(core::ToUString("Arguments"));
+  set.insert(core::ToUString("Array"));
+  set.insert(core::ToUString("Boolean"));
+  set.insert(core::ToUString("Date"));
+  set.insert(core::ToUString("Error"));
+  set.insert(core::ToUString("Function"));
+  set.insert(core::ToUString("JSON"));
+  set.insert(core::ToUString("Math"));
+  set.insert(core::ToUString("Number"));
+  set.insert(core::ToUString("Object"));
+  set.insert(core::ToUString("RegExp"));
+  set.insert(core::ToUString("String"));
   return set;
 }
 
-const std::unordered_set<std::u16string>& detail::NativeBrandSet() {
-  static const std::unordered_set<std::u16string>
+const std::unordered_set<core::UString>& detail::NativeBrandSet() {
+  static const std::unordered_set<core::UString>
       set(detail::CreateNativeBrandSet());
   return set;
 }

@@ -1,8 +1,8 @@
 #ifndef IV_I18N_DATE_TIME_FORMAT_H_
 #define IV_I18N_DATE_TIME_FORMAT_H_
 #include <memory>
-#include <string>
 #include <iv/stringpiece.h>
+#include <iv/ustringpiece.h>
 #include <iv/utils.h>
 #include <iv/i18n_timezone.h>
 #include <iv/i18n_calendar.h>
@@ -210,10 +210,10 @@ class DateTimeFormat : public DateTimeFormatConstants {
   }
 
   // section 12.3.2 Intl.DateTimeFormat.prototype.format
-  std::u16string Format(double x) const {
+  UString Format(double x) const {
     assert(core::math::IsFinite(x));
     // const double res = ToLocalTime(x, calendar(), tz());
-    return std::u16string();
+    return UString();
   }
 
   static double ToLocalTime(double date, Calendar::Type calendar, TimeZone::Type time_zone) {

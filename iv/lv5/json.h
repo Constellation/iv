@@ -1,6 +1,6 @@
 #ifndef IV_LV5_JSON_H_
 #define IV_LV5_JSON_H_
-#include <iv/stringpiece.h>
+#include <iv/ustringpiece.h>
 #include <iv/lv5/json_lexer.h>
 #include <iv/lv5/json_parser.h>
 #include <iv/lv5/json_stringifier.h>
@@ -8,8 +8,8 @@ namespace iv {
 namespace lv5 {
 
 template<bool AcceptLineTerminator>
-inline JSVal ParseJSON(Context* ctx, const core::U16StringPiece& str, Error* e) {
-  JSONParser<core::U16StringPiece, AcceptLineTerminator> parser(ctx, str);
+inline JSVal ParseJSON(Context* ctx, const core::UStringPiece& str, Error* e) {
+  JSONParser<core::UStringPiece, AcceptLineTerminator> parser(ctx, str);
   return parser.Parse(e);
 }
 
@@ -37,7 +37,7 @@ class MaybeJSONParser : private core::Noncopyable<MaybeJSONParser> {
       const Fiber16* fiber = str_->Get16Bit();
       return ParseJSON<false>(
           ctx,
-          core::U16StringPiece(*fiber).substr(1, fiber->size() - 2), e);
+          core::UStringPiece(*fiber).substr(1, fiber->size() - 2), e);
     }
   }
 

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include <string>
-#include <iv/string.h>
 #include <iv/stringpiece.h>
+#include <iv/ustringpiece.h>
+#include <iv/ustring.h>
 
 static void JoinFilePathStr(const iv::core::StringPiece& dir,
                             const iv::core::StringPiece& base,
@@ -59,9 +59,9 @@ TEST(StringPieceCase, EqualTest) {
   EXPECT_NE(StringPiece("OKK"), StringPiece("OK"));
 
   {
-    const std::u16string s1 = iv::core::ToU16String('0');
-    const std::u16string s2 = iv::core::ToU16String('+');
-    EXPECT_FALSE(iv::core::U16StringPiece(s1) == iv::core::U16StringPiece(s2));
+    const iv::core::UString s1 = iv::core::ToUString('0');
+    const iv::core::UString s2 = iv::core::ToUString('+');
+    EXPECT_FALSE(iv::core::UStringPiece(s1) == iv::core::UStringPiece(s2));
   }
 }
 

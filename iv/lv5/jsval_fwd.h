@@ -231,7 +231,7 @@ class JSLayout {
 
   Symbol ToSymbol(Context* ctx, Error* e) const;
 
-  std::u16string ToU16String(Context* ctx, Error* e) const;
+  core::UString ToUString(Context* ctx, Error* e) const;
 
   double ToNumber(Context* ctx, Error* e) const;
 

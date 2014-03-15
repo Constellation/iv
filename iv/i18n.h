@@ -8,6 +8,7 @@
 #define IV_I18N_H_
 #include <iv/character.h>
 #include <iv/stringpiece.h>
+#include <iv/ustringpiece.h>
 #include <iv/notfound.h>
 #include <iv/symbol_fwd.h>
 #include <iv/i18n_language_tag_scanner.h>
@@ -47,7 +48,7 @@ inline bool IsStructurallyValidLanguageTag(const StringPiece& piece) {
   return verifier.IsStructurallyValid();
 }
 
-inline bool IsStructurallyValidLanguageTag(const U16StringPiece& piece) {
+inline bool IsStructurallyValidLanguageTag(const UStringPiece& piece) {
   LanguageTagScanner verifier(piece.cbegin(), piece.cend());
   return verifier.IsStructurallyValid();
 }
@@ -182,7 +183,7 @@ class I18N {
    public:
     Symbols()
       :
-#define IV_V(name) name##_(ToU16String(#name)),
+#define IV_V(name) name##_(ToUString(#name)),
         IV_I18N_LOCALE_SYMBOLS(IV_V)
 #undef IV_V
         last_order_() {
@@ -195,7 +196,7 @@ class I18N {
 #undef IV_V
 
    private:
-#define IV_V(name) const std::u16string name##_;
+#define IV_V(name) const core::UString name##_;
     IV_I18N_LOCALE_SYMBOLS(IV_V)
 #undef IV_V
     int last_order_;

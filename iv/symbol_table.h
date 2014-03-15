@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <iv/detail/unordered_map.h>
+#include <iv/ustring.h>
 #include <iv/conversions.h>
 #include <iv/symbol.h>
 namespace iv {
@@ -12,7 +13,7 @@ class SymbolTable {
  public:
   class SymbolHolder {
    public:
-    SymbolHolder(const U16StringPiece& piece)  // NOLINT
+    SymbolHolder(const UStringPiece& piece)  // NOLINT
       : rep_(),
         size_(piece.size()),
         is_8bit_(false),
@@ -28,7 +29,7 @@ class SymbolTable {
       rep_.rep8 = piece.data();
     }
 
-    SymbolHolder(const std::u16string* str)  // NOLINT
+    SymbolHolder(const UString* str)  // NOLINT
       : rep_(),
         size_(str->size()),
         is_8bit_(false),
@@ -44,7 +45,7 @@ class SymbolTable {
       if (is_8bit_) {
         return Hash::StringToHash(StringPiece(rep_.rep8, size_));
       } else {
-        return Hash::StringToHash(U16StringPiece(rep_.rep16, size_));
+        return Hash::StringToHash(UStringPiece(rep_.rep16, size_));
       }
     }
 
@@ -57,8 +58,8 @@ class SymbolTable {
               StringPiece(rhs.rep_.rep8, rhs.size_);
         }
         return
-            U16StringPiece(lhs.rep_.rep16, lhs.size_) ==
-            U16StringPiece(rhs.rep_.rep16, rhs.size_);
+            UStringPiece(lhs.rep_.rep16, lhs.size_) ==
+            UStringPiece(rhs.rep_.rep16, rhs.size_);
       } else {
         if (lhs.size_ != rhs.size_) {
           return false;
@@ -81,7 +82,7 @@ class SymbolTable {
       }
     }
 
-    const std::u16string* pointer() const { return pointer_; }
+    const UString* pointer() const { return pointer_; }
 
     std::size_t size() const { return size_; }
 
@@ -92,7 +93,7 @@ class SymbolTable {
     } rep_;
     std::size_t size_;
     bool is_8bit_;
-    const std::u16string* pointer_;
+    const UString* pointer_;
     std::size_t hash_;
   };
 
@@ -142,7 +143,7 @@ class SymbolTable {
     if (it != set_.end()) {
       return symbol::MakeSymbol(it->pointer());
     } else {
-      const std::u16string* res = new std::u16string(str.begin(), str.end());
+      const UString* res = new UString(str.begin(), str.end());
       set_.insert(res);
       return symbol::MakeSymbol(res);
     }
