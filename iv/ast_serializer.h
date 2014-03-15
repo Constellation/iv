@@ -8,8 +8,7 @@
 #include <iv/ast.h>
 #include <iv/ast_visitor.h>
 #include <iv/ustring.h>
-#include <iv/stringpiece.h>
-#include <iv/ustringpiece.h>
+#include <iv/string_view.h>
 #include <iv/string_builder.h>
 #include <iv/conversions.h>
 namespace iv {

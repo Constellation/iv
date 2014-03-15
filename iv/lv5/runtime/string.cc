@@ -4,7 +4,7 @@
 #include <utility>
 #include <iv/detail/tuple.h>
 #include <iv/ustring.h>
-#include <iv/ustringpiece.h>
+#include <iv/string_view.h>
 #include <iv/character.h>
 #include <iv/conversions.h>
 #include <iv/platform_math.h>

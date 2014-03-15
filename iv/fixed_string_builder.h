@@ -7,9 +7,8 @@
 #include <cstring>
 #include <string>
 #include <algorithm>
-#include <iv/stringpiece.h>
+#include <iv/string_view.h>
 #include <iv/fixed_container.h>
-#include <iv/ustringpiece.h>
 namespace iv {
 namespace core {
 
@@ -44,11 +43,11 @@ class BasicFixedStringBuilder {
     }
   }
 
-  void Append(const UStringPiece& piece) {
+  void Append(const u16string_view& piece) {
     Append(piece.begin(), piece.size());
   }
 
-  void Append(const StringPiece& piece) {
+  void Append(const string_view& piece) {
     Append(piece.begin(), piece.size());
   }
 
@@ -68,7 +67,7 @@ class BasicFixedStringBuilder {
     Append(start, std::distance(start, last));
   }
 
-  void AddString(const BasicStringPiece<CharT>& piece) {
+  void AddString(const basic_string_view<CharT>& piece) {
     Append(piece);
   }
 
@@ -120,10 +119,10 @@ class BasicFixedStringBuilder {
     point_ = 0;
   }
 
-  BasicStringPiece<CharT> BuildPiece() const {
+  basic_string_view<CharT> BuildPiece() const {
     const std::size_t size = point_;
     Finalize();
-    return BasicStringPiece<CharT>(buffer_.data(), size);
+    return basic_string_view<CharT>(buffer_.data(), size);
   }
 
   std::basic_string<CharT> Build() const {

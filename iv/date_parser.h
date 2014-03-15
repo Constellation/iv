@@ -5,7 +5,7 @@
 #include <iv/detail/array.h>
 #include <iv/noncopyable.h>
 #include <iv/canonicalized_nan.h>
-#include <iv/stringpiece.h>
+#include <iv/string_view.h>
 #include <iv/date_utils.h>
 namespace iv {
 namespace core {
@@ -19,7 +19,7 @@ struct Keyword {
     AM_PM,
     TZ
   };
-  core::StringPiece keyword;
+  core::string_view keyword;
   Type type;
   int value;
 

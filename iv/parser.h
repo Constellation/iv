@@ -2241,7 +2241,7 @@ class Parser : private Noncopyable<> {
             ast::SymbolHolder());
       }
       const double val = lexer_.Numeric();
-      dtoa::StringPieceDToA builder;
+      dtoa::string_viewDToA builder;
       builder.Build(val);
       const Symbol name = table_->Lookup(builder.buffer());
       Next();
@@ -2257,7 +2257,7 @@ class Parser : private Noncopyable<> {
             ast::SymbolHolder());
       }
       const Symbol name = table_->Lookup(
-          UStringPiece(lexer_.Buffer().data(), lexer_.Buffer().size()));
+          u16string_view(lexer_.Buffer().data(), lexer_.Buffer().size()));
       Next();
       return ast::SymbolHolder(
           name,
@@ -2271,7 +2271,7 @@ class Parser : private Noncopyable<> {
 
   ast::SymbolHolder ParseSymbol() {
     const Symbol sym = table_->Lookup(
-        UStringPiece(lexer_.Buffer().data(), lexer_.Buffer().size()));
+        u16string_view(lexer_.Buffer().data(), lexer_.Buffer().size()));
     Next();
     return ast::SymbolHolder(
         sym,
@@ -2283,7 +2283,7 @@ class Parser : private Noncopyable<> {
   Identifier* ParseIdentifier() {
     assert(token_ == Token::TK_IDENTIFIER);
     const Symbol symbol = table_->Lookup(
-        UStringPiece(lexer_.Buffer().data(), lexer_.Buffer().size()));
+        u16string_view(lexer_.Buffer().data(), lexer_.Buffer().size()));
     Identifier* const ident = factory_->NewIdentifier(
         Token::TK_IDENTIFIER,
         symbol,

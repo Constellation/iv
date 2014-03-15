@@ -4,7 +4,7 @@
 #include <cassert>
 #include <string>
 #include <tr1/cstdint>
-#include <iv/stringpiece.h>
+#include <iv/string_view.h>
 #include <iv/ustring.h>
 #include <iv/none.h>
 namespace iv {
@@ -41,9 +41,9 @@ class AsciiSource {
   inline const std::string& filename() const {
     return FilenameData::kFilename;
   }
-  inline core::UStringPiece SubString(
+  inline core::u16string_view SubString(
       std::size_t n, std::size_t len = std::string::npos) const {
-    return core::UStringPiece();
+    return core::u16string_view();
   }
 
  private:
@@ -70,9 +70,9 @@ class UTF16Source {
   inline const std::string& filename() const {
     return FilenameData::kFilename;
   }
-  inline core::UStringPiece SubString(
+  inline core::u16string_view SubString(
       std::size_t n, std::size_t len = std::string::npos) const {
-    return core::UStringPiece();
+    return core::u16string_view();
   }
 
  private:
@@ -100,9 +100,9 @@ class UTF16LESource {
   inline const std::string& filename() const {
     return FilenameData::kFilename;
   }
-  inline core::UStringPiece SubString(
+  inline core::u16string_view SubString(
       std::size_t n, std::size_t len = std::string::npos) const {
-    return core::UStringPiece();
+    return core::u16string_view();
   }
 
  private:
@@ -130,9 +130,9 @@ class UTF16BESource {
   inline const std::string& filename() const {
     return FilenameData::kFilename;
   }
-  inline core::UStringPiece SubString(
+  inline core::u16string_view SubString(
       std::size_t n, std::size_t len = std::string::npos) const {
-    return core::UStringPiece();
+    return core::u16string_view();
   }
 
  private:

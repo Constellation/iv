@@ -1,7 +1,7 @@
 #ifndef IV_LV5_JSFUNCTION_FWD_H_
 #define IV_LV5_JSFUNCTION_FWD_H_
 #include <algorithm>
-#include <iv/ustringpiece.h>
+#include <iv/string_view.h>
 #include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/class.h>
@@ -53,7 +53,7 @@ class JSFunction : public JSObject {
 
   virtual JSAPI NativeFunction() const { return nullptr; }
 
-  virtual core::UStringPiece GetSource() const {
+  virtual core::u16string_view GetSource() const {
     static const core::UString kBlock =
         core::ToUString("() { \"[native code]\" }");
     return kBlock;

@@ -4,7 +4,7 @@
 #include <cstring>
 #include <gc/gc_cpp.h>
 #include <iv/ustring.h>
-#include <iv/ustringpiece.h>
+#include <iv/string_view.h>
 #include <iv/space.h>
 #include <iv/aero/aero.h>
 #include <iv/lv5/context.h>
@@ -28,7 +28,7 @@ class JSRegExpImpl : public gc_cleanup {
   };
 
   JSRegExpImpl(core::Space* allocator,
-               const core::UStringPiece& value, int flags)
+               const core::u16string_view& value, int flags)
     : flags_(flags),
       error_(0),
       code_(nullptr) {
@@ -36,7 +36,7 @@ class JSRegExpImpl : public gc_cleanup {
   }
 
   JSRegExpImpl(core::Space* allocator,
-               const core::StringPiece& value, int flags)
+               const core::string_view& value, int flags)
     : flags_(flags),
       error_(0),
       code_(nullptr) {

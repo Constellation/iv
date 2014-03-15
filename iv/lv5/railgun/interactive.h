@@ -7,7 +7,7 @@
 #include <iv/token.h>
 #include <iv/parser.h>
 #include <iv/unicode.h>
-#include <iv/stringpiece.h>
+#include <iv/string_view.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/factory.h>
 #include <iv/lv5/jsval.h>
@@ -60,7 +60,7 @@ class Interactive {
       buffer.insert(buffer.end(),
                     line.data(), line.data() + std::strlen(line.data()));
       Code* code = Parse(
-          core::StringPiece(buffer.data(), buffer.size()), &recover);
+          core::string_view(buffer.data(), buffer.size()), &recover);
       if (code) {
         buffer.clear();
         if (disassemble_) {
@@ -86,7 +86,7 @@ class Interactive {
     return EXIT_SUCCESS;
   }
  private:
-  Code* Parse(const core::StringPiece& text, bool* recover) {
+  Code* Parse(const core::string_view& text, bool* recover) {
     std::shared_ptr<core::FileSource> const src(
         new core::FileSource(text, detail::kInteractiveOrigin));
     AstFactory factory(&ctx_);

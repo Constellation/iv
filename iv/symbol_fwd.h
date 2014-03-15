@@ -6,8 +6,7 @@
 #include <iv/detail/functional.h>
 #include <iv/ustring.h>
 #include <iv/unicode.h>
-#include <iv/ustringpiece.h>
-#include <iv/stringpiece.h>
+#include <iv/string_view.h>
 #include <iv/byteorder.h>
 #include <iv/platform.h>
 namespace iv {

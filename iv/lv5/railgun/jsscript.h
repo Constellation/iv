@@ -17,7 +17,7 @@ class JSScript : public lv5::JSScript {
 
   void MarkChildren(radio::Core* core) { }
 
-  virtual core::UStringPiece SubString(std::size_t start,
+  virtual core::u16string_view SubString(std::size_t start,
                                        std::size_t len) const = 0;
 };
 
@@ -37,7 +37,7 @@ class JSSourceScript : public JSScript {
     return core::ToUString(core::SourceTraits<Source>::GetFileName(*source_));
   }
 
-  core::UStringPiece SubString(std::size_t start,
+  core::u16string_view SubString(std::size_t start,
                                std::size_t len) const {
     return source_->GetData().substr(start, len);
   }
