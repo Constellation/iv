@@ -110,7 +110,7 @@ inline JSString::JSString(Context* ctx, char16_t ch)
 }
 
 // external string
-inline JSString::JSString(Context* ctx, const core::U16StringPiece& str)
+inline JSString::JSString(Context* ctx, const core::u16string_view& str)
   : JSCell(radio::STRING, ctx->global_data()->primitive_string_map(), nullptr),
     size_(str.size()),
     is_8bit_(false),
@@ -347,18 +347,18 @@ JSString::size_type JSString::find(const JSString& target,
   if (Is8Bit() == target.Is8Bit()) {
     // same type
     if (Is8Bit()) {
-      return core::StringPiece(*Get8Bit()).find(*target.Get8Bit(), index);
+      return core::string_view(*Get8Bit()).find(*target.Get8Bit(), index);
     } else {
-      return core::U16StringPiece(*Get16Bit()).find(*target.Get16Bit(), index);
+      return core::u16string_view(*Get16Bit()).find(*target.Get16Bit(), index);
     }
   } else {
     if (Is8Bit()) {
       const Fiber16* rhs = target.Get16Bit();
-      return core::StringPiece(*Get8Bit()).find(
+      return core::string_view(*Get8Bit()).find(
           rhs->begin(), rhs->end(), index);
     } else {
       const Fiber8* rhs = target.Get8Bit();
-      return core::U16StringPiece(*Get16Bit()).find(
+      return core::u16string_view(*Get16Bit()).find(
           rhs->begin(), rhs->end(), index);
     }
   }
@@ -369,18 +369,18 @@ JSString::size_type JSString::rfind(const JSString& target,
   if (Is8Bit() == target.Is8Bit()) {
     // same type
     if (Is8Bit()) {
-      return core::StringPiece(*Get8Bit()).rfind(*target.Get8Bit(), index);
+      return core::string_view(*Get8Bit()).rfind(*target.Get8Bit(), index);
     } else {
-      return core::U16StringPiece(*Get16Bit()).rfind(*target.Get16Bit(), index);
+      return core::u16string_view(*Get16Bit()).rfind(*target.Get16Bit(), index);
     }
   } else {
     if (Is8Bit()) {
       const Fiber16* rhs = target.Get16Bit();
-      return core::StringPiece(*Get8Bit()).rfind(
+      return core::string_view(*Get8Bit()).rfind(
           rhs->begin(), rhs->end(), index);
     } else {
       const Fiber8* rhs = target.Get8Bit();
-      return core::U16StringPiece(*Get16Bit()).rfind(
+      return core::u16string_view(*Get16Bit()).rfind(
           rhs->begin(), rhs->end(), index);
     }
   }

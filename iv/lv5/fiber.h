@@ -300,7 +300,7 @@ class Fiber : public FiberBase {
       ptr_(fiber->ptr_ + from) {
   }
 
-  explicit Fiber(const core::BasicStringPiece<ExportCharT>& str)
+  explicit Fiber(const core::basic_string_view<ExportCharT>& str)
     : FiberBase(str.size(), k8BitFlag | IS_ORIGINAL | IS_EXTERNAL, this),
       ptr_(reinterpret_cast<CharT*>(const_cast<ExportCharT*>(str.data()))) {
   }
@@ -328,7 +328,7 @@ class Fiber : public FiberBase {
   }
 
   static this_type* NewWithExternal(
-      const core::BasicStringPiece<ExportCharT>& str) {
+      const core::basic_string_view<ExportCharT>& str) {
     return new (GC_MALLOC_ATOMIC(sizeof(this_type))) Fiber(str);
   }
 
@@ -336,8 +336,8 @@ class Fiber : public FiberBase {
     return new (GC_MALLOC_ATOMIC(sizeof(this_type))) Fiber(original, from, to);
   }
 
-  operator core::BasicStringPiece<ExportCharT>() const {
-    return core::BasicStringPiece<ExportCharT>(
+  operator core::basic_string_view<ExportCharT>() const {
+    return core::basic_string_view<ExportCharT>(
         reinterpret_cast<const ExportCharT*>(data()), size());
   }
 

@@ -16,7 +16,7 @@
 #include <iv/ast_fwd.h>
 #include <iv/ast_visitor.h>
 #include <iv/location.h>
-#include <iv/stringpiece.h>
+#include <iv/string_view.h>
 #include <iv/symbol.h>
 
 namespace iv {

@@ -120,7 +120,7 @@ inline JSObject* InitializeDateTimeFormat(Context* ctx,
 
   // TODO(Constellation)
   // clean up this duplicated code
-  static const std::array<core::StringPiece, 2> k6 = { {
+  static const std::array<core::string_view, 2> k6 = { {
     "lookup",
     "best fit"
   } };
@@ -194,7 +194,7 @@ inline JSObject* InitializeDateTimeFormat(Context* ctx,
   }
 
   // clean up this duplicated code
-  static const std::array<core::StringPiece, 2> k24 = { {
+  static const std::array<core::string_view, 2> k24 = { {
     "basic",
     "best fit"
   } };

@@ -491,10 +491,10 @@ class Compiler : private Visitor {
 };
 
 inline Code* Compile(core::Space* space,
-                     const core::U16StringPiece& pattern,
+                     const core::u16string_view& pattern,
                      int flags, int* error) {
   space->Clear();
-  Parser<core::U16StringPiece> parser(space, pattern, flags);
+  Parser<core::u16string_view> parser(space, pattern, flags);
   ParsedData data = parser.ParsePattern(error);
   if (*error) {
     return nullptr;
@@ -504,10 +504,10 @@ inline Code* Compile(core::Space* space,
 }
 
 inline Code* Compile(core::Space* space,
-                     const core::StringPiece& pattern,
+                     const core::string_view& pattern,
                      int flags, int* error) {
   space->Clear();
-  Parser<core::StringPiece> parser(space, pattern, flags);
+  Parser<core::string_view> parser(space, pattern, flags);
   ParsedData data = parser.ParsePattern(error);
   if (*error) {
     return nullptr;

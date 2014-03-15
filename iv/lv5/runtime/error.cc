@@ -1,5 +1,5 @@
 #include <string>
-#include <iv/stringpiece.h>
+#include <iv/string_view.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/constructor_check.h>
 #include <iv/lv5/arguments.h>

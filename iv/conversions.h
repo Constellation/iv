@@ -15,7 +15,7 @@
 #include <iv/character.h>
 #include <iv/conversions_digit.h>
 #include <iv/digit_iterator.h>
-#include <iv/stringpiece.h>
+#include <iv/string_view.h>
 #include <iv/none.h>
 namespace iv {
 namespace core {
@@ -124,14 +124,14 @@ inline double StringToIntegerWithRadix(const CharT* it, const CharT* last,
   return sign * result;
 }
 
-inline double StringToIntegerWithRadix(const StringPiece& piece,
+inline double StringToIntegerWithRadix(const string_view& piece,
                                        int radix, bool strip_prefix) {
   return StringToIntegerWithRadix(piece.data(),
                                   piece.data() + piece.size(),
                                   radix, strip_prefix);
 }
 
-inline double StringToIntegerWithRadix(const U16StringPiece& piece,
+inline double StringToIntegerWithRadix(const u16string_view& piece,
                                        int radix, bool strip_prefix) {
   return StringToIntegerWithRadix(piece.data(),
                                   piece.data() + piece.size(),
@@ -140,7 +140,7 @@ inline double StringToIntegerWithRadix(const U16StringPiece& piece,
 
 // Lua Hash
 struct LuaHash {
-  static inline std::size_t StringToHash(const U16StringPiece& x) {
+  static inline std::size_t StringToHash(const u16string_view& x) {
     std::size_t len = x.size();
     std::size_t step = (len >> 5) + 1;
     std::size_t h = 0;
@@ -150,7 +150,7 @@ struct LuaHash {
     return h;
   }
 
-  static inline std::size_t StringToHash(const StringPiece& x) {
+  static inline std::size_t StringToHash(const string_view& x) {
     std::size_t len = x.size();
     std::size_t step = (len >> 5) + 1;
     std::size_t h = 0;
@@ -178,9 +178,9 @@ struct FNVSeed<8> {
 };
 
 struct FNVHash {
-  static inline std::size_t StringToHash(const U16StringPiece& x) {
+  static inline std::size_t StringToHash(const u16string_view& x) {
     std::size_t hash = FNVSeed<sizeof(std::size_t)>::kBasis;
-    for (U16StringPiece::const_iterator it = x.begin(),
+    for (u16string_view::const_iterator it = x.begin(),
          last = x.end(); it != last; ++it) {
       hash *= FNVSeed<sizeof(std::size_t)>::kPrime;
       hash ^= (*it >> 8);
@@ -190,9 +190,9 @@ struct FNVHash {
     return hash;
   }
 
-  static inline std::size_t StringToHash(const StringPiece& x) {
+  static inline std::size_t StringToHash(const string_view& x) {
     std::size_t hash = FNVSeed<sizeof(std::size_t)>::kBasis;
-    for (StringPiece::const_iterator it = x.begin(),
+    for (string_view::const_iterator it = x.begin(),
          last = x.end(); it != last; ++it) {
       hash *= FNVSeed<sizeof(std::size_t)>::kPrime;
       hash ^= *it;
@@ -289,11 +289,11 @@ inline bool ConvertToUInt32(Iter it, const Iter last, uint32_t* value) {
           ((prev == (uint32_t_max / 10)) && (ch <= (uint32_t_max % 10))));
 }
 
-inline bool ConvertToUInt32(const U16StringPiece& str, uint32_t* value) {
+inline bool ConvertToUInt32(const u16string_view& str, uint32_t* value) {
   return ConvertToUInt32(str.begin(), str.end(), value);
 }
 
-inline bool ConvertToUInt32(const StringPiece& str, uint32_t* value) {
+inline bool ConvertToUInt32(const string_view& str, uint32_t* value) {
   return ConvertToUInt32(str.begin(), str.end(), value);
 }
 
@@ -659,18 +659,18 @@ inline double StringToDouble(Iter it, Iter last, bool parse_float) {
   }
 }
 
-inline double StringToDouble(const StringPiece& str, bool parse_float) {
+inline double StringToDouble(const string_view& str, bool parse_float) {
   return StringToDouble(str.begin(), str.end(), parse_float);
 }
 
-inline double StringToDouble(const U16StringPiece& str, bool parse_float) {
+inline double StringToDouble(const u16string_view& str, bool parse_float) {
   return StringToDouble(str.begin(), str.end(), parse_float);
 }
 
 template<typename U16OutputIter>
 inline U16OutputIter UnicodeSequenceEscape(U16OutputIter out,
                                            char16_t val,
-                                           const StringPiece& prefix = "\\u") {
+                                           const string_view& prefix = "\\u") {
   std::array<char, 4> buf = { { } };
   out = std::copy(prefix.begin(), prefix.end(), out);
   for (int i = 0; i < 4; ++i) {

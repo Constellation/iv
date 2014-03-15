@@ -29,13 +29,13 @@ inline JITExecutable<char16_t>::Executable JITCode::Compile16(const Code* code) 
   return exec16_;
 }
 
-inline int JITCode::Execute(VM* vm, Code* code, const core::StringPiece& subject,
+inline int JITCode::Execute(VM* vm, Code* code, const core::string_view& subject,
                             int* captures, std::size_t current_position) {
   JITExecutable<char>::Executable exec = Compile8(code);
   return exec(vm, subject.data(), subject.size(), captures, current_position);
 }
 
-inline int JITCode::Execute(VM* vm, Code* code, const core::U16StringPiece& subject,
+inline int JITCode::Execute(VM* vm, Code* code, const core::u16string_view& subject,
                             int* captures, std::size_t current_position) {
   JITExecutable<char16_t>::Executable exec = Compile16(code);
   return exec(vm, subject.data(), subject.size(), captures, current_position);

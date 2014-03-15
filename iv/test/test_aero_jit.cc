@@ -17,7 +17,7 @@ TEST(AeroJITCase, MainTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String("a*?");
-    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -31,7 +31,7 @@ TEST(AeroJITCase, MainTest) {
     space.Clear();
     std::u16string str = iv::core::ToU16String("(a){2}");
     std::u16string str1 = iv::core::ToU16String("aa");
-    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -46,7 +46,7 @@ TEST(AeroJITCase, MainTest) {
     space.Clear();
     std::u16string str = iv::core::ToU16String("(a){2}");
     std::string str1("aa");
-    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -61,7 +61,7 @@ TEST(AeroJITCase, MainTest) {
     space.Clear();
     std::u16string reg = iv::core::ToU16String(kURLRegExp);
     std::u16string str1 = iv::core::ToU16String("http://github.com/Constellation/");
-    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::u16string_view> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -75,7 +75,7 @@ TEST(AeroJITCase, MainTest) {
     space.Clear();
     std::u16string reg = iv::core::ToU16String("[\\0\\xa0]");
     std::u16string str1 = iv::core::ToU16String('\0');
-    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::u16string_view> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -96,7 +96,7 @@ TEST(AeroJITCase, SSE42) {
   {
     std::u16string reg = iv::core::ToU16String("[abcd]");
     std::u16string str1 = iv::core::ToU16String('a');
-    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::u16string_view> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -110,7 +110,7 @@ TEST(AeroJITCase, SSE42) {
   {
     std::u16string reg = iv::core::ToU16String("[a-cf-zA-FI-PT-Z]");
     std::u16string str1 = iv::core::ToU16String('Z');
-    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::u16string_view> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -130,7 +130,7 @@ TEST(AeroJITCase, FailedAtTest262Test) {
     space.Clear();
     std::u16string reg = iv::core::ToU16String("\\u0FFF");
     std::u16string str1 = iv::core::ToU16String(0x0FFF);
-    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::u16string_view> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -145,7 +145,7 @@ TEST(AeroJITCase, FailedAtTest262Test) {
     space.Clear();
     std::u16string reg = iv::core::ToU16String("\\u7FFF");
     std::u16string str1 = iv::core::ToU16String(0x7FFF);
-    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::u16string_view> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -160,7 +160,7 @@ TEST(AeroJITCase, FailedAtTest262Test) {
     space.Clear();
     std::u16string reg = iv::core::ToU16String("\\BE");
     std::u16string str1 = iv::core::ToU16String("TEST");
-    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::u16string_view> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -175,7 +175,7 @@ TEST(AeroJITCase, FailedAtTest262Test) {
     space.Clear();
     std::u16string reg = iv::core::ToU16String("Java(Script)?(?=\\:)");
     std::u16string str1 = iv::core::ToU16String("just JavaScript:");
-    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::u16string_view> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);

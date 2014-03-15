@@ -385,7 +385,7 @@ class NumberFormat {
 
   typedef std::unordered_map<std::string, const Data*> NumberFormatDataMap;
 
-  static const Data* Lookup(StringPiece name) {
+  static const Data* Lookup(string_view name) {
     const NumberFormatDataMap::const_iterator it = Map().find(name);
     if (it != Map().end()) {
       return it->second;

@@ -4,7 +4,7 @@
 #include <string>
 #include <iv/alloc.h>
 #include <iv/string.h>
-#include <iv/stringpiece.h>
+#include <iv/string_view.h>
 #include <iv/conversions.h>
 #include <iv/aero/aero.h>
 #include <iv/ignore_unused_variable_warning.h>
@@ -13,7 +13,7 @@ namespace {
 
 template<typename T>
 bool ExpectEqual(T reg,
-                 const iv::core::StringPiece& expected) {
+                 const iv::core::string_view& expected) {
   const std::u16string r = iv::core::ToU16String(reg);
   std::u16string res;
   iv::core::RegExpEscape(r.begin(), r.end(), std::back_inserter(res));
@@ -101,7 +101,7 @@ TEST(AeroSourceEscapeCase, OneCharTest) {
     std::u16string str = iv::core::ToU16String(ch);
     {
       space.Clear();
-      iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
+      iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
       int error = 0;
       parser.ParsePattern(&error);
       if (error) {  // invalid, like '['
@@ -112,7 +112,7 @@ TEST(AeroSourceEscapeCase, OneCharTest) {
     iv::core::RegExpEscape(str.begin(), str.end(), std::back_inserter(res));
     {
       space.Clear();
-      iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
+      iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
       int error = 0;
       iv::aero::ParsedData data = parser.ParsePattern(&error);
       EXPECT_FALSE(error);

@@ -707,7 +707,7 @@ inline Symbol JSLayout::ToSymbol(Context* ctx, Error* e) const {
       std::array<char, 15> buffer;
       char* end = core::Int32ToString(int32(), buffer.data());
       return ctx->Intern(
-          core::StringPiece(buffer.data(),
+          core::string_view(buffer.data(),
                             std::distance(buffer.data(), end)));
     } else {
       std::array<char, 80> buffer;

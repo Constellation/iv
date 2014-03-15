@@ -3,7 +3,7 @@
 #include <locale>
 #include <string>
 #include <vector>
-#include <iv/stringpiece.h>
+#include <iv/string_view.h>
 #include <iv/about.h>
 #include <iv/cmdline.h>
 #include <iv/platform_io.h>
@@ -30,7 +30,7 @@ void InitContext(iv::lv5::Context* ctx) {
 }
 
 #if defined(IV_ENABLE_JIT)
-int BreakerExecute(const iv::core::StringPiece& data,
+int BreakerExecute(const iv::core::string_view& data,
                    const std::string& filename, bool statistics) {
   iv::lv5::Error::Standard e;
   iv::lv5::breaker::Context ctx;
@@ -63,7 +63,7 @@ int BreakerExecuteFiles(const std::vector<std::string>& filenames) {
     }
     std::shared_ptr<iv::core::FileSource>
         src(new iv::core::FileSource(
-                iv::core::StringPiece(res.data(), res.size()), *it));
+                iv::core::string_view(res.data(), res.size()), *it));
     res.clear();
     iv::lv5::breaker::ExecuteInGlobal(&ctx, src, &e);
     if (e) {
@@ -76,7 +76,7 @@ int BreakerExecuteFiles(const std::vector<std::string>& filenames) {
 }
 #endif
 
-int RailgunExecute(const iv::core::StringPiece& data,
+int RailgunExecute(const iv::core::string_view& data,
                    const std::string& filename, bool statistics) {
   iv::lv5::Error::Standard e;
   iv::lv5::railgun::Context ctx;
@@ -111,7 +111,7 @@ int RailgunExecuteFiles(const std::vector<std::string>& filenames) {
     }
     std::shared_ptr<iv::core::FileSource>
         src(new iv::core::FileSource(
-                iv::core::StringPiece(res.data(), res.size()), *it));
+                iv::core::string_view(res.data(), res.size()), *it));
     res.clear();
     iv::lv5::railgun::ExecuteInGlobal(&ctx, src, &e);
     if (e) {
@@ -123,7 +123,7 @@ int RailgunExecuteFiles(const std::vector<std::string>& filenames) {
   return EXIT_SUCCESS;
 }
 
-int DisAssemble(const iv::core::StringPiece& data,
+int DisAssemble(const iv::core::string_view& data,
                 const std::string& filename) {
   iv::lv5::railgun::Context ctx;
   iv::lv5::Error::Standard e;
@@ -139,7 +139,7 @@ int DisAssemble(const iv::core::StringPiece& data,
   return EXIT_SUCCESS;
 }
 
-int Ast(const iv::core::StringPiece& data, const std::string& filename) {
+int Ast(const iv::core::string_view& data, const std::string& filename) {
   iv::core::FileSource src(data, filename);
   iv::lv5::railgun::Context ctx;
   iv::lv5::AstFactory factory(&ctx);
@@ -275,7 +275,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
       }
     }
-    const iv::core::StringPiece src(res.data(), res.size());
+    const iv::core::string_view src(res.data(), res.size());
     if (cmd.Exist("ast")) {
       return Ast(src, filename);
     } else if (cmd.Exist("dis")) {

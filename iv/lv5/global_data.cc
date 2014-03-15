@@ -3,7 +3,7 @@
 #include <iv/detail/array.h>
 #include <iv/dtoa.h>
 #include <iv/conversions.h>
-#include <iv/stringpiece.h>
+#include <iv/string_view.h>
 #include <iv/xorshift.h>
 #include <iv/random_generator.h>
 #include <iv/symbol_table.h>

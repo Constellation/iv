@@ -4,7 +4,7 @@
 #include <iv/alloc.h>
 #include <iv/ast_factory.h>
 #include <iv/location.h>
-#include <iv/stringpiece.h>
+#include <iv/string_view.h>
 #include <iv/lv5/symbol.h>
 #include <iv/lv5/specialized_ast.h>
 

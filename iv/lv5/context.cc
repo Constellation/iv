@@ -1666,11 +1666,11 @@ void Context::InitSymbol(const ClassSlot& func_cls,
              ATTR::C);
 }
 
-Symbol Context::Intern(const core::StringPiece& str) {
+Symbol Context::Intern(const core::string_view& str) {
   return global_data()->Intern(str);
 }
 
-Symbol Context::Intern(const core::U16StringPiece& str) {
+Symbol Context::Intern(const core::u16string_view& str) {
   return global_data()->Intern(str);
 }
 
