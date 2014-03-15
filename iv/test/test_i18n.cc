@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <iv/i18n.h>
+#include <iv/string.h>
 
 // examples are described at
 //   RFC 5646 Appendix A.  Examples of Language Tags (Informative)

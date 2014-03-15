@@ -491,10 +491,10 @@ class Compiler : private Visitor {
 };
 
 inline Code* Compile(core::Space* space,
-                     const core::UStringPiece& pattern,
+                     const core::U16StringPiece& pattern,
                      int flags, int* error) {
   space->Clear();
-  Parser<core::UStringPiece> parser(space, pattern, flags);
+  Parser<core::U16StringPiece> parser(space, pattern, flags);
   ParsedData data = parser.ParsePattern(error);
   if (*error) {
     return nullptr;

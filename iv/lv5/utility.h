@@ -11,7 +11,7 @@ struct JSDoubleEquals {
 };
 
 inline void Inspect(Context* ctx, JSVal val, Error* e) {
-  const core::UString str = val.ToUString(ctx, IV_LV5_ERROR_VOID(e));
+  const std::u16string str = val.ToU16String(ctx, IV_LV5_ERROR_VOID(e));
   core::unicode::FPutsUTF16(stdout, str);
   std::putchar('\n');
 }

@@ -103,7 +103,7 @@ class DefaultSymbolProvider : public core::Singleton<DefaultSymbolProvider> {
 #define V(sym)\
   const core::StringPiece sym##_target(#sym);\
   sym##_ = symbol::MakeSymbol(\
-      new core::UString(sym##_target.begin(), sym##_target.end()));\
+      new std::u16string(sym##_target.begin(), sym##_target.end()));\
   default_symbols_.insert(sym##_);
     IV_DEFAULT_SYMBOLS(V)
 #undef V

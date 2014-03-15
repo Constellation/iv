@@ -15,7 +15,7 @@
 #include <iv/character.h>
 #include <iv/conversions_digit.h>
 #include <iv/digit_iterator.h>
-#include <iv/ustringpiece.h>
+#include <iv/stringpiece.h>
 #include <iv/none.h>
 namespace iv {
 namespace core {
@@ -131,7 +131,7 @@ inline double StringToIntegerWithRadix(const StringPiece& piece,
                                   radix, strip_prefix);
 }
 
-inline double StringToIntegerWithRadix(const UStringPiece& piece,
+inline double StringToIntegerWithRadix(const U16StringPiece& piece,
                                        int radix, bool strip_prefix) {
   return StringToIntegerWithRadix(piece.data(),
                                   piece.data() + piece.size(),
@@ -140,7 +140,7 @@ inline double StringToIntegerWithRadix(const UStringPiece& piece,
 
 // Lua Hash
 struct LuaHash {
-  static inline std::size_t StringToHash(const UStringPiece& x) {
+  static inline std::size_t StringToHash(const U16StringPiece& x) {
     std::size_t len = x.size();
     std::size_t step = (len >> 5) + 1;
     std::size_t h = 0;
@@ -178,9 +178,9 @@ struct FNVSeed<8> {
 };
 
 struct FNVHash {
-  static inline std::size_t StringToHash(const UStringPiece& x) {
+  static inline std::size_t StringToHash(const U16StringPiece& x) {
     std::size_t hash = FNVSeed<sizeof(std::size_t)>::kBasis;
-    for (UStringPiece::const_iterator it = x.begin(),
+    for (U16StringPiece::const_iterator it = x.begin(),
          last = x.end(); it != last; ++it) {
       hash *= FNVSeed<sizeof(std::size_t)>::kPrime;
       hash ^= (*it >> 8);
@@ -289,7 +289,7 @@ inline bool ConvertToUInt32(Iter it, const Iter last, uint32_t* value) {
           ((prev == (uint32_t_max / 10)) && (ch <= (uint32_t_max % 10))));
 }
 
-inline bool ConvertToUInt32(const UStringPiece& str, uint32_t* value) {
+inline bool ConvertToUInt32(const U16StringPiece& str, uint32_t* value) {
   return ConvertToUInt32(str.begin(), str.end(), value);
 }
 
@@ -663,7 +663,7 @@ inline double StringToDouble(const StringPiece& str, bool parse_float) {
   return StringToDouble(str.begin(), str.end(), parse_float);
 }
 
-inline double StringToDouble(const UStringPiece& str, bool parse_float) {
+inline double StringToDouble(const U16StringPiece& str, bool parse_float) {
   return StringToDouble(str.begin(), str.end(), parse_float);
 }
 

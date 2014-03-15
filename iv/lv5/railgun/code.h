@@ -1,8 +1,8 @@
 #ifndef IV_LV5_RAILGUN_CODE_H_
 #define IV_LV5_RAILGUN_CODE_H_
 #include <algorithm>
+#include <string>
 #include <iv/detail/tuple.h>
-#include <iv/ustring.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/gc_template.h>
@@ -75,10 +75,10 @@ class Code : public radio::HeapObject<radio::POINTER> {
     }
   }
 
-  core::UString GenerateErrorLine(const Instruction* instr) const {
+  std::u16string GenerateErrorLine(const Instruction* instr) const {
     const std::size_t line_number =
         core_->LookupLineNumber(instr - core_->data()->data());
-    core::UString result;
+    std::u16string result;
     if (has_name_) {
       result.append(symbol::GetSymbolString(name()));
     } else {

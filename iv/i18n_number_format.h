@@ -6,11 +6,11 @@
 #include <iv/detail/array.h>
 #include <iv/platform_math.h>
 #include <iv/dtoa.h>
+#include <iv/string.h>
 #include <iv/character.h>
 #include <iv/i18n_numbering_system.h>
 #include <iv/i18n_currency.h>
 #include <iv/conversions_digit.h>
-#include <iv/ustring.h>
 namespace iv {
 namespace core {
 namespace i18n {
@@ -259,15 +259,15 @@ class NumberFormat {
   }
 
   // section 12.3.2 Intl.NumberFormat.prototype.format(value)
-  UString Format(double x) const {
+  std::u16string Format(double x) const {
     bool negative = false;
-    UString n;
+    std::u16string n;
     if (!math::IsFinite(x)) {
       if (math::IsNaN(x)) {
-        n = ToUString("NaN");
+        n = ToU16String("NaN");
       } else {
         // infinity mark
-        n = ToUString(0x221e);
+        n = ToU16String(0x221e);
         if (x < 0) {
           negative = true;
         }
@@ -284,12 +284,12 @@ class NumberFormat {
 
       if (minimum_significant_digits_ != kUnspecified &&
           maximum_significant_digits_ != kUnspecified) {
-        n = ToUString(
+        n = ToU16String(
             ToRawPrecision(x,
                            minimum_significant_digits_,
                            maximum_significant_digits_));
       } else {
-        n = ToUString(
+        n = ToU16String(
             ToRawFixed(x,
                        minimum_integer_digits_,
                        minimum_fraction_digits_,
@@ -302,7 +302,7 @@ class NumberFormat {
       if (numbering_system() &&
           numbering_system() !=
             NumberingSystem::Lookup(NumberingSystem::LATN)) {
-        for (UString::iterator it = n.begin(), last = n.end();
+        for (std::u16string::iterator it = n.begin(), last = n.end();
              it != last; ++it) {
           const char16_t ch = *it;
           if (character::IsDecimalDigit(ch)) {
@@ -317,18 +317,18 @@ class NumberFormat {
 
       if (use_grouping()) {
         using std::swap;
-        core::UString temp;
+        std::u16string temp;
         temp.reserve(n.size());
-        UString::size_type p = n.rfind('.');
-        if (p != UString::npos) {
+        std::u16string::size_type p = n.rfind('.');
+        if (p != std::u16string::npos) {
           p = n.size() - p;
           temp.append(n.rbegin(), n.rbegin() + p);
         } else {
           p = 0;
         }
         uint32_t count = 0;
-        UString::const_reverse_iterator it = n.rbegin() + p;
-        const UString::const_reverse_iterator last = n.rend();
+        std::u16string::const_reverse_iterator it = n.rbegin() + p;
+        const std::u16string::const_reverse_iterator last = n.rend();
         while (it != last) {
           temp.push_back(*it);
           ++it;
@@ -353,14 +353,14 @@ class NumberFormat {
 
     const std::size_t i = pattern.find("{number}");
     assert(i != std::string::npos);
-    UString result(pattern.begin(), pattern.begin() + i);
+    std::u16string result(pattern.begin(), pattern.begin() + i);
     result.append(n);
     result.append(pattern.begin() + i + std::strlen("{number}"), pattern.end());
 
     if (style_ == CURRENCY && currency()) {
-      const std::size_t i = result.find(ToUString("{currency}"));
-      assert(i != UString::npos);
-      UString currency_result(result.begin(), result.begin() + i);
+      const std::size_t i = result.find(ToU16String("{currency}"));
+      assert(i != std::u16string::npos);
+      std::u16string currency_result(result.begin(), result.begin() + i);
       if (currency_display() == Currency::SYMBOL &&
           currency()->symbol.size != 0) {
         currency_result.append(currency()->symbol.data,

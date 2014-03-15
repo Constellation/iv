@@ -165,7 +165,7 @@ JSVal JSONStringify(const Arguments& args, Error* e) {
   }
 
   // step 6, 7, 8
-  core::UString gap;
+  std::u16string gap;
   if (space.IsNumber()) {
     const double sp = std::min<double>(10.0,
                                        core::DoubleToInteger(space.number()));

@@ -4,14 +4,13 @@
 #include <new>
 #include <vector>
 #include <iterator>
+#include <string>
 #include <algorithm>
 #include <gc/gc_cpp.h>
 #include <iv/detail/cstdint.h>
 #include <iv/debug.h>
 #include <iv/unicode.h>
-#include <iv/ustring.h>
 #include <iv/stringpiece.h>
-#include <iv/ustringpiece.h>
 #include <iv/lv5/fiber.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsval_fwd.h>
@@ -310,8 +309,8 @@ class JSString : public JSCell {
     }
   }
 
-  core::UString GetUString() const {
-    core::UString str;
+  std::u16string GetUString() const {
+    std::u16string str;
     str.resize(size());
     Copy(str.begin());
     return str;
@@ -422,9 +421,9 @@ class JSString : public JSCell {
     }
   }
 
-  int compare(const core::UStringPiece& piece) const {
+  int compare(const core::U16StringPiece& piece) const {
     if (Is16Bit()) {
-      return core::UStringPiece(*Get16Bit()).compare(piece);
+      return core::U16StringPiece(*Get16Bit()).compare(piece);
     } else {
       const Fiber8* fiber = Get8Bit();
       return core::CompareIterators(fiber->begin(), fiber->end(), piece.begin(), piece.end());
@@ -433,7 +432,7 @@ class JSString : public JSCell {
 
   // factory methods
 
-  static this_type* New(Context* ctx, const core::UStringPiece& str, Error* e) {
+  static this_type* New(Context* ctx, const core::U16StringPiece& str, Error* e) {
     return New(ctx, str.begin(), str.size(), false, e);
   }
 
@@ -496,7 +495,7 @@ class JSString : public JSCell {
       return New(ctx, buffer.data(), end, true, &dummy);
     } else {
       assert(!symbol::IsIndexSymbol(sym));
-      const core::UString* str = symbol::GetStringFromSymbol(sym);
+      const std::u16string* str = symbol::GetStringFromSymbol(sym);
       if (str->empty()) {
         return NewEmptyString(ctx);
       }
@@ -610,7 +609,7 @@ class JSString : public JSCell {
   template<typename FiberType>
   JSString(Context* ctx, const FiberType* fiber, std::size_t from, std::size_t to);
   explicit JSString(Context* ctx, char16_t ch);
-  explicit JSString(Context* ctx, const core::UStringPiece& str);
+  explicit JSString(Context* ctx, const core::U16StringPiece& str);
   template<typename Iter>
   JSString(Context* ctx, Iter it, std::size_t n, bool is_8bit);
   JSString(Context* ctx, this_type* lhs, this_type* rhs);

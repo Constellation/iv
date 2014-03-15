@@ -1,10 +1,11 @@
 #ifndef IV_LV5_RAILGUN_CONSTANT_POOL_H_
 #define IV_LV5_RAILGUN_CONSTANT_POOL_H_
+#include <string>
 #include <iv/detail/cstdint.h>
 #include <iv/detail/unordered_map.h>
 #include <iv/detail/functional.h>
-#include <iv/ustring.h>
 #include <iv/utils.h>
+#include <iv/string.h>
 #include <iv/lv5/jsval_fwd.h>
 #include <iv/lv5/jsstring_fwd.h>
 #include <iv/lv5/error.h>
@@ -22,7 +23,7 @@ class ConstantPool {
  public:
   static const uint32_t kEmpty = UINT32_MAX;
 
-  typedef std::unordered_map<core::UString, int32_t> JSStringToIndexMap;
+  typedef std::unordered_map<std::u16string, int32_t> JSStringToIndexMap;
   typedef std::unordered_map<
       double,
       int32_t,
@@ -91,7 +92,7 @@ class ConstantPool {
     return empty_index_;
   }
 
-  uint32_t string_index(const core::UString& str) {
+  uint32_t string_index(const std::u16string& str) {
     const JSStringToIndexMap::const_iterator it =
         jsstring_to_index_map_.find(str);
 
@@ -113,15 +114,15 @@ class ConstantPool {
   }
 
   uint32_t string_index(const StringLiteral* str) {
-    return string_index(core::ToUString(str->value()));
+    return string_index(core::ToU16String(str->value()));
   }
 
   uint32_t string_index(const core::StringPiece& str) {
-    return string_index(core::ToUString(str));
+    return string_index(core::ToU16String(str));
   }
 
-  uint32_t string_index(const core::UStringPiece& str) {
-    return string_index(core::UString(str));
+  uint32_t string_index(const core::U16StringPiece& str) {
+    return string_index(std::u16string(str));
   }
 
   uint32_t number_index(double val) {

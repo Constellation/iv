@@ -70,7 +70,7 @@ class Operation {
   }
 
   void RaiseReferenceError(Symbol name, Error* e) const {
-    core::UStringBuilder builder;
+    core::U16StringBuilder builder;
     builder.Append('"');
     builder.Append(symbol::GetSymbolString(name));
     builder.Append("\" not defined");
@@ -78,7 +78,7 @@ class Operation {
   }
 
   void RaiseReferenceError(Error* e) const {
-    core::UStringBuilder builder;
+    core::U16StringBuilder builder;
     builder.Append("Invalid left-hand side expression");
     e->Report(Error::Reference, builder.BuildPiece());
   }

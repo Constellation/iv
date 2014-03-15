@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <string>
-#include <iv/ustring.h>
+#include <iv/string.h>
 #include <iv/string_builder.h>
 
 TEST(StringBuilderCase, LiteralBuildTest) {
@@ -10,9 +10,9 @@ TEST(StringBuilderCase, LiteralBuildTest) {
     EXPECT_EQ("TEST", builder.Build());
   }
   {
-    iv::core::UStringBuilder builder;
+    iv::core::U16StringBuilder builder;
     builder.Append("TEST");
-    EXPECT_TRUE(iv::core::ToUString("TEST") == builder.Build());
+    EXPECT_TRUE(iv::core::ToU16String("TEST") == builder.Build());
   }
 }
 
@@ -23,9 +23,9 @@ TEST(StringBuilderCase, CharBuildTest) {
     EXPECT_EQ("T", builder.Build());
   }
   {
-    iv::core::UStringBuilder builder;
+    iv::core::U16StringBuilder builder;
     builder.Append('T');
-    EXPECT_TRUE(iv::core::ToUString("T") == builder.Build());
+    EXPECT_TRUE(iv::core::ToU16String("T") == builder.Build());
   }
 }
 
@@ -37,8 +37,8 @@ TEST(StringBuilderCase, StringBuildTest) {
     EXPECT_EQ(str, builder.Build());
   }
   {
-    iv::core::UStringBuilder builder;
-    const iv::core::UString str = iv::core::ToUString("T");
+    iv::core::U16StringBuilder builder;
+    const std::u16string str = iv::core::ToU16String("T");
     builder.Append(str);
     EXPECT_TRUE(str == builder.Build());
   }

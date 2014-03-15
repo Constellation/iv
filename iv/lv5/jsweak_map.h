@@ -1,6 +1,6 @@
 #ifndef IV_LV5_JSWEAK_MAP_H_
 #define IV_LV5_JSWEAK_MAP_H_
-#include <iv/ustring.h>
+#include <string>
 #include <iv/all_static.h>
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/weak_box.h>

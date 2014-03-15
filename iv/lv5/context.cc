@@ -1,8 +1,8 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <string>
 #include <iv/detail/array.h>
-#include <iv/ustring.h>
 #include <iv/dtoa.h>
 #include <iv/canonicalized_nan.h>
 #include <iv/concat.h>
@@ -1670,7 +1670,7 @@ Symbol Context::Intern(const core::StringPiece& str) {
   return global_data()->Intern(str);
 }
 
-Symbol Context::Intern(const core::UStringPiece& str) {
+Symbol Context::Intern(const core::U16StringPiece& str) {
   return global_data()->Intern(str);
 }
 

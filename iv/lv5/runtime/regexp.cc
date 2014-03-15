@@ -112,8 +112,8 @@ JSVal RegExpCompile(const Arguments& args, Error* e) {
   Context* const ctx = args.ctx();
   const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::RegExp>()) {
-    core::UString pattern;
-    core::UString flags;
+    std::u16string pattern;
+    std::u16string flags;
     if (args_count != 0) {
       const JSVal first = args[0];
       if (!first.IsUndefined()) {

@@ -9,7 +9,6 @@
 #include <algorithm>
 #include <iv/stringpiece.h>
 #include <iv/fixed_container.h>
-#include <iv/ustringpiece.h>
 namespace iv {
 namespace core {
 
@@ -44,7 +43,7 @@ class BasicFixedStringBuilder {
     }
   }
 
-  void Append(const UStringPiece& piece) {
+  void Append(const U16StringPiece& piece) {
     Append(piece.begin(), piece.size());
   }
 

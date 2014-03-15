@@ -1,7 +1,7 @@
 #ifndef IV_AERO_PARSER_H_
 #define IV_AERO_PARSER_H_
 #include <iv/detail/unordered_set.h>
-#include <iv/ustringpiece.h>
+#include <iv/stringpiece.h>
 #include <iv/character.h>
 #include <iv/conversions.h>
 #include <iv/space.h>
@@ -48,7 +48,7 @@ class ParsedData {
   uint32_t max_captures_;
 };
 
-template<typename Source = core::UStringPiece>
+template<typename Source = core::U16StringPiece>
 class Parser {
  public:
   static const std::size_t kMaxPatternSize = core::Size::MB;

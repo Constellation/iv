@@ -35,7 +35,7 @@ inline int JITCode::Execute(VM* vm, Code* code, const core::StringPiece& subject
   return exec(vm, subject.data(), subject.size(), captures, current_position);
 }
 
-inline int JITCode::Execute(VM* vm, Code* code, const core::UStringPiece& subject,
+inline int JITCode::Execute(VM* vm, Code* code, const core::U16StringPiece& subject,
                             int* captures, std::size_t current_position) {
   JITExecutable<char16_t>::Executable exec = Compile16(code);
   return exec(vm, subject.data(), subject.size(), captures, current_position);

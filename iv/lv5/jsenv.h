@@ -361,7 +361,7 @@ class JSObjectEnv : public JSEnv {
     const bool value = record_->HasProperty(ctx, name);
     if (!value) {
       if (strict) {
-        core::UStringBuilder builder;
+        core::U16StringBuilder builder;
         builder.Append('"');
         builder.Append(symbol::GetSymbolString(name));
         builder.Append("\" not defined");

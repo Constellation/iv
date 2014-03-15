@@ -3,8 +3,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <gc/gc_cpp.h>
-#include <iv/ustring.h>
-#include <iv/ustringpiece.h>
+#include <iv/string.h>
+#include <iv/stringpiece.h>
 #include <iv/space.h>
 #include <iv/aero/aero.h>
 #include <iv/lv5/context.h>
@@ -13,7 +13,7 @@ namespace iv {
 namespace lv5 {
 namespace detail {
 
-static const core::UString kEmptyPattern = core::ToUString("(?:)");
+static const std::u16string kEmptyPattern = core::ToU16String("(?:)");
 
 }  // namespace detail
 
@@ -28,7 +28,7 @@ class JSRegExpImpl : public gc_cleanup {
   };
 
   JSRegExpImpl(core::Space* allocator,
-               const core::UStringPiece& value, int flags)
+               const core::U16StringPiece& value, int flags)
     : flags_(flags),
       error_(0),
       code_(nullptr) {

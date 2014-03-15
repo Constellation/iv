@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <type_traits>
-#include <iv/ustring.h>
-#include <iv/ustringpiece.h>
+#include <string>
+#include <iv/stringpiece.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/constructor_check.h>
 #include <iv/lv5/jsfunction.h>

@@ -601,5 +601,11 @@ inline StringPiece AdoptPiece(const StringPiece& piece) {
   return piece;
 }
 
+typedef BasicStringPiece<char16_t, std::char_traits<char16_t> > U16StringPiece;
+
+inline U16StringPiece AdoptPiece(const U16StringPiece& piece) {
+  return piece;
+}
+
 } }  // namespace iv::core
 #endif  // IV_STRINGPIECE_H_

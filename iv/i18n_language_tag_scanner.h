@@ -87,7 +87,6 @@
 #include <iv/detail/array.h>
 #include <iv/character.h>
 #include <iv/stringpiece.h>
-#include <iv/ustring.h>
 #include <iv/conversions_digit.h>
 #include <iv/i18n_locale.h>
 #include <iv/i18n_language_tag.h>

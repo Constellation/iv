@@ -1,8 +1,8 @@
 // dumper for debug
 #ifndef IV_AERO_DUMPER_H_
 #define IV_AERO_DUMPER_H_
+#include <string>
 #include <iv/string_builder.h>
-#include <iv/ustring.h>
 #include <iv/aero/visitor.h>
 #include <iv/aero/ast.h>
 namespace iv {
@@ -11,7 +11,7 @@ namespace aero {
 class Dumper : public Visitor {
  public:
   Dumper() : builder_() { }
-  core::UString Dump(Expression* node) {
+  std::u16string Dump(Expression* node) {
     builder_.clear();
     node->Accept(this);
     return builder_.Build();
@@ -96,7 +96,7 @@ class Dumper : public Visitor {
     builder_.Append(')');
   }
 
-  core::UStringBuilder builder_;
+  core::U16StringBuilder builder_;
 };
 
 } }  // namespace iv::aero

@@ -5,9 +5,7 @@
 #include <string>
 #include <iv/unicode.h>
 #include <iv/character.h>
-#include <iv/ustring.h>
 #include <iv/stringpiece.h>
-#include <iv/ustringpiece.h>
 #include <iv/source_traits.h>
 namespace iv {
 namespace core {
@@ -35,7 +33,7 @@ class FileSource {
     return filename_;
   }
 
-  core::UStringPiece GetData() const {
+  core::U16StringPiece GetData() const {
     return source_;
   }
 
@@ -119,7 +117,7 @@ class FileSource {
     return current;
   }
 
-  core::UString source_;
+  std::u16string source_;
   std::string filename_;
 };
 

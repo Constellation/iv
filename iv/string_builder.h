@@ -4,7 +4,6 @@
 #include <iterator>
 #include <string>
 #include <iv/stringpiece.h>
-#include <iv/ustringpiece.h>
 namespace iv {
 namespace core {
 
@@ -26,7 +25,7 @@ class BasicStringBuilder : protected std::vector<CharT> {
   typedef typename container_type::size_type size_type;
   typedef typename container_type::difference_type difference_type;
 
-  void Append(const core::UStringPiece& piece) {
+  void Append(const core::U16StringPiece& piece) {
     insert(container_type::end(), piece.begin(), piece.end());
   }
 
@@ -52,7 +51,7 @@ class BasicStringBuilder : protected std::vector<CharT> {
 
   // for assignable object (like std::string)
 
-  void append(const core::UStringPiece& piece) {
+  void append(const core::U16StringPiece& piece) {
     insert(container_type::end(), piece.begin(), piece.end());
   }
 
@@ -84,7 +83,7 @@ class BasicStringBuilder : protected std::vector<CharT> {
 };
 
 typedef BasicStringBuilder<char> StringBuilder;
-typedef BasicStringBuilder<char16_t> UStringBuilder;
+typedef BasicStringBuilder<char16_t> U16StringBuilder;
 
 } }  // namespace iv::core
 #endif  // IV_STRING_BUILDER_H_
