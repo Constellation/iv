@@ -1,6 +1,6 @@
 #ifndef IV_I18N_LOCALE_H_
 #define IV_I18N_LOCALE_H_
-#include <iv/string_view.h>
+#include <iv/stringpiece.h>
 #include <iv/fixed_string.h>
 namespace iv {
 namespace core {

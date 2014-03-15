@@ -38,7 +38,7 @@ inline JSObject* InitializeCollator(Context* ctx,
 
   Options options(o);
 
-  static const std::array<core::string_view, 2> k6 = { {
+  static const std::array<core::StringPiece, 2> k6 = { {
     "sort",
     "search"
   } };

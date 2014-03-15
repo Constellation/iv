@@ -34,7 +34,7 @@
 #include <iv/platform_math.h>
 #include <iv/thread.h>
 #include <iv/byteorder.h>
-#include <iv/string_view.h>
+#include <iv/stringpiece.h>
 #include <iv/conversions.h>
 
 namespace iv {
@@ -1334,13 +1334,13 @@ class StringDToA : public DToA<StringDToA, std::string> {
   }
 };
 
-class string_viewDToA : public DToA<string_viewDToA, void> {
+class StringPieceDToA : public DToA<StringPieceDToA, void> {
  public:
-  friend class DToA<string_viewDToA, void>;
+  friend class DToA<StringPieceDToA, void>;
   typedef std::array<char, kDToABufferSize> buffer_type;
 
-  string_view buffer() const {
-    return string_view(buffer_.data(), size_);
+  StringPiece buffer() const {
+    return StringPiece(buffer_.data(), size_);
   }
 
  private:

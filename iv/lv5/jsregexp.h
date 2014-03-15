@@ -2,7 +2,7 @@
 #define IV_LV5_JSREGEXP_H_
 #include <vector>
 #include <utility>
-#include <iv/string_view.h>
+#include <iv/stringpiece.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsobject_fwd.h>
@@ -40,7 +40,7 @@ class JSRegExp : public JSObject {
   }
 
   static JSRegExp* New(Context* ctx,
-                       const core::u16string_view& value,
+                       const core::U16StringPiece& value,
                        const JSRegExpImpl* impl,
                        Error* e) {
     JSRegExp* const reg = new JSRegExp(ctx, value, impl, IV_LV5_ERROR(e));
@@ -145,7 +145,7 @@ class JSRegExp : public JSObject {
   }
 
   JSRegExp(Context* ctx,
-           const core::u16string_view& pattern,
+           const core::U16StringPiece& pattern,
            const JSRegExpImpl* reg,
            Error* e)
     : JSObject(ctx->global_data()->regexp_map()),
@@ -193,7 +193,7 @@ class JSRegExp : public JSObject {
     return builder.Build(ctx, str->Is8Bit(), e);
   }
 
-  static JSString* Escape(Context* ctx, const core::u16string_view& str, Error* e) {
+  static JSString* Escape(Context* ctx, const core::U16StringPiece& str, Error* e) {
     JSStringBuilder builder;
     builder.reserve(str.size());
     core::RegExpEscape(str.begin(), str.end(), std::back_inserter(builder));

@@ -5,7 +5,7 @@
 #include <iv/detail/array.h>
 #include <iv/detail/unordered_map.h>
 #include <iv/noncopyable.h>
-#include <iv/string_view.h>
+#include <iv/stringpiece.h>
 #include <iv/conversions.h>
 #include <iv/lv5/railgun/fwd.h>
 #include <iv/lv5/railgun/op.h>
@@ -62,7 +62,7 @@ class DisAssembler : private core::Noncopyable<> {
       assert(len >= 0);  // %05d, so always pass
       line.insert(line.end(), buf, buf + len);
       DisAssemble(code, it, index, opcode, length, &line);
-      OutputLine(core::string_view(line.data(), line.size()));
+      OutputLine(core::StringPiece(line.data(), line.size()));
       line.clear();
       std::advance(it, length);
       index += length;
@@ -401,7 +401,7 @@ class DisAssembler : private core::Noncopyable<> {
   }
 
  private:
-  void OutputLine(const core::string_view& str) {
+  void OutputLine(const core::StringPiece& str) {
     static_cast<Derived*>(this)->OutputLine(str);
   }
 };
@@ -411,7 +411,7 @@ class OutputDisAssembler : public DisAssembler<OutputDisAssembler> {
   OutputDisAssembler(Context* ctx, FILE* file)
     : DisAssembler<OutputDisAssembler>(ctx), file_(file) { }
 
-  void OutputLine(const core::string_view& str) {
+  void OutputLine(const core::StringPiece& str) {
     const std::size_t rv = std::fwrite(str.data(), 1, str.size(), file_);
     if (rv == str.size()) {
       std::fputc('\n', file_);

@@ -10,7 +10,7 @@
 #include <iv/detail/cstdint.h>
 #include <iv/debug.h>
 #include <iv/unicode.h>
-#include <iv/string_view.h>
+#include <iv/stringpiece.h>
 #include <iv/lv5/fiber.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsval_fwd.h>
@@ -412,18 +412,18 @@ class JSString : public JSCell {
     return (*x.Flatten()) >= (*y.Flatten());
   }
 
-  int compare(const core::string_view& piece) const {
+  int compare(const core::StringPiece& piece) const {
     if (Is8Bit()) {
-      return core::string_view(*Get8Bit()).compare(piece);
+      return core::StringPiece(*Get8Bit()).compare(piece);
     } else {
       const Fiber16* fiber = Get16Bit();
       return core::CompareIterators(fiber->begin(), fiber->end(), piece.begin(), piece.end());
     }
   }
 
-  int compare(const core::u16string_view& piece) const {
+  int compare(const core::U16StringPiece& piece) const {
     if (Is16Bit()) {
-      return core::u16string_view(*Get16Bit()).compare(piece);
+      return core::U16StringPiece(*Get16Bit()).compare(piece);
     } else {
       const Fiber8* fiber = Get8Bit();
       return core::CompareIterators(fiber->begin(), fiber->end(), piece.begin(), piece.end());
@@ -432,11 +432,11 @@ class JSString : public JSCell {
 
   // factory methods
 
-  static this_type* New(Context* ctx, const core::u16string_view& str, Error* e) {
+  static this_type* New(Context* ctx, const core::U16StringPiece& str, Error* e) {
     return New(ctx, str.begin(), str.size(), false, e);
   }
 
-  static this_type* NewAsciiString(Context* ctx, const core::string_view& str, Error* e) {
+  static this_type* NewAsciiString(Context* ctx, const core::StringPiece& str, Error* e) {
     return New(ctx, str.begin(), str.size(), true, e);
   }
 
@@ -609,7 +609,7 @@ class JSString : public JSCell {
   template<typename FiberType>
   JSString(Context* ctx, const FiberType* fiber, std::size_t from, std::size_t to);
   explicit JSString(Context* ctx, char16_t ch);
-  explicit JSString(Context* ctx, const core::u16string_view& str);
+  explicit JSString(Context* ctx, const core::U16StringPiece& str);
   template<typename Iter>
   JSString(Context* ctx, Iter it, std::size_t n, bool is_8bit);
   JSString(Context* ctx, this_type* lhs, this_type* rhs);

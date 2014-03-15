@@ -953,7 +953,7 @@ inline Rep STORE_ELEMENT_INDEXED(
     std::array<char, 15> buffer;
     char* end = core::Int32ToString(index, buffer.data());
     const Symbol name =
-        ctx->Intern(core::string_view(
+        ctx->Intern(core::StringPiece(
                 buffer.data(), std::distance(buffer.data(), end)));
     obj->Put(ctx, name, src, ic->strict(), IV_LV5_BREAKER_ERR);
     return 0;

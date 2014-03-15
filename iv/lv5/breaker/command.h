@@ -17,7 +17,7 @@ namespace lv5 {
 namespace breaker {
 namespace detail {
 
-static void Execute(const core::string_view& data,
+static void Execute(const core::StringPiece& data,
                     const std::string& filename, Error* e) {
   breaker::Context ctx;
   ctx.DefineFunction<&Print, 1>("print");
@@ -59,7 +59,7 @@ inline JSVal Run(const Arguments& args, Error* e) {
 
   TickTimer timer;
   detail::Execute(
-      core::string_view(buffer.data(), buffer.size()),
+      core::StringPiece(buffer.data(), buffer.size()),
       filename, IV_LV5_ERROR(e));
   return timer.GetTime();
 }
@@ -84,7 +84,7 @@ inline JSVal Load(const Arguments& args, Error* e) {
   TickTimer timer;
   std::shared_ptr<core::FileSource> src(
       new core::FileSource(
-          core::string_view(buffer.data(), buffer.size()),
+          core::StringPiece(buffer.data(), buffer.size()),
           filename)
       );
   breaker::ExecuteInGlobal(

@@ -1,7 +1,7 @@
 #ifndef IV_AERO_JIT_FWD_H_
 #define IV_AERO_JIT_FWD_H_
 #include <iv/platform.h>
-#include <iv/string_view.h>
+#include <iv/stringpiece.h>
 #if defined(IV_ENABLE_JIT)
 #include <iv/third_party/xbyak/xbyak.h>
 namespace iv {
@@ -34,10 +34,10 @@ class JITCode {
 
   JITExecutable<char16_t>::Executable Compile16(const Code* code);
 
-  int Execute(VM* vm, Code* code, const core::string_view& subject,
+  int Execute(VM* vm, Code* code, const core::StringPiece& subject,
               int* captures, std::size_t current_position);
 
-  int Execute(VM* vm, Code* code, const core::u16string_view& subject,
+  int Execute(VM* vm, Code* code, const core::U16StringPiece& subject,
               int* captures, std::size_t current_position);
 
  private:

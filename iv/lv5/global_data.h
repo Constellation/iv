@@ -4,7 +4,7 @@
 #include <iv/detail/array.h>
 #include <iv/dtoa.h>
 #include <iv/conversions.h>
-#include <iv/string_view.h>
+#include <iv/stringpiece.h>
 #include <iv/xorshift.h>
 #include <iv/random_generator.h>
 #include <iv/symbol_table.h>
@@ -34,11 +34,11 @@ class GlobalData : public GlobalSymbols {
 
   void InitNormalObjectMaps(Context* ctx);
 
-  Symbol Intern(const core::string_view& str) {
+  Symbol Intern(const core::StringPiece& str) {
     return symbol_table_.Lookup(str);
   }
 
-  Symbol Intern(const core::u16string_view& str) {
+  Symbol Intern(const core::U16StringPiece& str) {
     return symbol_table_.Lookup(str);
   }
 
@@ -55,7 +55,7 @@ class GlobalData : public GlobalSymbols {
       const char* const str = core::DoubleToCString(number,
                                                     buffer.data(),
                                                     buffer.size());
-      return symbol_table_.Lookup(core::string_view(str));
+      return symbol_table_.Lookup(core::StringPiece(str));
     }
   }
 
@@ -67,7 +67,7 @@ class GlobalData : public GlobalSymbols {
       std::array<char, 30> buffer;
       const char* last = core::UInt64ToString(val, buffer.data());
       return symbol_table_.Lookup(
-          core::string_view(buffer.data(), last - buffer.data()));
+          core::StringPiece(buffer.data(), last - buffer.data()));
     }
   }
 

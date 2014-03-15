@@ -5,7 +5,7 @@
 #include <string>
 #include <iv/unicode.h>
 #include <iv/character.h>
-#include <iv/string_view.h>
+#include <iv/stringpiece.h>
 #include <iv/source_traits.h>
 namespace iv {
 namespace core {
@@ -13,8 +13,8 @@ namespace core {
 class FileSource {
  public:
   static const int kEOS = -1;
-  FileSource(const core::string_view& str,
-             const core::string_view& filename)
+  FileSource(const core::StringPiece& str,
+             const core::StringPiece& filename)
     : source_(),
       filename_(filename.data(), filename.size()) {
     ParseMagicComment(str);
@@ -33,7 +33,7 @@ class FileSource {
     return filename_;
   }
 
-  core::u16string_view GetData() const {
+  core::U16StringPiece GetData() const {
     return source_;
   }
 
@@ -43,7 +43,7 @@ class FileSource {
     return (begin == end) ? kEOS : *begin;
   }
 
-  void ParseMagicComment(const core::string_view& str) {
+  void ParseMagicComment(const core::StringPiece& str) {
     const char* begin = str.data();
     const char* end   = begin + str.size();
 

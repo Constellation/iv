@@ -7,7 +7,7 @@
 #ifndef IV_I18N_H_
 #define IV_I18N_H_
 #include <iv/character.h>
-#include <iv/string_view.h>
+#include <iv/stringpiece.h>
 #include <iv/notfound.h>
 #include <iv/symbol_fwd.h>
 #include <iv/i18n_language_tag_scanner.h>
@@ -42,12 +42,12 @@ inline bool IsStructurallyValidLanguageTag(Iter it, Iter last) {
   return verifier.IsStructurallyValid();
 }
 
-inline bool IsStructurallyValidLanguageTag(const string_view& piece) {
+inline bool IsStructurallyValidLanguageTag(const StringPiece& piece) {
   LanguageTagScanner verifier(piece.cbegin(), piece.cend());
   return verifier.IsStructurallyValid();
 }
 
-inline bool IsStructurallyValidLanguageTag(const u16string_view& piece) {
+inline bool IsStructurallyValidLanguageTag(const U16StringPiece& piece) {
   LanguageTagScanner verifier(piece.cbegin(), piece.cend());
   return verifier.IsStructurallyValid();
 }
@@ -123,7 +123,7 @@ class I18N {
                                        AvailIter alast,
                                        const std::string& locale) {
     std::size_t size = locale.size();
-    string_view candidate(locale.data(), size);
+    StringPiece candidate(locale.data(), size);
     while (!candidate.empty()) {
       const AvailIter it = std::find(ait, alast, candidate);
       if (it != alast) {
@@ -136,7 +136,7 @@ class I18N {
       if (pos >= 2 && candidate[pos - 2] == '-') {
         pos -= 2;
       }
-      candidate = string_view(locale.data(), pos - 1);
+      candidate = StringPiece(locale.data(), pos - 1);
     }
     return alast;
   }

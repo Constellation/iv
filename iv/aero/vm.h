@@ -5,7 +5,7 @@
 #include <memory>
 #include <iv/platform.h>
 #include <iv/noncopyable.h>
-#include <iv/string_view.h>
+#include <iv/stringpiece.h>
 #include <iv/os_allocator.h>
 #include <iv/aero/code.h>
 #include <iv/aero/character.h>
@@ -61,22 +61,22 @@ class VM : private core::Noncopyable<VM> {
   }
 
 #if defined(IV_ENABLE_JIT)
-  int Execute(Code* code, const core::u16string_view& subject,
+  int Execute(Code* code, const core::U16StringPiece& subject,
               int* captures, int offset) {
     return code->jit()->Execute(this, code, subject, captures, offset);
   }
 
-  int Execute(Code* code, const core::string_view& subject,
+  int Execute(Code* code, const core::StringPiece& subject,
               int* captures, int offset) {
     return code->jit()->Execute(this, code, subject, captures, offset);
   }
 #else
-  int Execute(Code* code, const core::u16string_view& subject,
+  int Execute(Code* code, const core::U16StringPiece& subject,
               int* captures, int offset) {
     return ExecuteImpl(code, subject, captures, offset);
   }
 
-  int Execute(Code* code, const core::string_view& subject,
+  int Execute(Code* code, const core::StringPiece& subject,
               int* captures, int offset) {
     return ExecuteImpl(code, subject, captures, offset);
   }

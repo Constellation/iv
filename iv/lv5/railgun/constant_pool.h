@@ -117,11 +117,11 @@ class ConstantPool {
     return string_index(core::ToU16String(str->value()));
   }
 
-  uint32_t string_index(const core::string_view& str) {
+  uint32_t string_index(const core::StringPiece& str) {
     return string_index(core::ToU16String(str));
   }
 
-  uint32_t string_index(const core::u16string_view& str) {
+  uint32_t string_index(const core::U16StringPiece& str) {
     return string_index(std::u16string(str));
   }
 

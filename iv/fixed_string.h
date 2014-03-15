@@ -1,6 +1,6 @@
 #ifndef IV_FIXED_STRING_H_
 #define IV_FIXED_STRING_H_
-#include <iv/string_view.h>
+#include <iv/stringpiece.h>
 namespace iv {
 namespace core {
 
@@ -24,7 +24,7 @@ class BasicFixedString {
 
   static const size_type npos;
 
-  BasicFixedString(const basic_string_view<char_type>& str)  // NOLINT
+  BasicFixedString(const BasicStringPiece<char_type>& str)  // NOLINT
     : size_(str.size()),
       data_() {
     assert(size() <= MAX);
@@ -32,8 +32,8 @@ class BasicFixedString {
     data()[size()] = '\0';
   }
 
-  operator basic_string_view<char_type>() {
-    return basic_string_view<char_type>(data(), size());
+  operator BasicStringPiece<char_type>() {
+    return BasicStringPiece<char_type>(data(), size());
   }
 
   size_type size() const { return size_; }
@@ -125,7 +125,7 @@ class BasicFixedString {
     data()[size()] = '\0';
   }
 
-  void append(const basic_string_view<char_type>& str) {
+  void append(const BasicStringPiece<char_type>& str) {
     assert((size() + str.size()) <= MAX);
     std::copy(str.begin(), str.end(), begin() + size());
     size_ = size() + str.size();

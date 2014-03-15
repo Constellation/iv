@@ -134,7 +134,7 @@ JSVal DateConstructor(const Arguments& args, Error* e) {
       tz_hour,
       tz_min);
   return JSString::NewAsciiString(
-      args.ctx(), core::string_view(buf, num), e);
+      args.ctx(), core::StringPiece(buf, num), e);
 }
 
 
@@ -262,7 +262,7 @@ JSVal DateToString(const Arguments& args, Error* e) {
       tz_hour,
       tz_min);
   return JSString::NewAsciiString(
-      args.ctx(), core::string_view(buf, num), e);
+      args.ctx(), core::StringPiece(buf, num), e);
 }
 
 // section 15.9.5.3 Date.prototype.toDateString()
@@ -292,7 +292,7 @@ JSVal DateToDateString(const Arguments& args, Error* e) {
       instance.date(),
       instance.year());
   return JSString::NewAsciiString(
-      args.ctx(), core::string_view(buf, num), e);
+      args.ctx(), core::StringPiece(buf, num), e);
 }
 
 // section 15.9.5.4 Date.prototype.toTimeString()
@@ -330,7 +330,7 @@ JSVal DateToTimeString(const Arguments& args, Error* e) {
       tz_hour,
       tz_min);
   return JSString::NewAsciiString(
-      args.ctx(), core::string_view(buf, num), e);
+      args.ctx(), core::StringPiece(buf, num), e);
 }
 
 // section 15.9.5.5 Date.prototype.toLocaleString()
@@ -371,7 +371,7 @@ JSVal DateToLocaleString(const Arguments& args, Error* e) {
       tz_hour,
       tz_min);
   return JSString::NewAsciiString(
-      args.ctx(), core::string_view(buf, num), e);
+      args.ctx(), core::StringPiece(buf, num), e);
 }
 
 // section 15.9.5.6 Date.prototype.toLocaleDateString()
@@ -401,7 +401,7 @@ JSVal DateToLocaleDateString(const Arguments& args, Error* e) {
       instance.date(),
       instance.year());
   return JSString::NewAsciiString(
-      args.ctx(), core::string_view(buf, num), e);
+      args.ctx(), core::StringPiece(buf, num), e);
 }
 
 // section 15.9.5.7 Date.prototype.toLocaleTimeString()
@@ -439,7 +439,7 @@ JSVal DateToLocaleTimeString(const Arguments& args, Error* e) {
       tz_hour,
       tz_min);
   return JSString::NewAsciiString(
-      args.ctx(), core::string_view(buf, num), e);
+      args.ctx(), core::StringPiece(buf, num), e);
 }
 
 // section 15.9.5.8 Date.prototype.valueOf()
@@ -1353,7 +1353,7 @@ JSVal DateToUTCString(const Arguments& args, Error* e) {
       instance.min(),
       instance.sec());
   return JSString::NewAsciiString(
-      args.ctx(), core::string_view(buf, num), e);
+      args.ctx(), core::StringPiece(buf, num), e);
 }
 
 // section 15.9.5.43 Date.prototype.toISOString()
@@ -1386,7 +1386,7 @@ JSVal DateToISOString(const Arguments& args, Error* e) {
       instance.sec(),
       instance.ms());
   return JSString::NewAsciiString(
-      args.ctx(), core::string_view(buf, num), e);
+      args.ctx(), core::StringPiece(buf, num), e);
 }
 
 // section 15.9.5.44 Date.prototype.toJSON()

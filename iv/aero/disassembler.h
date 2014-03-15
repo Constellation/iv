@@ -7,7 +7,7 @@
 #include <iv/detail/array.h>
 #include <iv/detail/cstdint.h>
 #include <iv/noncopyable.h>
-#include <iv/string_view.h>
+#include <iv/stringpiece.h>
 #include <iv/aero/op.h>
 #include <iv/aero/code.h>
 #include <iv/aero/utility.h>
@@ -39,14 +39,14 @@ class DisAssembler : private core::Noncopyable<> {
       const int len = snprintf(buf, sizeof(buf) - 1, "%05d: ", index);
       assert(len >= 0);  // %05d, so always pass
       line.insert(line.end(), buf, buf + len);
-      const core::string_view piece(OP::String(opcode));
+      const core::StringPiece piece(OP::String(opcode));
       line.insert(line.end(), piece.begin(), piece.end());
       for (uint32_t first = 1; first < length; ++first) {
         line.push_back(' ');
         std::string val = core::DoubleToStringWithRadix(*(it + first), 10);
         line.insert(line.end(), val.begin(), val.end());
       }
-      OutputLine(core::string_view(line.data(), line.size()));
+      OutputLine(core::StringPiece(line.data(), line.size()));
       line.clear();
       std::advance(it, length);
       index += length;
@@ -54,7 +54,7 @@ class DisAssembler : private core::Noncopyable<> {
   }
 
  private:
-  void OutputLine(const core::string_view& str) {
+  void OutputLine(const core::StringPiece& str) {
     static_cast<Derived*>(this)->OutputLine(str);
   }
 };
@@ -63,7 +63,7 @@ class OutputDisAssembler : public DisAssembler<OutputDisAssembler> {
  public:
   explicit OutputDisAssembler(FILE* file) : file_(file) { }
 
-  void OutputLine(const core::string_view& str) {
+  void OutputLine(const core::StringPiece& str) {
     const std::size_t rv = std::fwrite(str.data(), 1, str.size(), file_);
     if (rv == str.size()) {
       std::fputc('\n', file_);

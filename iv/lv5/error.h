@@ -5,7 +5,7 @@
 #include <string>
 #include <iv/detail/memory.h>
 #include <iv/noncopyable.h>
-#include <iv/string_view.h>
+#include <iv/stringpiece.h>
 #include <iv/lv5/jsval_fwd.h>
 namespace iv {
 namespace lv5 {
@@ -45,11 +45,11 @@ class Error {
   };
   static const uint8_t kKindMask = 8;
 
-  virtual void Report(Code code, const core::string_view& str) {
+  virtual void Report(Code code, const core::StringPiece& str) {
     set_code(code);
   }
 
-  virtual void Report(Code code, const core::u16string_view& str) {
+  virtual void Report(Code code, const core::U16StringPiece& str) {
     set_code(code);
   }
 
@@ -130,12 +130,12 @@ class Error::Standard : public Error {
  public:
   Standard() : Error(TYPE_STANDARD) { }
 
-  virtual void Report(Code code, const core::string_view& str) {
+  virtual void Report(Code code, const core::StringPiece& str) {
     Error::Report(code, str);
     detail_.assign(str.begin(), str.end());
   }
 
-  virtual void Report(Code code, const core::u16string_view& str) {
+  virtual void Report(Code code, const core::U16StringPiece& str) {
     Error::Report(code, str);
     detail_.assign(str.begin(), str.end());
   }

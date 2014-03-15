@@ -1704,7 +1704,7 @@ static void BM_AeroSunSpiderTest(benchmark::State& state) {
   while (state.KeepRunning()) {
     space.Clear();
     for (const auto& str : regs) {
-      iv::aero::Parser<iv::core::string_view> parser(&space,
+      iv::aero::Parser<iv::core::StringPiece> parser(&space,
                                                      str,
                                                      iv::aero::IGNORE_CASE);
       int error = 0;

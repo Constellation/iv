@@ -2,18 +2,18 @@
 #define IV_STRING_H_
 #include <string>
 #include <cstdint>
-#include <iv/string_view.h>
+#include <iv/stringpiece.h>
 namespace iv {
 namespace core {
 
-inline std::u16string ToU16String(const string_view& piece) {
+inline std::u16string ToU16String(const StringPiece& piece) {
   // TODO(Yusuke Suzuki): This cast is not necessary.
   return std::u16string(
       reinterpret_cast<const char16_t*>(piece.data()),
       reinterpret_cast<const char16_t*>(piece.data() + piece.size()));
 }
 
-inline std::u16string ToU16String(const u16string_view& piece) {
+inline std::u16string ToU16String(const U16StringPiece& piece) {
   return std::u16string(piece.begin(), piece.end());
 }
 

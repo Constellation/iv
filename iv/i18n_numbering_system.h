@@ -95,7 +95,7 @@ class NumberingSystem : public NumberingSystemConstants {
   typedef NumberingSystemData Data;
   typedef std::unordered_map<std::string, const Data*> NumberingSystemMap;  // NOLINT
 
-  static const Data* Lookup(string_view name) {
+  static const Data* Lookup(StringPiece name) {
     const NumberingSystemMap::const_iterator it = Map().find(name);
     if (it != Map().end()) {
       return it->second;

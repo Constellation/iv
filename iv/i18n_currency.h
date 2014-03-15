@@ -584,7 +584,7 @@ class Currency {
   typedef CurrencyData Data;
   typedef std::unordered_map<std::string, const Data*> CurrencyMap;
 
-  static const Data* Lookup(string_view name) {
+  static const Data* Lookup(StringPiece name) {
     const CurrencyMap::const_iterator it = Map().find(name);
     if (it != Map().end()) {
       return it->second;

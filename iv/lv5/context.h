@@ -1,7 +1,7 @@
 #ifndef IV_LV5_CONTEXT_H_
 #define IV_LV5_CONTEXT_H_
 #include <cstddef>
-#include <iv/string_view.h>
+#include <iv/stringpiece.h>
 #include <iv/noncopyable.h>
 #include <iv/space.h>
 #include <iv/i18n.h>
@@ -51,7 +51,7 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
 
   void Initialize();
 
-  void Import(const core::string_view& name, JSObject* obj) {
+  void Import(const core::StringPiece& name, JSObject* obj) {
     Error::Dummy e;
     const Symbol sym = Intern(name);
     global_env_->CreateMutableBinding(this, sym, true, IV_LV5_ERROR_VOID(&e));
@@ -60,14 +60,14 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
 
   template<typename Func>
   void DefineFunction(const Func& f,
-                      const core::string_view& func_name,
+                      const core::StringPiece& func_name,
                       std::size_t n) {
     JSFunction* const func = JSNativeFunction::New(this, f, n);
     Import(func_name, func);
   }
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
-  void DefineFunction(const core::string_view& func_name) {
+  void DefineFunction(const core::StringPiece& func_name) {
     const Symbol name = Intern(func_name);
     JSFunction* const f = JSInlinedFunction<func, n>::New(this, name);
     Import(func_name, f);
@@ -77,8 +77,8 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
     return throw_type_error_;
   }
 
-  Symbol Intern(const core::string_view& str);
-  Symbol Intern(const core::u16string_view& str);
+  Symbol Intern(const core::StringPiece& str);
+  Symbol Intern(const core::U16StringPiece& str);
   Symbol Intern(const JSString* str);
   Symbol Intern(uint32_t index);
   Symbol Intern(double number);

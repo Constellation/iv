@@ -12,7 +12,7 @@ class SymbolTable {
  public:
   class SymbolHolder {
    public:
-    SymbolHolder(const u16string_view& piece)  // NOLINT
+    SymbolHolder(const U16StringPiece& piece)  // NOLINT
       : rep_(),
         size_(piece.size()),
         is_8bit_(false),
@@ -20,7 +20,7 @@ class SymbolTable {
       rep_.rep16 = piece.data();
     }
 
-    SymbolHolder(const string_view& piece)  // NOLINT
+    SymbolHolder(const StringPiece& piece)  // NOLINT
       : rep_(),
         size_(piece.size()),
         is_8bit_(true),
@@ -42,9 +42,9 @@ class SymbolTable {
         return hash_;
       }
       if (is_8bit_) {
-        return Hash::StringToHash(string_view(rep_.rep8, size_));
+        return Hash::StringToHash(StringPiece(rep_.rep8, size_));
       } else {
-        return Hash::StringToHash(u16string_view(rep_.rep16, size_));
+        return Hash::StringToHash(U16StringPiece(rep_.rep16, size_));
       }
     }
 
@@ -53,12 +53,12 @@ class SymbolTable {
         if (lhs.is_8bit_) {
           // 8bits
           return
-              string_view(lhs.rep_.rep8, lhs.size_) ==
-              string_view(rhs.rep_.rep8, rhs.size_);
+              StringPiece(lhs.rep_.rep8, lhs.size_) ==
+              StringPiece(rhs.rep_.rep8, rhs.size_);
         }
         return
-            u16string_view(lhs.rep_.rep16, lhs.size_) ==
-            u16string_view(rhs.rep_.rep16, rhs.size_);
+            U16StringPiece(lhs.rep_.rep16, lhs.size_) ==
+            U16StringPiece(rhs.rep_.rep16, rhs.size_);
       } else {
         if (lhs.size_ != rhs.size_) {
           return false;
@@ -128,7 +128,7 @@ class SymbolTable {
 
   template<class CharT>
   inline Symbol Lookup(const CharT* str) {
-    return Lookup(basic_string_view<CharT>(str));
+    return Lookup(BasicStringPiece<CharT>(str));
   }
 
   template<class String>

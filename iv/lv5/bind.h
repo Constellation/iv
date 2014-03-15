@@ -1,6 +1,6 @@
 #ifndef IV_LV5_BIND_H_
 #define IV_LV5_BIND_H_
-#include <iv/string_view.h>
+#include <iv/stringpiece.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsobject_fwd.h>
@@ -39,7 +39,7 @@ class Object : public Scope {
   }
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
-  Object& def(const core::string_view& string) {
+  Object& def(const core::StringPiece& string) {
     return def<func, n>(ctx_->Intern(string));
   }
 
@@ -55,7 +55,7 @@ class Object : public Scope {
   }
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
-  Object& def(const core::string_view& string, int attr) {
+  Object& def(const core::StringPiece& string, int attr) {
     return def<func, n>(ctx_->Intern(string), attr);
   }
 
@@ -70,7 +70,7 @@ class Object : public Scope {
     return *this;
   }
 
-  Object& def(const core::string_view& string, JSVal val) {
+  Object& def(const core::StringPiece& string, JSVal val) {
     return def(ctx_->Intern(string), val);
   }
 
@@ -86,7 +86,7 @@ class Object : public Scope {
     return def(symbol->symbol(), val, attr);
   }
 
-  Object& def(const core::string_view& string, JSVal val, int attr) {
+  Object& def(const core::StringPiece& string, JSVal val, int attr) {
     return def(ctx_->Intern(string), val, attr);
   }
 
@@ -98,7 +98,7 @@ class Object : public Scope {
     return *this;
   }
 
-  Object& def_accessor(const core::string_view& string,
+  Object& def_accessor(const core::StringPiece& string,
                        JSObject* getter,
                        JSObject* setter, int attr) {
     return def_accessor(ctx_->Intern(string), getter, setter, attr);
@@ -113,7 +113,7 @@ class Object : public Scope {
     return *this;
   }
 
-  Object& def_getter(const core::string_view& string,
+  Object& def_getter(const core::StringPiece& string,
                      JSObject* getter, int attr) {
     return def_accessor(ctx_->Intern(string), getter, nullptr, attr);
   }
@@ -123,7 +123,7 @@ class Object : public Scope {
   }
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
-  Object& def_getter(const core::string_view& string) {
+  Object& def_getter(const core::StringPiece& string) {
     return def_getter<func, n>(ctx_->Intern(string));
   }
 
@@ -139,7 +139,7 @@ class Object : public Scope {
   }
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
-  Object& def_getter(const core::string_view& string, int attr) {
+  Object& def_getter(const core::StringPiece& string, int attr) {
     return def_getter<func, n>(ctx_->Intern(string), attr);
   }
 
@@ -154,7 +154,7 @@ class Object : public Scope {
     return *this;
   }
 
-  Object& def_setter(const core::string_view& string,
+  Object& def_setter(const core::StringPiece& string,
                      JSObject* setter, int attr) {
     return def_accessor(ctx_->Intern(string), nullptr, setter, attr);
   }
@@ -164,7 +164,7 @@ class Object : public Scope {
   }
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
-  Object& def_setter(const core::string_view& string) {
+  Object& def_setter(const core::StringPiece& string) {
     return def_setter<func, n>(ctx_->Intern(string));
   }
 
@@ -180,7 +180,7 @@ class Object : public Scope {
   }
 
   template<JSVal (*func)(const Arguments&, Error*), std::size_t n>
-  Object& def_setter(const core::string_view& string, int attr) {
+  Object& def_setter(const core::StringPiece& string, int attr) {
     return def_setter<func, n>(ctx_->Intern(string), attr);
   }
 

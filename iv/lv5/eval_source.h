@@ -28,7 +28,7 @@ class EvalSource : public core::Noncopyable<> {
     return source_.size();
   }
 
-  core::u16string_view GetData() const {
+  core::U16StringPiece GetData() const {
     return source_;
   }
 
@@ -45,7 +45,7 @@ struct SourceTraits<lv5::EvalSource> {
     return lv5::detail::kEvalSource;
   }
 
-  static core::u16string_view SubString(
+  static core::U16StringPiece SubString(
       const lv5::EvalSource& src,
       std::size_t n, std::size_t len = std::string::npos) {
     return src.GetData().substr(n, len);

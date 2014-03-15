@@ -235,7 +235,7 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
   NumberOptions options(o);
   JSObject* opt = JSObject::New(ctx);
 
-  static const std::array<core::string_view, 2> k7 = { {
+  static const std::array<core::StringPiece, 2> k7 = { {
     "lookup",
     "best fit"
   } };
@@ -284,7 +284,7 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
   const core::i18n::Currency::Data* currency_data = nullptr;
   JSString* c = nullptr;
   {
-    static const std::array<core::string_view, 3> k15 = { {
+    static const std::array<core::StringPiece, 3> k15 = { {
       "decimal",
       "percent",
       "currency"
@@ -337,7 +337,7 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
     }
 
     // currencyDisplay option
-    static const std::array<core::string_view, 3> kd = { {
+    static const std::array<core::StringPiece, 3> kd = { {
       "code",
       "symbol",
       "name"

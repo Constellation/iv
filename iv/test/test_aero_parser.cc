@@ -11,7 +11,7 @@ TEST(AeroParserCase, MainTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String("main");
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -23,7 +23,7 @@ TEST(AeroParserCase, MainTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String("ma[in]");
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -32,7 +32,7 @@ TEST(AeroParserCase, MainTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String("(ma[in])");
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -41,7 +41,7 @@ TEST(AeroParserCase, MainTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String("[\\d-a]");
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -50,7 +50,7 @@ TEST(AeroParserCase, MainTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String(kURLRegExp);
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -59,7 +59,7 @@ TEST(AeroParserCase, MainTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String("a{10,}");
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -68,7 +68,7 @@ TEST(AeroParserCase, MainTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String("a{10,20}");
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -77,7 +77,7 @@ TEST(AeroParserCase, MainTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String("\\a");
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -87,7 +87,7 @@ TEST(AeroParserCase, MainTest) {
     space.Clear();
     std::array<char16_t, 2> l = { { 92, 99 } };
     std::u16string str(l.begin(), l.end());
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -97,7 +97,7 @@ TEST(AeroParserCase, MainTest) {
     // see IE Blog
     space.Clear();
     std::u16string str = iv::core::ToU16String("ma[in]]");
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -106,7 +106,7 @@ TEST(AeroParserCase, MainTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String("a{10, 20}");
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -115,7 +115,7 @@ TEST(AeroParserCase, MainTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String("a{10,20");
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -124,7 +124,7 @@ TEST(AeroParserCase, MainTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String("a{ 10,20}");
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -133,7 +133,7 @@ TEST(AeroParserCase, MainTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String("a{a10,20}");
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -146,7 +146,7 @@ TEST(AeroParserCase, SyntaxInvalidTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String("ma[in");
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_TRUE(error);
@@ -155,7 +155,7 @@ TEST(AeroParserCase, SyntaxInvalidTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String("ma([in]");
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_TRUE(error);
@@ -164,7 +164,7 @@ TEST(AeroParserCase, SyntaxInvalidTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String("[b-a]");
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_TRUE(error);
@@ -173,7 +173,7 @@ TEST(AeroParserCase, SyntaxInvalidTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String("[b-aab]");
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_TRUE(error);
@@ -182,7 +182,7 @@ TEST(AeroParserCase, SyntaxInvalidTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String("a{20,10}");
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_TRUE(error);
@@ -191,7 +191,7 @@ TEST(AeroParserCase, SyntaxInvalidTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String("{20,10}");
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_TRUE(error);
@@ -200,7 +200,7 @@ TEST(AeroParserCase, SyntaxInvalidTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String("+");
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_TRUE(error);
@@ -209,7 +209,7 @@ TEST(AeroParserCase, SyntaxInvalidTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String("*");
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_TRUE(error);
@@ -218,7 +218,7 @@ TEST(AeroParserCase, SyntaxInvalidTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String("{20}");
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_TRUE(error);
@@ -227,7 +227,7 @@ TEST(AeroParserCase, SyntaxInvalidTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String("{20,}");
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_TRUE(error);
@@ -236,7 +236,7 @@ TEST(AeroParserCase, SyntaxInvalidTest) {
   {
     space.Clear();
     std::u16string str = iv::core::ToU16String("{0,2}");
-    iv::aero::Parser<iv::core::u16string_view> parser(&space, str, iv::aero::NONE);
+    iv::aero::Parser<iv::core::U16StringPiece> parser(&space, str, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_TRUE(error);

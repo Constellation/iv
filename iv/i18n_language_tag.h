@@ -4,7 +4,7 @@
 #define IV_I18N_LANGUAGE_TAG_H_
 #include <iv/detail/unordered_map.h>
 #include <iv/detail/array.h>
-#include <iv/string_view.h>
+#include <iv/stringpiece.h>
 namespace iv {
 namespace core {
 namespace i18n {
@@ -19,7 +19,7 @@ namespace data {
 //     i-enochian   x-i-enochian
 //     i-mingo      see-x-i-mingo
 //     zh-min       nan-x-zh-min
-typedef std::array<std::pair<string_view, string_view>, 26> GrandfatheredArray;
+typedef std::array<std::pair<StringPiece, StringPiece>, 26> GrandfatheredArray;
 static const GrandfatheredArray kGrandfathered = { {
   std::make_pair("cel-graulish", "cel-graulis"),
   std::make_pair("en-gb-oed", "en-GB-x-oed"),
@@ -51,7 +51,7 @@ static const GrandfatheredArray kGrandfathered = { {
 
 // Redundant tags are replaced to Preferred-Value.
 // If tag don't provide Preferred-Value, we don't replace it.
-typedef std::array<std::pair<string_view, string_view>, 25> RedundantArray;
+typedef std::array<std::pair<StringPiece, StringPiece>, 25> RedundantArray;
 static const RedundantArray kRedundant = { {
   std::make_pair("sgn-br", "bzs"),
   std::make_pair("sgn-co", "csn"),
@@ -81,7 +81,7 @@ static const RedundantArray kRedundant = { {
 } };
 
 // Language tags with Preferred-Value.
-typedef std::array<std::pair<string_view, string_view>, 16> LanguageArray;
+typedef std::array<std::pair<StringPiece, StringPiece>, 16> LanguageArray;
 static const LanguageArray kLanguage = { {
   std::make_pair("in", "id"),
   std::make_pair("iw", "he"),
@@ -102,7 +102,7 @@ static const LanguageArray kLanguage = { {
 } };
 
 // Region tags with Preferred-Value.
-typedef std::array<std::pair<string_view, string_view>, 6> RegionArray;
+typedef std::array<std::pair<StringPiece, StringPiece>, 6> RegionArray;
 static const RegionArray kRegion = { {
   std::make_pair("BU", "MM"),
   std::make_pair("DD", "DE"),
@@ -113,13 +113,13 @@ static const RegionArray kRegion = { {
 } };
 
 // Variant tags with Preferred-Value.
-typedef std::array<std::pair<string_view, string_view>, 1> VariantArray;
+typedef std::array<std::pair<StringPiece, StringPiece>, 1> VariantArray;
 static const VariantArray kVariant = { {
   std::make_pair("heploc", "alalc97")
 } };
 
 // Extlang tags with Preferred-Value and Prefix.
-typedef std::array<std::pair<string_view, std::pair<string_view, string_view> >, 225> ExtlangArray;  // NOLINT
+typedef std::array<std::pair<StringPiece, std::pair<StringPiece, StringPiece> >, 225> ExtlangArray;  // NOLINT
 static const ExtlangArray kExtlang = { {
   std::make_pair("aao", std::make_pair("aao", "ar")),
   std::make_pair("abh", std::make_pair("abh", "ar")),

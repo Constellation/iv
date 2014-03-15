@@ -1,7 +1,7 @@
 #ifndef IV_PLATFORM_IO_H_
 #define IV_PLATFORM_IO_H_
 #include <iv/utils.h>
-#include <iv/string_view.h>
+#include <iv/stringpiece.h>
 #include <vector>
 #include <string>
 namespace iv {
