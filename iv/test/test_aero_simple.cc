@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <vector>
 #include <memory>
+#include <string>
 #include <iv/alloc.h>
 #include <iv/ustring.h>
 #include <iv/unicode.h>
@@ -14,8 +15,8 @@ TEST(AeroSimpleCase, MainTest) {
   iv::aero::OutputDisAssembler disasm(stdout);
   {
     space.Clear();
-    iv::core::UString reg = iv::core::ToUString("s");
-    iv::core::UString str1 = iv::core::ToUString("s\n");
+    std::u16string reg = iv::core::ToU16String("s");
+    std::u16string str1 = iv::core::ToU16String("s\n");
     iv::aero::Parser<iv::core::u16string_view> parser(&space, reg, iv::aero::MULTILINE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
@@ -33,10 +34,10 @@ TEST(AeroSimpleCase, CounterTest) {
   iv::aero::OutputDisAssembler disasm(stdout);
   {
     space.Clear();
-    iv::core::UString reg = iv::core::ToUString("aa");
-    iv::core::UString str1 = iv::core::ToUString("aa");
-    iv::core::UString str2 = iv::core::ToUString("aaa");
-    iv::core::UString str3 = iv::core::ToUString("a");
+    std::u16string reg = iv::core::ToU16String("aa");
+    std::u16string str1 = iv::core::ToU16String("aa");
+    std::u16string str2 = iv::core::ToU16String("aaa");
+    std::u16string str3 = iv::core::ToU16String("a");
     iv::aero::Parser<iv::core::u16string_view> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
