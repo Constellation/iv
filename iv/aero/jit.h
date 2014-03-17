@@ -90,33 +90,6 @@ class JIT : public Xbyak::CodeGenerator {
     JIT* gen_;
   };
 
-  class RepatchBackTrack {
-   public:
-    RepatchBackTrack(std::size_t site, const uint8_t* instr)
-        : site_(site)
-        , instr_(instr) { }
-
-    static RepatchBackTrack RepatchableMov(Xbyak::CodeGenerator* gen,
-                                           const Xbyak::Reg64& reg,
-                                           const uint8_t* instr) {
-        const uint64_t dummy64 = UINT64_C(0x0FFF000000000000);
-        const std::size_t k64MovImmOffset = 2;
-        const std::size_t result = gen->getSize() + k64MovImmOffset;
-        gen->mov(reg, dummy64);
-        return RepatchBackTrack(result, instr);
-    }
-
-    void Repatch(Xbyak::CodeGenerator* gen, uint64_t addr) const {
-        gen->rewrite(site_, addr, sizeof(uint64_t));
-    }
-
-    const uint8_t* instr() const { return instr_; }
-
-   private:
-    std::size_t site_;
-    const uint8_t* instr_;
-  };
-
   static bool IsAvailableSSE42() {
     static const bool result = mie::isAvailableSSE42();
     return result;
@@ -145,8 +118,7 @@ class JIT : public Xbyak::CodeGenerator {
     : Xbyak::CodeGenerator(4096, Xbyak::AutoGrow),
       code_(code),
       first_instr_(code.bytes().data()),
-      targets_(),
-      backtracks_(),
+      jumps_(),
       character(kASCII ? byte : word),
       subject_(r12),
       size_(r13),
@@ -232,20 +204,19 @@ class JIT : public Xbyak::CodeGenerator {
       const uint32_t length = OP::GetLength(instr);
       switch (opcode) {
         case OP::PUSH_BACKTRACK: {
-          const int dis = Load4Bytes(instr + 1);
-          backtracks_[dis] = 0;
+          jumps_[Load4Bytes(instr + 1)] = Xbyak::Label();
           break;
         }
         case OP::COUNTER_NEXT: {
-          targets_.insert(Load4Bytes(instr + 9));
+          jumps_[Load4Bytes(instr + 9)] = Xbyak::Label();
           break;
         }
         case OP::ASSERTION_SUCCESS: {
-          targets_.insert(Load4Bytes(instr + 5));
+          jumps_[Load4Bytes(instr + 5)] = Xbyak::Label();
           break;
         }
         case OP::JUMP: {
-          targets_.insert(Load4Bytes(instr + 1));
+          jumps_[Load4Bytes(instr + 1)] = Xbyak::Label();
           break;
         }
       }
@@ -259,13 +230,7 @@ class JIT : public Xbyak::CodeGenerator {
 
   bool ReferencedByJump(const_pointer instr) const {
     const uint32_t offset = instr - first_instr_;
-    if (std::binary_search(targets_.begin(), targets_.end(), offset)) {
-      return true;
-    }
-    if (backtracks_.find(offset) != backtracks_.end()) {
-      return true;
-    }
-    return false;
+    return jumps_.find(offset) != jumps_.end();
   }
 
   static uint32_t GuardedSize(const_pointer instr) {
@@ -366,15 +331,11 @@ class JIT : public Xbyak::CodeGenerator {
       const uint8_t opcode = *instr;
       const uint32_t length = OP::GetLength(instr);
       const uint32_t offset = instr - first_instr_;
-      if (std::binary_search(targets_.begin(), targets_.end(), offset)) {
-        DefineLabel(offset);
+      const auto& iter = jumps_.find(offset);
+      if (iter != jumps_.end()) {
+        // define label
+        L(iter->second);
       }
-      const BackTrackMap::iterator it = backtracks_.find(offset);
-      if (it != backtracks_.end()) {
-          // offset from getCode
-          it->second = core::BitCast<uintptr_t>(getSize());
-      }
-
       // basic block optimization pass
       if (JIT::CanOptimize(opcode) && EmitOptimized(instr, last, &instr)) {
         continue;
@@ -607,18 +568,7 @@ IV_AERO_OPCODES(V)
     }
     // finish generating code and determine code address
     ready();
-    {
-      const uintptr_t top = core::BitCast<uintptr_t>(getCode());
-      for (RepatchBackTrack site : repatches_) {
-        const BackTrackMap::const_iterator it =
-            backtracks_.find(site.instr() - first_instr_);
-        assert(it != backtracks_.end());
-        site.Repatch(this, top + it->second);
-      }
-      targets_.clear();
-      repatches_.clear();
-      backtracks_.clear();
-    }
+    jumps_.clear();
   }
 
   void EmitSTORE_SP(const uint8_t* instr, uint32_t len) {
@@ -642,7 +592,7 @@ IV_AERO_OPCODES(V)
     movsxd(sp_, dword[captures_ + kIntSize * offset]);
     LoadStack(r10);
     movsxd(cp_, dword[r10 + sp_ * kIntSize + kIntSize]);
-    Jump(Load4Bytes(instr + 5));
+    jmp(jumps_[Load4Bytes(instr + 5)], T_NEAR);
   }
 
   void EmitASSERTION_FAILURE(const uint8_t* instr, uint32_t len) {
@@ -832,7 +782,7 @@ IV_AERO_OPCODES(V)
     add(r10d, 1);
     mov(dword[captures_ + kIntSize * counter], r10d);
     cmp(r10d, max);
-    jl(JIT::MakeLabel(Load4Bytes(instr + 9)), T_NEAR);
+    jl(jumps_[Load4Bytes(instr + 9)], T_NEAR);
   }
 
   void EmitPUSH_BACKTRACK(const uint8_t* instr, uint32_t len) {
@@ -869,9 +819,7 @@ IV_AERO_OPCODES(V)
     mov(dword[rsi + kIntSize], cpd_);
     const int val = static_cast<int>(Load4Bytes(instr + 1));
     // we use rsi as counter in AERO_PUSH_BACKTRACK
-    RepatchBackTrack site =
-        RepatchBackTrack::RepatchableMov(this, rax, first_instr_ + val);
-    repatches_.push_back(site);
+    mov(rax, jumps_[val]);
     mov(qword[rsi + kIntSize * (size - 2)], rax);
     outLocalLabel();
   }
@@ -1422,7 +1370,7 @@ IV_AERO_OPCODES(V)
         return;
     }
     assert(*(first_instr_ + offset) != OP::JUMP);
-    Jump(offset);
+    jmp(jumps_[offset], T_NEAR);
   }
 
   void EmitFAILURE(const uint8_t* instr, uint32_t len) {
@@ -1431,21 +1379,6 @@ IV_AERO_OPCODES(V)
 
   void EmitSUCCESS(const uint8_t* instr, uint32_t len) {
     jmp(jit_detail::kSuccessLabel, T_NEAR);
-  }
-
-  static std::string MakeLabel(uint32_t num,
-                               const std::string& prefix = "AERO_") {
-    std::string str(prefix);
-    core::UInt32ToString(num, std::back_inserter(str));
-    return str;
-  }
-
-  void DefineLabel(uint32_t num) {
-    L(JIT::MakeLabel(num));
-  }
-
-  void Jump(uint32_t num) {
-    jmp(JIT::MakeLabel(num), T_NEAR);
   }
 
   void IncrementCP(int offset, uint32_t length = 1) {
@@ -1486,9 +1419,7 @@ IV_AERO_OPCODES(V)
 
   const Code& code_;
   const const_pointer first_instr_;
-  core::SortedVector<uint32_t> targets_;
-  BackTrackMap backtracks_;
-  std::vector<RepatchBackTrack> repatches_;
+  std::unordered_map<uint32_t, Xbyak::Label> jumps_;
 
   const Xbyak::AddressFrame character;
   const Xbyak::Reg64& subject_;
