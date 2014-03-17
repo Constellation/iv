@@ -31,6 +31,7 @@ void Compiler::EmitBINARY_MULTIPLY(const Instruction* instr) {
   }
 
   const Assembler::LocalLabelScope scope(asm_);
+  Xbyak::Label exit;
 
   if (!(lhs_type.IsNotInt32() || rhs_type.IsNotInt32())) {
     if (lhs_type.IsConstantInt32()) {
@@ -54,7 +55,7 @@ void Compiler::EmitBINARY_MULTIPLY(const Instruction* instr) {
     }
     // boxing
     asm_->or(rax, r15);
-    asm_->jmp(".EXIT", Xbyak::CodeGenerator::T_NEAR);
+    asm_->jmp(exit, Xbyak::CodeGenerator::T_NEAR);
 
     kill_last_used();
 
@@ -66,7 +67,7 @@ void Compiler::EmitBINARY_MULTIPLY(const Instruction* instr) {
     asm_->mulsd(xmm0, xmm1);
     asm_->movq(rax, xmm0);
     ConvertDoubleToJSVal(rax);
-    asm_->jmp(".EXIT", Xbyak::CodeGenerator::T_NEAR);
+    asm_->jmp(exit, Xbyak::CodeGenerator::T_NEAR);
   }
 
   asm_->L(".DOUBLE");
@@ -74,8 +75,7 @@ void Compiler::EmitBINARY_MULTIPLY(const Instruction* instr) {
   LoadDouble(rhs, xmm1, rsi, ".GENERIC", Xbyak::CodeGenerator::T_NEAR);
 
   asm_->mulsd(xmm0, xmm1);
-  BoxDouble(xmm0, xmm1, rax);
-  asm_->jmp(".EXIT");
+  BoxDouble(xmm0, xmm1, rax, &exit);
 
   kill_last_used();
 
@@ -84,7 +84,7 @@ void Compiler::EmitBINARY_MULTIPLY(const Instruction* instr) {
   asm_->mov(rdi, r14);
   asm_->Call(&stub::BINARY_MULTIPLY);
 
-  asm_->L(".EXIT");
+  asm_->L(exit);
   asm_->mov(qword[r13 + dst * kJSValSize], rax);
   set_last_used_candidate(dst);
   type_record_.Put(dst, dst_type);
@@ -108,13 +108,13 @@ void Compiler::EmitBINARY_DIVIDE(const Instruction* instr) {
   }
 
   const Assembler::LocalLabelScope scope(asm_);
+  Xbyak::Label exit;
 
   LoadDouble(lhs, xmm0, rsi, ".GENERIC");
   LoadDouble(rhs, xmm1, rsi, ".GENERIC");
 
   asm_->divsd(xmm0, xmm1);
-  BoxDouble(xmm0, xmm1, rax);
-  asm_->jmp(".EXIT");
+  BoxDouble(xmm0, xmm1, rax, &exit);
 
   kill_last_used();
 
@@ -123,7 +123,7 @@ void Compiler::EmitBINARY_DIVIDE(const Instruction* instr) {
   asm_->mov(rdi, r14);
   asm_->Call(&stub::BINARY_DIVIDE);
 
-  asm_->L(".EXIT");
+  asm_->L(exit);
   asm_->mov(qword[r13 + dst * kJSValSize], rax);
   set_last_used_candidate(dst);
   type_record_.Put(dst, dst_type);
@@ -147,6 +147,7 @@ void Compiler::EmitBINARY_ADD(const Instruction* instr) {
   }
 
   const Assembler::LocalLabelScope scope(asm_);
+  Xbyak::Label exit;
 
   if (!(lhs_type.IsNotInt32() || rhs_type.IsNotInt32())) {
     if (lhs_type.IsConstantInt32()) {
@@ -170,7 +171,7 @@ void Compiler::EmitBINARY_ADD(const Instruction* instr) {
     }
     // boxing
     asm_->or(rax, r15);
-    asm_->jmp(".EXIT", Xbyak::CodeGenerator::T_NEAR);
+    asm_->jmp(exit, Xbyak::CodeGenerator::T_NEAR);
 
     kill_last_used();
 
@@ -183,7 +184,7 @@ void Compiler::EmitBINARY_ADD(const Instruction* instr) {
     asm_->cvtsi2sd(xmm0, rax);
     asm_->movq(rax, xmm0);
     ConvertDoubleToJSVal(rax);
-    asm_->jmp(".EXIT", Xbyak::CodeGenerator::T_NEAR);
+    asm_->jmp(exit, Xbyak::CodeGenerator::T_NEAR);
   }
 
   asm_->L(".DOUBLE");
@@ -191,8 +192,7 @@ void Compiler::EmitBINARY_ADD(const Instruction* instr) {
   LoadDouble(rhs, xmm1, rsi, ".GENERIC", Xbyak::CodeGenerator::T_NEAR);
 
   asm_->addsd(xmm0, xmm1);
-  BoxDouble(xmm0, xmm1, rax);
-  asm_->jmp(".EXIT");
+  BoxDouble(xmm0, xmm1, rax, &exit);
 
   kill_last_used();
 
@@ -201,7 +201,7 @@ void Compiler::EmitBINARY_ADD(const Instruction* instr) {
   asm_->mov(rdi, r14);
   asm_->Call(&stub::BINARY_ADD);
 
-  asm_->L(".EXIT");
+  asm_->L(exit);
   asm_->mov(qword[r13 + dst * kJSValSize], rax);
   set_last_used_candidate(dst);
   type_record_.Put(dst, dst_type);
@@ -315,6 +315,7 @@ void Compiler::EmitBINARY_SUBTRACT(const Instruction* instr) {
   }
 
   const Assembler::LocalLabelScope scope(asm_);
+  Xbyak::Label exit;
 
   if (!(lhs_type.IsNotInt32() || rhs_type.IsNotInt32())) {
     if (rhs_type.IsConstantInt32()) {
@@ -332,7 +333,7 @@ void Compiler::EmitBINARY_SUBTRACT(const Instruction* instr) {
     }
     // boxing
     asm_->or(rax, r15);
-    asm_->jmp(".EXIT", Xbyak::CodeGenerator::T_NEAR);
+    asm_->jmp(exit, Xbyak::CodeGenerator::T_NEAR);
 
     kill_last_used();
 
@@ -348,7 +349,7 @@ void Compiler::EmitBINARY_SUBTRACT(const Instruction* instr) {
     asm_->cvtsi2sd(xmm0, rax);
     asm_->movq(rax, xmm0);
     ConvertDoubleToJSVal(rax);
-    asm_->jmp(".EXIT", Xbyak::CodeGenerator::T_NEAR);
+    asm_->jmp(exit, Xbyak::CodeGenerator::T_NEAR);
   }
 
   asm_->L(".DOUBLE");
@@ -356,8 +357,7 @@ void Compiler::EmitBINARY_SUBTRACT(const Instruction* instr) {
   LoadDouble(rhs, xmm1, rsi, ".GENERIC", Xbyak::CodeGenerator::T_NEAR);
 
   asm_->subsd(xmm0, xmm1);
-  BoxDouble(xmm0, xmm1, rax);
-  asm_->jmp(".EXIT");
+  BoxDouble(xmm0, xmm1, rax, &exit);
 
   kill_last_used();
 
@@ -366,7 +366,7 @@ void Compiler::EmitBINARY_SUBTRACT(const Instruction* instr) {
   asm_->mov(rdi, r14);
   asm_->Call(&stub::BINARY_SUBTRACT);
 
-  asm_->L(".EXIT");
+  asm_->L(exit);
   asm_->mov(qword[r13 + dst * kJSValSize], rax);
   set_last_used_candidate(dst);
   type_record_.Put(dst, dst_type);

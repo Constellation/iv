@@ -2843,7 +2843,8 @@ class Compiler {
 
   void BoxDouble(const Xbyak::Xmm& src,
                  const Xbyak::Xmm& scratch,
-                 const Xbyak::Reg64& dst64) {
+                 const Xbyak::Reg64& dst64,
+                 const Xbyak::Label* exit) {
     const Xbyak::Reg32 dst32(dst64.getIdx());
     // We need to handle negative zero case.
     const Assembler::LocalLabelScope scope(asm_); {
@@ -2856,11 +2857,11 @@ class Compiler {
       asm_->jne(".FAST_DOUBLE");
       // target is int32
       asm_->or(dst64, r15);
-      asm_->jmp(".EXIT");
+      asm_->jmp(*exit, Xbyak::CodeGenerator::T_NEAR);
 
       asm_->L(".DOUBLE_ZERO");
       asm_->mov(dst64, r15);  // r15 is int32 +0
-      asm_->jmp(".EXIT");
+      asm_->jmp(*exit, Xbyak::CodeGenerator::T_NEAR);
 
       asm_->L(".FAST_DOUBLE");
       // target is double
@@ -2868,8 +2869,7 @@ class Compiler {
       asm_->test(dst64, dst64);  // Check sign (-0) case
       asm_->jz(".DOUBLE_ZERO");
       ConvertDoubleToJSVal(dst64);
-
-      asm_->L(".EXIT");
+      asm_->jmp(*exit, Xbyak::CodeGenerator::T_NEAR);
     }
   }
 
