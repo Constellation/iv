@@ -16,7 +16,7 @@ TEST(AeroSimpleCase, MainTest) {
     space.Clear();
     iv::core::UString reg = iv::core::ToUString("s");
     iv::core::UString str1 = iv::core::ToUString("s\n");
-    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::MULTILINE);
+    iv::aero::Parser<iv::core::u16string_view> parser(&space, reg, iv::aero::MULTILINE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);
@@ -37,7 +37,7 @@ TEST(AeroSimpleCase, CounterTest) {
     iv::core::UString str1 = iv::core::ToUString("aa");
     iv::core::UString str2 = iv::core::ToUString("aaa");
     iv::core::UString str3 = iv::core::ToUString("a");
-    iv::aero::Parser<iv::core::UStringPiece> parser(&space, reg, iv::aero::NONE);
+    iv::aero::Parser<iv::core::u16string_view> parser(&space, reg, iv::aero::NONE);
     int error = 0;
     iv::aero::ParsedData data = parser.ParsePattern(&error);
     ASSERT_FALSE(error);

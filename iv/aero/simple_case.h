@@ -4,6 +4,7 @@
 #include <string>
 #include <iv/platform.h>
 #include <iv/character.h>
+#include <iv/string_view.h>
 #include <iv/aero/parser.h>
 #include <iv/aero/flags.h>
 namespace iv {
@@ -47,9 +48,9 @@ class SimpleCase {
   }
 
   int Execute(
-      const core::UStringPiece& subject, int* captures, int offset) const {
+      const core::u16string_view& subject, int* captures, int offset) const {
     const std::size_t pos = subject.find(u16_, offset);
-    if (core::UStringPiece::npos == pos) {
+    if (core::u16string_view::npos == pos) {
       return AERO_FAILURE;
     }
     captures[0] = pos;
@@ -58,12 +59,12 @@ class SimpleCase {
   }
 
   int Execute(
-      const core::StringPiece& subject, int* captures, int offset) const {
+      const core::string_view& subject, int* captures, int offset) const {
     if (u8_.empty()) {
       return AERO_FAILURE;
     }
     const std::size_t pos = subject.find(u8_, offset);
-    if (core::StringPiece::npos == pos) {
+    if (core::string_view::npos == pos) {
       return AERO_FAILURE;
     }
     captures[0] = pos;
