@@ -601,30 +601,29 @@ IV_AERO_OPCODES(V)
     jmp(jit_detail::kBackTrackLabel, T_NEAR);
   }
 
-  void InlineIsLineTerminator(const RegC& reg, const char* ok) {
+  void InlineIsLineTerminator(const RegC& reg, const Xbyak::Label* ok) {
     cmp(reg, core::character::code::CR);
-    je(ok);
+    je(*ok);
     cmp(reg, core::character::code::LF);
-    je(ok);
+    je(*ok);
     if (!kASCII) {
       // not ASCII => 16bit
       // (c & ~1) == 0x2028;  // 0x2028 or 0x2029
       const Xbyak::Reg32 reg32(reg.getIdx());
       and(reg32, 0xFFFD);
       cmp(reg32, 0x2028);
-      je(ok);
+      je(*ok);
     }
   }
 
   void EmitASSERTION_BOL(const uint8_t* instr, uint32_t len) {
-    inLocalLabel();
+    Xbyak::Label success;
     test(cp_, cp_);
-    jz(".SUCCESS");
+    jz(success);
     mov(ch10_, character[subject_ + (cp_ * kCharSize) - kCharSize]);
-    InlineIsLineTerminator(ch10_, ".SUCCESS");
+    InlineIsLineTerminator(ch10_, &success);
     jmp(jit_detail::kBackTrackLabel, T_NEAR);
-    L(".SUCCESS");
-    outLocalLabel();
+    L(success);
   }
 
   void EmitASSERTION_BOB(const uint8_t* instr, uint32_t len) {
@@ -633,14 +632,13 @@ IV_AERO_OPCODES(V)
   }
 
   void EmitASSERTION_EOL(const uint8_t* instr, uint32_t len) {
-    inLocalLabel();
+    Xbyak::Label success;
     cmp(cp_, size_);
-    je(".SUCCESS");
+    je(success);
     mov(ch10_, character[subject_ + (cp_ * kCharSize)]);
-    InlineIsLineTerminator(ch10_, ".SUCCESS");
+    InlineIsLineTerminator(ch10_, &success);
     jmp(jit_detail::kBackTrackLabel, T_NEAR);
-    L(".SUCCESS");
-    outLocalLabel();
+    L(success);
   }
 
   void EmitASSERTION_EOB(const uint8_t* instr, uint32_t len) {
