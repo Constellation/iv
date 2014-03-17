@@ -70,6 +70,9 @@ class Dumper : public Visitor {
   void Visit(CharacterAtom* atom) {
     builder_.Append(atom->character());
   }
+  void Visit(StringAtom* atom) {
+    builder_.Append(atom->string().begin(), atom->string().end());
+  }
   void Visit(RangeAtom* atom) {
     // TODO(Constellation): implement it
   }

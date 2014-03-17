@@ -12,6 +12,7 @@
 #include <iv/aero/code.h>
 #include <iv/aero/captures.h>
 #include <iv/aero/quick_check_fwd.h>
+#include <iv/aero/simple_case.h>
 namespace iv {
 namespace aero {
 
@@ -47,15 +48,15 @@ class Compiler : private Visitor {
     const uint16_t filter = ret.first;
     data.pattern()->Accept(this);
     Emit<OP::SUCCESS>();
-    if (filter) {
-      if (ret.second == 1) {
-        return new Code(code_, max_captures_, counters_size_, filter, true);
-      } else {
-        return new Code(code_, max_captures_, counters_size_, filter, false);
-      }
-    } else {
-      return new Code(code_, max_captures_, counters_size_, filter, false);
-    }
+    const bool one_char = filter && ret.second == 1;
+    return new Code(
+        code_,
+        flags_,
+        max_captures_,
+        counters_size_,
+        filter,
+        one_char,
+        SimpleCase::New(data, IsIgnoreCase()));
   }
 
   uint32_t counters_size() const { return counters_size_; }
@@ -188,6 +189,14 @@ class Compiler : private Visitor {
 
   void Visit(CharacterAtom* atom) {
     EmitCharacter(atom->character());
+  }
+
+  void Visit(StringAtom* atom) {
+    Emit<OP::CHECK_N_CHARS>();
+    Emit4(atom->string().size());
+    for (char16_t ch : atom->string()) {
+      Emit2(ch);
+    }
   }
 
   void EmitCharacter(char16_t ch) {

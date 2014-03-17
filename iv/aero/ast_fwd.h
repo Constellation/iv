@@ -9,6 +9,7 @@
   V(DisjunctionAssertion)\
   V(BackReferenceAtom)\
   V(CharacterAtom)\
+  V(StringAtom)\
   V(RangeAtom)\
   V(DisjunctionAtom)\
   V(Quantifiered)

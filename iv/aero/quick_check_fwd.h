@@ -54,6 +54,7 @@ class QuickCheck : private Visitor {
   void Visit(DisjunctionAssertion* assertion);
   void Visit(BackReferenceAtom* atom);
   void Visit(CharacterAtom* atom);
+  void Visit(StringAtom* atom);
   void Visit(RangeAtom* atom);
   void Visit(DisjunctionAtom* atom);
   void Visit(Quantifiered* atom);
