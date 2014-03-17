@@ -33,7 +33,7 @@ void Compiler::EmitBINARY_EQ(const Instruction* instr, OP::Type fused) {
 
     if (fused != OP::NOP) {
       // fused jump opcode
-      const std::string label = MakeLabel(instr);
+      const Xbyak::Label& label = LookupLabel(instr);
       if (fused == OP::IF_TRUE) {
         asm_->je(label, Xbyak::CodeGenerator::T_NEAR);
       } else {
@@ -88,7 +88,7 @@ void Compiler::EmitBINARY_STRICT_EQ(const Instruction* instr, OP::Type fused) {
 
     if (fused != OP::NOP) {
       // fused jump opcode
-      const std::string label = MakeLabel(instr);
+      const Xbyak::Label& label = LookupLabel(instr);
       if (fused == OP::IF_TRUE) {
         asm_->je(label, Xbyak::CodeGenerator::T_NEAR);
       } else {
@@ -138,7 +138,7 @@ void Compiler::EmitBINARY_NE(const Instruction* instr, OP::Type fused) {
 
     if (fused != OP::NOP) {
       // fused jump opcode
-      const std::string label = MakeLabel(instr);
+      const Xbyak::Label& label = LookupLabel(instr);
       if (fused == OP::IF_TRUE) {
         asm_->jne(label, Xbyak::CodeGenerator::T_NEAR);
       } else {
@@ -194,7 +194,7 @@ void Compiler::EmitBINARY_STRICT_NE(const Instruction* instr, OP::Type fused) {
 
     if (fused != OP::NOP) {
       // fused jump opcode
-      const std::string label = MakeLabel(instr);
+      const Xbyak::Label& label = LookupLabel(instr);
       if (fused == OP::IF_TRUE) {
         asm_->jne(label, Xbyak::CodeGenerator::T_NEAR);
       } else {

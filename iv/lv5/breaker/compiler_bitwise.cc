@@ -212,7 +212,7 @@ void Compiler::EmitBINARY_BIT_AND(const Instruction* instr, OP::Type fused) {
   if (dst_type.IsConstant()) {
     if (fused != OP::NOP) {
       // fused jump opcode
-      const std::string label = MakeLabel(instr);
+      const Xbyak::Label& label = LookupLabel(instr);
       const bool result = dst_type.constant().ToBoolean();
       if ((fused == OP::IF_TRUE) == result) {
         asm_->jmp(label, Xbyak::CodeGenerator::T_NEAR);
@@ -230,7 +230,7 @@ void Compiler::EmitBINARY_BIT_AND(const Instruction* instr, OP::Type fused) {
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_BIT_AND);
     if (fused != OP::NOP) {
-      const std::string label = MakeLabel(instr);
+      const Xbyak::Label& label = LookupLabel(instr);
       asm_->test(eax, eax);
       if (fused == OP::IF_TRUE) {
         asm_->jnz(label, Xbyak::CodeGenerator::T_NEAR);
@@ -266,7 +266,7 @@ void Compiler::EmitBINARY_BIT_AND(const Instruction* instr, OP::Type fused) {
 
   if (fused != OP::NOP) {
     // fused jump opcode
-    const std::string label = MakeLabel(instr);
+    const Xbyak::Label& label = LookupLabel(instr);
     if (fused == OP::IF_TRUE) {
       asm_->jnz(label, Xbyak::CodeGenerator::T_NEAR);
     } else {

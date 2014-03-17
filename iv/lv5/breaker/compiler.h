@@ -34,29 +34,25 @@ class Compiler {
   typedef railgun::Instruction Instruction;
   typedef railgun::OP OP;
 
-  class JumpInfo {
-   public:
-    JumpInfo(std::size_t c, bool handled = false)
-      : counter(c),
-        offset(0),
-        exception_handled(handled) {
-    }
+  struct JumpInfo {
     JumpInfo()
-      : counter(0),
-        offset(0),
-        exception_handled(false) {
+      : exception_handled(false),
+        label() {
     }
-    std::size_t counter;
-    std::size_t offset;
+
+    JumpInfo(bool handled)
+      : exception_handled(handled),
+        label() {
+    }
+
     bool exception_handled;
+    Xbyak::Label label;
   };
 
   typedef std::unordered_map<railgun::Code*, std::size_t> EntryPointMap;
   typedef std::unordered_map<uint32_t, JumpInfo> JumpMap;
   typedef std::unordered_map<std::size_t,
                              Assembler::RepatchSite> UnresolvedAddressMap;
-  typedef std::vector<
-      std::pair<Assembler::RepatchSite, std::size_t> > RepatchSites;
   typedef std::vector<railgun::Code*> Codes;
   typedef std::unordered_map<const Instruction*, std::size_t> HandlerLinks;
 
@@ -75,7 +71,6 @@ class Compiler {
       unresolved_address_map_(),
       handler_links_(),
       codes_(),
-      counter_(0),
       previous_instr_(nullptr),
       last_used_(kInvalidUsedOffset),
       last_used_candidate_(),
@@ -164,7 +159,7 @@ class Compiler {
       if (r::OP::IsJump(opcode)) {
         const int32_t jump = instr[1].jump.to;
         const uint32_t to = index + jump;
-        jump_map_.insert(std::make_pair(to, JumpInfo(counter_++)));
+        jump_map_.insert(std::make_pair(to, JumpInfo(false)));
       }
       std::advance(instr, length);
     }
@@ -173,8 +168,8 @@ class Compiler {
     const r::ExceptionTable& table = code_->exception_table();
     for (const railgun::Handler& handler : table) {
       // should override (because handled option is true)
-      jump_map_[handler.begin()] = JumpInfo(counter_++, true);
-      jump_map_[handler.end()] = JumpInfo(counter_++, true);
+      jump_map_[handler.begin()] = JumpInfo(true);
+      jump_map_[handler.end()] = JumpInfo(true);
     }
   }
 
@@ -185,7 +180,7 @@ class Compiler {
     if (it != jump_map_.end()) {
       // this opcode is jump target
       // split basic block
-      asm_->L(MakeLabel(it->second.counter));
+      asm_->L(it->second.label);
       if (it->second.exception_handled) {
         // store handler range
         handler_links_.insert(std::make_pair(instr, asm_->size()));
@@ -895,7 +890,7 @@ class Compiler {
       asm_->Call(&stub::BINARY_INSTANCEOF);
       if (fused != OP::NOP) {
         // fused jump opcode
-        const std::string label = MakeLabel(instr);
+        const Xbyak::Label& label = LookupLabel(instr);
         asm_->cmp(rax, Extract(JSTrue));
         if (fused == OP::IF_TRUE) {
           asm_->je(label, Xbyak::CodeGenerator::T_NEAR);
@@ -923,7 +918,7 @@ class Compiler {
       asm_->Call(&stub::BINARY_IN);
       if (fused != OP::NOP) {
         // fused jump opcode
-        const std::string label = MakeLabel(instr);
+        const Xbyak::Label& label = LookupLabel(instr);
         asm_->cmp(rax, Extract(JSTrue));
         if (fused == OP::IF_TRUE) {
           asm_->je(label, Xbyak::CodeGenerator::T_NEAR);
@@ -2338,7 +2333,7 @@ class Compiler {
   void EmitIF_FALSE(const Instruction* instr) {
     // TODO(Constelation) inlining this
     const register_t cond = Reg(instr[1].jump.i16[0]);
-    const std::string label = MakeLabel(instr);
+    const Xbyak::Label& label = LookupLabel(instr);
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(rdi, cond);
@@ -2365,7 +2360,7 @@ class Compiler {
   void EmitIF_TRUE(const Instruction* instr) {
     // TODO(Constelation) inlining this
     const register_t cond = Reg(instr[1].jump.i16[0]);
-    const std::string label = MakeLabel(instr);
+    const Xbyak::Label& label = LookupLabel(instr);
     {
       const Assembler::LocalLabelScope scope(asm_);
       LoadVR(rdi, cond);
@@ -2393,7 +2388,7 @@ class Compiler {
     static const uint64_t layout = Extract(JSVal::Int32(railgun::VM::kJumpFromSubroutine));
     const register_t addr = Reg(instr[1].jump.i16[0]);
     const register_t flag = Reg(instr[1].jump.i16[1]);
-    const std::string label = MakeLabel(instr);
+    const Xbyak::Label& label = LookupLabel(instr);
 
     // register position and repatch afterward
     Assembler::RepatchSite site;
@@ -2415,7 +2410,7 @@ class Compiler {
   void EmitFORIN_SETUP(const Instruction* instr) {
     const register_t iterator = Reg(instr[1].jump.i16[0]);
     const register_t enumerable = Reg(instr[1].jump.i16[1]);
-    const std::string label = MakeLabel(instr);
+    const Xbyak::Label& label = LookupLabel(instr);
     LoadVR(rsi, enumerable);
     NotNullOrUndefinedGuard(rsi, rdi, label, Xbyak::CodeGenerator::T_NEAR);
     asm_->mov(rdi, r14);
@@ -2428,7 +2423,7 @@ class Compiler {
   void EmitFORIN_ENUMERATE(const Instruction* instr) {
     const register_t dst = Reg(instr[1].jump.i16[0]);
     const register_t iterator = Reg(instr[1].jump.i16[1]);
-    const std::string label = MakeLabel(instr);
+    const Xbyak::Label& label = LookupLabel(instr);
     asm_->mov(rdi, r12);
     LoadVR(rsi, iterator);
     asm_->Call(&stub::FORIN_ENUMERATE);
@@ -2688,7 +2683,7 @@ class Compiler {
 
   void NotNullOrUndefinedGuard(const Xbyak::Reg64& target,
                                const Xbyak::Reg64& tmp,
-                               const std::string& label,
+                               const Xbyak::Label& label,
                                Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_AUTO) {
     // (1000)2 = 8
     // Null is (0010)2 and Undefined is (1010)2
@@ -2770,25 +2765,15 @@ class Compiler {
     set_last_used_candidate(dst);
   }
 
-  std::string MakeLabel(const Instruction* op_instr) const {
+  Xbyak::Label& LookupLabel(const Instruction* op_instr) {
     const int32_t jump = op_instr[1].jump.to;
     const uint32_t to = (op_instr - code_->begin()) + jump;
-    const std::size_t num = jump_map_.find(to)->second.counter;
-    return MakeLabel(num);
-  }
-
-  static std::string MakeLabel(std::size_t num) {
-    std::string str("IV_LV5_BREAKER_JT_");
-    str.reserve(str.size() + 10);
-    core::detail::UIntToStringWithRadix<uint64_t>(num,
-                                                  std::back_inserter(str), 32);
-    return str;
+    return jump_map_.find(to)->second.label;
   }
 
   void Jump(const Instruction* instr) {
     assert(OP::IsJump(instr->GetOP()));
-    const std::string label = MakeLabel(instr);
-    asm_->jmp(label, Xbyak::CodeGenerator::T_NEAR);
+    asm_->jmp(LookupLabel(instr), Xbyak::CodeGenerator::T_NEAR);
   }
 
   inline const Instruction* previous_instr() const { return previous_instr_; }
@@ -2898,7 +2883,6 @@ class Compiler {
   UnresolvedAddressMap unresolved_address_map_;
   HandlerLinks handler_links_;
   Codes codes_;
-  std::size_t counter_;
   const Instruction* previous_instr_;
   int32_t last_used_;
   int32_t last_used_candidate_;

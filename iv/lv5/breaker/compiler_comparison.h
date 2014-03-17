@@ -20,11 +20,11 @@ struct LTTraits : public CompareTraits<LTTraits, stub::BINARY_LT> {
   }
 
   static void JumpInt(Assembler* assembler,
-                      bool if_true, const std::string& label) {
+                      bool if_true, const Xbyak::Label* label) {
     if (if_true) {
-      assembler->jl(label, Xbyak::CodeGenerator::T_NEAR);
+      assembler->jl(*label, Xbyak::CodeGenerator::T_NEAR);
     } else {
-      assembler->jge(label, Xbyak::CodeGenerator::T_NEAR);
+      assembler->jge(*label, Xbyak::CodeGenerator::T_NEAR);
     }
   }
 
@@ -38,13 +38,13 @@ struct LTTraits : public CompareTraits<LTTraits, stub::BINARY_LT> {
       const Xbyak::Xmm& fp0,
       const Xbyak::Xmm& fp1,
       const Xbyak::Reg8& reg,
-      const char* label = nullptr) {
+      const Xbyak::Label* label) {
     assembler->ucomisd(fp1, fp0);  // inverted
     if (label) {
       if (if_true) {
-        assembler->ja(label, Xbyak::CodeGenerator::T_NEAR);
+        assembler->ja(*label, Xbyak::CodeGenerator::T_NEAR);
       } else {
-        assembler->jbe(label, Xbyak::CodeGenerator::T_NEAR);
+        assembler->jbe(*label, Xbyak::CodeGenerator::T_NEAR);
       }
     } else {
       assert(if_true == true);
@@ -59,11 +59,11 @@ struct LTETraits : public CompareTraits<LTETraits, stub::BINARY_LTE> {
   }
 
   static void JumpInt(Assembler* assembler,
-                      bool if_true, const std::string& label) {
+                      bool if_true, const Xbyak::Label* label) {
     if (if_true) {
-      assembler->jle(label, Xbyak::CodeGenerator::T_NEAR);
+      assembler->jle(*label, Xbyak::CodeGenerator::T_NEAR);
     } else {
-      assembler->jg(label, Xbyak::CodeGenerator::T_NEAR);
+      assembler->jg(*label, Xbyak::CodeGenerator::T_NEAR);
     }
   }
 
@@ -77,13 +77,13 @@ struct LTETraits : public CompareTraits<LTETraits, stub::BINARY_LTE> {
       const Xbyak::Xmm& fp0,
       const Xbyak::Xmm& fp1,
       const Xbyak::Reg8& reg,
-      const char* label = nullptr) {
+      const Xbyak::Label* label = nullptr) {
     assembler->ucomisd(fp1, fp0);  // inverted
     if (label) {
       if (if_true) {
-        assembler->jae(label, Xbyak::CodeGenerator::T_NEAR);
+        assembler->jae(*label, Xbyak::CodeGenerator::T_NEAR);
       } else {
-        assembler->jb(label, Xbyak::CodeGenerator::T_NEAR);
+        assembler->jb(*label, Xbyak::CodeGenerator::T_NEAR);
       }
     } else {
       assert(if_true == true);
@@ -98,11 +98,11 @@ struct GTTraits : public CompareTraits<GTTraits, stub::BINARY_GT> {
   }
 
   static void JumpInt(Assembler* assembler,
-                      bool if_true, const std::string& label) {
+                      bool if_true, const Xbyak::Label* label) {
     if (if_true) {
-      assembler->jg(label, Xbyak::CodeGenerator::T_NEAR);
+      assembler->jg(*label, Xbyak::CodeGenerator::T_NEAR);
     } else {
-      assembler->jle(label, Xbyak::CodeGenerator::T_NEAR);
+      assembler->jle(*label, Xbyak::CodeGenerator::T_NEAR);
     }
   }
 
@@ -116,13 +116,13 @@ struct GTTraits : public CompareTraits<GTTraits, stub::BINARY_GT> {
       const Xbyak::Xmm& fp0,
       const Xbyak::Xmm& fp1,
       const Xbyak::Reg8& reg,
-      const char* label = nullptr) {
+      const Xbyak::Label* label = nullptr) {
     assembler->ucomisd(fp0, fp1);
     if (label) {
       if (if_true) {
-        assembler->ja(label, Xbyak::CodeGenerator::T_NEAR);
+        assembler->ja(*label, Xbyak::CodeGenerator::T_NEAR);
       } else {
-        assembler->jbe(label, Xbyak::CodeGenerator::T_NEAR);
+        assembler->jbe(*label, Xbyak::CodeGenerator::T_NEAR);
       }
     } else {
       assert(if_true == true);
@@ -137,11 +137,11 @@ struct GTETraits : public CompareTraits<GTETraits, stub::BINARY_GTE> {
   }
 
   static void JumpInt(Assembler* assembler,
-                      bool if_true, const std::string& label) {
+                      bool if_true, const Xbyak::Label* label) {
     if (if_true) {
-      assembler->jge(label, Xbyak::CodeGenerator::T_NEAR);
+      assembler->jge(*label, Xbyak::CodeGenerator::T_NEAR);
     } else {
-      assembler->jl(label, Xbyak::CodeGenerator::T_NEAR);
+      assembler->jl(*label, Xbyak::CodeGenerator::T_NEAR);
     }
   }
 
@@ -155,13 +155,13 @@ struct GTETraits : public CompareTraits<GTETraits, stub::BINARY_GTE> {
       const Xbyak::Xmm& fp0,
       const Xbyak::Xmm& fp1,
       const Xbyak::Reg8& reg,
-      const char* label = nullptr) {
+      const Xbyak::Label* label = nullptr) {
     assembler->ucomisd(fp0, fp1);
     if (label) {
       if (if_true) {
-        assembler->jae(label, Xbyak::CodeGenerator::T_NEAR);
+        assembler->jae(*label, Xbyak::CodeGenerator::T_NEAR);
       } else {
-        assembler->jb(label, Xbyak::CodeGenerator::T_NEAR);
+        assembler->jb(*label, Xbyak::CodeGenerator::T_NEAR);
       }
     } else {
       assert(if_true == true);
@@ -182,7 +182,8 @@ inline void Compiler::EmitCompare(const Instruction* instr, OP::Type fused) {
   const TypeEntry rhs_type = type_record_.Get(rhs);
   const TypeEntry dst_type = Traits::TypeAnalysis(lhs_type, rhs_type);
 
-  const std::string label = (fused != OP::NOP) ? MakeLabel(instr) : "";
+  const Xbyak::Label* label =
+      (fused != OP::NOP) ? &LookupLabel(instr) : nullptr;
   // (fused == OP::IF_TRUE || fused == OP::NOP)
   const bool jump_if_true = fused != OP::IF_FALSE;
 
@@ -192,7 +193,7 @@ inline void Compiler::EmitCompare(const Instruction* instr, OP::Type fused) {
       // fused jump opcode
       const bool result = dst_type.constant().ToBoolean();
       if (jump_if_true == result) {
-        asm_->jmp(label, Xbyak::CodeGenerator::T_NEAR);
+        asm_->jmp(*label, Xbyak::CodeGenerator::T_NEAR);
       }
     } else {
       EmitConstantDest(dst_type, dst);
@@ -245,7 +246,7 @@ inline void Compiler::EmitCompare(const Instruction* instr, OP::Type fused) {
         xmm0,
         xmm1,
         cl,
-        fused != OP::NOP ? label.c_str() : nullptr
+        label
         );
     if (fused != OP::NOP) {
       // Do nothing. Already jumped.
@@ -263,9 +264,9 @@ inline void Compiler::EmitCompare(const Instruction* instr, OP::Type fused) {
     if (fused != OP::NOP) {
       asm_->cmp(rax, Extract(JSTrue));
       if (jump_if_true) {
-        asm_->je(label, Xbyak::CodeGenerator::T_NEAR);
+        asm_->je(*label, Xbyak::CodeGenerator::T_NEAR);
       } else {
-        asm_->jne(label, Xbyak::CodeGenerator::T_NEAR);
+        asm_->jne(*label, Xbyak::CodeGenerator::T_NEAR);
       }
     } else {
       // Do nothing.
