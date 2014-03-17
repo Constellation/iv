@@ -71,15 +71,16 @@ void Compiler::EmitBINARY_MULTIPLY(const Instruction* instr) {
   }
 
   asm_->L(".DOUBLE");
-  LoadDouble(lhs, xmm0, rsi, ".GENERIC", Xbyak::CodeGenerator::T_NEAR);
-  LoadDouble(rhs, xmm1, rsi, ".GENERIC", Xbyak::CodeGenerator::T_NEAR);
+  Xbyak::Label generic;
+  LoadDouble(lhs, xmm0, rsi, &generic);
+  LoadDouble(rhs, xmm1, rsi, &generic);
 
   asm_->mulsd(xmm0, xmm1);
   BoxDouble(xmm0, xmm1, rax, &exit);
 
   kill_last_used();
 
-  asm_->L(".GENERIC");
+  asm_->L(generic);
   LoadVRs(rsi, lhs, rdx, rhs);
   asm_->mov(rdi, r14);
   asm_->Call(&stub::BINARY_MULTIPLY);
@@ -110,15 +111,16 @@ void Compiler::EmitBINARY_DIVIDE(const Instruction* instr) {
   const Assembler::LocalLabelScope scope(asm_);
   Xbyak::Label exit;
 
-  LoadDouble(lhs, xmm0, rsi, ".GENERIC");
-  LoadDouble(rhs, xmm1, rsi, ".GENERIC");
+  Xbyak::Label generic;
+  LoadDouble(lhs, xmm0, rsi, &generic);
+  LoadDouble(rhs, xmm1, rsi, &generic);
 
   asm_->divsd(xmm0, xmm1);
   BoxDouble(xmm0, xmm1, rax, &exit);
 
   kill_last_used();
 
-  asm_->L(".GENERIC");
+  asm_->L(generic);
   LoadVRs(rsi, lhs, rdx, rhs);
   asm_->mov(rdi, r14);
   asm_->Call(&stub::BINARY_DIVIDE);
@@ -188,15 +190,16 @@ void Compiler::EmitBINARY_ADD(const Instruction* instr) {
   }
 
   asm_->L(".DOUBLE");
-  LoadDouble(lhs, xmm0, rsi, ".GENERIC", Xbyak::CodeGenerator::T_NEAR);
-  LoadDouble(rhs, xmm1, rsi, ".GENERIC", Xbyak::CodeGenerator::T_NEAR);
+  Xbyak::Label generic;
+  LoadDouble(lhs, xmm0, rsi, &generic);
+  LoadDouble(rhs, xmm1, rsi, &generic);
 
   asm_->addsd(xmm0, xmm1);
   BoxDouble(xmm0, xmm1, rax, &exit);
 
   kill_last_used();
 
-  asm_->L(".GENERIC");
+  asm_->L(generic);
   LoadVRs(rsi, lhs, rdx, rhs);
   asm_->mov(rdi, r14);
   asm_->Call(&stub::BINARY_ADD);
@@ -353,15 +356,16 @@ void Compiler::EmitBINARY_SUBTRACT(const Instruction* instr) {
   }
 
   asm_->L(".DOUBLE");
-  LoadDouble(lhs, xmm0, rsi, ".GENERIC", Xbyak::CodeGenerator::T_NEAR);
-  LoadDouble(rhs, xmm1, rsi, ".GENERIC", Xbyak::CodeGenerator::T_NEAR);
+  Xbyak::Label generic;
+  LoadDouble(lhs, xmm0, rsi, &generic);
+  LoadDouble(rhs, xmm1, rsi, &generic);
 
   asm_->subsd(xmm0, xmm1);
   BoxDouble(xmm0, xmm1, rax, &exit);
 
   kill_last_used();
 
-  asm_->L(".GENERIC");
+  asm_->L(generic);
   LoadVRs(rsi, lhs, rdx, rhs);
   asm_->mov(rdi, r14);
   asm_->Call(&stub::BINARY_SUBTRACT);

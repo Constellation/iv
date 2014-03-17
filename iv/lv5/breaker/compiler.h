@@ -2412,7 +2412,7 @@ class Compiler {
     const register_t enumerable = Reg(instr[1].jump.i16[1]);
     const Xbyak::Label& label = LookupLabel(instr);
     LoadVR(rsi, enumerable);
-    NotNullOrUndefinedGuard(rsi, rdi, label, Xbyak::CodeGenerator::T_NEAR);
+    NotNullOrUndefinedGuard(rsi, rdi, &label, Xbyak::CodeGenerator::T_NEAR);
     asm_->mov(rdi, r14);
     asm_->Call(&stub::FORIN_SETUP);
     asm_->mov(ptr[r13 + iterator * kJSValSize], rax);
@@ -2637,14 +2637,14 @@ class Compiler {
 
   void NumberGuard(register_t reg,
                    const Xbyak::Reg64& target,
-                   const std::string& label,
+                   const Xbyak::Label* bailout,
                    Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_AUTO) {
     if (type_record_.Get(reg).IsNumber()) {
       // no check
       return;
     }
     asm_->test(target, r15);
-    asm_->jz(label, near);
+    asm_->jz(*bailout, near);
   }
 
   void LoadCellTag(const Xbyak::Reg64& target, const Xbyak::Reg32& out) {
@@ -2657,41 +2657,46 @@ class Compiler {
     asm_->cmp(word[target + radio::Cell::TagOffset()], tag);  // NOLINT
   }
 
-  void LoadClassTag(const Xbyak::Reg64& target,
-                    const Xbyak::Reg64& tmp,
-                    const Xbyak::Reg32& out) {
-    const std::ptrdiff_t offset = IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
+  void LoadClassTag(
+      const Xbyak::Reg64& target,
+      const Xbyak::Reg64& tmp,
+      const Xbyak::Reg32& out) {
+    const std::ptrdiff_t offset =
+        IV_CAST_OFFSET(radio::Cell*, JSObject*) + JSObject::ClassOffset();
     asm_->mov(tmp, qword[target + offset]);
     asm_->mov(out, word[tmp + IV_OFFSETOF(Class, type)]);
   }
 
-  void EmptyGuard(const Xbyak::Reg64& target,
-                  const std::string& label,
-                  Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_AUTO) {
+  void EmptyGuard(
+      const Xbyak::Reg64& target,
+      const std::string& label,
+      Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_AUTO) {
     assert(Extract(JSEmpty) == 0);  // Because of null pointer
     asm_->test(target, target);
     asm_->jnz(label, near);
   }
 
-  void NotEmptyGuard(const Xbyak::Reg64& target,
-                     const std::string& label,
-                     Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_AUTO) {
+  void NotEmptyGuard(
+      const Xbyak::Reg64& target,
+      const std::string& label,
+      Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_AUTO) {
     assert(Extract(JSEmpty) == 0);  // Because of null pointer
     asm_->test(target, target);
     asm_->jz(label, near);
   }
 
-  void NotNullOrUndefinedGuard(const Xbyak::Reg64& target,
-                               const Xbyak::Reg64& tmp,
-                               const Xbyak::Label& label,
-                               Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_AUTO) {
+  void NotNullOrUndefinedGuard(
+      const Xbyak::Reg64& target,
+      const Xbyak::Reg64& tmp,
+      const Xbyak::Label* label,
+      Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_AUTO) {
     // (1000)2 = 8
     // Null is (0010)2 and Undefined is (1010)2
     // ~UINT64_C(8) value is -9
     asm_->mov(tmp, target);
     asm_->and(tmp, -9);
     asm_->cmp(tmp, detail::jsval64::kNull);
-    asm_->je(label, near);
+    asm_->je(*label, near);
   }
 
   void CheckObjectCoercible(register_t reg,
@@ -2808,11 +2813,12 @@ class Compiler {
     }
   }
 
-  void LoadDouble(register_t reg,
-                  const Xbyak::Xmm& xmm,
-                  const Xbyak::Reg64& scratch,
-                  const std::string& label,
-                  Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_AUTO) {
+  void LoadDouble(
+      register_t reg,
+      const Xbyak::Xmm& xmm,
+      const Xbyak::Reg64& scratch,
+      const Xbyak::Label* bailout,
+      Xbyak::CodeGenerator::LabelType near = Xbyak::CodeGenerator::T_NEAR) {
     const TypeEntry type = type_record_.Get(reg);
     const Xbyak::Reg32 scratch32(scratch.getIdx());
     if (type.IsConstantDouble()) {
@@ -2826,7 +2832,7 @@ class Compiler {
     } else {
       // Ensure reg is number (int32 OR double)
       LoadVR(scratch, reg);
-      NumberGuard(reg, scratch, label, near);
+      NumberGuard(reg, scratch, bailout, near);
       const Assembler::LocalLabelScope scope(asm_); {
         Int32Guard(reg, scratch, ".IS_DOUBLE");
         // now scratch32 is int32
