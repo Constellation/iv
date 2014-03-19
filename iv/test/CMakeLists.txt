@@ -50,6 +50,7 @@ add_executable(iv_unit_tests
     test_segmented_vector.cc
     test_singleton.cc
     test_sip_hash.cc
+    test_small_vector.cc
     test_sorted_vector.cc
     test_space.cc
     test_string_builder.cc
