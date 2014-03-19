@@ -9,7 +9,6 @@
 #include <iv/lv5/breaker/type.h>
 #include <iv/lv5/breaker/stub.h>
 #include <iv/lv5/breaker/compiler.h>
-#include <iv/lv5/breaker/compiler_comparison.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {

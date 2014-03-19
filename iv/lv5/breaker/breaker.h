@@ -9,7 +9,6 @@
 #include <iv/lv5/breaker/assembler.h>
 #include <iv/lv5/breaker/native_code.h>
 #include <iv/lv5/breaker/compiler.h>
-#include <iv/lv5/breaker/compiler_comparison.h>
 #include <iv/lv5/breaker/entry_point.h>
 #include <iv/lv5/breaker/jsfunction.h>
 #include <iv/lv5/breaker/runtime.h>
