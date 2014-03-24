@@ -185,22 +185,11 @@ int JSFlatString::compare(const this_type& x) const {
 
 char16_t JSString::At(size_type n) const {
   assert(n < size());
-  const JSString* current = this;
-  size_type offset = n;
-  do {
-    assert(!current->empty());
-    if (current->IsFlat()) {
-      return (*static_cast<const JSFlatString*>(current))[offset];
-    }
-    const JSConsString* cons = static_cast<const JSConsString*>(current);
-    if (cons->lhs()->size() > offset) {
-      current = cons->lhs();
-    } else {
-      current = cons->rhs();
-      offset -= cons->lhs()->size();
-    }
-  } while (true);
-  return 0;  // Makes compiler happy.
+  if (IsFlat()) {
+    return (*static_cast<const JSFlatString*>(this))[n];
+  }
+  Flatten();
+  return (*static_cast<const JSFlatString*>(this))[n];
 }
 
 JSString* JSString::New(Context* ctx, Symbol sym) {
