@@ -806,7 +806,7 @@ inline void Compiler::Visit(const StringLiteral* lit) {
     // this value is not used and StringLiteral doesn't have side effect
     return;
   }
-  if (lit->value().size() > JSString::kMaxSize) {
+  if (lit->value().size() > static_cast<std::size_t>(JSString::kMaxSize)) {
     EmitError(Error::Type, "too long string is prohibited");
     return;
   }

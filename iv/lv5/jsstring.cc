@@ -211,7 +211,7 @@ JSString* JSString::New(Context* ctx, Symbol sym) {
     if (str->size() == 1) {
       return New(ctx, (*str)[0]);
     }
-    assert(str->size() <= kMaxSize);
+    assert(str->size() <= static_cast<std::size_t>(kMaxSize));
     return JSString::NewExternal(ctx, *str);
   }
 }
