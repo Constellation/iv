@@ -672,7 +672,7 @@ inline JSString* JSLayout::ToString(Context* ctx, Error* e) const {
     std::array<char, 80> buffer;
     const char* const str =
         core::DoubleToCString(number(), buffer.data(), buffer.size());
-    return JSString::NewAsciiString(ctx, str, e);
+    return JSString::New(ctx, str, e);
   } else if (IsBoolean()) {
     return boolean() ?
         ctx->global_data()->string_true() : ctx->global_data()->string_false();
@@ -743,7 +743,7 @@ inline Symbol JSLayout::ToSymbol(Context* ctx, Error* e) const {
 inline std::u16string JSLayout::ToU16String(Context* ctx, Error* e) const {
   if (IsString()) {
     JSString* str = string();
-    return std::u16string(str->begin(), str->end());
+    return str->GetUTF16();
   } else if (IsNumber()) {
     // int32 short cut
     if (IsInt32()) {
@@ -782,9 +782,9 @@ inline double JSLayout::ToNumber(Context* ctx, Error* e) const {
   } else if (IsString()) {
     const JSString* str = string();
     if (str->Is8Bit()) {
-      return core::StringToDouble(*str->Get8Bit(), false);
+      return core::StringToDouble(*str->Flatten8(), false);
     } else {
-      return core::StringToDouble(*str->Get16Bit(), false);
+      return core::StringToDouble(*str->Flatten16(), false);
     }
   } else if (IsBoolean()) {
     return boolean() ? 1 : +0;
@@ -811,9 +811,9 @@ inline JSVal JSVal::ToNumberValue(Context* ctx, Error* e) const {
   } else if (IsString()) {
     const JSString* str = string();
     if (str->Is8Bit()) {
-      return core::StringToDouble(*str->Get8Bit(), false);
+      return core::StringToDouble(*str->Flatten8(), false);
     } else {
-      return core::StringToDouble(*str->Get16Bit(), false);
+      return core::StringToDouble(*str->Flatten16(), false);
     }
   } else if (IsBoolean()) {
     return JSVal::Int32(boolean() ? 1 : 0);
@@ -927,9 +927,9 @@ inline std::size_t JSLayout::HashImpl(bool zero) const {
   if (IsString()) {
     JSString* str = string();
     if (str->Is8Bit()) {
-      return core::Hash::StringToHash(*str->Get8Bit());
+      return core::Hash::StringToHash(*str->Flatten8());
     } else {
-      return core::Hash::StringToHash(*str->Get16Bit());
+      return core::Hash::StringToHash(*str->Flatten16());
     }
   }
 
@@ -1053,7 +1053,7 @@ inline JSVal JSVal::GetSlot(Context* ctx,
       JSString* str = string();
       if (name == symbol::length()) {
         slot->set(
-            JSVal::UInt32(str->size()),
+            JSVal::Int32(str->size()),
             Attributes::String::Length(),
             str);
         return slot->value();
@@ -1061,9 +1061,9 @@ inline JSVal JSVal::GetSlot(Context* ctx,
 
       if (symbol::IsArrayIndexSymbol(name)) {
         const uint32_t index = symbol::GetIndexFromSymbol(name);
-        if (index < str->size()) {
+        if (index < static_cast<uint32_t>(str->size())) {
           slot->set(
-              JSString::NewSingle(ctx, str->At(index)),
+              JSString::New(ctx, str->At(index)),
               Attributes::String::Indexed(),
               str);
           return slot->value();
@@ -1093,7 +1093,7 @@ inline bool JSVal::GetPropertySlot(Context* ctx,
       JSString* str = string();
       if (name == symbol::length()) {
         slot->set(
-            JSVal::UInt32(str->size()),
+            JSVal::Int32(str->size()),
             Attributes::String::Length(),
             str);
         return true;
@@ -1101,9 +1101,9 @@ inline bool JSVal::GetPropertySlot(Context* ctx,
 
       if (symbol::IsArrayIndexSymbol(name)) {
         const uint32_t index = symbol::GetIndexFromSymbol(name);
-        if (index < str->size()) {
+        if (index < static_cast<uint32_t>(str->size())) {
           slot->set(
-              JSString::NewSingle(ctx, str->At(index)),
+              JSString::New(ctx, str->At(index)),
               Attributes::String::Indexed(),
               str);
           return true;

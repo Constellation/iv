@@ -120,6 +120,13 @@ class JSVector : private JSArray {
     return vec;
   }
 
+  template<typename Iter>
+  static JSVector* New(Context* ctx, Iter it, Iter last) {
+    JSVector* vec = New(ctx);
+    vec->assign(it, last);
+    return vec;
+  }
+
   // Once gain JSArray, JSVector is disabled, do not touch.
   JSArray* ToJSArray() {
     const size_type total = size();

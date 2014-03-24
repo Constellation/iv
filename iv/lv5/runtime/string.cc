@@ -15,6 +15,7 @@
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsstring.h>
+#include <iv/lv5/jsvector.h>
 #include <iv/lv5/jsstringobject.h>
 #include <iv/lv5/jsstring_iterator.h>
 #include <iv/lv5/jsregexp.h>
@@ -43,22 +44,22 @@ inline int64_t SplitMatch(JSString* str, uint32_t q, JSString* rhs) {
   if (str->Is8Bit() == rhs->Is8Bit()) {
     // same type
     if (str->Is8Bit()) {
-      if (std::char_traits<uint8_t>::compare(
-              rhs->Get8Bit()->data(),
-              str->Get8Bit()->data() + q, rs) != 0) {
+      if (std::char_traits<char>::compare(
+              rhs->Flatten8()->data(),
+              str->Flatten8()->data() + q, rs) != 0) {
         return -1;
       }
     } else {
       if (std::char_traits<char16_t>::compare(
-              rhs->Get16Bit()->data(),
-              str->Get16Bit()->data() + q, rs) != 0) {
+              rhs->Flatten16()->data(),
+              str->Flatten16()->data() + q, rs) != 0) {
         return -1;
       }
     }
   } else {
     if (str->Is8Bit()) {
-      const Fiber8* left = str->Get8Bit();
-      const Fiber16* right = rhs->Get16Bit();
+      const JSAsciiFlatString* left = str->Flatten8();
+      const JSUTF16FlatString* right = rhs->Flatten16();
       if (core::CompareIterators(
               right->begin(),
               right->begin() + rs,
@@ -67,8 +68,8 @@ inline int64_t SplitMatch(JSString* str, uint32_t q, JSString* rhs) {
         return -1;
       }
     } else {
-      const Fiber16* left = str->Get16Bit();
-      const Fiber8* right = rhs->Get8Bit();
+      const JSUTF16FlatString* left = str->Flatten16();
+      const JSAsciiFlatString* right = rhs->Flatten8();
       if (core::CompareIterators(
               right->begin(),
               right->begin() + rs,
@@ -206,9 +207,9 @@ class StringReplacer : public Replacer<StringReplacer> {
   template<typename Builder>
   void DoReplace(Builder* builder, Error* e) {
     if (replace_->Is8Bit()) {
-      DoReplaceImpl(replace_->Get8Bit(), builder, e);
+      DoReplaceImpl(replace_->Flatten8(), builder, e);
     } else {
-      DoReplaceImpl(replace_->Get16Bit(), builder, e);
+      DoReplaceImpl(replace_->Flatten16(), builder, e);
     }
   }
 
@@ -458,14 +459,14 @@ JSVal StringConstructor(const Arguments& args, Error* e) {
     if (!args.empty()) {
       str = args.front().ToString(args.ctx(), IV_LV5_ERROR(e));
     } else {
-      str = JSString::NewEmptyString(args.ctx());
+      str = JSString::NewEmpty(args.ctx());
     }
     return JSStringObject::New(args.ctx(), str);
   } else {
     if (!args.empty()) {
       return args.front().ToString(args.ctx(), e);
     } else {
-      return JSString::NewEmptyString(args.ctx());
+      return JSString::NewEmpty(args.ctx());
     }
   }
 }
@@ -516,7 +517,7 @@ JSVal StringRaw(const Arguments& args, Error* e) {
   const uint32_t literal_segments =
       internal::GetLength(ctx, raw, IV_LV5_ERROR(e));
   if (!literal_segments) {
-    return JSString::NewEmptyString(ctx);
+    return JSString::NewEmpty(ctx);
   }
   JSStringBuilder elements;
   uint32_t next_index = 0;
@@ -578,17 +579,17 @@ JSVal StringCharAt(const Arguments& args, Error* e) {
   const JSVal first = args.At(0);
   uint32_t pos;
   if (first.GetUInt32(&pos)) {
-    if (pos >= str->size()) {
-      return JSString::NewEmptyString(args.ctx());
+    if (pos >= static_cast<uint32_t>(str->size())) {
+      return JSString::NewEmpty(args.ctx());
     }
   } else {
     const double position = first.ToInteger(args.ctx(), IV_LV5_ERROR(e));
-    if (position < 0 || position >= str->size()) {
-      return JSString::NewEmptyString(args.ctx());
+    if (position < 0 || position >= static_cast<uint32_t>(str->size())) {
+      return JSString::NewEmpty(args.ctx());
     }
     pos = static_cast<uint32_t>(position);
   }
-  return JSString::NewSingle(args.ctx(), str->At(pos));
+  return JSString::New(args.ctx(), str->At(pos));
 }
 
 // section 15.5.4.5 String.prototype.charCodeAt(pos)
@@ -600,7 +601,7 @@ JSVal StringCharCodeAt(const Arguments& args, Error* e) {
   const JSVal first = args.At(0);
   uint32_t pos;
   if (first.GetUInt32(&pos)) {
-    if (pos >= str->size()) {
+    if (pos >= static_cast<uint32_t>(str->size())) {
       return JSNaN;
     }
   } else {
@@ -623,18 +624,19 @@ JSVal StringCodePointAt(const Arguments& args, Error* e) {
   const JSVal arg1 = args.At(0);
   uint32_t pos;
   if (arg1.GetUInt32(&pos)) {
-    if (pos >= str->size()) {
+    if (pos >= static_cast<uint32_t>(str->size())) {
       return JSUndefined;
     }
   } else {
     const double position = arg1.ToInteger(args.ctx(), IV_LV5_ERROR(e));
-    if (position < 0 || position >= str->size()) {
+    if (position < 0 || position >= static_cast<uint32_t>(str->size())) {
       return JSUndefined;
     }
     pos = static_cast<uint32_t>(position);
   }
   const char16_t first = str->At(pos);
-  if (first < 0xD800 || first > 0xDBFF || (pos + 1) == str->size()) {
+  if (first < 0xD800 || first > 0xDBFF ||
+      (pos + 1) == static_cast<uint32_t>(str->size())) {
     return JSVal::UInt16(first);
   }
   const char16_t second = str->At(pos + 1);
@@ -827,10 +829,10 @@ JSVal StringReplace(const Arguments& args, Error* e) {
       }
       if (replace_value->Is8Bit()) {
         detail::ReplaceOnce(&builder, str, search_str,
-                            loc, replace_value->Get8Bit());
+                            loc, replace_value->Flatten8());
       } else {
         detail::ReplaceOnce(&builder, str, search_str,
-                            loc, replace_value->Get16Bit());
+                            loc, replace_value->Flatten16());
       }
     }
     builder.AppendJSString(
@@ -1061,15 +1063,15 @@ JSString* ConvertCase(Context* ctx,
   if (str->Is8Bit()) {
     std::vector<char> builder;
     builder.resize(str->size());
-    const Fiber8* fiber = str->Get8Bit();
+    const JSAsciiFlatString* fiber = str->Flatten8();
     std::transform(fiber->begin(), fiber->end(), builder.begin(), converter);
     return JSString::New(ctx, builder.begin(), builder.end(), true, e);
   } else {
     // Special Casing is considered
     std::vector<char16_t> builder;
     builder.reserve(str->size());
-    const Fiber16* fiber = str->Get16Bit();
-    for (Fiber16::const_iterator it = fiber->begin(),
+    const JSUTF16FlatString* fiber = str->Flatten16();
+    for (typename JSUTF16FlatString::const_iterator it = fiber->begin(),
          last = fiber->end(); it != last; ++it) {
       const uint64_t ch = converter(*it);
       if (ch > 0xFFFF) {
@@ -1139,7 +1141,7 @@ JSVal StringToLocaleLowerCase(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   if (str->Is8Bit()) {
-    const Fiber8* fiber = str->Get8Bit();
+    const JSAsciiFlatString* fiber = str->Flatten8();
     return detail::ConvertCaseLocale(
         args.ctx(),
         fiber->begin(), fiber->end(),
@@ -1148,7 +1150,7 @@ JSVal StringToLocaleLowerCase(const Arguments& args, Error* e) {
       return core::character::ToLocaleLowerCase(locale, c, prev, next);
     }, e);
   } else {
-    const Fiber16* fiber = str->Get16Bit();
+    const JSUTF16FlatString* fiber = str->Flatten16();
     return detail::ConvertCaseLocale(
         args.ctx(),
         fiber->begin(), fiber->end(),
@@ -1177,7 +1179,7 @@ JSVal StringToLocaleUpperCase(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   if (str->Is8Bit()) {
-    const Fiber8* fiber = str->Get8Bit();
+    const JSAsciiFlatString* fiber = str->Flatten8();
     return detail::ConvertCaseLocale(
         args.ctx(),
         fiber->begin(), fiber->end(),
@@ -1186,7 +1188,7 @@ JSVal StringToLocaleUpperCase(const Arguments& args, Error* e) {
       return core::character::ToLocaleUpperCase(locale, c, prev, next);
     }, e);
   } else {
-    const Fiber16* fiber = str->Get16Bit();
+    const JSUTF16FlatString* fiber = str->Flatten16();
     return detail::ConvertCaseLocale(
         args.ctx(),
         fiber->begin(), fiber->end(),
@@ -1210,7 +1212,7 @@ JSVal detail::StringTrimHelper(Context* ctx, const FiberType* fiber, Error* e) {
     }
   }
   if (empty) {
-    return JSString::NewEmptyString(ctx);
+    return JSString::NewEmpty(ctx);
   }
   // trim tailing space
   typename FiberType::const_reverse_iterator rit = fiber->rbegin();
@@ -1230,9 +1232,9 @@ JSVal StringTrim(const Arguments& args, Error* e) {
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(args.ctx(), IV_LV5_ERROR(e));
   if (str->Is8Bit()) {
-    return detail::StringTrimHelper(args.ctx(), str->Get8Bit(), e);
+    return detail::StringTrimHelper(args.ctx(), str->Flatten8(), e);
   } else {
-    return detail::StringTrimHelper(args.ctx(), str->Get16Bit(), e);
+    return detail::StringTrimHelper(args.ctx(), str->Flatten16(), e);
   }
 }
 
@@ -1245,7 +1247,7 @@ JSVal StringRepeat(const Arguments& args, Error* e) {
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
   const int32_t count = args.At(0).ToInt32(ctx, IV_LV5_ERROR(e));
   if (count < 0) {
-    return JSString::NewEmptyString(ctx);
+    return JSString::NewEmpty(ctx);
   }
   return str->Repeat(ctx, count, e);
 }
@@ -1276,12 +1278,13 @@ JSVal StringStartsWith(const Arguments& args, Error* e) {
     }
   }
 
-  if (search_string->size() + start > str->size()) {
+  if (search_string->size() + start > static_cast<uint32_t>(str->size())) {
     return JSFalse;
   }
-  JSString::const_iterator it = str->begin() + start;
-  return JSVal::Bool(
-      std::equal(search_string->begin(), search_string->end(), it));
+  const JSFlatString* flat = str->Flatten();
+  JSFlatString::const_iterator it = flat->begin() + start;
+  const JSFlatString* search = search_string->Flatten();
+  return JSVal::Bool(std::equal(search->begin(), search->end(), it));
 }
 
 // section 15.5.4.23 String.prototype.endsWith(searchString, [endPosition])
@@ -1312,13 +1315,14 @@ JSVal StringEndsWith(const Arguments& args, Error* e) {
     }
   }
 
-  if (search_string->size() > end) {
+  if (static_cast<uint32_t>(search_string->size()) > end) {
     return JSFalse;
   }
   const std::size_t start = end - search_string->size();
-  const JSString::const_iterator it = str->begin() + start;
-  return JSVal::Bool(
-      std::equal(search_string->begin(), search_string->end(), it));
+  const JSFlatString* flat = str->Flatten();
+  const JSFlatString::const_iterator it = flat->begin() + start;
+  const JSFlatString* search = search_string->Flatten();
+  return JSVal::Bool(std::equal(search->begin(), search->end(), it));
 }
 
 // section 15.5.4.24 String.prototype.contains(searchString, [position])
@@ -1347,7 +1351,8 @@ JSVal StringContains(const Arguments& args, Error* e) {
     }
   }
 
-  if ((search_string->size() + start) > str->size()) {
+  if ((static_cast<uint32_t>(search_string->size()) + start) >
+      static_cast<uint32_t>(str->size())) {
     return JSFalse;
   }
   return JSVal::Bool(str->find(*search_string, start) != JSString::npos);
@@ -1360,7 +1365,8 @@ JSVal StringReverse(const Arguments& args, Error* e) {
   Context* ctx = args.ctx();
   val.CheckObjectCoercible(IV_LV5_ERROR(e));
   JSString* const str = val.ToString(ctx, IV_LV5_ERROR(e));
-  return JSString::New(ctx, str->crbegin(), str->crend(), str->Is8Bit(), e);
+  const JSFlatString* flat = str->Flatten();
+  return JSString::New(ctx, flat->crbegin(), flat->crend(), str->Is8Bit(), e);
 }
 
 // section B.2.3 String.prototype.substr(start, length)
@@ -1401,7 +1407,7 @@ JSVal StringSubstr(const Arguments& args, Error* e) {
                                           len - result5);
 
   if (result6 <= 0) {
-    return JSString::NewEmptyString(ctx);
+    return JSString::NewEmpty(ctx);
   }
 
   const uint32_t capacity = core::DoubleToUInt32(result6);

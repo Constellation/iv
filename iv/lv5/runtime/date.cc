@@ -42,11 +42,11 @@ JSVal DateConstructor(const Arguments& args, Error* e) {
         if (str->Is8Bit()) {
           return JSDate::New(
               ctx,
-              core::date::TimeClip(core::date::Parse(*str->Get8Bit())));
+              core::date::TimeClip(core::date::Parse(*str->Flatten8())));
         } else {
           return JSDate::New(
               ctx,
-              core::date::TimeClip(core::date::Parse(*str->Get16Bit())));
+              core::date::TimeClip(core::date::Parse(*str->Flatten16())));
         }
       } else {
         const double V = v.ToNumber(ctx, IV_LV5_ERROR(e));
@@ -133,8 +133,7 @@ JSVal DateConstructor(const Arguments& args, Error* e) {
       sign,
       tz_hour,
       tz_min);
-  return JSString::NewAsciiString(
-      args.ctx(), core::string_view(buf, num), e);
+  return JSString::New(args.ctx(), core::string_view(buf, num), e);
 }
 
 
@@ -144,9 +143,9 @@ JSVal DateParse(const Arguments& args, Error* e) {
   const JSVal first = (args.empty()) ? JSUndefined : args[0];
   const JSString* target = first.ToString(args.ctx(), IV_LV5_ERROR(e));
   if (target->Is8Bit()) {
-    return core::date::Parse(*target->Get8Bit());
+    return core::date::Parse(*target->Flatten8());
   } else {
-    return core::date::Parse(*target->Get16Bit());
+    return core::date::Parse(*target->Flatten16());
   }
 }
 
@@ -237,7 +236,7 @@ JSVal DateToString(const Arguments& args, Error* e) {
   // this is date object
   JSDate* date = static_cast<JSDate*>(obj.object());
   if (!date->local().IsValid()) {
-    return JSString::NewAsciiString(args.ctx(), "Invalid Date", e);
+    return JSString::New(args.ctx(), "Invalid Date", e);
   }
 
   const int timezone = -date->timezone();
@@ -261,8 +260,7 @@ JSVal DateToString(const Arguments& args, Error* e) {
       sign,
       tz_hour,
       tz_min);
-  return JSString::NewAsciiString(
-      args.ctx(), core::string_view(buf, num), e);
+  return JSString::New(args.ctx(), core::string_view(buf, num), e);
 }
 
 // section 15.9.5.3 Date.prototype.toDateString()
@@ -291,8 +289,7 @@ JSVal DateToDateString(const Arguments& args, Error* e) {
       instance.MonthString(),
       instance.date(),
       instance.year());
-  return JSString::NewAsciiString(
-      args.ctx(), core::string_view(buf, num), e);
+  return JSString::New(args.ctx(), core::string_view(buf, num), e);
 }
 
 // section 15.9.5.4 Date.prototype.toTimeString()
@@ -329,8 +326,7 @@ JSVal DateToTimeString(const Arguments& args, Error* e) {
       sign,
       tz_hour,
       tz_min);
-  return JSString::NewAsciiString(
-      args.ctx(), core::string_view(buf, num), e);
+  return JSString::New(args.ctx(), core::string_view(buf, num), e);
 }
 
 // section 15.9.5.5 Date.prototype.toLocaleString()
@@ -346,7 +342,7 @@ JSVal DateToLocaleString(const Arguments& args, Error* e) {
   // this is date object
   JSDate* date = static_cast<JSDate*>(obj.object());
   if (!date->local().IsValid()) {
-    return JSString::NewAsciiString(args.ctx(), "Invalid Date", e);
+    return JSString::New(args.ctx(), "Invalid Date", e);
   }
 
   const int timezone = -date->timezone();
@@ -370,8 +366,7 @@ JSVal DateToLocaleString(const Arguments& args, Error* e) {
       sign,
       tz_hour,
       tz_min);
-  return JSString::NewAsciiString(
-      args.ctx(), core::string_view(buf, num), e);
+  return JSString::New(args.ctx(), core::string_view(buf, num), e);
 }
 
 // section 15.9.5.6 Date.prototype.toLocaleDateString()
@@ -400,8 +395,7 @@ JSVal DateToLocaleDateString(const Arguments& args, Error* e) {
       instance.MonthString(),
       instance.date(),
       instance.year());
-  return JSString::NewAsciiString(
-      args.ctx(), core::string_view(buf, num), e);
+  return JSString::New(args.ctx(), core::string_view(buf, num), e);
 }
 
 // section 15.9.5.7 Date.prototype.toLocaleTimeString()
@@ -438,8 +432,7 @@ JSVal DateToLocaleTimeString(const Arguments& args, Error* e) {
       sign,
       tz_hour,
       tz_min);
-  return JSString::NewAsciiString(
-      args.ctx(), core::string_view(buf, num), e);
+  return JSString::New(args.ctx(), core::string_view(buf, num), e);
 }
 
 // section 15.9.5.8 Date.prototype.valueOf()
@@ -1352,7 +1345,7 @@ JSVal DateToUTCString(const Arguments& args, Error* e) {
       instance.hour(),
       instance.min(),
       instance.sec());
-  return JSString::NewAsciiString(
+  return JSString::New(
       args.ctx(), core::string_view(buf, num), e);
 }
 
@@ -1385,8 +1378,7 @@ JSVal DateToISOString(const Arguments& args, Error* e) {
       instance.min(),
       instance.sec(),
       instance.ms());
-  return JSString::NewAsciiString(
-      args.ctx(), core::string_view(buf, num), e);
+  return JSString::New(args.ctx(), core::string_view(buf, num), e);
 }
 
 // section 15.9.5.44 Date.prototype.toJSON()

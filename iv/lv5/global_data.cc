@@ -81,17 +81,17 @@ GlobalData::GlobalData(Context* ctx)
   {
     Error::Dummy e;
     string_empty_ = new JSString(ctx);
-    string_null_ = JSString::NewAsciiString(ctx, "null", &e);
-    string_true_ = JSString::NewAsciiString(ctx, "true", &e);
-    string_false_ = JSString::NewAsciiString(ctx, "false", &e);
-    string_undefined_ = JSString::NewAsciiString(ctx, "undefined", &e);
-    string_function_ = JSString::NewAsciiString(ctx, "function", &e);
-    string_object_ = JSString::NewAsciiString(ctx, "object", &e);
-    string_number_ = JSString::NewAsciiString(ctx, "number", &e);
-    string_string_ = JSString::NewAsciiString(ctx, "string", &e);
-    string_symbol_ = JSString::NewAsciiString(ctx, "symbol", &e);
-    string_boolean_ = JSString::NewAsciiString(ctx, "boolean", &e);
-    string_empty_regexp_ = JSString::NewAsciiString(ctx, "(?:)", &e);
+    string_null_ = JSString::New(ctx, "null", &e);
+    string_true_ = JSString::New(ctx, "true", &e);
+    string_false_ = JSString::New(ctx, "false", &e);
+    string_undefined_ = JSString::New(ctx, "undefined", &e);
+    string_function_ = JSString::New(ctx, "function", &e);
+    string_object_ = JSString::New(ctx, "object", &e);
+    string_number_ = JSString::New(ctx, "number", &e);
+    string_string_ = JSString::New(ctx, "string", &e);
+    string_symbol_ = JSString::New(ctx, "symbol", &e);
+    string_boolean_ = JSString::New(ctx, "boolean", &e);
+    string_empty_regexp_ = JSString::New(ctx, "(?:)", &e);
 
     // RegExp Map
     // see also jsregexp.h, JSRegExp::FIELD
@@ -175,10 +175,12 @@ void GlobalData::InitNormalObjectMaps(Context* ctx) {
 JSString* GlobalData::GetSingleString(char16_t ch) {
   if (ch < 0x80) {
     // caching value
+    const char ascii = ch;
     if (string_cache_[ch]) {
       return string_cache_[ch];
     }
-    return (string_cache_[ch] = new JSString(ctx_, ch));
+    return (string_cache_[ch] =
+            new JSSeqString(ctx_, true, &ascii, &ascii + 1));
   }
   return nullptr;
 }

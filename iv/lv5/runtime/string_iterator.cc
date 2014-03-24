@@ -50,11 +50,11 @@ JSVal StringIteratorNext(const Arguments& args, Error* e) {
   const char16_t first = s->At(index);
   JSString* result = nullptr;
   if (first < 0xD800U || first > 0xDBFFU || index + 1 == len) {
-    result = JSString::NewSingle(ctx, first);
+    result = JSString::New(ctx, first);
   } else {
     const char16_t second = s->At(index + 1);
     if (second < 0xDC00U || second > 0xDFFFU) {
-      result = JSString::NewSingle(ctx, first);
+      result = JSString::New(ctx, first);
     } else {
       result = s->Substring(ctx, index, index + 2);
     }

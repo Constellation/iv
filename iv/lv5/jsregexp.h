@@ -13,6 +13,7 @@
 #include <iv/lv5/jsregexp_impl.h>
 #include <iv/lv5/bind.h>
 #include <iv/lv5/jsvector.h>
+#include <iv/lv5/jsstring_builder.h>
 namespace iv {
 namespace lv5 {
 
@@ -92,17 +93,17 @@ class JSRegExp : public JSObject {
 
   JSVal ExecGlobal(Context* ctx, JSString* str, Error* e) {
     if (str->Is8Bit()) {
-      return ExecGlobal(ctx, str, str->Get8Bit(), e);
+      return ExecGlobal(ctx, str, str->Flatten8(), e);
     } else {
-      return ExecGlobal(ctx, str, str->Get16Bit(), e);
+      return ExecGlobal(ctx, str, str->Flatten16(), e);
     }
   }
 
   JSVal Exec(Context* ctx, JSString* str, Error* e) {
     if (str->Is8Bit()) {
-      return Exec(ctx, str, str->Get8Bit(), e);
+      return Exec(ctx, str, str->Flatten8(), e);
     } else {
-      return Exec(ctx, str, str->Get16Bit(), e);
+      return Exec(ctx, str, str->Flatten16(), e);
     }
   }
 
@@ -114,8 +115,8 @@ class JSRegExp : public JSObject {
         static_cast<std::size_t>(impl_->number_of_captures() * 2)
         <= vec->size());
     const int res = (str->Is8Bit()) ?
-        impl_->Execute(ctx, *str->Get8Bit(), index, vec->data()) :
-        impl_->Execute(ctx, *str->Get16Bit(), index, vec->data());
+        impl_->Execute(ctx, *str->Flatten8(), index, vec->data()) :
+        impl_->Execute(ctx, *str->Flatten16(), index, vec->data());
     return res == aero::AERO_SUCCESS;
   }
 
@@ -127,11 +128,11 @@ class JSRegExp : public JSObject {
       impl_() {
     int f = 0;
     if (flags->Is8Bit()) {
-      const Fiber8* fiber8 = flags->Get8Bit();
-      f = JSRegExpImpl::ComputeFlags(fiber8->begin(), fiber8->end());
+      const JSAsciiFlatString* flat = flags->Flatten8();
+      f = JSRegExpImpl::ComputeFlags(flat->begin(), flat->end());
     } else {
-      const Fiber16* fiber16 = flags->Get16Bit();
-      f = JSRegExpImpl::ComputeFlags(fiber16->begin(), fiber16->end());
+      const JSUTF16FlatString* flat = flags->Flatten16();
+      f = JSRegExpImpl::ComputeFlags(flat->begin(), flat->end());
     }
     impl_ = CompileImpl(ctx->regexp_allocator(), pattern, f);
     JSString* escaped = Escape(ctx, pattern, IV_LV5_ERROR_VOID(e));
@@ -183,12 +184,12 @@ class JSRegExp : public JSObject {
     JSStringBuilder builder;
     builder.reserve(str->size());
     if (str->Is8Bit()) {
-      const Fiber8* fiber8 = str->Get8Bit();
-      core::RegExpEscape(fiber8->begin(), fiber8->end(),
+      const JSAsciiFlatString* flat = str->Flatten8();
+      core::RegExpEscape(flat->begin(), flat->end(),
                          std::back_inserter(builder));
     } else {
-      const Fiber16* fiber16 = str->Get16Bit();
-      core::RegExpEscape(fiber16->begin(), fiber16->end(),
+      const JSUTF16FlatString* flat = str->Flatten16();
+      core::RegExpEscape(flat->begin(), flat->end(),
                          std::back_inserter(builder));
     }
     return builder.Build(ctx, str->Is8Bit(), e);
@@ -241,9 +242,7 @@ class JSRegExp : public JSObject {
       if (previous_index > size) {
         break;
       }
-      vec->push_back(
-          JSString::NewWithFiber(
-              ctx, fiber, offset_vector[0], offset_vector[1]));
+      vec->push_back(str->Substring(ctx, offset_vector[0], offset_vector[1]));
     } while (true);
 
     if (vec->empty()) {
@@ -292,7 +291,7 @@ class JSRegExp : public JSObject {
       const int begin = offset_vector[i*2];
       const int end = offset_vector[i*2+1];
       if (begin != -1 && end != -1) {
-        (*vec)[i] = JSString::NewWithFiber(ctx, fiber, begin, end);
+        (*vec)[i] = str->Substring(ctx, begin, end);
       }
     }
 
@@ -314,9 +313,9 @@ class JSRegExp : public JSObject {
   static JSRegExpImpl* CompileImpl(core::Space* space,
                                    JSString* pattern, int flags = 0) {
     if (pattern->Is8Bit()) {
-      return new JSRegExpImpl(space, *pattern->Get8Bit(), flags);
+      return new JSRegExpImpl(space, *pattern->Flatten8(), flags);
     } else {
-      return new JSRegExpImpl(space, *pattern->Get16Bit(), flags);
+      return new JSRegExpImpl(space, *pattern->Flatten16(), flags);
     }
   }
 

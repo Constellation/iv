@@ -45,7 +45,7 @@ JSVal ErrorToString(const Arguments& args, Error* e) {
       const JSVal target =
           obj.object()->Get(ctx, symbol::name(), IV_LV5_ERROR(e));
       if (target.IsUndefined()) {
-        name = JSString::NewAsciiString(ctx, "Error", IV_LV5_ERROR(e));
+        name = JSString::New(ctx, "Error", IV_LV5_ERROR(e));
       } else {
         name = target.ToString(ctx, IV_LV5_ERROR(e));
       }
@@ -55,7 +55,7 @@ JSVal ErrorToString(const Arguments& args, Error* e) {
       const JSVal target =
           obj.object()->Get(ctx, symbol::message(), IV_LV5_ERROR(e));
       if (target.IsUndefined()) {
-        msg = JSString::NewEmptyString(ctx);
+        msg = JSString::NewEmpty(ctx);
       } else {
         msg = target.ToString(ctx, IV_LV5_ERROR(e));
       }

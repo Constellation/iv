@@ -29,12 +29,12 @@ class MaybeJSONParser : private core::Noncopyable<MaybeJSONParser> {
 
   JSVal Parse(Context* ctx, Error* e) {
     if (str_->Is8Bit()) {
-      const Fiber8* fiber = str_->Get8Bit();
+      const JSAsciiFlatString* fiber = str_->Flatten8();
       return ParseJSON<false>(
           ctx,
           core::string_view(*fiber).substr(1, fiber->size() - 2), e);
     } else {
-      const Fiber16* fiber = str_->Get16Bit();
+      const JSUTF16FlatString* fiber = str_->Flatten16();
       return ParseJSON<false>(
           ctx,
           core::u16string_view(*fiber).substr(1, fiber->size() - 2), e);

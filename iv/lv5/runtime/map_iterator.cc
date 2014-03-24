@@ -6,6 +6,7 @@
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsarray.h>
+#include <iv/lv5/jsvector.h>
 #include <iv/lv5/jsmap.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/jsmap_iterator.h>

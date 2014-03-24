@@ -9,6 +9,7 @@
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsstring.h>
+#include <iv/lv5/jsstring_builder.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/internal.h>
 #include <iv/lv5/runtime/function.h>

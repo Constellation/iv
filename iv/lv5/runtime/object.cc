@@ -9,8 +9,10 @@
 #include <iv/lv5/arguments.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/jsstring.h>
+#include <iv/lv5/jsstring_builder.h>
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsarray.h>
+#include <iv/lv5/jsvector.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/context.h>
@@ -384,10 +386,10 @@ JSVal ObjectToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.toString", args, e);
   const JSVal this_binding = args.this_binding();
   if (this_binding.IsUndefined()) {
-    return JSString::NewAsciiString(args.ctx(), "[object Undefined]", e);
+    return JSString::New(args.ctx(), "[object Undefined]", e);
   }
   if (this_binding.IsNull()) {
-    return JSString::NewAsciiString(args.ctx(), "[object Null]", e);
+    return JSString::New(args.ctx(), "[object Null]", e);
   }
 
   JSObject* const obj = this_binding.ToObject(args.ctx(), IV_LV5_ERROR(e));

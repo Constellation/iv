@@ -118,13 +118,13 @@ JSVal RegExpCompile(const Arguments& args, Error* e) {
       const JSVal first = args[0];
       if (!first.IsUndefined()) {
         JSString* str = first.ToString(ctx, IV_LV5_ERROR(e));
-        pattern = str->GetUString();
+        pattern = str->GetUTF16();
       }
       if (args_count > 1) {
         const JSVal second = args[1];
         if (!second.IsUndefined()) {
           JSString* str = second.ToString(ctx, IV_LV5_ERROR(e));
-          flags = str->GetUString();
+          flags = str->GetUTF16();
         }
       }
     }

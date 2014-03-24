@@ -30,7 +30,7 @@ class JSStringObject : public JSObject {
     JSString* value = static_cast<const JSStringObject*>(obj)->value();
     const std::size_t len = value->size();
     if (index < len) {
-      slot->set(JSString::NewSingle(ctx, value->At(index)), Attributes::String::Indexed(), obj);
+      slot->set(JSString::New(ctx, value->At(index)), Attributes::String::Indexed(), obj);
       return true;
     }
     return JSObject::GetOwnIndexedPropertySlotMethod(obj, ctx, index, slot);
@@ -61,7 +61,7 @@ class JSStringObject : public JSObject {
   }
 
   static JSStringObject* NewPlain(Context* ctx, Map* map) {
-    return new JSStringObject(ctx, map, JSString::NewEmptyString(ctx));
+    return new JSStringObject(ctx, map, JSString::NewEmpty(ctx));
   }
 
   virtual void MarkChildren(radio::Core* core) {

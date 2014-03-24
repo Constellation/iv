@@ -38,7 +38,8 @@ inline JSVector* CanonicalizeLocaleList(Context* ctx, JSVal locales, Error* e) {
         return nullptr;
       }
       JSString* tag = value.ToString(ctx, IV_LV5_ERROR(e));
-      core::i18n::LanguageTagScanner scanner(tag->begin(), tag->end());
+      const JSFlatString* flat = tag->Flatten();
+      core::i18n::LanguageTagScanner scanner(flat->begin(), flat->end());
       if (!scanner.IsStructurallyValid()) {
         e->Report(Error::Range, "locale pattern is not well formed");
         return nullptr;
@@ -47,7 +48,7 @@ inline JSVector* CanonicalizeLocaleList(Context* ctx, JSVal locales, Error* e) {
       if (checker.find(canonicalized) == checker.end()) {
         checker.insert(canonicalized);
         JSString* str =
-            JSString::NewAsciiString(ctx, canonicalized, IV_LV5_ERROR(e));
+            JSString::New(ctx, canonicalized, IV_LV5_ERROR(e));
         seen->push_back(str);
       }
     }
@@ -95,7 +96,7 @@ class Options {
       return str;
     }
     if (fallback) {
-      return JSString::NewAsciiString(ctx, fallback, e);
+      return JSString::New(ctx, fallback, e);
     }
     return nullptr;
   }
@@ -160,13 +161,14 @@ inline JSVector* LookupSupportedLocales(Context* ctx,
        iz = requested->end(); i != iz; ++i) {
     const JSVal res = *i;
     JSString* str = res.ToString(ctx, IV_LV5_ERROR(e));
+    const JSFlatString* flat = str->Flatten();
     const std::string locale(
-        core::i18n::LanguageTagScanner::RemoveExtension(str->begin(),
-                                                        str->end()));
+        core::i18n::LanguageTagScanner::RemoveExtension(flat->begin(),
+                                                        flat->end()));
     const AvailIter t = ctx->i18n()->BestAvailableLocale(it, last, locale);
     if (t != last) {
       JSString* str =
-          JSString::NewAsciiString(ctx, locale, IV_LV5_ERROR(e));
+          JSString::New(ctx, locale, IV_LV5_ERROR(e));
       subset->push_back(str);
     }
   }
@@ -354,7 +356,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx, JSVal op,
           ctx,
           name,
           DataDescriptor(
-              JSString::NewAsciiString(ctx, "numeric", e),
+              JSString::New(ctx, "numeric", e),
               ATTR::W | ATTR::E | ATTR::C),
           true, IV_LV5_ERROR(e));
     }
@@ -368,7 +370,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx, JSVal op,
           ctx,
           name,
           DataDescriptor(
-              JSString::NewAsciiString(ctx, "numeric", e),
+              JSString::New(ctx, "numeric", e),
               ATTR::W | ATTR::E | ATTR::C),
           true, IV_LV5_ERROR(e));
     }

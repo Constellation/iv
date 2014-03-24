@@ -1,7 +1,7 @@
 #ifndef IV_LV5_JSSTRING_BUILDER_H_
 #define IV_LV5_JSSTRING_BUILDER_H_
 #include <iv/string_builder.h>
-#include <iv/lv5/jsstring_fwd.h>
+#include <iv/lv5/jsstring.h>
 namespace iv {
 namespace lv5 {
 
@@ -18,7 +18,9 @@ class JSStringBuilder : public core::BasicStringBuilder<char16_t> {
   void AppendJSString(const JSString& str) {
     const size_t current_size = container_type::size();
     container_type::resize(current_size + str.size());
-    str.Copy(container_type::begin() + current_size);
+    const JSFlatString* flat = str.Flatten();
+    std::copy(flat->begin(), flat->end(),
+              container_type::begin() + current_size);
   }
 
   void AppendJSString(const JSString& str,
@@ -26,7 +28,9 @@ class JSStringBuilder : public core::BasicStringBuilder<char16_t> {
                       size_t to) {
     const size_t current_size = container_type::size();
     container_type::resize(current_size + (to - from));
-    str.Copy(from, to, container_type::begin() + current_size);
+    const JSFlatString* flat = str.Flatten();
+    std::copy(flat->begin() + from, flat->begin() + to,
+              container_type::begin() + current_size);
   }
 };
 

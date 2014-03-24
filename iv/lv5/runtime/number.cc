@@ -115,12 +115,12 @@ JSVal NumberToString(const Arguments& args, Error* e) {
       // if radix == 10, through to radix 10 or no radix
       if (radix != 10) {
         if (core::math::IsNaN(num)) {
-          return JSString::NewAsciiString(args.ctx(), "NaN", e);
+          return JSString::New(args.ctx(), "NaN", e);
         } else if (core::math::IsInf(num)) {
           if (num > 0) {
-            return JSString::NewAsciiString(args.ctx(), "Infinity", e);
+            return JSString::New(args.ctx(), "Infinity", e);
           } else {
-            return JSString::NewAsciiString(args.ctx(), "-Infinity", e);
+            return JSString::New(args.ctx(), "-Infinity", e);
           }
         }
         JSStringBuilder builder;
@@ -140,7 +140,7 @@ JSVal NumberToString(const Arguments& args, Error* e) {
   const char* const str = core::DoubleToCString(num,
                                                 buffer.data(),
                                                 buffer.size());
-  return JSString::NewAsciiString(args.ctx(), str, e);
+  return JSString::New(args.ctx(), str, e);
 }
 
 // section 15.7.4.2 Number.prototype.toLocaleString()
@@ -229,7 +229,7 @@ JSVal NumberToFixed(const Arguments& args, Error* e) {
     const char* const str = core::DoubleToCString(x,
                                                   buffer.data(),
                                                   buffer.size());
-    return JSString::NewAsciiString(args.ctx(), str, e);
+    return JSString::New(args.ctx(), str, e);
   } else {
     JSStringDToA builder(ctx);
     return builder.BuildFixed(x, core::DoubleToInt32(fd), 0);
@@ -256,12 +256,12 @@ JSVal NumberToExponential(const Arguments& args, Error* e) {
   }
 
   if (core::math::IsNaN(x)) {
-    return JSString::NewAsciiString(ctx, "NaN", e);
+    return JSString::New(ctx, "NaN", e);
   } else if (core::math::IsInf(x)) {
     if (x < 0) {
-      return JSString::NewAsciiString(ctx, "-Infinity", e);
+      return JSString::New(ctx, "-Infinity", e);
     } else {
-      return JSString::NewAsciiString(ctx, "Infinity", e);
+      return JSString::New(ctx, "Infinity", e);
     }
   }
 
@@ -331,12 +331,12 @@ JSVal NumberToPrecision(const Arguments& args, Error* e) {
   }
 
   if (core::math::IsNaN(x)) {
-    return JSString::NewAsciiString(ctx, "NaN", e);
+    return JSString::New(ctx, "NaN", e);
   } else if (core::math::IsInf(x)) {
     if (x < 0) {
-      return JSString::NewAsciiString(ctx, "-Infinity", e);
+      return JSString::New(ctx, "-Infinity", e);
     } else {
-      return JSString::NewAsciiString(ctx, "Infinity", e);
+      return JSString::New(ctx, "Infinity", e);
     }
   }
 

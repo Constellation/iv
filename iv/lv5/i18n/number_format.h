@@ -3,6 +3,8 @@
 #include <iv/i18n.h>
 #include <iv/ignore_unused_variable_warning.h>
 #include <iv/lv5/jsobject_fwd.h>
+#include <iv/lv5/jsstring.h>
+#include <iv/lv5/jsstring_builder.h>
 #include <iv/lv5/bind.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/i18n/utility.h>
@@ -60,19 +62,19 @@ class JSNumberFormatHolder : public JSObject {
     switch (format()->style()) {
       case core::i18n::NumberFormat::DECIMAL:
         object.def(symbol::style(),
-                   JSString::NewAsciiString(ctx, "decimal", e),
+                   JSString::New(ctx, "decimal", e),
                    ATTR::W | ATTR::E | ATTR::C);
         break;
 
       case core::i18n::NumberFormat::PERCENT:
         object.def(symbol::style(),
-                   JSString::NewAsciiString(ctx, "percent", e),
+                   JSString::New(ctx, "percent", e),
                    ATTR::W | ATTR::E | ATTR::C);
         break;
 
       case core::i18n::NumberFormat::CURRENCY:
         object.def(symbol::style(),
-                   JSString::NewAsciiString(ctx, "currency", e),
+                   JSString::New(ctx, "currency", e),
                    ATTR::W | ATTR::E | ATTR::C);
         if (currency_) {
           object.def(symbol::currency(),
@@ -81,17 +83,17 @@ class JSNumberFormatHolder : public JSObject {
         switch (format()->currency_display()) {
           case core::i18n::Currency::CODE:
             object.def(symbol::currencyDisplay(),
-                       JSString::NewAsciiString(ctx, "code", e),
+                       JSString::New(ctx, "code", e),
                        ATTR::W | ATTR::E | ATTR::C);
             break;
           case core::i18n::Currency::SYMBOL:
             object.def(symbol::currencyDisplay(),
-                       JSString::NewAsciiString(ctx, "symbol", e),
+                       JSString::New(ctx, "symbol", e),
                        ATTR::W | ATTR::E | ATTR::C);
             break;
           case core::i18n::Currency::NAME:
             object.def(symbol::currencyDisplay(),
-                       JSString::NewAsciiString(ctx, "name", e),
+                       JSString::New(ctx, "name", e),
                        ATTR::W | ATTR::E | ATTR::C);
             break;
         }
@@ -134,18 +136,18 @@ class JSNumberFormatHolder : public JSObject {
 
     if (const core::i18n::NumberingSystem::Data* data = format()->numbering_system()) {
       object.def(ctx->Intern("numberingSystem"),
-                 JSString::NewAsciiString(ctx, data->name, e),
+                 JSString::New(ctx, data->name, e),
                  ATTR::W | ATTR::E | ATTR::C);
     } else {
       // default is LATN
       object.def(ctx->Intern("numberingSystem"),
-                 JSString::NewAsciiString(ctx, "latn", e),
+                 JSString::New(ctx, "latn", e),
                  ATTR::W | ATTR::E | ATTR::C);
     }
 
     if (const core::i18n::NumberFormat::Data* data = format()->data()) {
       object.def(ctx->Intern("locale"),
-                 JSString::NewAsciiString(ctx, data->name, e),
+                 JSString::New(ctx, data->name, e),
                  ATTR::W | ATTR::E | ATTR::C);
     }
     return obj;
@@ -190,7 +192,7 @@ class JSNumberFormatBoundFunction : public JSFunction {
     DefineOwnProperty(
         ctx, symbol::name(),
         DataDescriptor(
-            JSString::NewAsciiString(ctx, "format", &dummy),
+            JSString::New(ctx, "format", &dummy),
             ATTR::NONE), false, nullptr);
   }
 
@@ -308,22 +310,25 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
             ctx, symbol::currency(),
             static_cast<const char**>(nullptr),
             static_cast<const char**>(nullptr), nullptr, IV_LV5_ERROR(e));
-    if (currency) {
-      if (!core::i18n::IsWellFormedCurrencyCode(currency->begin(), currency->end())) {
-        e->Report(Error::Range, "invalid currency code");
+    const JSFlatString* flat = nullptr;
+    if (!currency) {
+      if (style == core::i18n::NumberFormat::CURRENCY) {
+        e->Report(Error::Type, "currency is not specified");
         return nullptr;
       }
     } else {
-      if (style == core::i18n::NumberFormat::CURRENCY) {
-        e->Report(Error::Type, "currency is not specified");
+      flat = currency->Flatten();
+      if (!core::i18n::IsWellFormedCurrencyCode(flat->begin(), flat->end())) {
+        e->Report(Error::Range, "invalid currency code");
         return nullptr;
       }
     }
 
     if (style == core::i18n::NumberFormat::CURRENCY) {
+      assert(flat);
       JSStringBuilder builder;
-      for (JSString::const_iterator it = currency->begin(),
-           last = currency->end();
+      for (JSFlatString::const_iterator it = flat->begin(),
+           last = flat->end();
            it != last; ++it) {
         if (core::character::IsASCII(*it)) {
           builder.Append(core::character::ToUpperCase(*it));
@@ -332,8 +337,7 @@ inline JSObject* InitializeNumberFormat(Context* ctx,
         }
       }
       c = builder.Build(ctx, false, IV_LV5_ERROR(e));
-      currency_data =
-          core::i18n::Currency::Lookup(std::string(c->begin(), c->end()));
+      currency_data = core::i18n::Currency::Lookup(c->GetUTF8());
     }
 
     // currencyDisplay option

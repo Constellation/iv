@@ -6,7 +6,7 @@
 #include <iv/ustring.h>
 #include <iv/utils.h>
 #include <iv/lv5/jsval_fwd.h>
-#include <iv/lv5/jsstring_fwd.h>
+#include <iv/lv5/jsstring.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/railgun/context_fwd.h>
 #include <iv/lv5/railgun/code.h>
@@ -141,7 +141,7 @@ class ConstantPool {
 
   uint32_t Lookup(JSVal constant) {
     if (constant.IsString()) {
-      return string_index(constant.string()->GetUString());
+      return string_index(constant.string()->GetUTF16());
     } else if (constant.IsNumber()) {
       return number_index(constant.number());
     } else if (constant.IsUndefined()) {

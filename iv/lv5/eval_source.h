@@ -14,9 +14,7 @@ static const std::string kEvalSource = "(eval)";
 class EvalSource : public core::Noncopyable<> {
  public:
   explicit EvalSource(const JSString& str)
-    : source_() {
-    source_.resize(str.size());
-    str.Copy(source_.begin());
+    : source_(str.GetUTF16()) {
   }
 
   inline char16_t operator[](std::size_t pos) const {

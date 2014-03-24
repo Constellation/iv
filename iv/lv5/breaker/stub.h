@@ -105,12 +105,16 @@ inline Rep BINARY_ADD(Frame* stack, JSVal lhs, JSVal rhs) {
   if (lhs.IsString()) {
     if (rhs.IsString()) {
       JSString* const result =
-          JSString::New(ctx, lhs.string(), rhs.string(), IV_LV5_BREAKER_ERR);
+          JSString::NewCons(ctx,
+                            lhs.string(),
+                            rhs.string(),
+                            IV_LV5_BREAKER_ERR);
       return Extract(result);
     } else {
       const JSVal rp = rhs.ToPrimitive(ctx, Hint::NONE, IV_LV5_BREAKER_ERR);
       JSString* const rs = rp.ToString(ctx, IV_LV5_BREAKER_ERR);
-      JSString* const result = JSString::New(ctx, lhs.string(), rs, IV_LV5_BREAKER_ERR);
+      JSString* const result =
+          JSString::NewCons(ctx, lhs.string(), rs, IV_LV5_BREAKER_ERR);
       return Extract(result);
     }
   }
@@ -120,7 +124,8 @@ inline Rep BINARY_ADD(Frame* stack, JSVal lhs, JSVal rhs) {
   if (lprim.IsString() || rprim.IsString()) {
     JSString* const lstr = lprim.ToString(ctx, IV_LV5_BREAKER_ERR);
     JSString* const rstr = rprim.ToString(ctx, IV_LV5_BREAKER_ERR);
-    JSString* const result = JSString::New(ctx, lstr, rstr, IV_LV5_BREAKER_ERR);
+    JSString* const result =
+        JSString::NewCons(ctx, lstr, rstr, IV_LV5_BREAKER_ERR);
     return Extract(result);
   }
 
@@ -600,12 +605,13 @@ inline RepPair CONSTRUCT(Frame* stack,
 }
 
 inline Rep CONCAT(Frame* stack, JSVal* src, uint32_t count) {
-  JSString* result = JSString::New(stack->ctx, src, count, IV_LV5_BREAKER_ERR);
+  JSString* result =
+      JSString::NewCons(stack->ctx, src, count, IV_LV5_BREAKER_ERR);
   return Extract(result);
 }
 
 inline Rep RAISE(Frame* stack, Error::Code code, JSString* str) {
-  stack->error->Report(code, str->GetUString());
+  stack->error->Report(code, str->GetUTF16());
   IV_LV5_BREAKER_RAISE();
   return 0;
 }
@@ -1113,7 +1119,7 @@ inline Rep LOAD_PROP(Frame* stack, JSVal base, LoadPropertyIC* ic) {  // NOLINT
   if (name == symbol::length()) {
     if (base.IsString()) {
       ic->LoadStringLength(ctx);
-      return Extract(JSVal::UInt32(base.string()->size()));
+      return Extract(JSVal::Int32(base.string()->size()));
     } else if (base.IsObject() && base.object()->IsClass<Class::Array>()) {
       ic->LoadArrayLength(ctx);
       return Extract(

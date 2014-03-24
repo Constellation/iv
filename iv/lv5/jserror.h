@@ -128,7 +128,7 @@ inline JSVal Error::Standard::Detail(Context* ctx) {
   Error::Dummy dummy;
   JSString* message = JSString::New(ctx, detail(), &dummy);
   if (dummy) {
-    message = JSString::NewAsciiString(ctx, "something wrong with error message", &dummy);
+    message = JSString::New(ctx, "something wrong with error message", &dummy);
   }
   switch (code()) {
     case Error::Eval: {
@@ -189,7 +189,7 @@ inline JSVal Error::Standard::Detail(Context* ctx) {
       Error::Dummy dummy;
       JSString* stack = JSString::New(ctx, dump, &dummy);
       if (dummy) {
-        stack = JSString::NewAsciiString(ctx, "something wrong with error stack", &dummy);
+        stack = JSString::New(ctx, "something wrong with error stack", &dummy);
       }
       error->DefineOwnProperty(
           ctx, symbol::stack(),
