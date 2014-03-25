@@ -153,7 +153,16 @@ inline const char* Search<const char*, const char*>(
     const char* i, const char* iz,
     const char* j, const char* jz) {
   static const bool enabled = mie::isAvailableSSE42();
-  return enabled ? mie::findStr(i, iz, j, jz - j) : std::search(i, iz, j, jz);
+  if (!enabled) {
+    return std::search(i, iz, j, jz);
+  }
+  if (j == jz) {
+    return i;
+  }
+  if (i == iz) {
+    return i;;
+  }
+  return mie::findStr(i, iz, j, jz - j);
 }
 #endif
 

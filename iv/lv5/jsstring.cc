@@ -65,14 +65,13 @@ JSString::size_type JSString::find(const JSString& target,
     } else {
       return view16().find(target.view16(), index);
     }
+  }
+  if (Is8Bit()) {
+    const core::u16string_view rhs = target.view16();
+    return view8().find(rhs.begin(), rhs.end(), index);
   } else {
-    if (Is8Bit()) {
-      core::u16string_view rhs = target.view16();
-      return view8().find(rhs.begin(), rhs.end(), index);
-    } else {
-      core::string_view rhs = target.view8();
-      return view16().find(rhs.begin(), rhs.end(), index);
-    }
+    const core::string_view rhs = target.view8();
+    return view16().find(rhs.begin(), rhs.end(), index);
   }
 }
 
@@ -85,14 +84,13 @@ JSString::size_type JSString::rfind(const JSString& target,
     } else {
       return view16().rfind(target.view16(), index);
     }
+  }
+  if (Is8Bit()) {
+    const core::u16string_view rhs = target.view16();
+    return view8().rfind(rhs.begin(), rhs.end(), index);
   } else {
-    if (Is8Bit()) {
-      core::u16string_view rhs = target.view16();
-      return view8().rfind(rhs.begin(), rhs.end(), index);
-    } else {
-      core::string_view rhs = target.view8();
-      return view16().rfind(rhs.begin(), rhs.end(), index);
-    }
+    const core::string_view rhs = target.view8();
+    return view16().rfind(rhs.begin(), rhs.end(), index);
   }
 }
 
