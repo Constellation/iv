@@ -145,22 +145,5 @@ JSVal DirectCallToEval(const Arguments& args, railgun::Frame* frame, Error* e);
 
 typedef int32_t register_t;
 
-namespace stub {
-
-Rep LOAD_GLOBAL(Frame* stack, Symbol name, GlobalIC* ic, Assembler* as);
-
-Rep STORE_GLOBAL(Frame* stack, Symbol name,
-                 GlobalIC* ic, Assembler* as, JSVal src);
-
-Rep LOAD_PROP_GENERIC(Frame* stack, JSVal base, LoadPropertyIC* site);
-Rep LOAD_PROP(Frame* stack, JSVal base, LoadPropertyIC* site);
-
-Rep STORE_PROP(Frame* stack, JSVal base, JSVal src, StorePropertyIC* ic);
-Rep STORE_PROP_GENERIC(Frame* stack, JSVal base, JSVal src, StorePropertyIC* ic);  // NOLINT
-
-Rep STORE_ELEMENT(Frame* stack, JSVal base, JSVal src, JSVal element, StoreElementIC* ic);  // NOLINT
-Rep STORE_ELEMENT_GENERIC(Frame* stack, JSVal base, JSVal src, JSVal element, StoreElementIC* ic);  // NOLINT
-Rep STORE_ELEMENT_INDEXED(Frame* stack, JSVal base, JSVal src, int32_t index, StoreElementIC* ic);  // NOLINT
-
-} } } }  // namespace iv::lv5::breaker::stub
+} } }  // namespace iv::lv5::breaker
 #endif  // IV_LV5_BREAKER_FWD_H_

@@ -1,9 +1,10 @@
 // PolyIC compiler
 #ifndef IV_BREAKER_POLY_IC_H_
 #define IV_BREAKER_POLY_IC_H_
+#include <iv/lv5/breaker/fwd.h>
 #include <iv/lv5/breaker/assembler.h>
 #include <iv/lv5/breaker/ic.h>
-#include <iv/lv5/breaker/fwd.h>
+#include <iv/lv5/breaker/stub.h>
 #include <iv/intrusive_list.h>
 namespace iv {
 namespace lv5 {

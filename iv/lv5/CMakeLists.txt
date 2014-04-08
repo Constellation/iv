@@ -50,6 +50,7 @@ add_library(liblv5 STATIC
     breaker/compiler_call.cc
     breaker/compiler_comparison.cc
     breaker/compiler_equals.cc
+    breaker/stub.cc
     runtime/array.cc
     runtime/array_buffer.cc
     runtime/array_iterator.cc

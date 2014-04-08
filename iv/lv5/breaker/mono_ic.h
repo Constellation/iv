@@ -3,6 +3,7 @@
 #define IV_BREAKER_MONO_IC_H_
 #include <iv/lv5/breaker/assembler.h>
 #include <iv/lv5/breaker/ic.h>
+#include <iv/lv5/breaker/stub.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {
