@@ -11,6 +11,7 @@
 #include <iv/lv5/breaker/compiler.h>
 #include <iv/lv5/breaker/runtime.h>
 #include <iv/lv5/breaker/compiler_comparison.h>
+#include <iv/lv5/breaker/entry_point.h>
 
 namespace iv {
 namespace lv5 {
