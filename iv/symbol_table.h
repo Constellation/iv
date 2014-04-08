@@ -13,7 +13,7 @@ class SymbolTable {
  public:
   class SymbolHolder {
    public:
-    SymbolHolder(const UStringPiece& piece)  // NOLINT
+    SymbolHolder(const u16string_view& piece)  // NOLINT
       : rep_(),
         size_(piece.size()),
         is_8bit_(false),
@@ -21,7 +21,7 @@ class SymbolTable {
       rep_.rep16 = piece.data();
     }
 
-    SymbolHolder(const StringPiece& piece)  // NOLINT
+    SymbolHolder(const string_view& piece)  // NOLINT
       : rep_(),
         size_(piece.size()),
         is_8bit_(true),
@@ -29,7 +29,7 @@ class SymbolTable {
       rep_.rep8 = piece.data();
     }
 
-    SymbolHolder(const UString* str)  // NOLINT
+    SymbolHolder(const std::u16string* str)  // NOLINT
       : rep_(),
         size_(str->size()),
         is_8bit_(false),
@@ -43,9 +43,9 @@ class SymbolTable {
         return hash_;
       }
       if (is_8bit_) {
-        return Hash::StringToHash(StringPiece(rep_.rep8, size_));
+        return Hash::StringToHash(string_view(rep_.rep8, size_));
       } else {
-        return Hash::StringToHash(UStringPiece(rep_.rep16, size_));
+        return Hash::StringToHash(u16string_view(rep_.rep16, size_));
       }
     }
 
@@ -54,12 +54,12 @@ class SymbolTable {
         if (lhs.is_8bit_) {
           // 8bits
           return
-              StringPiece(lhs.rep_.rep8, lhs.size_) ==
-              StringPiece(rhs.rep_.rep8, rhs.size_);
+              string_view(lhs.rep_.rep8, lhs.size_) ==
+              string_view(rhs.rep_.rep8, rhs.size_);
         }
         return
-            UStringPiece(lhs.rep_.rep16, lhs.size_) ==
-            UStringPiece(rhs.rep_.rep16, rhs.size_);
+            u16string_view(lhs.rep_.rep16, lhs.size_) ==
+            u16string_view(rhs.rep_.rep16, rhs.size_);
       } else {
         if (lhs.size_ != rhs.size_) {
           return false;
@@ -82,7 +82,7 @@ class SymbolTable {
       }
     }
 
-    const UString* pointer() const { return pointer_; }
+    const std::u16string* pointer() const { return pointer_; }
 
     std::size_t size() const { return size_; }
 
@@ -93,7 +93,7 @@ class SymbolTable {
     } rep_;
     std::size_t size_;
     bool is_8bit_;
-    const UString* pointer_;
+    const std::u16string* pointer_;
     std::size_t hash_;
   };
 
@@ -129,7 +129,7 @@ class SymbolTable {
 
   template<class CharT>
   inline Symbol Lookup(const CharT* str) {
-    return Lookup(BasicStringPiece<CharT>(str));
+    return Lookup(basic_string_view<CharT>(str));
   }
 
   template<class String>
@@ -143,7 +143,7 @@ class SymbolTable {
     if (it != set_.end()) {
       return symbol::MakeSymbol(it->pointer());
     } else {
-      const UString* res = new UString(str.begin(), str.end());
+      const std::u16string* res = new std::u16string(str.begin(), str.end());
       set_.insert(res);
       return symbol::MakeSymbol(res);
     }

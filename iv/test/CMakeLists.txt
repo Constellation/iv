@@ -22,6 +22,7 @@ add_executable(iv_unit_tests
     test_aero_incomplete.cc
     test_aero_jit.cc
     test_aero_parser.cc
+    test_aero_simple.cc
     test_aero_source_escape.cc
     test_aero_vm.cc
     test_any.cc
@@ -49,10 +50,11 @@ add_executable(iv_unit_tests
     test_segmented_vector.cc
     test_singleton.cc
     test_sip_hash.cc
+    test_small_vector.cc
     test_sorted_vector.cc
     test_space.cc
     test_string_builder.cc
-    test_stringpiece.cc
+    test_string_view.cc
     test_thread.cc
     test_thread_safe_ref_counted.cc
     test_unicode.cc

@@ -10,6 +10,7 @@
 #include <iv/lv5/jsvector.h>
 #include <iv/lv5/jsarray_iterator.h>
 #include <iv/lv5/jsstring.h>
+#include <iv/lv5/jsstring_builder.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/runtime/object.h>
 #include <iv/lv5/runtime/array.h>
@@ -170,7 +171,7 @@ JSVal ArrayToLocaleString(const Arguments& args, Error* e) {
   const uint32_t len = internal::GetLength(ctx, array, IV_LV5_ERROR(e));
 
   if (len == 0) {
-    return JSString::NewEmptyString(ctx);
+    return JSString::NewEmpty(ctx);
   }
 
   // implementation depended locale based separator
@@ -299,11 +300,11 @@ JSVal ArrayJoin(const Arguments& args, Error* e) {
   if (!args.At(0).IsUndefined()) {
     separator = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
   } else {
-    separator = JSString::NewAsciiString(ctx, ",", e);
+    separator = JSString::New(ctx, ",", e);
   }
 
   if (len == 0) {
-    return JSString::NewEmptyString(ctx);
+    return JSString::NewEmpty(ctx);
   }
 
   JSStringBuilder builder;

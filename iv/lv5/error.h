@@ -5,7 +5,7 @@
 #include <iv/detail/memory.h>
 #include <iv/ustring.h>
 #include <iv/noncopyable.h>
-#include <iv/stringpiece.h>
+#include <iv/string_view.h>
 #include <iv/lv5/jsval_fwd.h>
 namespace iv {
 namespace lv5 {
@@ -15,7 +15,7 @@ class Error {
  public:
   typedef Error this_type;
   typedef void (Error::*bool_type)() const;
-  typedef std::vector<core::UString> Stack;
+  typedef std::vector<std::u16string> Stack;
 
   class Dummy;
   class Standard;
@@ -45,11 +45,11 @@ class Error {
   };
   static const uint8_t kKindMask = 8;
 
-  virtual void Report(Code code, const core::StringPiece& str) {
+  virtual void Report(Code code, const core::string_view& str) {
     set_code(code);
   }
 
-  virtual void Report(Code code, const core::UStringPiece& str) {
+  virtual void Report(Code code, const core::u16string_view& str) {
     set_code(code);
   }
 
@@ -65,7 +65,7 @@ class Error {
     data_ = ((data_ & (~kCodeMask)) | c);
   }
 
-  virtual core::UString detail() const { return core::UString(); }
+  virtual std::u16string detail() const { return std::u16string(); }
 
   virtual JSVal value() const { return JSUndefined; }
 
@@ -130,12 +130,12 @@ class Error::Standard : public Error {
  public:
   Standard() : Error(TYPE_STANDARD) { }
 
-  virtual void Report(Code code, const core::StringPiece& str) {
+  virtual void Report(Code code, const core::string_view& str) {
     Error::Report(code, str);
     detail_.assign(str.begin(), str.end());
   }
 
-  virtual void Report(Code code, const core::UStringPiece& str) {
+  virtual void Report(Code code, const core::u16string_view& str) {
     Error::Report(code, str);
     detail_.assign(str.begin(), str.end());
   }
@@ -150,7 +150,7 @@ class Error::Standard : public Error {
     stack_.reset();
   }
 
-  virtual core::UString detail() const { return detail_; }
+  virtual std::u16string detail() const { return detail_; }
 
   virtual JSVal value() const { return value_; }
 
@@ -171,7 +171,7 @@ class Error::Standard : public Error {
 
  private:
   JSVal value_;
-  core::UString detail_;
+  std::u16string detail_;
   std::shared_ptr<Stack> stack_;
 };
 

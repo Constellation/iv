@@ -14,7 +14,7 @@ namespace lv5 {
 namespace railgun {
 namespace detail {
 
-static void Execute(const core::StringPiece& data,
+static void Execute(const core::string_view& data,
                     const std::string& filename, Error* e) {
   Context ctx;
   ctx.DefineFunction<&Print, 1>("print");
@@ -53,7 +53,7 @@ inline JSVal Run(const Arguments& args, Error* e) {
       if (core::io::ReadFile(filename, &buffer)) {
         TickTimer timer;
         detail::Execute(
-            core::StringPiece(buffer.data(), buffer.size()),
+            core::string_view(buffer.data(), buffer.size()),
             filename, IV_LV5_ERROR(e));
         return timer.GetTime();
       }

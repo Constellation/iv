@@ -11,6 +11,7 @@
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsstring.h>
+#include <iv/lv5/jsstring_builder.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/internal.h>
@@ -270,10 +271,10 @@ JSVal GlobalParseInt(const Arguments& args, Error* e) {
       radix = 10;
     }
     if (str->Is8Bit()) {
-      return core::StringToIntegerWithRadix(*str->Get8Bit(),
+      return core::StringToIntegerWithRadix(*str->Flatten8(),
                                             radix, strip_prefix);
     } else {
-      return core::StringToIntegerWithRadix(*str->Get16Bit(),
+      return core::StringToIntegerWithRadix(*str->Flatten16(),
                                             radix, strip_prefix);
     }
   } else {
@@ -287,9 +288,9 @@ JSVal GlobalParseFloat(const Arguments& args, Error* e) {
   if (!args.empty()) {
     JSString* const str = args[0].ToString(args.ctx(), IV_LV5_ERROR(e));
     if (str->Is8Bit()) {
-      return core::StringToDouble(*str->Get8Bit(), true);
+      return core::StringToDouble(*str->Flatten8(), true);
     } else {
-      return core::StringToDouble(*str->Get16Bit(), true);
+      return core::StringToDouble(*str->Flatten16(), true);
     }
   }
   return JSNaN;
@@ -327,9 +328,9 @@ JSVal GlobalDecodeURI(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("decodeURI", args, e);
   JSString* str = args.At(0).ToString(args.ctx(), IV_LV5_ERROR(e));
   if (str->Is8Bit()) {
-    return detail::Decode<detail::URI>(args.ctx(), str->Get8Bit(), e);
+    return detail::Decode<detail::URI>(args.ctx(), str->Flatten8(), e);
   } else {
-    return detail::Decode<detail::URI>(args.ctx(), str->Get16Bit(), e);
+    return detail::Decode<detail::URI>(args.ctx(), str->Flatten16(), e);
   }
 }
 
@@ -338,9 +339,10 @@ JSVal GlobalDecodeURIComponent(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("decodeURIComponent", args, e);
   JSString* str = args.At(0).ToString(args.ctx(), IV_LV5_ERROR(e));
   if (str->Is8Bit()) {
-    return detail::Decode<detail::URIComponent>(args.ctx(), str->Get8Bit(), e);
+    return detail::Decode<detail::URIComponent>(args.ctx(), str->Flatten8(), e);
   } else {
-    return detail::Decode<detail::URIComponent>(args.ctx(), str->Get16Bit(), e);
+    return detail::Decode<detail::URIComponent>(args.ctx(),
+                                                str->Flatten16(), e);
   }
 }
 
@@ -349,9 +351,9 @@ JSVal GlobalEncodeURI(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("encodeURIComponent", args, e);
   JSString* str = args.At(0).ToString(args.ctx(), IV_LV5_ERROR(e));
   if (str->Is8Bit()) {
-    return detail::Encode<detail::URI>(args.ctx(), str->Get8Bit(), e);
+    return detail::Encode<detail::URI>(args.ctx(), str->Flatten8(), e);
   } else {
-    return detail::Encode<detail::URI>(args.ctx(), str->Get16Bit(), e);
+    return detail::Encode<detail::URI>(args.ctx(), str->Flatten16(), e);
   }
 }
 
@@ -360,9 +362,10 @@ JSVal GlobalEncodeURIComponent(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("encodeURI", args, e);
   JSString* str = args.At(0).ToString(args.ctx(), IV_LV5_ERROR(e));
   if (str->Is8Bit()) {
-    return detail::Encode<detail::URIComponent>(args.ctx(), str->Get8Bit(), e);
+    return detail::Encode<detail::URIComponent>(args.ctx(), str->Flatten8(), e);
   } else {
-    return detail::Encode<detail::URIComponent>(args.ctx(), str->Get16Bit(), e);
+    return detail::Encode<detail::URIComponent>(args.ctx(),
+                                                str->Flatten16(), e);
   }
 }
 
@@ -372,7 +375,8 @@ JSVal ThrowTypeError(const Arguments& args, Error* e) {
 }
 
 template<typename FiberType>
-inline JSVal detail::EscapeHelper(Context* ctx, const FiberType* fiber, Error* e) {
+inline JSVal detail::EscapeHelper(Context* ctx,
+                                  const FiberType* fiber, Error* e) {
   const char kHexDigits[17] = "0123456789ABCDEF";
   std::array<char16_t, 3> hexbuf;
   hexbuf[0] = '%';
@@ -407,14 +411,15 @@ JSVal GlobalEscape(const Arguments& args, Error* e) {
     return str;  // empty string
   }
   if (str->Is8Bit()) {
-    return detail::EscapeHelper(ctx, str->Get8Bit(), e);
+    return detail::EscapeHelper(ctx, str->Flatten8(), e);
   } else {
-    return detail::EscapeHelper(ctx, str->Get16Bit(), e);
+    return detail::EscapeHelper(ctx, str->Flatten16(), e);
   }
 }
 
 template<typename FiberType>
-inline JSVal detail::UnescapeHelper(Context* ctx, const FiberType* fiber, Error* e) {
+inline JSVal detail::UnescapeHelper(Context* ctx,
+                                    const FiberType* fiber, Error* e) {
   JSStringBuilder builder;
   const std::size_t len = fiber->size();
   std::size_t k = 0;
@@ -466,9 +471,9 @@ JSVal GlobalUnescape(const Arguments& args, Error* e) {
     return str;  // empty string
   }
   if (str->Is8Bit()) {
-    return detail::UnescapeHelper(ctx, str->Get8Bit(), e);
+    return detail::UnescapeHelper(ctx, str->Flatten8(), e);
   } else {
-    return detail::UnescapeHelper(ctx, str->Get16Bit(), e);
+    return detail::UnescapeHelper(ctx, str->Flatten16(), e);
   }
 }
 

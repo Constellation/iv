@@ -5,7 +5,7 @@
 #include <iv/location.h>
 #include <iv/ast.h>
 #include <iv/alloc.h>
-#include <iv/ustringpiece.h>
+#include <iv/string_view.h>
 
 namespace iv {
 namespace core {

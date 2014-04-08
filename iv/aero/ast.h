@@ -145,6 +145,18 @@ class CharacterAtom : public Atom {
   char16_t character_;
 };
 
+class StringAtom : public Atom {
+ public:
+  typedef core::SpaceVector<core::Space, char16_t>::type String;
+  explicit StringAtom(const String* vec) : string_(vec) {
+    assert(!vec->empty());
+  }
+  const String& string() const { return *string_; }
+  DECLARE_DERIVED_NODE_TYPE(StringAtom)
+ private:
+  const String* string_;
+};
+
 class RangeAtom : public Atom {
  public:
   explicit RangeAtom(bool inverted,

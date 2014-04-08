@@ -3,8 +3,7 @@
 #include <vector>
 #include <iterator>
 #include <string>
-#include <iv/stringpiece.h>
-#include <iv/ustringpiece.h>
+#include <iv/string_view.h>
 namespace iv {
 namespace core {
 
@@ -26,11 +25,11 @@ class BasicStringBuilder : protected std::vector<CharT> {
   typedef typename container_type::size_type size_type;
   typedef typename container_type::difference_type difference_type;
 
-  void Append(const core::UStringPiece& piece) {
+  void Append(const core::u16string_view& piece) {
     insert(container_type::end(), piece.begin(), piece.end());
   }
 
-  void Append(const core::StringPiece& piece) {
+  void Append(const core::string_view& piece) {
     insert(container_type::end(),
            reinterpret_cast<const uint8_t*>(piece.data()),
            reinterpret_cast<const uint8_t*>(piece.data()) + piece.size());
@@ -52,11 +51,11 @@ class BasicStringBuilder : protected std::vector<CharT> {
 
   // for assignable object (like std::string)
 
-  void append(const core::UStringPiece& piece) {
+  void append(const core::u16string_view& piece) {
     insert(container_type::end(), piece.begin(), piece.end());
   }
 
-  void append(const core::StringPiece& piece) {
+  void append(const core::string_view& piece) {
     insert(container_type::end(),
            reinterpret_cast<const uint8_t*>(piece.data()),
            reinterpret_cast<const uint8_t*>(piece.data()) + piece.size());
@@ -72,8 +71,8 @@ class BasicStringBuilder : protected std::vector<CharT> {
 
   using container_type::reserve;
 
-  core::BasicStringPiece<CharT> BuildPiece() const {
-    return core::BasicStringPiece<CharT>(container_type::data(),
+  core::basic_string_view<CharT> BuildPiece() const {
+    return core::basic_string_view<CharT>(container_type::data(),
                                          container_type::size());
   }
 

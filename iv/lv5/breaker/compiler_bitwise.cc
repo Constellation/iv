@@ -1,3 +1,9 @@
+#include <iv/platform.h>
+#if !defined(IV_ENABLE_JIT)
+#include <iv/dummy_cc.h>
+IV_DUMMY_CC()
+#else
+
 #include <iv/debug.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/jsobject.h>
@@ -212,10 +218,10 @@ void Compiler::EmitBINARY_BIT_AND(const Instruction* instr, OP::Type fused) {
   if (dst_type.IsConstant()) {
     if (fused != OP::NOP) {
       // fused jump opcode
-      const std::string label = MakeLabel(instr);
+      const Xbyak::Label& label = LookupLabel(instr);
       const bool result = dst_type.constant().ToBoolean();
       if ((fused == OP::IF_TRUE) == result) {
-        asm_->jmp(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->jmp(label, Xbyak::CodeGenerator::T_NEAR);
       }
     } else {
       EmitConstantDest(dst_type, dst);
@@ -230,12 +236,12 @@ void Compiler::EmitBINARY_BIT_AND(const Instruction* instr, OP::Type fused) {
     asm_->mov(rdi, r14);
     asm_->Call(&stub::BINARY_BIT_AND);
     if (fused != OP::NOP) {
-      const std::string label = MakeLabel(instr);
+      const Xbyak::Label& label = LookupLabel(instr);
       asm_->test(eax, eax);
       if (fused == OP::IF_TRUE) {
-        asm_->jnz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->jnz(label, Xbyak::CodeGenerator::T_NEAR);
       } else {
-        asm_->jz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->jz(label, Xbyak::CodeGenerator::T_NEAR);
       }
     } else {
       asm_->mov(qword[r13 + dst * kJSValSize], rax);
@@ -266,11 +272,11 @@ void Compiler::EmitBINARY_BIT_AND(const Instruction* instr, OP::Type fused) {
 
   if (fused != OP::NOP) {
     // fused jump opcode
-    const std::string label = MakeLabel(instr);
+    const Xbyak::Label& label = LookupLabel(instr);
     if (fused == OP::IF_TRUE) {
-      asm_->jnz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+      asm_->jnz(label, Xbyak::CodeGenerator::T_NEAR);
     } else {
-      asm_->jz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+      asm_->jz(label, Xbyak::CodeGenerator::T_NEAR);
     }
     asm_->jmp(".EXIT");
 
@@ -283,9 +289,9 @@ void Compiler::EmitBINARY_BIT_AND(const Instruction* instr, OP::Type fused) {
 
     asm_->test(eax, eax);
     if (fused == OP::IF_TRUE) {
-      asm_->jnz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+      asm_->jnz(label, Xbyak::CodeGenerator::T_NEAR);
     } else {
-      asm_->jz(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+      asm_->jz(label, Xbyak::CodeGenerator::T_NEAR);
     }
     asm_->L(".EXIT");
   } else {
@@ -433,3 +439,4 @@ void Compiler::EmitBINARY_BIT_OR(const Instruction* instr) {
 }
 
 } } }  // namespace iv::lv5::breaker
+#endif

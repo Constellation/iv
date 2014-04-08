@@ -18,6 +18,7 @@
 #include <iv/aero/jit_fwd.h>
 #include <iv/aero/jit.h>
 #include <iv/aero/jit_code.h>
+#include <iv/aero/simple_case.h>
 
 namespace iv {
 namespace aero {

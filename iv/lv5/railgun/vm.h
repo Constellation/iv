@@ -1814,7 +1814,7 @@ inline JSVal VM::Execute(Frame* start, Error* e) {
         const Error::Code code = static_cast<Error::Code>(instr[1].u32[0]);
         const uint32_t constant = instr[1].u32[1];
         JSString* str = frame->GetConstant(constant).string();
-        e->Report(code, str->GetUString());
+        e->Report(code, str->GetUTF16());
         DISPATCH_ERROR();
       }
 
@@ -1837,7 +1837,7 @@ inline JSVal VM::Execute(Frame* start, Error* e) {
       DEFINE_OPCODE(CONCAT) {
         // opcode | (dst | start | count)
         JSVal* src = &REG(instr[1].ssw.i16[1]);
-        JSString* str = JSString::New(ctx(), src, instr[1].ssw.u32, ERR);
+        JSString* str = JSString::NewCons(ctx(), src, instr[1].ssw.u32, ERR);
         REG(instr[1].ssw.i16[0]) = str;
         DISPATCH(CONCAT);
       }

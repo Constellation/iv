@@ -33,6 +33,7 @@ class CaptureCalculator : public Visitor {
   }
   void Visit(BackReferenceAtom* atom) { }
   void Visit(CharacterAtom* atom) { }
+  void Visit(StringAtom* atom) { }
   void Visit(RangeAtom* atom) { }
   void Visit(DisjunctionAtom* atom) {
     if (atom->captured()) {

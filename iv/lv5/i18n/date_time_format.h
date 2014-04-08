@@ -86,7 +86,7 @@ class JSDateTimeFormatBoundFunction : public JSFunction {
     DefineOwnProperty(
         ctx, symbol::name(),
         DataDescriptor(
-            JSString::NewAsciiString(ctx, "format", &dummy),
+            JSString::New(ctx, "format", &dummy),
             ATTR::NONE), false, nullptr);
   }
 
@@ -120,7 +120,7 @@ inline JSObject* InitializeDateTimeFormat(Context* ctx,
 
   // TODO(Constellation)
   // clean up this duplicated code
-  static const std::array<core::StringPiece, 2> k6 = { {
+  static const std::array<core::string_view, 2> k6 = { {
     "lookup",
     "best fit"
   } };
@@ -157,9 +157,10 @@ inline JSObject* InitializeDateTimeFormat(Context* ctx,
         options.options()->Get(ctx, symbol::timeZone(), IV_LV5_ERROR(e));
     if (!time_zone.IsUndefined()) {
       JSString* str = time_zone.ToString(ctx, IV_LV5_ERROR(e));
+      const JSFlatString* flat = str->Flatten();
       std::vector<char16_t> vec;
-      for (JSString::const_iterator it = str->begin(),
-           last = str->end(); it != last; ++it) {
+      for (JSFlatString::const_iterator it = flat->begin(),
+           last = flat->end(); it != last; ++it) {
         vec.push_back(core::i18n::ToLocaleIdentifierUpperCase(*it));
       }
       if (vec.size() != 3 || vec[0] != 'U' || vec[1] != 'T' || vec[2] != 'C') {
@@ -187,14 +188,16 @@ inline JSObject* InitializeDateTimeFormat(Context* ctx,
               it->values.begin(), it->values.begin() + it->size,
               nullptr, IV_LV5_ERROR(e));
       if (str) {
+        const JSFlatString* flat = str->Flatten();
         set[i] =
-            core::i18n::DateTimeFormat::ToFormatValue(str->begin(), str->end());
+            core::i18n::DateTimeFormat::ToFormatValue(flat->begin(),
+                                                      flat->end());
       }
     }
   }
 
   // clean up this duplicated code
-  static const std::array<core::StringPiece, 2> k24 = { {
+  static const std::array<core::string_view, 2> k24 = { {
     "basic",
     "best fit"
   } };

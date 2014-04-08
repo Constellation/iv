@@ -339,11 +339,11 @@ class Operation {
     }
     if (lhs.IsString()) {
       if (rhs.IsString()) {
-        return JSString::New(ctx_, lhs.string(), rhs.string(), e);
+        return JSString::NewCons(ctx_, lhs.string(), rhs.string(), e);
       } else {
         const JSVal rp = rhs.ToPrimitive(ctx_, Hint::NONE, CHECK);
         JSString* const rs = rp.ToString(ctx_, CHECK);
-        return JSString::New(ctx_, lhs.string(), rs, e);
+        return JSString::NewCons(ctx_, lhs.string(), rs, e);
       }
     }
 
@@ -352,7 +352,7 @@ class Operation {
     if (lprim.IsString() || rprim.IsString()) {
       JSString* const lstr = lprim.ToString(ctx_, CHECK);
       JSString* const rstr = rprim.ToString(ctx_, CHECK);
-      return JSString::New(ctx_, lstr, rstr, e);
+      return JSString::NewCons(ctx_, lstr, rstr, e);
     }
 
     const double left = lprim.ToNumber(ctx_, CHECK);
@@ -604,8 +604,8 @@ class Operation {
       }
       if (symbol::IsArrayIndexSymbol(s)) {
         const uint32_t index = symbol::GetIndexFromSymbol(s);
-        if (index < str->size()) {
-          *res = JSString::NewSingle(ctx_, str->At(index));
+        if (index < static_cast<uint32_t>(str->size())) {
+          *res = JSString::New(ctx_, str->At(index));
           return true;
         }
       }

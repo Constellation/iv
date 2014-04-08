@@ -1,3 +1,9 @@
+#include <iv/platform.h>
+#if !defined(IV_ENABLE_JIT)
+#include <iv/dummy_cc.h>
+IV_DUMMY_CC()
+#else
+
 #include <iv/debug.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/jsobject.h>
@@ -33,11 +39,11 @@ void Compiler::EmitBINARY_EQ(const Instruction* instr, OP::Type fused) {
 
     if (fused != OP::NOP) {
       // fused jump opcode
-      const std::string label = MakeLabel(instr);
+      const Xbyak::Label& label = LookupLabel(instr);
       if (fused == OP::IF_TRUE) {
-        asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->je(label, Xbyak::CodeGenerator::T_NEAR);
       } else {
-        asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->jne(label, Xbyak::CodeGenerator::T_NEAR);
       }
       asm_->jmp(".EXIT");
 
@@ -46,9 +52,9 @@ void Compiler::EmitBINARY_EQ(const Instruction* instr, OP::Type fused) {
       asm_->Call(&stub::BINARY_EQ);
       asm_->cmp(rax, Extract(JSTrue));
       if (fused == OP::IF_TRUE) {
-        asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->je(label, Xbyak::CodeGenerator::T_NEAR);
       } else {
-        asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->jne(label, Xbyak::CodeGenerator::T_NEAR);
       }
       asm_->L(".EXIT");
       return;
@@ -88,11 +94,11 @@ void Compiler::EmitBINARY_STRICT_EQ(const Instruction* instr, OP::Type fused) {
 
     if (fused != OP::NOP) {
       // fused jump opcode
-      const std::string label = MakeLabel(instr);
+      const Xbyak::Label& label = LookupLabel(instr);
       if (fused == OP::IF_TRUE) {
-        asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->je(label, Xbyak::CodeGenerator::T_NEAR);
       } else {
-        asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->jne(label, Xbyak::CodeGenerator::T_NEAR);
       }
       asm_->jmp(".EXIT");
 
@@ -100,9 +106,9 @@ void Compiler::EmitBINARY_STRICT_EQ(const Instruction* instr, OP::Type fused) {
       asm_->Call(&stub::BINARY_STRICT_EQ);
       asm_->cmp(rax, Extract(JSTrue));
       if (fused == OP::IF_TRUE) {
-        asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->je(label, Xbyak::CodeGenerator::T_NEAR);
       } else {
-        asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->jne(label, Xbyak::CodeGenerator::T_NEAR);
       }
       asm_->L(".EXIT");
       return;
@@ -138,11 +144,11 @@ void Compiler::EmitBINARY_NE(const Instruction* instr, OP::Type fused) {
 
     if (fused != OP::NOP) {
       // fused jump opcode
-      const std::string label = MakeLabel(instr);
+      const Xbyak::Label& label = LookupLabel(instr);
       if (fused == OP::IF_TRUE) {
-        asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->jne(label, Xbyak::CodeGenerator::T_NEAR);
       } else {
-        asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->je(label, Xbyak::CodeGenerator::T_NEAR);
       }
       asm_->jmp(".EXIT");
 
@@ -151,9 +157,9 @@ void Compiler::EmitBINARY_NE(const Instruction* instr, OP::Type fused) {
       asm_->Call(&stub::BINARY_NE);
       asm_->cmp(rax, Extract(JSTrue));
       if (fused == OP::IF_TRUE) {
-        asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->je(label, Xbyak::CodeGenerator::T_NEAR);
       } else {
-        asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->jne(label, Xbyak::CodeGenerator::T_NEAR);
       }
       asm_->L(".EXIT");
       return;
@@ -194,11 +200,11 @@ void Compiler::EmitBINARY_STRICT_NE(const Instruction* instr, OP::Type fused) {
 
     if (fused != OP::NOP) {
       // fused jump opcode
-      const std::string label = MakeLabel(instr);
+      const Xbyak::Label& label = LookupLabel(instr);
       if (fused == OP::IF_TRUE) {
-        asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->jne(label, Xbyak::CodeGenerator::T_NEAR);
       } else {
-        asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->je(label, Xbyak::CodeGenerator::T_NEAR);
       }
       asm_->jmp(".EXIT");
 
@@ -206,9 +212,9 @@ void Compiler::EmitBINARY_STRICT_NE(const Instruction* instr, OP::Type fused) {
       asm_->Call(&stub::BINARY_STRICT_NE);
       asm_->cmp(rax, Extract(JSTrue));
       if (fused == OP::IF_TRUE) {
-        asm_->je(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->je(label, Xbyak::CodeGenerator::T_NEAR);
       } else {
-        asm_->jne(label.c_str(), Xbyak::CodeGenerator::T_NEAR);
+        asm_->jne(label, Xbyak::CodeGenerator::T_NEAR);
       }
       asm_->L(".EXIT");
       return;
@@ -233,3 +239,4 @@ void Compiler::EmitBINARY_STRICT_NE(const Instruction* instr, OP::Type fused) {
 }
 
 } } }  // namespace iv::lv5::breaker
+#endif

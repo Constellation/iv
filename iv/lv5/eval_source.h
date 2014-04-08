@@ -14,9 +14,7 @@ static const std::string kEvalSource = "(eval)";
 class EvalSource : public core::Noncopyable<> {
  public:
   explicit EvalSource(const JSString& str)
-    : source_() {
-    source_.resize(str.size());
-    str.Copy(source_.begin());
+    : source_(str.GetUTF16()) {
   }
 
   inline char16_t operator[](std::size_t pos) const {
@@ -28,12 +26,12 @@ class EvalSource : public core::Noncopyable<> {
     return source_.size();
   }
 
-  core::UStringPiece GetData() const {
+  core::u16string_view GetData() const {
     return source_;
   }
 
  private:
-  core::UString source_;
+  std::u16string source_;
 };
 
 }  // namespace lv5
@@ -45,7 +43,7 @@ struct SourceTraits<lv5::EvalSource> {
     return lv5::detail::kEvalSource;
   }
 
-  static core::UStringPiece SubString(
+  static core::u16string_view SubString(
       const lv5::EvalSource& src,
       std::size_t n, std::size_t len = std::string::npos) {
     return src.GetData().substr(n, len);

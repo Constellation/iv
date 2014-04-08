@@ -9,8 +9,10 @@
 #include <iv/lv5/arguments.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/jsstring.h>
+#include <iv/lv5/jsstring_builder.h>
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsarray.h>
+#include <iv/lv5/jsvector.h>
 #include <iv/lv5/error.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/context.h>
@@ -24,8 +26,8 @@ namespace detail {
 inline void DefinePropertiesHelper(Context* ctx, JSObject* obj,
                                    JSObject* props, Error* e);
 
-std::unordered_set<core::UString> CreateNativeBrandSet();
-const std::unordered_set<core::UString>& NativeBrandSet();
+std::unordered_set<std::u16string> CreateNativeBrandSet();
+const std::unordered_set<std::u16string>& NativeBrandSet();
 
 }  // namespace detail
 
@@ -356,25 +358,25 @@ JSVal ObjectIs(const Arguments& args, Error* e) {
   return JSVal::Bool(JSVal::SameValue(args.At(0), args.At(1)));
 }
 
-std::unordered_set<core::UString> detail::CreateNativeBrandSet() {
-  std::unordered_set<core::UString> set;
-  set.insert(core::ToUString("Arguments"));
-  set.insert(core::ToUString("Array"));
-  set.insert(core::ToUString("Boolean"));
-  set.insert(core::ToUString("Date"));
-  set.insert(core::ToUString("Error"));
-  set.insert(core::ToUString("Function"));
-  set.insert(core::ToUString("JSON"));
-  set.insert(core::ToUString("Math"));
-  set.insert(core::ToUString("Number"));
-  set.insert(core::ToUString("Object"));
-  set.insert(core::ToUString("RegExp"));
-  set.insert(core::ToUString("String"));
+std::unordered_set<std::u16string> detail::CreateNativeBrandSet() {
+  std::unordered_set<std::u16string> set;
+  set.insert(core::ToU16String("Arguments"));
+  set.insert(core::ToU16String("Array"));
+  set.insert(core::ToU16String("Boolean"));
+  set.insert(core::ToU16String("Date"));
+  set.insert(core::ToU16String("Error"));
+  set.insert(core::ToU16String("Function"));
+  set.insert(core::ToU16String("JSON"));
+  set.insert(core::ToU16String("Math"));
+  set.insert(core::ToU16String("Number"));
+  set.insert(core::ToU16String("Object"));
+  set.insert(core::ToU16String("RegExp"));
+  set.insert(core::ToU16String("String"));
   return set;
 }
 
-const std::unordered_set<core::UString>& detail::NativeBrandSet() {
-  static const std::unordered_set<core::UString>
+const std::unordered_set<std::u16string>& detail::NativeBrandSet() {
+  static const std::unordered_set<std::u16string>
       set(detail::CreateNativeBrandSet());
   return set;
 }
@@ -384,10 +386,10 @@ JSVal ObjectToString(const Arguments& args, Error* e) {
   IV_LV5_CONSTRUCTOR_CHECK("Object.prototype.toString", args, e);
   const JSVal this_binding = args.this_binding();
   if (this_binding.IsUndefined()) {
-    return JSString::NewAsciiString(args.ctx(), "[object Undefined]", e);
+    return JSString::New(args.ctx(), "[object Undefined]", e);
   }
   if (this_binding.IsNull()) {
-    return JSString::NewAsciiString(args.ctx(), "[object Null]", e);
+    return JSString::New(args.ctx(), "[object Null]", e);
   }
 
   JSObject* const obj = this_binding.ToObject(args.ctx(), IV_LV5_ERROR(e));

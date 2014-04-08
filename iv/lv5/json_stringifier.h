@@ -50,7 +50,7 @@ class JSONStackScope : private core::Noncopyable<> {
   trace::Vector<JSObject*>::type* stack_;
 };
 
-static const core::UString kJSONNullString = core::ToUString("null");
+static const std::u16string kJSONNullString = core::ToU16String("null");
 
 }  // namespace detail
 
@@ -58,7 +58,7 @@ class JSONStringifier : private core::Noncopyable<> {
  public:
   JSONStringifier(Context* ctx,
                   JSFunction* replacer,
-                  const core::UString& gap,
+                  const std::u16string& gap,
                   const trace::Vector<JSString*>::type* property_list)
     : ctx_(ctx),
       replacer_(replacer),
@@ -88,13 +88,13 @@ class JSONStringifier : private core::Noncopyable<> {
     JSStringBuilder builder;
     builder.Append('"');
     if (str.Is8Bit()) {
-      const Fiber8* fiber = str.Get8Bit();
-      core::JSONQuote(fiber->begin(),
-                      fiber->end(), std::back_inserter(builder));
+      const JSAsciiFlatString* flat = str.Flatten8();
+      core::JSONQuote(flat->begin(),
+                      flat->end(), std::back_inserter(builder));
     } else {
-      const Fiber16* fiber = str.Get16Bit();
-      core::JSONQuote(fiber->begin(),
-                      fiber->end(), std::back_inserter(builder));
+      const JSUTF16FlatString* flat = str.Flatten16();
+      core::JSONQuote(flat->begin(),
+                      flat->end(), std::back_inserter(builder));
     }
     builder.Append('"');
     return builder.Build(ctx_, str.Is8Bit(), e);
@@ -102,7 +102,7 @@ class JSONStringifier : private core::Noncopyable<> {
 
   JSVal JO(JSObject* value, Error* e) {
     detail::JSONStackScope scope(&stack_, value, IV_LV5_ERROR(e));
-    const core::UString stepback = indent_;
+    const std::u16string stepback = indent_;
     indent_.append(gap_);
 
     trace::Vector<JSString*>::type prop;
@@ -123,22 +123,28 @@ class JSONStringifier : private core::Noncopyable<> {
       k = &prop;
     }
 
-    std::vector<core::UString> partial;
+    std::vector<std::u16string> partial;
 
     for (trace::Vector<JSString*>::type::const_iterator it = k->begin(),
          last = k->end(); it != last; ++it) {
       const JSVal result = Str(ctx_->Intern(*it), value, IV_LV5_ERROR(e));
       if (!result.IsUndefined()) {
-        core::UString member;
-        JSString* ret = Quote(**it, IV_LV5_ERROR(e));
-        ret->Copy(std::back_inserter(member));
+        std::u16string member;
+        {
+          JSString* ret = Quote(**it, IV_LV5_ERROR(e));
+          const JSFlatString* flat = ret->Flatten();
+          std::copy(flat->begin(), flat->end(), std::back_inserter(member));
+        }
         member.push_back(':');
         if (!gap_.empty()) {
           member.push_back(' ');
         }
         assert(result.IsString());
-        JSString* target = result.string();
-        target->Copy(std::back_inserter(member));
+        {
+          JSString* target = result.string();
+          const JSFlatString* flat = target->Flatten();
+          std::copy(flat->begin(), flat->end(), std::back_inserter(member));
+        }
         partial.push_back(member);
       }
     }
@@ -146,12 +152,12 @@ class JSONStringifier : private core::Noncopyable<> {
     JSString* final;
     if (partial.empty()) {
       // no error
-      final = JSString::NewAsciiString(ctx_, "{}", e);
+      final = JSString::New(ctx_, "{}", e);
     } else {
       JSStringBuilder builder;
       if (gap_.empty()) {
         builder.Append('{');
-        std::vector<core::UString>::const_iterator
+        std::vector<std::u16string>::const_iterator
             it = partial.begin(), last = partial.end();
         while (it != last) {
           builder.Append(*it);
@@ -167,7 +173,7 @@ class JSONStringifier : private core::Noncopyable<> {
       } else {
         builder.Append("{\n");
         builder.Append(indent_);
-        std::vector<core::UString>::const_iterator
+        std::vector<std::u16string>::const_iterator
             it = partial.begin(), last = partial.end();
         while (it != last) {
           builder.Append(*it);
@@ -191,10 +197,10 @@ class JSONStringifier : private core::Noncopyable<> {
 
   JSVal JA(JSArray* value, Error* e) {
     detail::JSONStackScope scope(&stack_, value, IV_LV5_ERROR(e));
-    const core::UString stepback = indent_;
+    const std::u16string stepback = indent_;
     indent_.append(gap_);
 
-    std::vector<core::UString> partial;
+    std::vector<std::u16string> partial;
 
     const uint32_t len = internal::GetLength(ctx_, value, IV_LV5_ERROR(e));
     for (uint32_t index = 0; index < len; ++index) {
@@ -204,18 +210,18 @@ class JSONStringifier : private core::Noncopyable<> {
       } else {
         assert(str.IsString());
         const JSString* const s = str.string();
-        partial.push_back(s->GetUString());
+        partial.push_back(s->GetUTF16());
       }
     }
     JSString* final;
     if (partial.empty()) {
       // no error
-      final = JSString::NewAsciiString(ctx_, "[]", e);
+      final = JSString::New(ctx_, "[]", e);
     } else {
       JSStringBuilder builder;
       if (gap_.empty()) {
         builder.Append('[');
-        std::vector<core::UString>::const_iterator
+        std::vector<std::u16string>::const_iterator
             it = partial.begin(), last = partial.end();
         while (it != last) {
           builder.Append(*it);
@@ -231,7 +237,7 @@ class JSONStringifier : private core::Noncopyable<> {
       } else {
         builder.Append("[\n");
         builder.Append(indent_);
-        std::vector<core::UString>::const_iterator
+        std::vector<std::u16string>::const_iterator
             it = partial.begin(), last = partial.end();
         while (it != last) {
           builder.Append(*it);
@@ -317,8 +323,8 @@ class JSONStringifier : private core::Noncopyable<> {
   Context* ctx_;
   JSFunction* replacer_;
   trace::Vector<JSObject*>::type stack_;
-  core::UString indent_;
-  core::UString gap_;
+  std::u16string indent_;
+  std::u16string gap_;
   const trace::Vector<JSString*>::type* property_list_;
 };
 

@@ -13,11 +13,11 @@ class JSScript : public lv5::JSScript {
  public:
   virtual ~JSScript() { }
 
-  virtual core::UString filename() const = 0;
+  virtual std::u16string filename() const = 0;
 
   void MarkChildren(radio::Core* core) { }
 
-  virtual core::UStringPiece SubString(std::size_t start,
+  virtual core::u16string_view SubString(std::size_t start,
                                        std::size_t len) const = 0;
 };
 
@@ -33,11 +33,11 @@ class JSSourceScript : public JSScript {
     return source_;
   }
 
-  virtual core::UString filename() const {
-    return core::ToUString(core::SourceTraits<Source>::GetFileName(*source_));
+  virtual std::u16string filename() const {
+    return core::ToU16String(core::SourceTraits<Source>::GetFileName(*source_));
   }
 
-  core::UStringPiece SubString(std::size_t start,
+  core::u16string_view SubString(std::size_t start,
                                std::size_t len) const {
     return source_->GetData().substr(start, len);
   }

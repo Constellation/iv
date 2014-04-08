@@ -7,6 +7,7 @@
 #include <iv/lv5/error.h>
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsarray.h>
+#include <iv/lv5/jsvector.h>
 #include <iv/lv5/jsstring.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/internal.h>
@@ -89,9 +90,9 @@ JSVal JSONParse(const Arguments& args, Error* e) {
   JSString* const text = args.At(0).ToString(ctx, IV_LV5_ERROR(e));
   JSVal result;
   if (text->Is8Bit()) {
-    result = ParseJSON<true>(ctx, *text->Get8Bit(), IV_LV5_ERROR(e));
+    result = ParseJSON<true>(ctx, *text->Flatten8(), IV_LV5_ERROR(e));
   } else {
-    result = ParseJSON<true>(ctx, *text->Get16Bit(), IV_LV5_ERROR(e));
+    result = ParseJSON<true>(ctx, *text->Flatten16(), IV_LV5_ERROR(e));
   }
   const JSVal second = args.At(1);
   if (second.IsCallable()) {
@@ -165,7 +166,7 @@ JSVal JSONStringify(const Arguments& args, Error* e) {
   }
 
   // step 6, 7, 8
-  core::UString gap;
+  std::u16string gap;
   if (space.IsNumber()) {
     const double sp = std::min<double>(10.0,
                                        core::DoubleToInteger(space.number()));
@@ -175,14 +176,14 @@ JSVal JSONStringify(const Arguments& args, Error* e) {
   } else if (space.IsString()) {
     JSString* sp = space.string();
     if (sp->Is8Bit()) {
-      const Fiber8* fiber = sp->Get8Bit();
+      const JSAsciiFlatString* fiber = sp->Flatten8();
       if (fiber->size() <= 10) {
         gap.assign(fiber->begin(), fiber->end());
       } else {
         gap.assign(fiber->begin(), fiber->begin() + 10);
       }
     } else {
-      const Fiber16* fiber = sp->Get16Bit();
+      const JSUTF16FlatString* fiber = sp->Flatten16();
       if (fiber->size() <= 10) {
         gap.assign(fiber->begin(), fiber->end());
       } else {

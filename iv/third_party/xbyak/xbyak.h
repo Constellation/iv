@@ -25,7 +25,8 @@
 #if ((defined(_MSC_VER) && (_MSC_VER >= 1600)) || defined(_LIBCPP_VERSION) ||\
 	 			 ((__cplusplus >= 201103) || defined(__GXX_EXPERIMENTAL_CXX0X__)))
 	#include <unordered_map>
-	#define XBYAK_USE_UNORDERED_MAP
+	#define XBYAK_STD_UNORDERED_MAP std::unordered_map
+	#define XBYAK_STD_UNORDERED_MULTIMAP std::unordered_multimap
 
 // Clang/llvm-gcc and ICC-EDG in 'GCC-mode' always claim to be GCC 4.2, using
 // libstdcxx 20070719 (from GCC 4.2.1, the last GPL 2 version).
@@ -35,14 +36,18 @@
 								 ((__GLIBCXX__ >= 20070719) && (__GNUC_MINOR__ >= 2) && \
 									(defined(__INTEL_COMPILER) || defined(__llvm__))))
 	#include <tr1/unordered_map>
-	#define XBYAK_USE_TR1_UNORDERED_MAP
+	#define XBYAK_STD_UNORDERED_MAP std::tr1::unordered_map
+	#define XBYAK_STD_UNORDERED_MULTIMAP std::tr1::unordered_multimap
 
 #elif defined(_MSC_VER) && (_MSC_VER >= 1500) && (_MSC_VER < 1600)
 	#include <unordered_map>
-	#define XBYAK_USE_TR1_UNORDERED_MAP
+	#define XBYAK_STD_UNORDERED_MAP std::tr1::unordered_map
+	#define XBYAK_STD_UNORDERED_MULTIMAP std::tr1::unordered_multimap
 
 #else
 	#include <map>
+	#define XBYAK_STD_UNORDERED_MAP std::map
+	#define XBYAK_STD_UNORDERED_MULTIMAP std::multimap
 #endif
 #ifdef _WIN32
 	#include <windows.h>
@@ -83,7 +88,7 @@ namespace Xbyak {
 
 enum {
 	DEFAULT_MAX_CODE_SIZE = 4096,
-	VERSION = 0x4300 /* 0xABCD = A.BC(D) */
+	VERSION = 0x4500 /* 0xABCD = A.BC(D) */
 };
 
 #ifndef MIE_INTEGER_TYPE_DEFINED
@@ -141,6 +146,8 @@ enum {
 	ERR_BAD_TNUM,
 	ERR_BAD_VSIB_ADDRESSING,
 	ERR_CANT_CONVERT,
+	ERR_LABEL_ISNOT_SET_BY_L,
+	ERR_LABEL_IS_ALREADY_SET_BY_L,
 	ERR_INTERNAL
 };
 
@@ -187,6 +194,8 @@ public:
 			"bad tNum",
 			"bad vsib addressing",
 			"can't convert",
+			"label is not set by L()",
+			"label is already set by L()",
 			"internal error",
 		};
 		assert((size_t)err_ < sizeof(errTbl) / sizeof(*errTbl));
@@ -877,30 +886,57 @@ struct JmpLabel {
 	inner::LabelMode mode;
 };
 
+class LabelManager;
+
 class Label {
+	mutable LabelManager *mgr;
+	mutable int id;
+	friend class LabelManager;
+public:
+	Label() : mgr(0), id(0) {}
+	Label(const Label& rhs);
+	Label& operator=(const Label& rhs);
+	~Label();
+	int getId() const { return id; }
+
+	// backward compatibility
+	static std::string toStr(int num)
+	{
+		char buf[16];
+#ifdef _MSC_VER
+		_snprintf_s
+#else
+		snprintf
+#endif
+		(buf, sizeof(buf), ".%08x", num);
+		return buf;
+	}
+};
+
+class LabelManager {
 	CodeArray *base_;
 	int anonymousCount_; // for @@, @f, @b
 	enum {
-		maxStack = 10
+		maxStack = 16
 	};
 	int stack_[maxStack];
 	int stackPos_;
 	int usedCount_;
 	int localCount_; // for .***
-public:
-private:
-#ifdef XBYAK_USE_UNORDERED_MAP
-	typedef std::unordered_map<std::string, size_t> DefinedList;
-	typedef std::unordered_multimap<std::string, const JmpLabel> UndefinedList;
-#elif defined(XBYAK_USE_TR1_UNORDERED_MAP)
-	typedef std::tr1::unordered_map<std::string, size_t> DefinedList;
-	typedef std::tr1::unordered_multimap<std::string, const JmpLabel> UndefinedList;
-#else
-	typedef std::map<std::string, size_t> DefinedList;
-	typedef std::multimap<std::string, const JmpLabel> UndefinedList;
-#endif
+	mutable int labelId_;
+
+	// for string label
+	typedef XBYAK_STD_UNORDERED_MAP<std::string, size_t> DefinedList;
+	typedef XBYAK_STD_UNORDERED_MULTIMAP<std::string, const JmpLabel> UndefinedList;
 	DefinedList definedList_;
 	UndefinedList undefinedList_;
+	// for Label class
+	typedef XBYAK_STD_UNORDERED_MAP<int, size_t> DefinedList2;
+	typedef XBYAK_STD_UNORDERED_MULTIMAP<int, const JmpLabel> UndefinedList2;
+	typedef XBYAK_STD_UNORDERED_MAP<int, int> RefCount;
+	DefinedList2 definedList2_;
+	UndefinedList2 undefinedList2_;
+	RefCount refCount_;
 
 	/*
 		@@ --> @@.<num>
@@ -908,25 +944,84 @@ private:
 		@f --> @@.<num + 1>
 		.*** -> .***.<num>
 	*/
-	std::string convertLabel(const std::string& label) const
+	std::string getId(std::string label) const
 	{
-		std::string newLabel(label);
-		if (newLabel == "@f" || newLabel == "@F") {
-			newLabel = std::string("@@") + toStr(anonymousCount_ + 1);
-		} else if (newLabel == "@b" || newLabel == "@B") {
-			newLabel = std::string("@@") + toStr(anonymousCount_);
+		if (label == "@f" || label == "@F") {
+			label = std::string("@@") + Label::toStr(anonymousCount_ + 1);
+		} else if (label == "@b" || label == "@B") {
+			label = std::string("@@") + Label::toStr(anonymousCount_);
 		} else if (*label.c_str() == '.') {
-			newLabel += toStr(localCount_);
+			label += Label::toStr(localCount_);
 		}
-		return newLabel;
+		return label;
+	}
+	int getId(const Label& label) const
+	{
+		if (label.id == 0) label.id = labelId_++;
+		return label.id;
+	}
+	template<class DefList, class UndefList, class T>
+	void define_inner(DefList& defList, UndefList& undefList, const T& labelId, size_t addrOffset)
+	{
+		// add label
+		typename DefList::value_type item(labelId, addrOffset);
+		std::pair<typename DefList::iterator, bool> ret = defList.insert(item);
+		if (!ret.second) throw Error(ERR_LABEL_IS_REDEFINED);
+		// search undefined label
+		for (;;) {
+			typename UndefList::iterator itr = undefList.find(labelId);
+			if (itr == undefList.end()) break;
+			const JmpLabel *jmp = &itr->second;
+			const size_t offset = jmp->endOfJmp - jmp->jmpSize;
+			size_t disp;
+			if (jmp->mode == inner::LaddTop) {
+				disp = addrOffset;
+			} else if (jmp->mode == inner::Labs) {
+				disp = size_t(base_->getCurr());
+			} else {
+				disp = addrOffset - jmp->endOfJmp;
+#ifdef XBYAK64
+                if (jmp->jmpSize <= 4 && !inner::IsInInt32(disp)) throw Error(ERR_OFFSET_IS_TOO_BIG);
+#endif
+                if (jmp->jmpSize == 1 && !inner::IsInDisp8((uint32)disp)) throw Error(ERR_LABEL_IS_TOO_FAR);
+			}
+			if (base_->isAutoGrow()) {
+				base_->save(offset, disp, jmp->jmpSize, jmp->mode);
+			} else {
+				base_->rewrite(offset, disp, jmp->jmpSize);
+			}
+			undefList.erase(itr);
+		}
+	}
+	template<class DefList, class T>
+	bool getOffset_inner(const DefList& defList, size_t *offset, const T& label) const
+	{
+		typename DefList::const_iterator i = defList.find(getId(label));
+		if (i == defList.end()) return false;
+		*offset = i->second;
+		return true;
+	}
+	friend class Label;
+	void incRefCount(int id) { refCount_[id]++; }
+	void decRefCount(int id)
+	{
+		RefCount::iterator i = refCount_.find(id);
+		if (i == refCount_.end()) return;
+		if (i->second == 1) {
+			refCount_.erase(i);
+			definedList2_.erase(id);
+		} else {
+			--i->second;
+		}
 	}
 public:
-	Label()
+	LabelManager()
 		: base_(0)
 		, anonymousCount_(0)
 		, stackPos_(1)
 		, usedCount_(0)
 		, localCount_(0)
+		, labelId_(1)
 	{
 	}
 	void reset()
@@ -936,6 +1031,7 @@ public:
 		stackPos_ = 1;
 		usedCount_ = 0;
 		localCount_ = 0;
+		labelId_ = 1;
 		definedList_.clear();
 		undefinedList_.clear();
 	}
@@ -950,57 +1046,45 @@ public:
 		localCount_ = stack_[--stackPos_ - 1];
 	}
 	void set(CodeArray *base) { base_ = base; }
-	void define(const std::string& _label, size_t addrOffset, const uint8 *addr)
+	// copy label because it is modified
+	void define(std::string label)
 	{
-		std::string label(_label);
 		if (label == "@@") {
-			label += toStr(++anonymousCount_);
+			label += Label::toStr(++anonymousCount_);
 		} else if (*label.c_str() == '.') {
-			label += toStr(localCount_);
+			label += Label::toStr(localCount_);
 		}
-		// add label
-		DefinedList::value_type item(label, addrOffset);
-		std::pair<DefinedList::iterator, bool> ret = definedList_.insert(item);
-		if (!ret.second) throw Error(ERR_LABEL_IS_REDEFINED);
-		// search undefined label
-		for (;;) {
-			UndefinedList::iterator itr = undefinedList_.find(label);
-			if (itr == undefinedList_.end()) break;
-			const JmpLabel *jmp = &itr->second;
-			const size_t offset = jmp->endOfJmp - jmp->jmpSize;
-			size_t disp;
-			if (jmp->mode == inner::LaddTop) {
-				disp = addrOffset;
-			} else if (jmp->mode == inner::Labs) {
-				disp = size_t(addr);
-			} else {
-				disp = addrOffset - jmp->endOfJmp;
-				if (jmp->jmpSize <= 4) disp = inner::VerifyInInt32(disp);
-				if (jmp->jmpSize == 1 && !inner::IsInDisp8((uint32)disp)) throw Error(ERR_LABEL_IS_TOO_FAR);
-			}
-			if (base_->isAutoGrow()) {
-				base_->save(offset, disp, jmp->jmpSize, jmp->mode);
-			} else {
-				base_->rewrite(offset, disp, jmp->jmpSize);
-			}
-			undefinedList_.erase(itr);
-		}
+		define_inner(definedList_, undefinedList_, label, base_->getSize());
+	}
+	void define2(const Label& label)
+	{
+		define_inner(definedList2_, undefinedList2_, getId(label), base_->getSize());
+		refCount_[label.id] = 1;
+		label.mgr = this;
+	}
+	void assign(Label& dst, const Label& src)
+	{
+		DefinedList2::const_iterator i = definedList2_.find(src.id);
+		if (i == definedList2_.end()) throw Error(ERR_LABEL_ISNOT_SET_BY_L);
+		define_inner(definedList2_, undefinedList2_, dst.id, i->second);
+		refCount_[dst.id] = 1;
+		dst.mgr = this;
 	}
 	bool getOffset(size_t *offset, const std::string& label) const
 	{
-		std::string newLabel = convertLabel(label);
-		DefinedList::const_iterator itr = definedList_.find(newLabel);
-		if (itr != definedList_.end()) {
-			*offset = itr->second;
-			return true;
-		} else {
-			return false;
-		}
+		return getOffset_inner(definedList_, offset, label);
+	}
+	bool getOffset(size_t *offset, const Label& label) const
+	{
+		return getOffset_inner(definedList2_, offset, label);
 	}
 	void addUndefinedLabel(const std::string& label, const JmpLabel& jmp)
 	{
-		std::string newLabel = convertLabel(label);
-		undefinedList_.insert(UndefinedList::value_type(newLabel, jmp));
+		undefinedList_.insert(UndefinedList::value_type(getId(label), jmp));
+	}
+	void addUndefinedLabel(const Label& label, const JmpLabel& jmp)
+	{
+		undefinedList2_.insert(UndefinedList2::value_type(label.id, jmp));
 	}
 	bool hasUndefinedLabel() const
 	{
@@ -1011,18 +1095,35 @@ public:
 		}
 		return !undefinedList_.empty();
 	}
-	static inline std::string toStr(int num)
+	bool hasUndefinedLabel2() const
 	{
-		char buf[16];
-#ifdef _MSC_VER
-		_snprintf_s
-#else
-		snprintf
-#endif
-		(buf, sizeof(buf), ".%08x", num);
-		return buf;
+		if (inner::debug) {
+			for (UndefinedList2::const_iterator i = undefinedList2_.begin(); i != undefinedList2_.end(); ++i) {
+				fprintf(stderr, "undefined label2:%d\n", i->first);
+			}
+		}
+		return !undefinedList2_.empty();
 	}
 };
+
+inline Label::Label(const Label& rhs)
+{
+	id = rhs.id;
+	mgr = rhs.mgr;
+	if (mgr) mgr->incRefCount(id);
+}
+inline Label& Label::operator=(const Label& rhs)
+{
+	if (id) throw Error(ERR_LABEL_IS_ALREADY_SET_BY_L);
+	id = rhs.id;
+	mgr = rhs.mgr;
+	if (mgr) mgr->incRefCount(id);
+	return *this;
+}
+inline Label::~Label()
+{
+	if (id && mgr) mgr->decRefCount(id);
+}
 
 class CodeGenerator : public CodeArray {
 public:
@@ -1035,8 +1136,12 @@ private:
 	CodeGenerator operator=(const CodeGenerator&); // don't call
 #ifdef XBYAK64
 	enum { i32e = 32 | 64, BIT = 64 };
+	static const size_t dummyAddr = (size_t(0x11223344) << 32) | 55667788;
+	typedef Reg64 NativeReg;
 #else
 	enum { i32e = 32, BIT = 32 };
+	static const size_t dummyAddr = 0x12345678;
+	typedef Reg32 NativeReg;
 #endif
 	// (XMM, XMM|MEM)
 	static inline bool isXMM_XMMorMEM(const Operand& op1, const Operand& op2)
@@ -1107,7 +1212,7 @@ private:
 			db(0xC4); db((r ? 0 : 0x80) | (x ? 0 : 0x40) | (b ? 0 : 0x20) | mmmm); db((w << 7) | vvvv);
 		}
 	}
-	Label label_;
+	LabelManager labelMgr_;
 	bool isInDisp16(uint32 x) const { return 0xFFFF8000 <= x || x <= 0x7FFF; }
 	uint8 getModRM(int mod, int r1, int r2) const { return static_cast<uint8>((mod << 6) | ((r1 & 7) << 3) | (r2 & 7)); }
 	void opModR(const Reg& reg1, const Reg& reg2, int code0, int code1 = NONE, int code2 = NONE)
@@ -1137,11 +1242,12 @@ private:
 			db(longCode); dd(disp - longJmpSize);
 		}
 	}
-	void opJmp(const std::string& label, LabelType type, uint8 shortCode, uint8 longCode, uint8 longPref)
+	template<class T>
+	void opJmp(const T& label, LabelType type, uint8 shortCode, uint8 longCode, uint8 longPref)
 	{
 		if (isAutoGrow() && size_ + 16 >= maxSize_) growMemory(); /* avoid splitting code of jmp */
 		size_t offset = 0;
-		if (label_.getOffset(&offset, label)) { /* label exists */
+		if (labelMgr_.getOffset(&offset, label)) { /* label exists */
 			makeJmp(inner::VerifyInInt32(offset - size_), type, shortCode, longCode, longPref);
 		} else {
 			JmpLabel jmp;
@@ -1155,7 +1261,7 @@ private:
 			}
 			jmp.mode = inner::LasIs;
 			jmp.endOfJmp = size_;
-			label_.addUndefinedLabel(label, jmp);
+			labelMgr_.addUndefinedLabel(label, jmp);
 		}
 	}
 	void opJmpAbs(const void *addr, LabelType type, uint8 shortCode, uint8 longCode)
@@ -1462,13 +1568,22 @@ public:
 	const Ymm &ym8, &ym9, &ym10, &ym11, &ym12, &ym13, &ym14, &ym15;
 	const RegRip rip;
 #endif
-	void L(const std::string& label)
-	{
-		label_.define(label, getSize(), getCurr());
-	}
-	void inLocalLabel() { label_.enterLocal(); }
-	void outLocalLabel() { label_.leaveLocal(); }
+	void L(const std::string& label) { labelMgr_.define(label); }
+	void L(const Label& label) { labelMgr_.define2(label); }
+	/*
+		assign src to dst
+		require
+		dst : does not used by L()
+		src : used by L()
+	*/
+	void assignL(Label& dst, const Label& src) { labelMgr_.assign(dst, src); }
+	void inLocalLabel() { labelMgr_.enterLocal(); }
+	void outLocalLabel() { labelMgr_.leaveLocal(); }
 	void jmp(const std::string& label, LabelType type = T_AUTO)
+	{
+		opJmp(label, type, B11101011, B11101001, 0);
+	}
+	void jmp(const Label& label, LabelType type = T_AUTO)
 	{
 		opJmp(label, type, B11101011, B11101001, 0);
 	}
@@ -1589,92 +1704,36 @@ public:
 			opRM_RM(reg1, reg2, B10001000);
 		}
 	}
-	void mov(const Operand& op,
-#ifdef XBYAK64
-	uint64 imm, bool opti = true
-#else
-	uint32 imm, bool = true
-#endif
-	)
-	{
-		verifyMemHasSize(op);
-		if (op.isREG()) {
-			int bit = op.getBit();
-			int idx = op.getIdx();
-			int code = B10110000 | ((bit == 8 ? 0 : 1) << 3);
-
-#ifdef XBYAK64
-			if (opti && bit == 64 && (imm >> 32) == 0) {
-				rex(Reg32(idx));
-				bit = 32;
-			} else {
-				rex(op);
-				if (opti && bit == 64 && inner::IsInInt32(imm)) {
-					db(B11000111);
-					code = B11000000;
-					bit = 32;
-				}
-			}
-#else
-			rex(op);
-#endif
-			db(code | (idx & 7));
-			db(imm, bit / 8);
-		} else if (op.isMEM()) {
-			opModM(static_cast<const Address&>(op), Reg(0, Operand::REG, op.getBit()), B11000110);
-			int size = op.getBit() / 8; if (size > 4) size = 4;
-			db(static_cast<uint32>(imm), size);
-		} else {
-			throw Error(ERR_BAD_COMBINATION);
-		}
-	}
-	// QQQ : rewrite this function with putL
-	void mov(
-#ifdef XBYAK64
-		const Reg64& reg,
-#else
-		const Reg32& reg,
-#endif
-		const char *label)
-	{
-		if (label == 0) {
-			mov(reg, 0, true);
-			return;
-		}
-		const int jmpSize = (int)sizeof(size_t);
-#ifdef XBYAK64
-		const size_t dummyAddr = (size_t(0x11223344) << 32) | 55667788;
-#else
-		const size_t dummyAddr = 0x12345678;
-#endif
-		if (isAutoGrow() && size_ + 16 >= maxSize_) growMemory();
-		size_t offset = 0;
-		if (label_.getOffset(&offset, label)) {
-			if (isAutoGrow()) {
-				mov(reg, dummyAddr);
-				save(size_ - jmpSize, offset, jmpSize, inner::LaddTop);
-			} else {
-				mov(reg, size_t(top_) + offset, false); // not to optimize 32-bit imm
-			}
-			return;
-		}
-		mov(reg, dummyAddr);
-		JmpLabel jmp;
-		jmp.endOfJmp = size_;
-		jmp.jmpSize = jmpSize;
-		jmp.mode = isAutoGrow() ? inner::LaddTop : inner::Labs;
-		label_.addUndefinedLabel(label, jmp);
-	}
+private:
 	/*
-		put address of label to buffer
-		@note the put size is 4(32-bit), 8(64-bit)
+		mov(r, imm) = db(imm, mov_imm(r, imm))
 	*/
-	void putL(const std::string& label)
+	int mov_imm(const Reg& reg, size_t imm)
+	{
+		int bit = reg.getBit();
+		const int idx = reg.getIdx();
+		int code = B10110000 | ((bit == 8 ? 0 : 1) << 3);
+		if (bit == 64 && (imm & ~size_t(0xffffffffu)) == 0) {
+			rex(Reg32(idx));
+			bit = 32;
+		} else {
+			rex(reg);
+			if (bit == 64 && inner::IsInInt32(imm)) {
+				db(B11000111);
+				code = B11000000;
+				bit = 32;
+			}
+		}
+		db(code | (idx & 7));
+		return bit / 8;
+	}
+	template<class T>
+	void putL_inner(T& label)
 	{
 		const int jmpSize = (int)sizeof(size_t);
 		if (isAutoGrow() && size_ + 16 >= maxSize_) growMemory();
 		size_t offset = 0;
-		if (label_.getOffset(&offset, label)) {
+		if (labelMgr_.getOffset(&offset, label)) {
 			if (isAutoGrow()) {
 				db(uint64(0), jmpSize);
 				save(size_ - jmpSize, offset, jmpSize, inner::LaddTop);
@@ -1688,8 +1747,43 @@ public:
 		jmp.endOfJmp = size_;
 		jmp.jmpSize = jmpSize;
 		jmp.mode = isAutoGrow() ? inner::LaddTop : inner::Labs;
-		label_.addUndefinedLabel(label, jmp);
+		labelMgr_.addUndefinedLabel(label, jmp);
 	}
+public:
+	void mov(const Operand& op, size_t imm)
+	{
+		verifyMemHasSize(op);
+		if (op.isREG()) {
+			const int size = mov_imm(static_cast<const Reg&>(op), imm);
+			db(imm, size);
+		} else if (op.isMEM()) {
+			opModM(static_cast<const Address&>(op), Reg(0, Operand::REG, op.getBit()), B11000110);
+			int size = op.getBit() / 8; if (size > 4) size = 4;
+			db(static_cast<uint32>(imm), size);
+		} else {
+			throw Error(ERR_BAD_COMBINATION);
+		}
+	}
+	void mov(const NativeReg& reg, const char *label) // can't use std::string
+	{
+		if (label == 0) {
+			mov(static_cast<const Operand&>(reg), 0); // call imm
+			return;
+		}
+		mov_imm(reg, dummyAddr);
+		putL(label);
+	}
+	void mov(const NativeReg& reg, const Label& label)
+	{
+		mov_imm(reg, dummyAddr);
+		putL(label);
+	}
+	/*
+		put address of label to buffer
+		@note the put size is 4(32-bit), 8(64-bit)
+	*/
+	void putL(const std::string& label) { putL_inner(label); }
+	void putL(const Label& label) { putL_inner(label); }
 	void cmpxchg8b(const Address& addr) { opModM(addr, Reg32(1), 0x0F, B11000111); }
 #ifdef XBYAK64
 	void cmpxchg16b(const Address& addr) { opModM(addr, Reg64(1), 0x0F, B11000111); }
@@ -1715,15 +1809,12 @@ public:
 		}
 		opModRM(*p1, *p2, (p1->isREG() && p2->isREG() && (p1->getBit() == p2->getBit())), p2->isMEM(), B10000110 | (p1->isBit(8) ? 0 : 1));
 	}
-	void call(const std::string& label)
-	{
-		opJmp(label, T_NEAR, 0, B11101000, 0);
-	}
+	void call(const std::string& label) { opJmp(label, T_NEAR, 0, B11101000, 0); }
+	// call(string label)
 	void call(const char *label) { call(std::string(label)); }
-	void call(const void *addr)
-	{
-		opJmpAbs(addr, T_NEAR, 0, B11101000);
-	}
+	void call(const Label& label) { opJmp(label, T_NEAR, 0, B11101000, 0); }
+	// call(function pointer)
+	void call(const void *addr) { opJmpAbs(addr, T_NEAR, 0, B11101000); }
 	// special case
 	void movd(const Address& addr, const Mmx& mmx)
 	{
@@ -1862,15 +1953,15 @@ public:
 		, rip()
 #endif
 	{
-		label_.set(this);
+		labelMgr_.set(this);
 	}
 	void reset()
 	{
 		resetSize();
-		label_.reset();
-		label_.set(this);
+		labelMgr_.reset();
+		labelMgr_.set(this);
 	}
-	bool hasUndefinedLabel() const { return label_.hasUndefinedLabel(); }
+	bool hasUndefinedLabel() const { return labelMgr_.hasUndefinedLabel() || labelMgr_.hasUndefinedLabel2(); }
 	/*
 		call ready() to complete generating code on AutoGrow
 	*/

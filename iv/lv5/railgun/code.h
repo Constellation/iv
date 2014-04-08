@@ -75,10 +75,10 @@ class Code : public radio::HeapObject<radio::POINTER> {
     }
   }
 
-  core::UString GenerateErrorLine(const Instruction* instr) const {
+  std::u16string GenerateErrorLine(const Instruction* instr) const {
     const std::size_t line_number =
         core_->LookupLineNumber(instr - core_->data()->data());
-    core::UString result;
+    std::u16string result;
     if (has_name_) {
       result.append(symbol::GetSymbolString(name()));
     } else {

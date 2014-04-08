@@ -5,7 +5,7 @@
 #include <iv/qhashmap.h>
 #include <iv/lv5/gc_template.h>
 #include <iv/lv5/railgun/fwd.h>
-#include <iv/lv5/jsstring_fwd.h>
+#include <iv/lv5/jsstring.h>
 namespace iv {
 namespace lv5 {
 namespace railgun {

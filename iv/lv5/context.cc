@@ -90,7 +90,7 @@ void Context::Initialize() {
   struct ClassSlot func_cls = {
     JSFunction::GetClass(),
     Intern("Function"),
-    JSString::NewAsciiString(this, "Function", &dummy),
+    JSString::New(this, "Function", &dummy),
     func_constructor,
     func_proto
   };
@@ -100,7 +100,7 @@ void Context::Initialize() {
   struct ClassSlot obj_cls = {
     JSObject::GetClass(),
     Intern("Object"),
-    JSString::NewAsciiString(this, "Object", &dummy),
+    JSString::New(this, "Object", &dummy),
     obj_constructor,
     obj_proto
   };
@@ -219,7 +219,7 @@ void Context::Initialize() {
     struct ClassSlot cls = {
       JSArguments::GetClass(),
       Intern("Arguments"),
-      JSString::NewAsciiString(this, "Arguments", &dummy),
+      JSString::New(this, "Arguments", &dummy),
       nullptr,
       obj_proto
     };
@@ -236,7 +236,7 @@ void Context::InitGlobal(const ClassSlot& func_cls,
   struct ClassSlot cls = {
     JSGlobal::GetClass(),
     symbol::global(),
-    JSString::NewAsciiString(this, "global", &dummy),
+    JSString::New(this, "global", &dummy),
     nullptr,
     obj_proto
   };
@@ -291,7 +291,7 @@ void Context::InitArray(const ClassSlot& func_cls,
   struct ClassSlot cls = {
     JSArray::GetClass(),
     Intern("Array"),
-    JSString::NewAsciiString(this, "Array", &dummy),
+    JSString::New(this, "Array", &dummy),
     constructor,
     proto
   };
@@ -313,13 +313,13 @@ void Context::InitArray(const ClassSlot& func_cls,
      JSInlinedFunction<&runtime::ArrayValues, 0>::New(this, Intern("values"));
 
   JSVector* unscopables = JSVector::New(this, {
-    JSString::NewAsciiString(this, "find", &dummy),
-    JSString::NewAsciiString(this, "findIndex", &dummy),
-    JSString::NewAsciiString(this, "fill", &dummy),
-    JSString::NewAsciiString(this, "copyWithin", &dummy),
-    JSString::NewAsciiString(this, "entries", &dummy),
-    JSString::NewAsciiString(this, "keys", &dummy),
-    JSString::NewAsciiString(this, "values", &dummy)
+    JSString::New(this, "find", &dummy),
+    JSString::New(this, "findIndex", &dummy),
+    JSString::New(this, "fill", &dummy),
+    JSString::New(this, "copyWithin", &dummy),
+    JSString::New(this, "entries", &dummy),
+    JSString::New(this, "keys", &dummy),
+    JSString::New(this, "values", &dummy)
   });
 
   bind::Object(this, proto)
@@ -408,7 +408,7 @@ void Context::InitArray(const ClassSlot& func_cls,
       // ES6
       // section 22.1.5.2.3 %ArrayIteratorPrototype%[@@toStringTag]
       .def(global_data()->builtin_symbol_toStringTag(),
-           JSString::NewAsciiString(this, "Array Iterator", &dummy),
+           JSString::New(this, "Array Iterator", &dummy),
            ATTR::W | ATTR::C);
   global_data()->set_array_iterator_prototype(array_iterator_proto);
 }
@@ -429,7 +429,7 @@ void Context::InitString(const ClassSlot& func_cls,
   struct ClassSlot cls = {
     JSStringObject::GetClass(),
     Intern("String"),
-    JSString::NewAsciiString(this, "String", &dummy),
+    JSString::New(this, "String", &dummy),
     constructor,
     proto
   };
@@ -531,7 +531,7 @@ void Context::InitString(const ClassSlot& func_cls,
       // ES6
       // section 21.1.5.2.3 %StringIteratorPrototype%[@@toStringTag]
       .def(global_data()->builtin_symbol_toStringTag(),
-           JSString::NewAsciiString(this, "String Iterator", &dummy),
+           JSString::New(this, "String Iterator", &dummy),
            ATTR::W | ATTR::C);
   global_data()->set_string_iterator_prototype(string_iterator_proto);
 }
@@ -552,7 +552,7 @@ void Context::InitBoolean(const ClassSlot& func_cls,
   struct ClassSlot cls = {
     JSBooleanObject::GetClass(),
     Intern("Boolean"),
-    JSString::NewAsciiString(this, "Boolean", &dummy),
+    JSString::New(this, "Boolean", &dummy),
     constructor,
     proto
   };
@@ -590,7 +590,7 @@ void Context::InitNumber(const ClassSlot& func_cls,
   struct ClassSlot cls = {
     JSNumberObject::GetClass(),
     Intern("Number"),
-    JSString::NewAsciiString(this, "Number", &dummy),
+    JSString::New(this, "Number", &dummy),
     constructor,
     proto
   };
@@ -655,7 +655,7 @@ void Context::InitMath(const ClassSlot& func_cls,
   struct ClassSlot cls = {
     JSMath::GetClass(),
     Intern("Math"),
-    JSString::NewAsciiString(this, "Math", &dummy),
+    JSString::New(this, "Math", &dummy),
     nullptr,
     obj_proto
   };
@@ -764,7 +764,7 @@ void Context::InitDate(const ClassSlot& func_cls,
   struct ClassSlot cls = {
     JSDate::GetClass(),
     Intern("Date"),
-    JSString::NewAsciiString(this, "Date", &dummy),
+    JSString::New(this, "Date", &dummy),
     constructor,
     proto
   };
@@ -902,7 +902,7 @@ void Context::InitRegExp(const ClassSlot& func_cls,
   struct ClassSlot cls = {
     JSRegExp::GetClass(),
     Intern("RegExp"),
-    JSString::NewAsciiString(this, "RegExp", &dummy),
+    JSString::New(this, "RegExp", &dummy),
     constructor,
     proto
   };
@@ -943,7 +943,7 @@ void Context::InitError(const ClassSlot& func_cls,
   struct ClassSlot cls = {
     JSError::GetClass(),
     Intern("Error"),
-    JSString::NewAsciiString(this, "Error", &dummy),
+    JSString::New(this, "Error", &dummy),
     constructor,
     proto
   };
@@ -960,9 +960,9 @@ void Context::InitError(const ClassSlot& func_cls,
       .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
       // section 15.11.4.2 Error.prototype.name
       .def("name",
-           JSString::NewAsciiString(this, "Error", &dummy), ATTR::W | ATTR::C)
+           JSString::New(this, "Error", &dummy), ATTR::W | ATTR::C)
       // section 15.11.4.3 Error.prototype.message
-      .def("message", JSString::NewEmptyString(this), ATTR::W | ATTR::C)
+      .def("message", JSString::NewEmpty(this), ATTR::W | ATTR::C)
       // section 15.11.4.4 Error.prototype.toString()
       .def<&runtime::ErrorToString, 0>(symbol::toString());
   global_data()->set_error_prototype(proto);
@@ -982,7 +982,7 @@ void Context::InitError(const ClassSlot& func_cls,
     struct ClassSlot sub_cls = {
       JSEvalError::GetClass(),
       Intern("Error"),
-      JSString::NewAsciiString(this, "EvalError", &dummy),
+      JSString::New(this, "EvalError", &dummy),
       sub_constructor,
       sub_proto
     };
@@ -994,7 +994,7 @@ void Context::InitError(const ClassSlot& func_cls,
         .def(symbol::constructor(),
              sub_constructor, ATTR::W | ATTR::C)
         .def("name", sub_cls.name_string, ATTR::W | ATTR::C)
-        .def("message", JSString::NewEmptyString(this), ATTR::W | ATTR::C);
+        .def("message", JSString::NewEmpty(this), ATTR::W | ATTR::C);
     global_data()->set_eval_error_prototype(sub_proto);
   }
   {
@@ -1012,7 +1012,7 @@ void Context::InitError(const ClassSlot& func_cls,
     struct ClassSlot sub_cls = {
       JSRangeError::GetClass(),
       Intern("Error"),
-      JSString::NewAsciiString(this, "RangeError", &dummy),
+      JSString::New(this, "RangeError", &dummy),
       sub_constructor,
       sub_proto
     };
@@ -1024,7 +1024,7 @@ void Context::InitError(const ClassSlot& func_cls,
         .def(symbol::constructor(),
              sub_constructor, ATTR::W | ATTR::C)
         .def("name", sub_cls.name_string, ATTR::W | ATTR::C)
-        .def("message", JSString::NewEmptyString(this), ATTR::W | ATTR::C);
+        .def("message", JSString::NewEmpty(this), ATTR::W | ATTR::C);
     global_data()->set_range_error_prototype(sub_proto);
   }
   {
@@ -1044,7 +1044,7 @@ void Context::InitError(const ClassSlot& func_cls,
     struct ClassSlot sub_cls = {
       JSReferenceError::GetClass(),
       Intern("Error"),
-      JSString::NewAsciiString(this, "ReferenceError", &dummy),
+      JSString::New(this, "ReferenceError", &dummy),
       sub_constructor,
       sub_proto
     };
@@ -1056,7 +1056,7 @@ void Context::InitError(const ClassSlot& func_cls,
         .def(symbol::constructor(),
              sub_constructor, ATTR::W | ATTR::C)
         .def("name", sub_cls.name_string, ATTR::W | ATTR::C)
-        .def("message", JSString::NewEmptyString(this), ATTR::W | ATTR::C);
+        .def("message", JSString::NewEmpty(this), ATTR::W | ATTR::C);
     global_data()->set_reference_error_prototype(sub_proto);
   }
   {
@@ -1075,7 +1075,7 @@ void Context::InitError(const ClassSlot& func_cls,
     struct ClassSlot sub_cls = {
       JSSyntaxError::GetClass(),
       Intern("Error"),
-      JSString::NewAsciiString(this, "SyntaxError", &dummy),
+      JSString::New(this, "SyntaxError", &dummy),
       sub_constructor,
       sub_proto
     };
@@ -1087,7 +1087,7 @@ void Context::InitError(const ClassSlot& func_cls,
         .def(symbol::constructor(),
              sub_constructor, ATTR::W | ATTR::C)
         .def("name", sub_cls.name_string, ATTR::W | ATTR::C)
-        .def("message", JSString::NewEmptyString(this), ATTR::W | ATTR::C);
+        .def("message", JSString::NewEmpty(this), ATTR::W | ATTR::C);
     global_data()->set_syntax_error_prototype(sub_proto);
   }
   {
@@ -1105,7 +1105,7 @@ void Context::InitError(const ClassSlot& func_cls,
     struct ClassSlot sub_cls = {
       JSTypeError::GetClass(),
       Intern("Error"),
-      JSString::NewAsciiString(this, "TypeError", &dummy),
+      JSString::New(this, "TypeError", &dummy),
       sub_constructor,
       sub_proto
     };
@@ -1117,7 +1117,7 @@ void Context::InitError(const ClassSlot& func_cls,
         .def(symbol::constructor(),
              sub_constructor, ATTR::W | ATTR::C)
         .def("name", sub_cls.name_string, ATTR::W | ATTR::C)
-        .def("message", JSString::NewEmptyString(this), ATTR::W | ATTR::C);
+        .def("message", JSString::NewEmpty(this), ATTR::W | ATTR::C);
     global_data()->set_type_error_prototype(sub_proto);
   }
   {
@@ -1135,7 +1135,7 @@ void Context::InitError(const ClassSlot& func_cls,
     struct ClassSlot sub_cls = {
       JSURIError::GetClass(),
       Intern("Error"),
-      JSString::NewAsciiString(this, "URIError", &dummy),
+      JSString::New(this, "URIError", &dummy),
       sub_constructor,
       sub_proto
     };
@@ -1147,7 +1147,7 @@ void Context::InitError(const ClassSlot& func_cls,
         .def(symbol::constructor(),
              sub_constructor, ATTR::W | ATTR::C)
         .def("name", sub_cls.name_string, ATTR::W | ATTR::C)
-        .def("message", JSString::NewEmptyString(this), ATTR::W | ATTR::C);
+        .def("message", JSString::NewEmpty(this), ATTR::W | ATTR::C);
     global_data()->set_uri_error_prototype(sub_proto);
   }
 }
@@ -1159,7 +1159,7 @@ void Context::InitJSON(const ClassSlot& func_cls,
   struct ClassSlot cls = {
     JSJSON::GetClass(),
     Intern("JSON"),
-    JSString::NewAsciiString(this, "JSON", &dummy),
+    JSString::New(this, "JSON", &dummy),
     nullptr,
     obj_proto
   };
@@ -1197,7 +1197,7 @@ void Context::InitMap(const ClassSlot& func_cls,
   bind::Object(this, proto)
       .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
       .def(global_data()->builtin_symbol_toStringTag(),
-           JSString::NewAsciiString(this, "Map", &dummy), ATTR::C)
+           JSString::New(this, "Map", &dummy), ATTR::C)
       .def<&runtime::MapClear, 0>("clear")
       .def<&runtime::MapDelete, 1>("delete")
       .def<&runtime::MapForEach, 1>("forEach")
@@ -1230,7 +1230,7 @@ void Context::InitMap(const ClassSlot& func_cls,
       // ES6
       // section 23.1.5.2.3 %MapIteratorPrototype%[@@toStringTag]
       .def(global_data()->builtin_symbol_toStringTag(),
-           JSString::NewAsciiString(this, "Map Iterator", &dummy),
+           JSString::New(this, "Map Iterator", &dummy),
            ATTR::W | ATTR::C);
   global_data()->set_map_iterator_prototype(map_iterator_proto);
 }
@@ -1253,7 +1253,7 @@ void Context::InitWeakMap(const ClassSlot& func_cls,
   bind::Object(this, proto)
       .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
       .def(global_data()->builtin_symbol_toStringTag(),
-           JSString::NewAsciiString(this, "WeakMap", &dummy), ATTR::C)
+           JSString::New(this, "WeakMap", &dummy), ATTR::C)
       .def<&runtime::WeakMapClear, 0>("clear")
       .def<&runtime::WeakMapDelete, 1>("delete")
       .def<&runtime::WeakMapGet, 1>("get")
@@ -1284,7 +1284,7 @@ void Context::InitSet(const ClassSlot& func_cls,
   bind::Object(this, proto)
       .def(symbol::constructor(), constructor, ATTR::W | ATTR::C)
       .def(global_data()->builtin_symbol_toStringTag(),
-           JSString::NewAsciiString(this, "Set", &dummy), ATTR::C)
+           JSString::New(this, "Set", &dummy), ATTR::C)
       .def<&runtime::SetAdd, 1>("add")
       .def<&runtime::SetClear, 0>("clear")
       .def<&runtime::SetDelete, 1>("delete")
@@ -1316,7 +1316,7 @@ void Context::InitSet(const ClassSlot& func_cls,
       // ES6
       // section 23.2.5.2.3 %SetIteratorPrototype%[@@toStringTag]
       .def(global_data()->builtin_symbol_toStringTag(),
-           JSString::NewAsciiString(this, "Set Iterator", &dummy),
+           JSString::New(this, "Set Iterator", &dummy),
            ATTR::W | ATTR::C);
   global_data()->set_set_iterator_prototype(set_iterator_proto);
 }
@@ -1342,7 +1342,7 @@ void Context::InitIntl(const ClassSlot& func_cls,
     struct ClassSlot cls = {
       JSCollator::GetClass(),
       Intern("Collator"),
-      JSString::NewAsciiString(this, "Collator", &dummy),
+      JSString::New(this, "Collator", &dummy),
       constructor,
       proto
     };
@@ -1401,7 +1401,7 @@ void Context::InitIntl(const ClassSlot& func_cls,
     struct ClassSlot cls = {
       JSDateTimeFormat::GetClass(),
       Intern("DateTimeFormat"),
-      JSString::NewAsciiString(this, "DateTimeFormat", &dummy),
+      JSString::New(this, "DateTimeFormat", &dummy),
       constructor,
       proto
     };
@@ -1440,7 +1440,7 @@ void Context::InitBinaryBlocks(const ClassSlot& func_cls,
     struct ClassSlot cls = {
       JSArrayBuffer::GetClass(),
       Intern("ArrayBuffer"),
-      JSString::NewAsciiString(this, "ArrayBuffer", &dummy),
+      JSString::New(this, "ArrayBuffer", &dummy),
       constructor,
       proto
     };
@@ -1482,7 +1482,7 @@ void Context::InitBinaryBlocks(const ClassSlot& func_cls,
     struct ClassSlot cls = {
       JSDataView::GetClass(),
       Intern("DataView"),
-      JSString::NewAsciiString(this, "DataView", &dummy),
+      JSString::New(this, "DataView", &dummy),
       constructor,
       proto
     };
@@ -1536,7 +1536,7 @@ inline void Context::InitTypedArray(const ClassSlot& func_cls,
   struct ClassSlot slot = {
     TypedArray::GetClass(),
     Intern(cls->name),
-    JSString::NewAsciiString(this, cls->name, &dummy),
+    JSString::New(this, cls->name, &dummy),
     constructor,
     proto
   };
@@ -1568,7 +1568,7 @@ void Context::InitReflect(const ClassSlot& func_cls,
   struct ClassSlot cls = {
     JSReflect::GetClass(),
     Intern("Reflect"),
-    JSString::NewAsciiString(this, "Reflect", &dummy),
+    JSString::New(this, "Reflect", &dummy),
     nullptr,
     obj_proto
   };
@@ -1632,7 +1632,7 @@ void Context::InitSymbol(const ClassSlot& func_cls,
   struct ClassSlot cls = {
     JSSymbolObject::GetClass(),
     Intern("Symbol"),
-    JSString::NewAsciiString(this, "Symbol", &dummy),
+    JSString::New(this, "Symbol", &dummy),
     constructor,
     proto
   };
@@ -1658,7 +1658,7 @@ void Context::InitSymbol(const ClassSlot& func_cls,
       .def<&runtime::SymbolToString, 0>("toString")
       .def<&runtime::SymbolValueOf, 0>("valueOf")
       .def(global_data()->builtin_symbol_toStringTag(),
-           JSString::NewAsciiString(this, "Symbol", &dummy), ATTR::C)
+           JSString::New(this, "Symbol", &dummy), ATTR::C)
       .def(global_data()->builtin_symbol_toPrimitive(),
            JSInlinedFunction<
              &runtime::SymbolToPrimitive, 1>::New(
@@ -1666,19 +1666,19 @@ void Context::InitSymbol(const ClassSlot& func_cls,
              ATTR::C);
 }
 
-Symbol Context::Intern(const core::StringPiece& str) {
+Symbol Context::Intern(const core::string_view& str) {
   return global_data()->Intern(str);
 }
 
-Symbol Context::Intern(const core::UStringPiece& str) {
+Symbol Context::Intern(const core::u16string_view& str) {
   return global_data()->Intern(str);
 }
 
 Symbol Context::Intern(const JSString* str) {
   if (str->Is8Bit()) {
-    return global_data()->Intern(*str->Get8Bit());
+    return global_data()->Intern(*str->Flatten8());
   } else {
-    return global_data()->Intern(*str->Get16Bit());
+    return global_data()->Intern(*str->Flatten16());
   }
 }
 

@@ -316,7 +316,7 @@ class LoadPropertyIC : public PropertyIC<LoadPropertyIC> {
       as->jne(fail);
       // load
       const std::size_t length = JSObject::ElementsOffset() + IndexedElements::LengthOffset();
-      as->mov(eax, word[rsi + length]);
+      as->mov(eax, dword[rsi + length]);
       as->cmp(eax, INT32_MAX);
       as->ja(fail);
       as->or(rax, r15);
@@ -341,7 +341,7 @@ class LoadPropertyIC : public PropertyIC<LoadPropertyIC> {
       // load string length
       const std::ptrdiff_t length_offset =
           IV_CAST_OFFSET(radio::Cell*, JSString*) + JSString::SizeOffset();
-      as->mov(eax, word[rsi + length_offset]);
+      as->mov(eax, dword[rsi + length_offset]);
       as->or(rax, r15);
       as->ret();
     }

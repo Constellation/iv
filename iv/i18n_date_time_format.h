@@ -1,8 +1,7 @@
 #ifndef IV_I18N_DATE_TIME_FORMAT_H_
 #define IV_I18N_DATE_TIME_FORMAT_H_
 #include <memory>
-#include <iv/stringpiece.h>
-#include <iv/ustringpiece.h>
+#include <iv/string_view.h>
 #include <iv/utils.h>
 #include <iv/i18n_timezone.h>
 #include <iv/i18n_calendar.h>
@@ -201,7 +200,7 @@ class DateTimeFormat : public DateTimeFormatConstants {
 
   typedef std::unordered_map<std::string, const Data*> DateTimeFormatDataMap;
 
-  static const Data* Lookup(StringPiece name) {
+  static const Data* Lookup(string_view name) {
     const DateTimeFormatDataMap::const_iterator it = Map().find(name);
     if (it != Map().end()) {
       return it->second;
@@ -210,10 +209,10 @@ class DateTimeFormat : public DateTimeFormatConstants {
   }
 
   // section 12.3.2 Intl.DateTimeFormat.prototype.format
-  UString Format(double x) const {
+  std::u16string Format(double x) const {
     assert(core::math::IsFinite(x));
     // const double res = ToLocalTime(x, calendar(), tz());
-    return UString();
+    return std::u16string();
   }
 
   static double ToLocalTime(double date, Calendar::Type calendar, TimeZone::Type time_zone) {
@@ -239,7 +238,7 @@ class DateTimeFormat : public DateTimeFormatConstants {
   const NumberFormat* nf2() const { return nf2_.get(); }
  private:
   template<typename Iter>
-  static bool Equals(const core::StringPiece& value, Iter it, Iter last) {
+  static bool Equals(const core::string_view& value, Iter it, Iter last) {
     return CompareIterators(value.begin(), value.end(), it, last) == 0;
   }
 

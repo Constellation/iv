@@ -118,9 +118,7 @@ class JIT : public Xbyak::CodeGenerator {
     : Xbyak::CodeGenerator(4096, Xbyak::AutoGrow),
       code_(code),
       first_instr_(code.bytes().data()),
-      targets_(),
-      backtracks_(),
-      tracked_(),
+      jumps_(),
       character(kASCII ? byte : word),
       subject_(r12),
       size_(r13),
@@ -206,28 +204,24 @@ class JIT : public Xbyak::CodeGenerator {
       const uint32_t length = OP::GetLength(instr);
       switch (opcode) {
         case OP::PUSH_BACKTRACK: {
-          const int dis = Load4Bytes(instr + 1);
-          if (backtracks_.find(dis) == backtracks_.end()) {
-            backtracks_.insert(std::make_pair(dis, backtracks_.size()));
-          }
+          jumps_[Load4Bytes(instr + 1)] = Xbyak::Label();
           break;
         }
         case OP::COUNTER_NEXT: {
-          targets_.insert(Load4Bytes(instr + 9));
+          jumps_[Load4Bytes(instr + 9)] = Xbyak::Label();
           break;
         }
         case OP::ASSERTION_SUCCESS: {
-          targets_.insert(Load4Bytes(instr + 5));
+          jumps_[Load4Bytes(instr + 5)] = Xbyak::Label();
           break;
         }
         case OP::JUMP: {
-          targets_.insert(Load4Bytes(instr + 1));
+          jumps_[Load4Bytes(instr + 1)] = Xbyak::Label();
           break;
         }
       }
       std::advance(instr, length);
     }
-    tracked_.resize(backtracks_.size(), 0);
   }
 
   static bool CanOptimize(uint8_t opcode) {
@@ -236,17 +230,15 @@ class JIT : public Xbyak::CodeGenerator {
 
   bool ReferencedByJump(const_pointer instr) const {
     const uint32_t offset = instr - first_instr_;
-    if (std::binary_search(targets_.begin(), targets_.end(), offset)) {
-      return true;
-    }
-    if (backtracks_.find(offset) != backtracks_.end()) {
-      return true;
-    }
-    return false;
+    return jumps_.find(offset) != jumps_.end();
   }
 
-  static uint32_t GuardedSize(uint8_t opcode) {
+  static uint32_t GuardedSize(const_pointer instr) {
+    const uint8_t opcode = *instr;
     assert(CanOptimize(opcode));
+    if (opcode == OP::CHECK_N_CHARS) {
+      return Load4Bytes(instr + 1);
+    }
     return (opcode > OP::COUNTER_ZERO) ? 1 : 0;
   }
 
@@ -257,7 +249,7 @@ class JIT : public Xbyak::CodeGenerator {
     assert(CanOptimize(*instr));
     assert(instr != last);
 
-    uint32_t guarded = JIT::GuardedSize(*instr);
+    uint32_t guarded = JIT::GuardedSize(instr);
     const_pointer current = instr;
     std::advance(current, OP::GetLength(current));
     const const_pointer start = current;
@@ -266,7 +258,7 @@ class JIT : public Xbyak::CodeGenerator {
     while (current != last) {
       if (CanOptimize(*current) && !ReferencedByJump(current)) {
         // ok
-        guarded += JIT::GuardedSize(*current);
+        guarded += JIT::GuardedSize(current);
       } else {
         // bailout
         break;
@@ -289,6 +281,9 @@ class JIT : public Xbyak::CodeGenerator {
     while (instr != current) {
       const uint32_t length = OP::GetLength(instr);
       switch (*instr) {
+        case OP::CHECK_N_CHARS:
+          EmitCHECK_N_CHARS(instr, length, offset);
+          break;
         case OP::CHECK_1BYTE_CHAR:
           EmitCHECK_1BYTE_CHAR(instr, length, offset);
           break;
@@ -320,7 +315,7 @@ class JIT : public Xbyak::CodeGenerator {
           UNREACHABLE();
         }
       }
-      offset += JIT::GuardedSize(*instr);
+      offset += JIT::GuardedSize(instr);
       std::advance(instr, length);
     }
     *result = current;
@@ -336,14 +331,11 @@ class JIT : public Xbyak::CodeGenerator {
       const uint8_t opcode = *instr;
       const uint32_t length = OP::GetLength(instr);
       const uint32_t offset = instr - first_instr_;
-      if (std::binary_search(targets_.begin(), targets_.end(), offset)) {
-        DefineLabel(offset);
+      const auto& iter = jumps_.find(offset);
+      if (iter != jumps_.end()) {
+        // define label
+        L(iter->second);
       }
-      const BackTrackMap::const_iterator it = backtracks_.find(offset);
-      if (it != backtracks_.end()) {
-          tracked_[it->second] = core::BitCast<uintptr_t>(getSize()); // offset from getCode
-      }
-
       // basic block optimization pass
       if (JIT::CanOptimize(opcode) && EmitOptimized(instr, last, &instr)) {
         continue;
@@ -384,7 +376,8 @@ IV_AERO_OPCODES(V)
       jmp(jit_detail::kFailureLabel, T_NEAR);
     } else {
       // one char check and bloom filter path
-      if (code_.IsQuickCheckOneChar() && kASCII && !core::character::IsASCII(filter)) {
+      if (code_.IsQuickCheckOneChar() && kASCII &&
+          !core::character::IsASCII(filter)) {
         jmp(jit_detail::kFailureLabel, T_NEAR);
         L(jit_detail::kQuickCheckNextLabel);
         return;
@@ -435,7 +428,7 @@ IV_AERO_OPCODES(V)
     mov(size_, rdx);
     mov(cp_, r8);
 
-    const std::size_t size = code_.captures() * 2 + code_.counters() + 1;
+    const std::size_t size = code_.captures() * 2 + code_.counters() + 2;
     {
       // allocate state space
       // rdi is already VM*
@@ -468,9 +461,9 @@ IV_AERO_OPCODES(V)
       xor(sp_, sp_);
 
       // initialize captures
-      if ((size - 1) != 0) {
+      if ((size - 2) != 0) {
         IV_AERO_LOCAL() {
-          mov(r11d, size - 1);
+          mov(r11d, size - 2);
           L(".LOOP_START");
           mov(dword[captures_ + r11 * kIntSize], kUndefined);
           sub(r11d, 1);
@@ -536,7 +529,7 @@ IV_AERO_OPCODES(V)
       L(jit_detail::kBackTrackLabel);
       test(sp_, sp_);
       jz(".FAILURE", T_NEAR);
-      const int size = code_.captures() * 2 + code_.counters() + 1;
+      const int size = code_.captures() * 2 + code_.counters() + 2;
       sub(sp_, size);
 
       // copy to captures
@@ -558,9 +551,8 @@ IV_AERO_OPCODES(V)
       L(".LOOP_END");
 
       movsxd(cp_, dword[captures_ + kIntSize]);
-      movsxd(rcx, dword[captures_ + kIntSize * (size - 1)]);
-      mov(rax, core::BitCast<uintptr_t>(tracked_.data()));
-      jmp(ptr[rax + rcx * kPtrSize]);
+      mov(rax, qword[captures_ + kIntSize * (size - 2)]);
+      jmp(rax);
 
       L(".FAILURE");
       mov(cp_, qword[rsp + k64Size * OFFSET_CP]);
@@ -576,12 +568,7 @@ IV_AERO_OPCODES(V)
     }
     // finish generating code and determine code address
     ready();
-    {
-      const uintptr_t top = core::BitCast<uintptr_t>(getCode());
-      for (size_t i = 0; i < tracked_.size(); i++) {
-        tracked_[i] += top;
-      }
-    }
+    jumps_.clear();
   }
 
   void EmitSTORE_SP(const uint8_t* instr, uint32_t len) {
@@ -605,7 +592,7 @@ IV_AERO_OPCODES(V)
     movsxd(sp_, dword[captures_ + kIntSize * offset]);
     LoadStack(r10);
     movsxd(cp_, dword[r10 + sp_ * kIntSize + kIntSize]);
-    Jump(Load4Bytes(instr + 5));
+    jmp(jumps_[Load4Bytes(instr + 5)], T_NEAR);
   }
 
   void EmitASSERTION_FAILURE(const uint8_t* instr, uint32_t len) {
@@ -614,30 +601,29 @@ IV_AERO_OPCODES(V)
     jmp(jit_detail::kBackTrackLabel, T_NEAR);
   }
 
-  void InlineIsLineTerminator(const RegC& reg, const char* ok) {
+  void InlineIsLineTerminator(const RegC& reg, const Xbyak::Label* ok) {
     cmp(reg, core::character::code::CR);
-    je(ok);
+    je(*ok);
     cmp(reg, core::character::code::LF);
-    je(ok);
+    je(*ok);
     if (!kASCII) {
       // not ASCII => 16bit
       // (c & ~1) == 0x2028;  // 0x2028 or 0x2029
       const Xbyak::Reg32 reg32(reg.getIdx());
       and(reg32, 0xFFFD);
       cmp(reg32, 0x2028);
-      je(ok);
+      je(*ok);
     }
   }
 
   void EmitASSERTION_BOL(const uint8_t* instr, uint32_t len) {
-    inLocalLabel();
+    Xbyak::Label success;
     test(cp_, cp_);
-    jz(".SUCCESS");
+    jz(success);
     mov(ch10_, character[subject_ + (cp_ * kCharSize) - kCharSize]);
-    InlineIsLineTerminator(ch10_, ".SUCCESS");
+    InlineIsLineTerminator(ch10_, &success);
     jmp(jit_detail::kBackTrackLabel, T_NEAR);
-    L(".SUCCESS");
-    outLocalLabel();
+    L(success);
   }
 
   void EmitASSERTION_BOB(const uint8_t* instr, uint32_t len) {
@@ -646,14 +632,13 @@ IV_AERO_OPCODES(V)
   }
 
   void EmitASSERTION_EOL(const uint8_t* instr, uint32_t len) {
-    inLocalLabel();
+    Xbyak::Label success;
     cmp(cp_, size_);
-    je(".SUCCESS");
+    je(success);
     mov(ch10_, character[subject_ + (cp_ * kCharSize)]);
-    InlineIsLineTerminator(ch10_, ".SUCCESS");
+    InlineIsLineTerminator(ch10_, &success);
     jmp(jit_detail::kBackTrackLabel, T_NEAR);
-    L(".SUCCESS");
-    outLocalLabel();
+    L(success);
   }
 
   void EmitASSERTION_EOB(const uint8_t* instr, uint32_t len) {
@@ -795,11 +780,11 @@ IV_AERO_OPCODES(V)
     add(r10d, 1);
     mov(dword[captures_ + kIntSize * counter], r10d);
     cmp(r10d, max);
-    jl(JIT::MakeLabel(Load4Bytes(instr + 9)).c_str(), T_NEAR);
+    jl(jumps_[Load4Bytes(instr + 9)], T_NEAR);
   }
 
   void EmitPUSH_BACKTRACK(const uint8_t* instr, uint32_t len) {
-    const int size = code_.captures() * 2 + code_.counters() + 1;
+    const int size = code_.captures() * 2 + code_.counters() + 2;
     inLocalLabel();
     LoadVM(rdi);
     add(sp_, size);
@@ -819,8 +804,8 @@ IV_AERO_OPCODES(V)
     lea(rsi, ptr[rdi + (sp_ * kIntSize) - (kIntSize * size)]);
 
     // copy
-    if ((size - 1) != 0) {
-      mov(r11d, size - 1);
+    if ((size - 2) != 0) {
+      mov(r11d, size - 2);
       L(".LOOP_START");
       sub(r11d, 1);
       mov(ecx, dword[captures_ + r11 * kIntSize]);
@@ -831,10 +816,9 @@ IV_AERO_OPCODES(V)
 
     mov(dword[rsi + kIntSize], cpd_);
     const int val = static_cast<int>(Load4Bytes(instr + 1));
-    const BackTrackMap::const_iterator it = backtracks_.find(val);
-    assert(it != backtracks_.end());
     // we use rsi as counter in AERO_PUSH_BACKTRACK
-    mov(dword[rsi + kIntSize * (size - 1)], static_cast<uint32_t>(it->second));
+    mov(rax, jumps_[val]);
+    mov(qword[rsi + kIntSize * (size - 2)], rax);
     outLocalLabel();
   }
 
@@ -959,7 +943,8 @@ IV_AERO_OPCODES(V)
     outLocalLabel();
   }
 
-  void EmitCHECK_1BYTE_CHAR(const uint8_t* instr, uint32_t len, int offset = -1) {
+  void EmitCHECK_1BYTE_CHAR(const uint8_t* instr,
+                            uint32_t len, int offset = -1) {
     const CharT ch = Load1Bytes(instr + 1);
     EmitSizeGuard(offset);
     cmp(LoadCode(offset), ch);
@@ -967,7 +952,8 @@ IV_AERO_OPCODES(V)
     IncrementCP(offset);
   }
 
-  void EmitCHECK_2BYTE_CHAR(const uint8_t* instr, uint32_t len, int offset = -1) {
+  void EmitCHECK_2BYTE_CHAR(const uint8_t* instr,
+                            uint32_t len, int offset = -1) {
     if (kASCII) {
       jmp(jit_detail::kBackTrackLabel, T_NEAR);
       return;
@@ -982,6 +968,176 @@ IV_AERO_OPCODES(V)
     }
     jne(jit_detail::kBackTrackLabel, T_NEAR);
     IncrementCP(offset);
+  }
+
+  void EmitB(uint64_t mask, uint64_t ignore_case_mask,
+             int offset, std::size_t base, std::size_t advance) {
+    movzx(r10d, LoadCodeDirect(byte, offset, base + advance));
+    if ((ignore_case_mask >> (advance * 8)) & 0xFFULL) {
+      or(r10d, (ignore_case_mask >> (advance * 8)) & 0xFFULL);
+    }
+    cmp(r10d, (mask >> (advance * 8)) & 0xFFULL);
+    jne(jit_detail::kBackTrackLabel, T_NEAR);
+  }
+
+  void EmitW(uint64_t mask, uint64_t ignore_case_mask,
+             int offset, std::size_t base, std::size_t advance) {
+    movzx(r10d, LoadCodeDirect(word, offset, base + advance));
+    if ((ignore_case_mask >> (advance * 8)) & 0xFFFFULL) {
+      or(r10d, (ignore_case_mask >> (advance * 8)) & 0xFFFFULL);
+    }
+    cmp(r10d, (mask >> (advance * 8)) & 0xFFFFULL);
+    jne(jit_detail::kBackTrackLabel, T_NEAR);
+  }
+
+  void EmitD(uint64_t mask, uint64_t ignore_case_mask,
+             int offset, std::size_t base, std::size_t advance) {
+    mov(r10d, LoadCodeDirect(dword, offset, base + advance));
+    if ((ignore_case_mask >> (advance * 8)) & 0xFFFFFFFFULL) {
+      or(r10d, (ignore_case_mask >> (advance * 8)) & 0xFFFFFFFFULL);
+    }
+    cmp(r10d, (mask >> (advance * 8)) & 0xFFFFFFFFULL);
+    jne(jit_detail::kBackTrackLabel, T_NEAR);
+  }
+
+  void EmitQ(uint64_t mask, uint64_t ignore_case_mask,
+             int offset, std::size_t base, std::size_t advance) {
+    mov(r10, LoadCodeDirect(qword, offset, base + advance));
+    if (ignore_case_mask) {
+      mov(r11, ignore_case_mask);
+      or(r10, r11);
+    }
+    mov(r11, mask);
+    cmp(r10, r11);
+    jne(jit_detail::kBackTrackLabel, T_NEAR);
+  }
+
+  void EmitCHECK_N_CHARS(const uint8_t* instr, uint32_t len, int offset = -1) {
+    // TODO(Yusuke Suzuki):
+    // This code still has room for extending it to SSE.
+    const uint32_t size = Load4Bytes(instr + 1);
+    EmitSizeGuard(offset, size);
+
+    const uint32_t compare_at_once = (k64Size / kCharSize);
+    const uint32_t shift = kCharSize * 8;
+    uint32_t index = 0;
+    do {
+      uint64_t ignore_case_mask = 0;
+      uint64_t mask = 0;
+      const uint32_t start = index;
+      bool ignore_case_slow_case = false;
+      uint32_t i = 0;
+      for (; i < compare_at_once && index < size; ++i, ++index) {
+        const char16_t ch = Load2Bytes(instr + 5 + index * 2);
+        const uint64_t shift_amount = shift * i;
+
+        if (kASCII && !core::character::IsASCII(ch)) {
+          // Fail without check.
+          jmp(jit_detail::kBackTrackLabel, T_NEAR);
+          return;
+        }
+
+        if (!code_.IsIgnoreCase()) {
+          mask |= static_cast<uint64_t>(ch) << (shift_amount);
+          continue;
+        }
+
+        if (kASCII) {
+          const char16_t uu = core::character::ToASCIIUpperCase(ch);
+          const char16_t lu = core::character::ToASCIILowerCase(ch);
+          if (ch == uu && uu == lu) {
+            // Ignore case has no effect.
+            mask |= static_cast<uint64_t>(ch) << (shift_amount);
+            continue;
+          }
+
+          // Here, uu & lu is limited to [a-zA-Z].
+          mask |= static_cast<uint64_t>(lu) << (shift_amount);
+          ignore_case_mask |= (0x20ULL) << (shift_amount);
+          continue;
+        }
+
+        const char16_t uu = core::character::ToUpperCase(ch);
+        const char16_t lu = core::character::ToLowerCase(ch);
+
+        if (ch == uu && uu == lu) {
+          // Ignore case has no effect.
+          mask |= static_cast<uint64_t>(ch) << (shift_amount);
+          continue;
+        }
+
+        // Give up. compare with each characters.
+        ignore_case_slow_case = true;
+        break;
+      }
+
+      const std::size_t base = kCharSize * start;
+      if (i != 0) {
+        const uint32_t width = (kASCII) ? i : i * 2;
+        switch (width) {
+          case 8:
+            EmitQ(mask, ignore_case_mask, offset, base, 0);
+            break;
+          case 7:
+            EmitD(mask, ignore_case_mask, offset, base, 0);
+            EmitW(mask, ignore_case_mask, offset, base, 4);
+            EmitB(mask, ignore_case_mask, offset, base, 6);
+            break;
+          case 6:
+            EmitD(mask, ignore_case_mask, offset, base, 0);
+            EmitW(mask, ignore_case_mask, offset, base, 4);
+            break;
+          case 5:
+            EmitD(mask, ignore_case_mask, offset, base, 0);
+            EmitB(mask, ignore_case_mask, offset, base, 4);
+            break;
+          case 4:
+            EmitD(mask, ignore_case_mask, offset, base, 0);
+            break;
+          case 3:
+            EmitW(mask, ignore_case_mask, offset, base, 0);
+            EmitB(mask, ignore_case_mask, offset, base, 2);
+            break;
+          case 2:
+            EmitW(mask, ignore_case_mask, offset, base, 0);
+            break;
+          case 1:
+            EmitB(mask, ignore_case_mask, offset, base, 0);
+            break;
+        }
+      }
+
+      // Slow case for ignore case handling.
+      if (ignore_case_slow_case) {
+        const char16_t ch = Load2Bytes(instr + 5 + index * 2);
+        const char16_t uu = core::character::ToUpperCase(ch);
+        const char16_t lu = core::character::ToLowerCase(ch);
+
+        IV_AERO_LOCAL() {
+          assert(!(uu == lu && uu == ch));
+          if (uu == ch || lu == ch) {
+            movzx(r10, LoadCode(offset, index));
+            cmp(r10d, uu);
+            je(".SUCCESS");
+            cmp(r10d, lu);
+            je(".SUCCESS");
+            jmp(jit_detail::kBackTrackLabel, T_NEAR);
+          } else {
+            movzx(r10, LoadCode(offset, index));
+            cmp(r10d, ch);
+            je(".SUCCESS");
+            cmp(r10d, uu);
+            je(".SUCCESS");
+            cmp(r10d, lu);
+            je(".SUCCESS");
+            jmp(jit_detail::kBackTrackLabel, T_NEAR);
+          }
+          L(".SUCCESS");
+        }
+        ++index;
+      }
+    } while (index < size);
+    IncrementCP(offset, size);
   }
 
   void EmitCHECK_2CHAR_OR(const uint8_t* instr, uint32_t len, int offset = -1) {
@@ -1071,7 +1227,7 @@ IV_AERO_OPCODES(V)
       union {
         std::array<uint16_t, 8> b16;
         std::array<uint64_t, 2> b64;
-      } buffer{};
+      } buffer {};
       auto it = buffer.b16.begin();
       for (std::size_t i = 0; i < length; i += 4) {
         const char16_t finish = Load2Bytes(instr + 5 + 4 + i + 2);
@@ -1115,7 +1271,7 @@ IV_AERO_OPCODES(V)
           union {
             std::array<uint16_t, 8> b16;
             std::array<uint64_t, 2> b64;
-          } buffer{};
+          } buffer {};
           const std::size_t counts =
               (std::min<std::size_t>)(4, (ranges - base));
           for (std::size_t i = 0; i < counts; ++i) {
@@ -1169,7 +1325,8 @@ IV_AERO_OPCODES(V)
     }
   }
 
-  void EmitCHECK_RANGE_INVERTED(const uint8_t* instr, uint32_t len, int offset = -1) {
+  void EmitCHECK_RANGE_INVERTED(const uint8_t* instr,
+                                uint32_t len, int offset = -1) {
     inLocalLabel();
     EmitSizeGuard(offset);
     movzx(r10, LoadCode(offset));
@@ -1211,7 +1368,7 @@ IV_AERO_OPCODES(V)
         return;
     }
     assert(*(first_instr_ + offset) != OP::JUMP);
-    Jump(offset);
+    jmp(jumps_[offset], T_NEAR);
   }
 
   void EmitFAILURE(const uint8_t* instr, uint32_t len) {
@@ -1222,46 +1379,45 @@ IV_AERO_OPCODES(V)
     jmp(jit_detail::kSuccessLabel, T_NEAR);
   }
 
-  static std::string MakeLabel(uint32_t num, const std::string& prefix = "AERO_") {
-    std::string str(prefix);
-    core::UInt32ToString(num, std::back_inserter(str));
-    return str;
-  }
-
-  void DefineLabel(uint32_t num) {
-    L(JIT::MakeLabel(num).c_str());
-  }
-
-  void Jump(uint32_t num) {
-    jmp(JIT::MakeLabel(num).c_str(), T_NEAR);
-  }
-
-  void IncrementCP(int offset) {
+  void IncrementCP(int offset, uint32_t length = 1) {
     if (offset < 0) {
-      add(cp_, 1);
+      add(cp_, length);
     }
   }
 
-  Xbyak::Address LoadCode(int offset) {
+  Xbyak::Address LoadCode(int offset, uint32_t i = 0) {
+    return LoadCodeDirect(character, offset, i * kCharSize);
+  }
+
+  Xbyak::Address LoadCodeDirect(const Xbyak::AddressFrame& frame,
+                                int offset, std::size_t more) {
     if (offset < 0) {
-      return character[subject_ + cp_ * kCharSize];
+      if (more == 0) {
+        return frame[subject_ + cp_ * kCharSize];
+      } else {
+        return frame[subject_ + cp_ * kCharSize + more];
+      }
     } else {
-      return character[rbp + offset * kCharSize];
+      return frame[rbp + (offset * kCharSize + more)];
     }
   }
 
-  void EmitSizeGuard(int offset) {
+  void EmitSizeGuard(int offset, uint32_t length = 1) {
     if (offset < 0) {
-      cmp(cp_, size_);
+      if (length == 1) {
+        cmp(cp_, size_);
+      } else {
+        mov(r10, cp_);
+        add(r10, length - 1);
+        cmp(r10, size_);
+      }
       jge(jit_detail::kBackTrackLabel, T_NEAR);
     }
   }
 
   const Code& code_;
   const const_pointer first_instr_;
-  core::SortedVector<uint32_t> targets_;
-  BackTrackMap backtracks_;
-  std::vector<uintptr_t> tracked_;
+  std::unordered_map<uint32_t, Xbyak::Label> jumps_;
 
   const Xbyak::AddressFrame character;
   const Xbyak::Reg64& subject_;

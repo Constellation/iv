@@ -28,12 +28,13 @@ inline JSVector* LookupSupportedLocales(Context* ctx,
        iz = requested->end(); i != iz; ++i) {
     const JSVal res = *i;
     JSString* str = res.ToString(ctx, IV_LV5_ERROR(e));
+    const JSFlatString* flat = str->Flatten();
     const std::string locale(
-        core::i18n::LanguageTagScanner::RemoveExtension(str->begin(),
-                                                        str->end()));
+        core::i18n::LanguageTagScanner::RemoveExtension(flat->begin(),
+                                                        flat->end()));
     const AvailIter t = ctx->i18n()->BestAvailableLocale(it, last, locale);
     if (t != last) {
-      JSString* str = JSString::NewAsciiString(ctx, locale, IV_LV5_ERROR(e));
+      JSString* str = JSString::New(ctx, locale, IV_LV5_ERROR(e));
       subset->push_back(str);
     }
   }
@@ -275,7 +276,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx,
           ctx,
           name,
           DataDescriptor(
-              JSString::NewAsciiString(ctx, "numeric", e),
+              JSString::New(ctx, "numeric", e),
               ATTR::W | ATTR::E | ATTR::C),
           true, IV_LV5_ERROR(e));
     }
@@ -289,7 +290,7 @@ inline JSObject* ToDateTimeOptions(Context* ctx,
           ctx,
           name,
           DataDescriptor(
-              JSString::NewAsciiString(ctx, "numeric", e),
+              JSString::New(ctx, "numeric", e),
               ATTR::W | ATTR::E | ATTR::C),
           true, IV_LV5_ERROR(e));
     }

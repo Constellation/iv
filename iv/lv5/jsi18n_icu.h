@@ -163,8 +163,8 @@ class JSCollator : public JSObject {
   icu::Collator* collator() const { return collator_->handle.get(); }
 
   JSVal Compare(Context* ctx, JSVal left, JSVal right, Error* e) {
-    const core::UString lhs = left.ToUString(ctx, IV_LV5_ERROR(e));
-    const core::UString rhs = right.ToUString(ctx, IV_LV5_ERROR(e));
+    const std::u16string lhs = left.ToU16String(ctx, IV_LV5_ERROR(e));
+    const std::u16string rhs = right.ToU16String(ctx, IV_LV5_ERROR(e));
     const UChar* lstr = reinterpret_cast<const UChar*>(lhs.data());
     const UChar* rstr = reinterpret_cast<const UChar*>(rhs.data());
     UErrorCode status = U_ZERO_ERROR;

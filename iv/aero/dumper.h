@@ -11,7 +11,7 @@ namespace aero {
 class Dumper : public Visitor {
  public:
   Dumper() : builder_() { }
-  core::UString Dump(Expression* node) {
+  std::u16string Dump(Expression* node) {
     builder_.clear();
     node->Accept(this);
     return builder_.Build();
@@ -69,6 +69,9 @@ class Dumper : public Visitor {
   }
   void Visit(CharacterAtom* atom) {
     builder_.Append(atom->character());
+  }
+  void Visit(StringAtom* atom) {
+    builder_.Append(atom->string().begin(), atom->string().end());
   }
   void Visit(RangeAtom* atom) {
     // TODO(Constellation): implement it

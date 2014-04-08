@@ -6,6 +6,7 @@
 #include <iv/lv5/jsobject.h>
 #include <iv/lv5/jsi18n.h>
 #include <iv/lv5/context.h>
+#include <iv/lv5/jsstring_builder.h>
 #include <iv/lv5/runtime/array.h>
 #include <iv/lv5/runtime/i18n.h>
 namespace iv {

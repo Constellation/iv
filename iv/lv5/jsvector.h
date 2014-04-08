@@ -49,7 +49,9 @@ class JSVector : private JSArray {
   size_type max_size() const { return elements_.vector.max_size(); }
 
   void resize(size_type sz) { elements_.vector.resize(sz); }
-  void resize(size_type sz, const_reference c) { elements_.vector.resize(sz, c); }
+  void resize(size_type sz, const_reference c) {
+    elements_.vector.resize(sz, c);
+  }
 
 
   size_type capacity() const { return elements_.vector.capacity(); }
@@ -120,6 +122,13 @@ class JSVector : private JSArray {
     return vec;
   }
 
+  template<typename Iter>
+  static JSVector* New(Context* ctx, Iter it, Iter last) {
+    JSVector* vec = New(ctx);
+    vec->assign(it, last);
+    return vec;
+  }
+
   // Once gain JSArray, JSVector is disabled, do not touch.
   JSArray* ToJSArray() {
     const size_type total = size();
@@ -129,7 +138,8 @@ class JSVector : private JSArray {
       uint32_t i = IndexedElements::kMaxVectorSize;
       for (const_iterator it = cbegin() + i,
            last = cend(); it != last; ++it, ++i) {
-        sparse->insert(std::make_pair(i, StoredSlot(*it, ATTR::Object::Data())));
+        sparse->insert(
+            std::make_pair(i, StoredSlot(*it, ATTR::Object::Data())));
       }
       elements_.vector.resize(IndexedElements::kMaxVectorSize);
     }
@@ -147,6 +157,9 @@ class JSVector : private JSArray {
       elements_.vector.resize(size, value);
   }
 };
+
+static_assert(sizeof(JSArray) == sizeof(JSVector),
+              "JSVector is interface for newly created JSArray");
 
 } }  // namespace iv::lv5
 #endif  // IV_LV5_JSVECTOR_H_

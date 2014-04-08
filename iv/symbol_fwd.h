@@ -6,8 +6,7 @@
 #include <iv/detail/functional.h>
 #include <iv/ustring.h>
 #include <iv/unicode.h>
-#include <iv/ustringpiece.h>
-#include <iv/stringpiece.h>
+#include <iv/string_view.h>
 #include <iv/byteorder.h>
 #include <iv/platform.h>
 namespace iv {
@@ -83,7 +82,7 @@ typedef SymbolLayout<core::Size::kPointerSize, core::kLittleEndian> Symbol;
 
 static const uint32_t kSymbolIsIndex = 0xFFFF;
 
-inline Symbol MakeSymbol(const core::UString* str) {
+inline Symbol MakeSymbol(const std::u16string* str) {
   Symbol symbol = { };
   symbol.str_.str_ = (reinterpret_cast<uintptr_t>(str) | 0x1);
   return symbol;
@@ -163,9 +162,9 @@ inline Symbol MakeSymbolFromIndex(uint32_t index) {
   return MakeSymbol(index);
 }
 
-inline const core::UString* GetStringFromSymbol(Symbol sym) {
+inline const std::u16string* GetStringFromSymbol(Symbol sym) {
   assert(IsStringSymbol(sym));
-  return reinterpret_cast<const core::UString*>(
+  return reinterpret_cast<const std::u16string*>(
       sym.str_.str_ & ~static_cast<uintptr_t>(1));
 }
 
@@ -174,21 +173,21 @@ inline uint32_t GetIndexFromSymbol(Symbol sym) {
   return sym.index_.high_;
 }
 
-inline core::UString GetIndexStringFromSymbol(Symbol sym) {
+inline std::u16string GetIndexStringFromSymbol(Symbol sym) {
   assert(IsIndexSymbol(sym));
   const uint32_t index = GetIndexFromSymbol(sym);
   std::array<char, 15> buffer;
   char* end = core::UInt32ToString(index, buffer.data());
-  return core::UString(buffer.data(), end);
+  return std::u16string(buffer.data(), end);
 }
 
-inline core::UString GetSymbolString(Symbol sym) {
+inline std::u16string GetSymbolString(Symbol sym) {
   if (IsIndexSymbol(sym)) {
     return GetIndexStringFromSymbol(sym);
   } else if (IsStringSymbol(sym)) {
     return *GetStringFromSymbol(sym);
   } else {
-    return core::UString();
+    return std::u16string();
   }
 }
 
@@ -202,7 +201,7 @@ inline std::ostream& operator<<(std::ostream& o, Symbol symbol) {
   if (symbol::IsIndexSymbol(symbol)) {
     return o << symbol::GetIndexFromSymbol(symbol);
   } else {
-    const UString* str = symbol::GetStringFromSymbol(symbol);
+    const std::u16string* str = symbol::GetStringFromSymbol(symbol);
     if (str) {
       std::string utf8;
       utf8.reserve(str->size());

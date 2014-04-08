@@ -35,7 +35,7 @@ JSVal SymbolToString(const Arguments& args, Error* e) {
   JSSymbol* sym = static_cast<JSSymbolObject*>(s.object())->symbol();
   JSVal desc = sym->description();
   if (desc.IsUndefined()) {
-    desc = JSString::NewEmptyString(ctx);
+    desc = JSString::NewEmpty(ctx);
   }
   assert(desc.IsString());
 

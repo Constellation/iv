@@ -1,5 +1,5 @@
-#ifndef IV_STRINGPIECE_H_
-#define IV_STRINGPIECE_H_
+#ifndef IV_STRING_VIEW_H_
+#define IV_STRING_VIEW_H_
 #include <climits>
 #include <algorithm>
 #include <functional>
@@ -14,7 +14,7 @@ namespace core {
 namespace detail {
 
 template<class CharT, class Piece>
-struct StringPieceFindOf {
+struct string_viewFindOf {
   typedef typename Piece::size_type size_type;
 
   static size_type FindFirstOf(const Piece& that,
@@ -89,7 +89,7 @@ struct StringPieceFindOf {
 };
 
 template<class Piece>
-struct StringPieceFindOf<char, Piece> {
+struct string_viewFindOf<char, Piece> {
   typedef typename Piece::size_type size_type;
 
   static size_type FindFirstOf(const Piece& that,
@@ -164,9 +164,9 @@ struct StringPieceFindOf<char, Piece> {
 }  // namespace detail
 
 template<class CharT, class Traits = std::char_traits<CharT> >
-class BasicStringPiece {
+class basic_string_view {
  public:
-  typedef BasicStringPiece<CharT, Traits> this_type;
+  typedef basic_string_view<CharT, Traits> this_type;
 
   // standard STL container boilerplate
   typedef Traits traits_type;
@@ -187,21 +187,21 @@ class BasicStringPiece {
 
  public:
   // We provide non-explicit singleton constructors so users can pass
-  // in a "const char*" or a "string" wherever a "StringPiece" is
+  // in a "const char*" or a "string" wherever a "string_view" is
   // expected.
-  BasicStringPiece() : ptr_(nullptr), length_(0) { }
+  basic_string_view() : ptr_(nullptr), length_(0) { }
 
-  BasicStringPiece(const_pointer str)  // NOLINT
+  basic_string_view(const_pointer str)  // NOLINT
     : ptr_(str), length_((str == nullptr) ? 0 : Traits::length(str)) { }
 
   template<class Alloc>
-  BasicStringPiece(const std::basic_string<CharT, Traits, Alloc>& str)  // NOLINT
+  basic_string_view(const std::basic_string<CharT, Traits, Alloc>& str)  // NOLINT
     : ptr_(str.data()), length_(str.size()) { }
 
-  BasicStringPiece(const_pointer offset, size_type len)
+  basic_string_view(const_pointer offset, size_type len)
     : ptr_(offset), length_(len) { }
 
-  BasicStringPiece(const BasicStringPiece& str)
+  basic_string_view(const basic_string_view& str)
     : ptr_(str.ptr_), length_(str.length_) { }
 
   // data() may return a pointer to a buffer with embedded NULs, and the
@@ -442,7 +442,7 @@ class BasicStringPiece {
       return find_first_of(s.ptr_[0], pos);
     }
 
-    return detail::StringPieceFindOf<
+    return detail::string_viewFindOf<
         CharT,
         this_type>::FindFirstOf(*this, s, pos);
   }
@@ -464,7 +464,7 @@ class BasicStringPiece {
       return find_first_not_of(s.ptr_[0], pos);
     }
 
-    return detail::StringPieceFindOf<
+    return detail::string_viewFindOf<
         CharT,
         this_type>::FindFirstNotOf(*this, s, pos);
   }
@@ -491,7 +491,7 @@ class BasicStringPiece {
       return find_last_of(s.ptr_[0], pos);
     }
 
-    return detail::StringPieceFindOf<
+    return detail::string_viewFindOf<
         CharT,
         this_type>::FindLastOf(*this, s, pos);
   }
@@ -512,7 +512,7 @@ class BasicStringPiece {
     if (s.size() == 1) {
       return find_last_not_of(s.ptr_[0], pos);
     }
-    return detail::StringPieceFindOf<
+    return detail::string_viewFindOf<
         CharT,
         this_type>::FindLastNotOf(*this, s, pos);
   }
@@ -582,24 +582,23 @@ class BasicStringPiece {
   size_type length_;
 };
 
-// allow StringPiece to be logged (needed for unit testing).
+// allow string_view to be logged (needed for unit testing).
 template<class CharT, class Traits>
 inline std::ostream& operator<<(std::ostream& o,
-                                const BasicStringPiece<CharT, Traits>& piece) {
+                                const basic_string_view<CharT, Traits>& piece) {
   o.write(piece.data(), static_cast<std::streamsize>(piece.size()));
   return o;
 }
 
 template<class CharT, class Traits>
-const typename BasicStringPiece<CharT, Traits>::size_type
-BasicStringPiece<CharT, Traits>::npos =
-  static_cast<typename BasicStringPiece<CharT, Traits>::size_type>(-1);
+const typename basic_string_view<CharT, Traits>::size_type
+basic_string_view<CharT, Traits>::npos =
+  static_cast<typename basic_string_view<CharT, Traits>::size_type>(-1);
 
-typedef BasicStringPiece<char, std::char_traits<char> > StringPiece;
-
-inline StringPiece AdoptPiece(const StringPiece& piece) {
-  return piece;
-}
+typedef basic_string_view<char> string_view;
+typedef basic_string_view<wchar_t> wstring_view;
+typedef basic_string_view<char16_t> u16string_view;
+typedef basic_string_view<char32_t> u32string_view;
 
 } }  // namespace iv::core
-#endif  // IV_STRINGPIECE_H_
+#endif  // IV_STRING_VIEW_H_

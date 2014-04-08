@@ -1700,11 +1700,12 @@ static void BM_AeroSunSpiderTest(benchmark::State& state) {
   iv::core::Space space;
   iv::aero::VM vm;
   std::vector<int> vec(1000);
+  iv::aero::OutputDisAssembler disasm(stdout);
 
   while (state.KeepRunning()) {
     space.Clear();
     for (const auto& str : regs) {
-      iv::aero::Parser<iv::core::StringPiece> parser(&space,
+      iv::aero::Parser<iv::core::string_view> parser(&space,
                                                      str,
                                                      iv::aero::IGNORE_CASE);
       int error = 0;
@@ -1712,6 +1713,7 @@ static void BM_AeroSunSpiderTest(benchmark::State& state) {
       CHECK(error);
       iv::aero::Compiler compiler(iv::aero::IGNORE_CASE);
       std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
+      // disasm.DisAssemble(*code.get());
 
       // Run RegExp global flag behavior.
       int prev = 0;

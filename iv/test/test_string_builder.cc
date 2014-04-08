@@ -12,7 +12,7 @@ TEST(StringBuilderCase, LiteralBuildTest) {
   {
     iv::core::UStringBuilder builder;
     builder.Append("TEST");
-    EXPECT_TRUE(iv::core::ToUString("TEST") == builder.Build());
+    EXPECT_TRUE(iv::core::ToU16String("TEST") == builder.Build());
   }
 }
 
@@ -25,7 +25,7 @@ TEST(StringBuilderCase, CharBuildTest) {
   {
     iv::core::UStringBuilder builder;
     builder.Append('T');
-    EXPECT_TRUE(iv::core::ToUString("T") == builder.Build());
+    EXPECT_TRUE(iv::core::ToU16String("T") == builder.Build());
   }
 }
 
@@ -38,7 +38,7 @@ TEST(StringBuilderCase, StringBuildTest) {
   }
   {
     iv::core::UStringBuilder builder;
-    const iv::core::UString str = iv::core::ToUString("T");
+    const std::u16string str = iv::core::ToU16String("T");
     builder.Append(str);
     EXPECT_TRUE(str == builder.Build());
   }

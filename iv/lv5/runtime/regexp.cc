@@ -112,19 +112,19 @@ JSVal RegExpCompile(const Arguments& args, Error* e) {
   Context* const ctx = args.ctx();
   const JSVal obj = args.this_binding();
   if (obj.IsObject() && obj.object()->IsClass<Class::RegExp>()) {
-    core::UString pattern;
-    core::UString flags;
+    std::u16string pattern;
+    std::u16string flags;
     if (args_count != 0) {
       const JSVal first = args[0];
       if (!first.IsUndefined()) {
         JSString* str = first.ToString(ctx, IV_LV5_ERROR(e));
-        pattern = str->GetUString();
+        pattern = str->GetUTF16();
       }
       if (args_count > 1) {
         const JSVal second = args[1];
         if (!second.IsUndefined()) {
           JSString* str = second.ToString(ctx, IV_LV5_ERROR(e));
-          flags = str->GetUString();
+          flags = str->GetUTF16();
         }
       }
     }
