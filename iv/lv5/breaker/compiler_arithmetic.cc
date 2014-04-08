@@ -1,3 +1,9 @@
+#include <iv/platform.h>
+#if !defined(IV_ENABLE_JIT)
+#include <iv/dummy_cc.h>
+IV_DUMMY_CC()
+#else
+
 #include <iv/debug.h>
 #include <iv/lv5/jsval.h>
 #include <iv/lv5/jsobject.h>
@@ -377,3 +383,4 @@ void Compiler::EmitBINARY_SUBTRACT(const Instruction* instr) {
 }
 
 } } }  // namespace iv::lv5::breaker
+#endif

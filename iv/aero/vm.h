@@ -494,7 +494,7 @@ inline int VM::Main(Code* code, const Piece& subject,
         assert(length > 0);
         if (current_position + (length - 1) < subject.size()) {
           for (uint32_t i = 0; i < length; ++i) {
-            const auto current subject[current_position + i];
+            const auto current = subject[current_position + i];
             const char16_t target = Load2Bytes(instr + 5 + i * 2);
             if (current == target) {
               continue;

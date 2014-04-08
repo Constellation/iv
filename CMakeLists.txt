@@ -32,6 +32,7 @@ endmacro()
 
 option(JIT "enable JIT (default on)" ON)
 option(LTO "enable clang LTO - Link-Time-Optimization (default on)" OFF)
+option(M32 "force building for ia32 architectures (default off)" OFF)
 
 # In Ubuntu environment, we can specify supc++
 if (NOT DEFINED CLANG_CXX_ABI)
@@ -44,6 +45,15 @@ set_property(CACHE CLANG_CXX_ABI PROPERTY STRINGS ;${CXXABIS})
 # disable jit
 if (NOT JIT)
   add_definitions("-DIV_DISABLE_JIT")
+endif()
+
+if (M32)
+  if(UNIX)
+    add_definitions(-m32)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -m32")
+    set(CMAKE_SHARED_LIBRARY_C_FLAGS "${CMAKE_SHARED_LIBRARY_C_FLAGS} -m32")
+    set(CMAKE_SHARED_LIBRARY_CXX_FLAGS "${CMAKE_SHARED_LIBRARY_CXX_FLAGS} -m32")
+  endif()
 endif()
 
 set(CMAKE_C_FLAGS_RELEASE "")
