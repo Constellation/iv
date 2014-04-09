@@ -13,6 +13,10 @@
 #include <cybozu/atoi.hpp>
 #include <mie/operator.hpp>
 #include <mie/power.hpp>
+#ifdef _MSC_VER
+	#pragma warning(push)
+	#pragma warning(disable : 4127)
+#endif
 
 namespace mie {
 
@@ -195,14 +199,6 @@ public:
 	{
 		fromStr(str, base);
 	}
-	FpT(const FpT& x)
-		: v(x.v)
-	{
-	}
-	FpT& operator=(const FpT& x)
-	{
-		v = x.v; return *this;
-	}
 	FpT& operator=(int x)
 	{
 		if (x >= 0) {
@@ -227,7 +223,7 @@ public:
 			neg(*this, *this);
 		}
 	}
-	void set(const std::string& str, int base = 10) { fromStr(str, base); }
+	void set(const std::string& str, int base = 0) { fromStr(str, base); }
 	void toStr(std::string& str, int base = 10, bool withPrefix = false) const
 	{
 		switch (base) {
@@ -273,8 +269,7 @@ public:
 			clear();
 			return;
 		}
-		std::vector<S> buf(n);
-		std::copy(inBuf, inBuf + buf.size(), &buf[0]);
+		std::vector<S> buf(inBuf, inBuf + n);
 		setMaskMod(buf);
 	}
 	static inline void setModulo(const std::string& mstr, int base = 0)
@@ -363,6 +358,32 @@ public:
 		power_impl::power(z, x, y);
 	}
 	const ImplType& getInnerValue() const { return v; }
+	static inline size_t getModBitLen() { return modBitLen_; }
+	static inline uint64_t cvtInt(const FpT& x, bool *err = 0)
+	{
+		if (x > uint64_t(0xffffffffffffffffull)) {
+			if (err) {
+				*err = true;
+				return 0;
+			} else {
+				throw cybozu::Exception("fp:FpT:cvtInt:too large") << x;
+			}
+		}
+		if (err) *err = false;
+		if (sizeof(BlockType) == 8) {
+			return isZero(x) ? 0 : getBlock(x, 0);
+		} else if (sizeof(BlockType) == 4) {
+			uint64_t ret = getBlock(x, 0);
+			if (getBlockSize(x) == 2) {
+				ret += uint64_t(getBlock(x, 1)) << 32;
+			}
+			return ret;
+		} else {
+			fprintf(stderr, "fp:FpT:cvtInt:not implemented\n");
+			exit(1);
+		}
+	}
+	uint64_t cvtInt(bool *err = 0) const { return cvtInt(*this, err); }
 private:
 	static ImplType m_;
 	static size_t modBitLen_;
@@ -415,3 +436,6 @@ struct hash<mie::FpT<T, tag> > : public std::unary_function<mie::FpT<T, tag>, si
 
 CYBOZU_NAMESPACE_TR1_END } // std::tr1
 
+#ifdef _WIN32
+	#pragma warning(pop)
+#endif

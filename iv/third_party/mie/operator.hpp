@@ -31,13 +31,13 @@ struct Empty {};
 */
 template<class T, class E = Empty<T> >
 struct comparable : E {
-	MIE_FORCE_INLINE friend bool operator<(const T& x, const T& y) { return T::compare(x, y) < 0; }
-	MIE_FORCE_INLINE friend bool operator>=(const T& x, const T& y) { return !operator<(x, y); }
+	friend MIE_FORCE_INLINE bool operator<(const T& x, const T& y) { return T::compare(x, y) < 0; }
+	friend MIE_FORCE_INLINE bool operator>=(const T& x, const T& y) { return !operator<(x, y); }
 
-	MIE_FORCE_INLINE friend bool operator>(const T& x, const T& y) { return T::compare(x, y) > 0; }
-	MIE_FORCE_INLINE friend bool operator<=(const T& x, const T& y) { return !operator>(x, y); }
-	MIE_FORCE_INLINE friend bool operator==(const T& x, const T& y) { return T::compare(x, y) == 0; }
-	MIE_FORCE_INLINE friend bool operator!=(const T& x, const T& y) { return !operator==(x, y); }
+	friend MIE_FORCE_INLINE bool operator>(const T& x, const T& y) { return T::compare(x, y) > 0; }
+	friend MIE_FORCE_INLINE bool operator<=(const T& x, const T& y) { return !operator>(x, y); }
+	friend MIE_FORCE_INLINE bool operator==(const T& x, const T& y) { return T::compare(x, y) == 0; }
+	friend MIE_FORCE_INLINE bool operator!=(const T& x, const T& y) { return !operator==(x, y); }
 };
 
 /*
@@ -47,8 +47,8 @@ template<class T, class E = Empty<T> >
 struct addsub : E {
 	template<class S> MIE_FORCE_INLINE T& operator+=(const S& rhs) { T::add(static_cast<T&>(*this), static_cast<const T&>(*this), rhs); return static_cast<T&>(*this); }
 	template<class S> MIE_FORCE_INLINE T& operator-=(const S& rhs) { T::sub(static_cast<T&>(*this), static_cast<const T&>(*this), rhs); return static_cast<T&>(*this); }
-	template<class S> MIE_FORCE_INLINE friend T operator+(const T& a, const S& b) { T c; T::add(c, a, b); return c; }
-	template<class S> MIE_FORCE_INLINE friend T operator-(const T& a, const S& b) { T c; T::sub(c, a, b); return c; }
+	template<class S> friend MIE_FORCE_INLINE T operator+(const T& a, const S& b) { T c; T::add(c, a, b); return c; }
+	template<class S> friend MIE_FORCE_INLINE T operator-(const T& a, const S& b) { T c; T::sub(c, a, b); return c; }
 };
 
 /*
@@ -57,7 +57,7 @@ struct addsub : E {
 template<class T, class E = Empty<T> >
 struct mulable : E {
 	template<class S> MIE_FORCE_INLINE T& operator*=(const S& rhs) { T::mul(static_cast<T&>(*this), static_cast<const T&>(*this), rhs); return static_cast<T&>(*this); }
-	template<class S> MIE_FORCE_INLINE friend T operator*(const T& a, const S& b) { T c; T::mul(c, a, b); return c; }
+	template<class S> friend MIE_FORCE_INLINE T operator*(const T& a, const S& b) { T c; T::mul(c, a, b); return c; }
 };
 
 /*
@@ -66,7 +66,7 @@ struct mulable : E {
 template<class T, class E = Empty<T> >
 struct invertible : E {
 	MIE_FORCE_INLINE T& operator/=(const T& rhs) { T c; T::inv(c, rhs); T::mul(static_cast<T&>(*this), static_cast<const T&>(*this), c); return static_cast<T&>(*this); }
-	MIE_FORCE_INLINE friend T operator/(const T& a, const T& b) { T c; T::inv(c, b); T::mul(c, c, a); return c; }
+	friend MIE_FORCE_INLINE T operator/(const T& a, const T& b) { T c; T::inv(c, b); T::mul(c, c, a); return c; }
 };
 
 /*

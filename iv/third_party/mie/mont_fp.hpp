@@ -75,15 +75,6 @@ public:
 	{
 		fromStr(str, base);
 	}
-	MontFpT(const MontFpT& x)
-	{
-		*this = x;
-	}
-	MontFpT& operator=(const MontFpT& x)
-	{
-		for (size_t i = 0; i < N; i++) v_[i] = x.v_[i];
-		return *this;
-	}
 	MontFpT& operator=(int x)
 	{
 		if (x == 0) {
@@ -182,8 +173,7 @@ public:
 			clear();
 			return;
 		}
-		std::vector<S> buf(n);
-		std::copy(inBuf, inBuf + buf.size(), &buf[0]);
+		std::vector<S> buf(inBuf, inBuf + n);
 		setMaskMod(buf);
 	}
 	static inline void setModulo(const std::string& pstr, int base = 0)
@@ -209,6 +199,8 @@ public:
 		add = Xbyak::CastTo<void3op>(fg_.add_);
 		sub = Xbyak::CastTo<void3op>(fg_.sub_);
 		mul = Xbyak::CastTo<void3op>(fg_.mul_);
+		square = Xbyak::CastTo<void2op>(fg_.sqr_);
+		if (square == 0) square = squareC;
 		neg = Xbyak::CastTo<void2op>(fg_.neg_);
 		shr1 = Xbyak::CastTo<void2op>(fg_.shr1_);
 		addNc = Xbyak::CastTo<bool3op>(fg_.addNc_);
@@ -236,12 +228,13 @@ public:
 	static void3op add;
 	static void3op sub;
 	static void3op mul;
+	static void2op square;
 	static void2op neg;
 	static void2op shr1;
 	static bool3op addNc;
 	static bool3op subNc;
 	static int2op preInv;
-	static inline void square(MontFpT& z, const MontFpT& x)
+	static inline void squareC(MontFpT& z, const MontFpT& x)
 	{
 		mul(z, x, x);
 	}
@@ -372,6 +365,25 @@ public:
 	const uint64_t* getInnerValue() const { return v_; }
 	bool operator==(const MontFpT& rhs) const { return compare(*this, rhs) == 0; }
 	bool operator!=(const MontFpT& rhs) const { return compare(*this, rhs) != 0; }
+	static inline size_t getModBitLen() { return modBitLen_; }
+	static inline uint64_t cvtInt(const MontFpT& x, bool *err = 0)
+	{
+		MontFpT t;
+		mul(t, x, one_);
+		for (size_t i = 1; i < N; i++) {
+			if (t.v_[i]) {
+				if (err) {
+					*err = true;
+					return 0;
+				} else {
+					throw cybozu::Exception("MontFp:cvtInt:too large") << x;
+				}
+			}
+		}
+		if (err) *err = false;
+		return t.v_[0];
+	}
+	uint64_t cvtInt(bool *err = 0) const { return cvtInt(*this, err); }
 };
 
 template<size_t N, class tag>mpz_class MontFpT<N, tag>::pOrg_;
@@ -386,6 +398,7 @@ template<size_t N, class tag>size_t MontFpT<N, tag>::modBitLen_;
 template<size_t N, class tag>typename MontFpT<N, tag>::void3op MontFpT<N, tag>::add;
 template<size_t N, class tag>typename MontFpT<N, tag>::void3op MontFpT<N, tag>::sub;
 template<size_t N, class tag>typename MontFpT<N, tag>::void3op MontFpT<N, tag>::mul;
+template<size_t N, class tag>typename MontFpT<N, tag>::void2op MontFpT<N, tag>::square;
 template<size_t N, class tag>typename MontFpT<N, tag>::void2op MontFpT<N, tag>::neg;
 template<size_t N, class tag>typename MontFpT<N, tag>::void2op MontFpT<N, tag>::shr1;
 template<size_t N, class tag>typename MontFpT<N, tag>::bool3op MontFpT<N, tag>::addNc;

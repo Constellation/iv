@@ -63,18 +63,19 @@ public:
 };
 
 struct MixPack {
+	static const size_t useAll = 100;
 	Xbyak::util::Pack p;
 	Xbyak::RegExp m;
 	size_t mn;
 	MixPack() : mn(0) {}
-	MixPack(Xbyak::util::Pack& remain, size_t& rspPos, size_t n, int useRegNum = -1)
+	MixPack(Xbyak::util::Pack& remain, size_t& rspPos, size_t n, size_t useRegNum = useAll)
 	{
 		init(remain, rspPos, n, useRegNum);
 	}
-	void init(Xbyak::util::Pack& remain, size_t& rspPos, size_t n, int useRegNum = -1)
+	void init(Xbyak::util::Pack& remain, size_t& rspPos, size_t n, size_t useRegNum = useAll)
 	{
 		size_t pn = std::min(remain.size(), n);
-		if (useRegNum > 0 && useRegNum < (int)pn) pn = useRegNum;
+		if (useRegNum != useAll && useRegNum < pn) pn = useRegNum;
 		this->mn = n - pn;
 		this->m = Xbyak::util::rsp + rspPos;
 		this->p = remain.sub(0, pn);
@@ -133,7 +134,7 @@ struct MixPack {
 if (rm.isReg()) { \
 	op(r, rm.getReg()); \
 } else { \
-	op(r, ptr [rm.getMem()]); \
+	op(r, qword [rm.getMem()]); \
 }
 
 /*
@@ -145,12 +146,13 @@ if (rm.isReg()) { \
 if (rm.isReg()) { \
 	op(rm.getReg(), r); \
 } else { \
-	op(ptr [rm.getMem()], r); \
+	op(qword [rm.getMem()], r); \
 }
 
 struct FpGenerator : Xbyak::CodeGenerator {
 	typedef Xbyak::RegExp RegExp;
 	typedef Xbyak::Reg64 Reg64;
+	typedef Xbyak::Xmm Xmm;
 	typedef Xbyak::Operand Operand;
 	typedef Xbyak::util::StackFrame StackFrame;
 	typedef Xbyak::util::Pack Pack;
@@ -184,6 +186,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	void3op sub_;
 	void3op mul_;
 	uint3opI mulI_;
+	void2op sqr_;
 	void2op neg_;
 	void2op shr1_;
 	int2op preInv_;
@@ -209,12 +212,12 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		@param p [in] pointer to prime
 		@param pn [in] length of prime
 	*/
-	void init(const uint64_t *p, size_t pn)
+	void init(const uint64_t *p, int pn)
 	{
 		if (pn < 2) throw cybozu::Exception("mie:FpGenerator:small pn") << pn;
 		p_ = p;
 		pp_ = montgomery::getCoff(p[0]);
-		pn_ = (int)pn;
+		pn_ = pn;
 		isFullBit_ = (p_[pn_ - 1] >> 63) != 0;
 //		printf("p=%p, pn_=%d, isFullBit_=%d\n", p_, pn_, isFullBit_);
 
@@ -240,6 +243,11 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		align(16);
 		mul_ = getCurr<void3op>();
 		gen_mul();
+		align(16);
+		sqr_ = getCurr<void2op>();
+		if (!gen_sqr()) {
+			sqr_ = 0;
+		}
 		align(16);
 		shr1_ = getCurr<void2op>();
 		gen_shr1();
@@ -312,11 +320,14 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		outLocalLabel();
 	}
 	/*
-		(rdx:pz[]) = px[] * y
-		use rax, rdx, pw[]
-		@note this is general version(maybe not so fast)
+		(rdx:pz[0..n-1]) = px[0..n-1] * y
+		use t, rax, rdx
+		if n > 2
+		use
+		wk[0] if useMulx_
+		wk[0..n-2] otherwise
 	*/
-	void gen_raw_mulI(const RegExp& pz, const RegExp& px, const Reg64& y, const RegExp& pw, const Reg64& t, int n)
+	void gen_raw_mulI(const RegExp& pz, const RegExp& px, const Reg64& y, const MixPack& wk, const Reg64& t, size_t n)
 	{
 		assert(n >= 2);
 		if (n == 2) {
@@ -331,70 +342,66 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			mov(ptr [pz + 8], rax);
 			return;
 		}
-		for (int i = 0; i < n; i++) {
+		if (useMulx_) {
+			assert(wk.size() > 0 && wk.isReg(0));
+			const Reg64& t1 = wk.getReg(0);
+			// mulx(H, L, x) = [H:L] = x * rdx
+			mov(rdx, y);
+			mulx(t1, rax, ptr [px]); // [y:rax] = px * y
+			mov(ptr [pz], rax);
+			const Reg64 *pt0 = &t;
+			const Reg64 *pt1 = &t1;
+			for (size_t i = 1; i < n - 1; i++) {
+				mulx(*pt0, rax, ptr [px + i * 8]);
+				if (i == 1) {
+					add(rax, *pt1);
+				} else {
+					adc(rax, *pt1);
+				}
+				mov(ptr [pz + i * 8], rax);
+				std::swap(pt0, pt1);
+			}
+			mulx(rdx, rax, ptr [px + (n - 1) * 8]);
+			adc(rax, *pt1);
+			mov(ptr [pz + (n - 1) * 8], rax);
+			adc(rdx, 0);
+			return;
+		}
+		assert(wk.size() >= n - 1);
+		for (size_t i = 0; i < n; i++) {
 			mov(rax, ptr [px + i * 8]);
 			mul(y);
-			mov(ptr [pz + i * 8], rax);
 			if (i < n - 1) {
-				mov(ptr [pw + i * 8], rdx);
+				mov(ptr [pz + i * 8], rax);
+				g_mov(wk[i], rdx);
 			}
 		}
-		for (int i = 1; i < n; i++) {
+		for (size_t i = 1; i < n - 1; i++) {
 			mov(t, ptr [pz + i * 8]);
 			if (i == 1) {
-				add(t, ptr [pw + (i - 1) * 8]);
+				g_add(t, wk[i - 1]);
 			} else {
-				adc(t, ptr [pw + (i - 1) * 8]);
+				g_adc(t, wk[i - 1]);
 			}
 			mov(ptr [pz + i * 8], t);
 		}
-		adc(rdx, 0);
-	}
-	/*
-		(rdx:pz[]) = px[] * y
-		use rax, rdx, pw[]
-	*/
-	void gen_raw_mulI_with_mulx(const RegExp& pz, const RegExp& px, const Reg64& y, const Reg64& t0, const Reg64& t1, int n)
-	{
-		assert(n > 2);
-		// mulx(H, L, x) = [H:L] = x * rdxA
-		mov(rdx, y);
-		mulx(t1, rax, ptr [px]); // [y:rax] = px * y
-		mov(ptr [pz], rax);
-		const Reg64 *pt0 = &t0;
-		const Reg64 *pt1 = &t1;
-		for (int i = 1; i < n - 1; i++) {
-			mulx(*pt0, rax, ptr [px + i * 8]);
-			if (i == 1) {
-				add(rax, *pt1);
-			} else {
-				adc(rax, *pt1);
-			}
-			mov(ptr [pz + i * 8], rax);
-			std::swap(pt0, pt1);
-		}
-		mulx(rdx, rax, ptr [px + (n - 1) * 8]);
-		adc(rax, *pt1);
+		g_adc(rax, wk[n - 2]);
 		mov(ptr [pz + (n - 1) * 8], rax);
 		adc(rdx, 0);
 	}
 	void gen_mulI()
 	{
-		if (useMulx_) {
-			// mulx H, L, x ; [H:L] = x * rdx
-			StackFrame sf(this, 3, 2 | UseRDX);
-			const Reg64& pz = sf.p[0];
-			const Reg64& px = sf.p[1];
-			const Reg64& y = sf.p[2];
-			gen_raw_mulI_with_mulx(pz, px, y, sf.t[0], sf.t[1], pn_);
-			mov(rax, rdx);
-			return;
-		}
-		StackFrame sf(this, 3, 1 | UseRDX, pn_ * 8);
+		assert(pn_ >= 2);
+		const int regNum = useMulx_ ? 2 : (1 + std::min(pn_ - 1, 8));
+		const int stackSize = useMulx_ ? 0 : (pn_ - 1) * 8;
+		StackFrame sf(this, 3, regNum | UseRDX, stackSize);
 		const Reg64& pz = sf.p[0];
 		const Reg64& px = sf.p[1];
 		const Reg64& y = sf.p[2];
-		gen_raw_mulI(pz, px, y, rsp, sf.t[0], pn_);
+		size_t rspPos = 0;
+		Pack remain = sf.t.sub(1);
+		MixPack wk(remain, rspPos, pn_ - 1);
+		gen_raw_mulI(pz, px, y, wk, sf.t[0], pn_);
 		mov(rax, rdx);
 	}
 	/*
@@ -566,28 +573,41 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			throw cybozu::Exception("mie:FpGenerator:gen_mul:not implemented for") << pn_;
 		}
 	}
+	bool gen_sqr()
+	{
+		if (pn_ == 3) {
+			gen_montSqr3(p_, pp_);
+			return true;
+		}
+		return false;
+	}
 	/*
 		input (pz[], px[], py[])
 		z[] <- montgomery(x[], y[])
 	*/
 	void gen_montMulN(const uint64_t *p, uint64_t pp, int n)
 	{
-		StackFrame sf(this, 3, (3 | UseRDX) + (useMulx_ ? 1 : 0), (n * 3 + 2) * 8);
+		assert(2 <= pn_ && pn_ <= 9);
+		const int regNum = useMulx_ ? 4 : 3 + std::min(n - 1, 7);
+		const int stackSize = (n * 3 + (isFullBit_ ? 2 : 1)) * 8;
+		StackFrame sf(this, 3, regNum | UseRDX, stackSize);
 		const Reg64& pz = sf.p[0];
 		const Reg64& px = sf.p[1];
 		const Reg64& py = sf.p[2];
 		const Reg64& y = sf.t[0];
 		const Reg64& pAddr = sf.t[1];
-		const Pack pt = sf.t.sub(2);
-		const Reg64& t = pt[0];
-		const RegExp pw1 = rsp; // pw1[0..n-1]
-		const RegExp pw2 = pw1 + n * 8; // pw2[0..n-1]
+		const Reg64& t = sf.t[2];
+		Pack remain = sf.t.sub(3);
+		size_t rspPos = 0;
+
+		MixPack pw1(remain, rspPos, n - 1);
+		const RegExp pw2 = rsp + rspPos; // pw2[0..n-1]
 		const RegExp pc = pw2 + n * 8; // pc[0..n+1]
 		mov(pAddr, (size_t)p);
 
 		for (int i = 0; i < n; i++) {
 			mov(y, ptr [py + i * 8]);
-			montgomeryN_1(pp, n, pc, px, y, pAddr, pt, pw1, pw2, i == 0);
+			montgomeryN_1(pp, n, pc, px, y, pAddr, t, pw1, pw2, i == 0);
 		}
 		// pz[] = pc[] - p[]
 		gen_raw_sub(pz, pc, pAddr, t);
@@ -626,19 +646,19 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		mov(p0, (uint64_t)p);
 		movq(xm1, p2);
 		mov(p2, ptr [p2]);
-		montgomery4_1(pp, t0, t7, t3, t2, t1, p1, p2, p0, t4, t5, t6, t8, t9, true);
+		montgomery4_1(pp, t0, t7, t3, t2, t1, p1, p2, p0, t4, t5, t6, t8, t9, true, xm2);
 
 		movq(p2, xm1);
 		mov(p2, ptr [p2 + 8]);
-		montgomery4_1(pp, t1, t0, t7, t3, t2, p1, p2, p0, t4, t5, t6, t8, t9, false);
+		montgomery4_1(pp, t1, t0, t7, t3, t2, p1, p2, p0, t4, t5, t6, t8, t9, false, xm2);
 
 		movq(p2, xm1);
 		mov(p2, ptr [p2 + 16]);
-		montgomery4_1(pp, t2, t1, t0, t7, t3, p1, p2, p0, t4, t5, t6, t8, t9, false);
+		montgomery4_1(pp, t2, t1, t0, t7, t3, p1, p2, p0, t4, t5, t6, t8, t9, false, xm2);
 
 		movq(p2, xm1);
 		mov(p2, ptr [p2 + 24]);
-		montgomery4_1(pp, t3, t2, t1, t0, t7, p1, p2, p0, t4, t5, t6, t8, t9, false);
+		montgomery4_1(pp, t3, t2, t1, t0, t7, p1, p2, p0, t4, t5, t6, t8, t9, false, xm2);
 		// [t7:t3:t2:t1:t0]
 
 		mov(t4, t0);
@@ -689,7 +709,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		mov(t9, ptr [p2 + 16]);
 		montgomery3_1(pp, t2, t1, t0, t3, p1, t9, t7, t4, t5, t6, t8, p0, false);
 
-		// [t3:t2:t1:t0]
+		// [(t3):t2:t1:t0]
 		mov(t4, t0);
 		mov(t5, t1);
 		mov(t6, t2);
@@ -700,6 +720,60 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		cmovc(t2, t6);
 		movq(p0, xm0);
 		store_mr(p0, Pack(t2, t1, t0));
+	}
+	/*
+		input (pz, px)
+		z[0..2] <- montgomery(px[0..2], px[0..2])
+		destroy gt0, ..., gt9, xm0, xm1, p2
+	*/
+	void gen_montSqr3(const uint64_t *p, uint64_t pp)
+	{
+		StackFrame sf(this, 3, 10 | UseRDX, 16 * 3);
+		const Reg64& pz = sf.p[0];
+		const Reg64& px = sf.p[1];
+//		const Reg64& py = sf.p[2]; // not used
+
+		const Reg64& t0 = sf.t[0];
+		const Reg64& t1 = sf.t[1];
+		const Reg64& t2 = sf.t[2];
+		const Reg64& t3 = sf.t[3];
+		const Reg64& t4 = sf.t[4];
+		const Reg64& t5 = sf.t[5];
+		const Reg64& t6 = sf.t[6];
+		const Reg64& t7 = sf.t[7];
+		const Reg64& t8 = sf.t[8];
+		const Reg64& t9 = sf.t[9];
+
+		movq(xm0, pz); // save pz
+		mov(t7, (uint64_t)p);
+		mov(t9, ptr [px]);
+		mul3x1_sqr1(px, t9, t3, t2, t1, t0);
+		mov(t0, rdx);
+		montgomery3_sub(pp, t0, t9, t2, t1, px, t3, t7, t4, t5, t6, t8, pz, true);
+
+		mov(t3, ptr [px + 8]);
+		mul3x1_sqr2(px, t3, t6, t5, t4);
+		add_rr(Pack(t1, t0, t9, t2), Pack(rdx, rax, t5, t4));
+		if (isFullBit_) setc(pz.cvt8());
+		montgomery3_sub(pp, t1, t3, t9, t2, px, t0, t7, t4, t5, t6, t8, pz, false);
+
+		mov(t0, ptr [px + 16]);
+		mul3x1_sqr3(t0, t5, t4);
+		add_rr(Pack(t2, t1, t3, t9), Pack(rdx, rax, t5, t4));
+		if (isFullBit_) setc(pz.cvt8());
+		montgomery3_sub(pp, t2, t0, t3, t9, px, t1, t7, t4, t5, t6, t8, pz, false);
+
+		// [t9:t2:t0:t3]
+		mov(t4, t3);
+		mov(t5, t0);
+		mov(t6, t2);
+		sub_rm(Pack(t2, t0, t3), t7);
+		if (isFullBit_) sbb(t9, 0);
+		cmovc(t3, t4);
+		cmovc(t0, t5);
+		cmovc(t2, t6);
+		movq(pz, xm0);
+		store_mr(pz, Pack(t2, t0, t3));
 	}
 	static inline void debug_put_inner(const uint64_t *ptr, int n)
 	{
@@ -934,7 +1008,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		if (pn_ > 9) {
 			throw cybozu::Exception("mie:FpGenerator:gen_preInv:large pn_") << pn_;
 		}
-		StackFrame sf(this, 2, 10 | UseRDX | UseRCX, (std::max(0, pn_ * 5 - freeRegNum) + 1 + (isFullBit_ ? 1 : 0)) * 8);
+		StackFrame sf(this, 2, 10 | UseRDX | UseRCX, (std::max<int>(0, pn_ * 5 - freeRegNum) + 1 + (isFullBit_ ? 1 : 0)) * 8);
 		const Reg64& pr = sf.p[0];
 		const Reg64& px = sf.p[1];
 		const Reg64& t = rcx;
@@ -945,7 +1019,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		*/
 		size_t rspPos = 0;
 
-		assert((int)sf.t.size() >= pn_);
+		assert(sf.t.size() >= (size_t)pn_);
 		Pack remain = sf.t;
 
 		const MixPack rr(remain, rspPos, pn_);
@@ -1118,7 +1192,7 @@ private:
 		if (op2.isReg()) {
 			(this->*op)(op1, op2.getReg());
 		} else {
-			(this->*op)(op1, ptr [op2.getMem()]);
+			(this->*op)(op1, qword [op2.getMem()]);
 		}
 	}
 	void make_op_mr(void (Xbyak::CodeGenerator::*op)(const Xbyak::Operand&, const Xbyak::Operand&), const MemReg& op1, const Reg64& op2)
@@ -1126,7 +1200,7 @@ private:
 		if (op1.isReg()) {
 			(this->*op)(op1.getReg(), op2);
 		} else {
-			(this->*op)(ptr [op1.getMem()], op2);
+			(this->*op)(qword [op1.getMem()], op2);
 		}
 	}
 	void make_op(void (Xbyak::CodeGenerator::*op)(const Xbyak::Operand&, const Xbyak::Operand&), const MemReg& op1, const MemReg& op2, const Reg64& t)
@@ -1145,6 +1219,7 @@ private:
 	void g_sub(const MemReg& op1, const MemReg& op2, const Reg64& t) { make_op(&Xbyak::CodeGenerator::sub, op1, op2, t); }
 	void g_sbb(const MemReg& op1, const MemReg& op2, const Reg64& t) { make_op(&Xbyak::CodeGenerator::sbb, op1, op2, t); }
 	void g_cmp(const MemReg& op1, const MemReg& op2, const Reg64& t) { make_op(&Xbyak::CodeGenerator::cmp, op1, op2, t); }
+	void g_or(const Reg64& r, const MemReg& op) { make_op_rm(&Xbyak::CodeGenerator::or_, r, op); }
 	void g_test(const MemReg& op1, const MemReg& op2, const Reg64& t)
 	{
 		const MemReg *pop1 = &op1;
@@ -1154,28 +1229,30 @@ private:
 		}
 		// (M, M), (R, M), (R, R)
 		if (pop1->isReg()) {
-			if (pop2->isReg()) {
-				test(pop1->getReg(), pop2->getReg());
-			} else {
-				test(ptr [pop2->getMem()], pop1->getReg());
-			}
+			MIE_FP_GEN_OP_MR(test, (*pop2), pop1->getReg())
 		} else {
 			mov(t, ptr [pop1->getMem()]);
 			test(ptr [pop2->getMem()], t);
 		}
 	}
+	void g_mov(const MemReg& op, const Reg64& r)
+	{
+		make_op_mr(&Xbyak::CodeGenerator::mov, op, r);
+	}
+	void g_mov(const Reg64& r, const MemReg& op)
+	{
+		make_op_rm(&Xbyak::CodeGenerator::mov, r, op);
+	}
+	void g_add(const Reg64& r, const MemReg& mr) { MIE_FP_GEN_OP_RM(add, r, mr) }
+	void g_adc(const Reg64& r, const MemReg& mr) { MIE_FP_GEN_OP_RM(adc, r, mr) }
 	void isBothZero(const MemReg& op1, const MemReg& op2, const Reg64& t)
 	{
-		MIE_FP_GEN_OP_RM(mov, t, op1)
-		MIE_FP_GEN_OP_RM(or_, t, op2)
+		g_mov(t, op1);
+		g_or(t, op2);
 	}
 	void g_test(const MemReg& op, int imm)
 	{
-		if (op.isReg()) {
-			test(op.getReg(), imm);
-		} else {
-			test(qword [op.getMem()], imm);
-		}
+		MIE_FP_GEN_OP_MR(test, op, imm)
 	}
 	/*
 		z[] = x[]
@@ -1262,17 +1339,9 @@ private:
 				test(t, t);
 			}
 		} else {
-			if (z.isReg(0)) {
-				mov(t, z.getReg(0));
-			} else {
-				mov(t, ptr [z.getMem(0)]);
-			}
+			g_mov(t, z[0]);
 			for (size_t i = 1; i < n; i++) {
-				if (z.isReg(i)) {
-					or_(t, z.getReg(i));
-				} else {
-					or_(t, ptr [z.getMem(i)]);
-				}
+				g_or(t, z[i]);
 			}
 		}
 	}
@@ -1282,27 +1351,145 @@ private:
 	*/
 	void mul3x1(const RegExp& py, const Reg64& x, const Reg64& t2, const Reg64& t1, const Reg64& t0, const Reg64& t)
 	{
-		mov(rax, ptr [py]);
-		mul(x);
+		if (useMulx_) {
+			// mulx(H, L, x) = [H:L] = x * rdx
+			/*
+				rdx:x
+				    t:t1
+				      rax:t0
+			*/
+			mov(rdx, x);
+			mulx(rax, t0, ptr [py]); // [rax:t0] = py[0] * x
+			mulx(t, t1, ptr [py + 8]); // [t:t1] = py[1] * x
+			add(t1, rax);
+			mulx(rdx, x, ptr [py + 8 * 2]);
+			adc(x, t);
+			adc(rdx, 0);
+		} else {
+			mov(rax, ptr [py]);
+			mul(x);
+			mov(t0, rax);
+			mov(t1, rdx);
+			mov(rax, ptr [py + 8]);
+			mul(x);
+			mov(t, rax);
+			mov(t2, rdx);
+			mov(rax, ptr [py + 8 * 2]);
+			mul(x);
+			/*
+				rdx:rax
+				     t2:t
+				        t1:t0
+			*/
+			add(t1, t);
+			adc(rax, t2);
+			adc(rdx, 0);
+			mov(x, rax);
+		}
+	}
+	/*
+		[x2:x1:x0] * x0
+	*/
+	void mul3x1_sqr1(const RegExp& px, const Reg64& x0, const Reg64& t2, const Reg64& t1, const Reg64& t0, const Reg64& t)
+	{
+		mov(rax, x0);
+		mul(x0);
 		mov(t0, rax);
 		mov(t1, rdx);
-		mov(rax, ptr [py + 8]);
-		mul(x);
+		mov(rax, ptr [px + 8]);
+		mul(x0);
+		mov(ptr [rsp + 0 * 8], rax); // (x0 * x1)_L
+		mov(ptr [rsp + 1 * 8], rdx); // (x0 * x1)_H
 		mov(t, rax);
 		mov(t2, rdx);
-		mov(rax, ptr [py + 8 * 2]);
-		mul(x);
+		mov(rax, ptr [px + 8 * 2]);
+		mul(x0);
+		mov(ptr [rsp + 2 * 8], rax); // (x0 * x2)_L
+		mov(ptr [rsp + 3 * 8], rdx); // (x0 * x2)_H
 		/*
 			rdx:rax
 			     t2:t
 			        t1:t0
 		*/
 		add(t1, t);
+		adc(t2, rax);
+		adc(rdx, 0);
+	}
+	/*
+		[x2:x1:x0] * x1
+	*/
+	void mul3x1_sqr2(const RegExp& px, const Reg64& x1, const Reg64& t2, const Reg64& t1, const Reg64& t0)
+	{
+		mov(t0, ptr [rsp + 0 * 8]);// (x0 * x1)_L
+		mov(rax, x1);
+		mul(x1);
+		mov(t1, rax);
+		mov(t2, rdx);
+		mov(rax, ptr [px + 8 * 2]);
+		mul(x1);
+		mov(ptr [rsp + 4 * 8], rax); // (x1 * x2)_L
+		mov(ptr [rsp + 5 * 8], rdx); // (x1 * x2)_H
+		/*
+			rdx:rax
+			     t2:t1
+			         t:t0
+		*/
+		add(t1, ptr [rsp + 1 * 8]); // (x0 * x1)_H
 		adc(rax, t2);
 		adc(rdx, 0);
-		mov(x, rax);
+	}
+	/*
+		[rdx:rax:t1:t0] = [x2:x1:x0] * x2
+	*/
+	void mul3x1_sqr3(const Reg64& x2, const Reg64& t1, const Reg64& t0)
+	{
+		mov(rax, x2);
+		mul(x2);
+		/*
+			rdx:rax
+			     t2:t
+			        t1:t0
+		*/
+		mov(t0, ptr [rsp + 2 * 8]); // (x0 * x2)_L
+		mov(t1, ptr [rsp + 3 * 8]); // (x0 * x2)_H
+		add(t1, ptr [rsp + 4 * 8]); // (x1 * x2)_L
+		adc(rax, ptr [rsp + 5 * 8]); // (x1 * x2)_H
+		adc(rdx, 0);
 	}
 
+	/*
+		c = [c3:y:c1:c0] = c + x[2..0] * y
+		q = uint64_t(c0 * pp)
+		c = (c + q * p) >> 64
+		input  [c3:c2:c1:c0], px, y, p
+		output [c0:c3:c2:c1] ; c0 == 0 unless isFullBit_
+
+		@note use rax, rdx, destroy y
+	*/
+	void montgomery3_sub(uint64_t pp, const Reg64& c3, const Reg64& c2, const Reg64& c1, const Reg64& c0,
+		const Reg64& /*px*/, const Reg64& y, const Reg64& p,
+		const Reg64& t0, const Reg64& t1, const Reg64& t2, const Reg64& t3, const Reg64& t4, bool isFirst)
+	{
+		// input [c3:y:c1:0]
+		// [t4:c3:y:c1:c0]
+		// t4 = 0 or 1 if isFullBit_, = 0 otherwise
+		mov(rax, pp);
+		mul(c0); // q = rax
+		mov(c2, rax);
+		mul3x1(p, c2, t2, t1, t0, t3);
+		// [rdx:c2:t1:t0] = p * q
+		add(c0, t0); // always c0 is zero
+		adc(c1, t1);
+		adc(c2, y);
+		adc(c3, rdx);
+		if (isFullBit_) {
+			if (isFirst) {
+				setc(c0.cvt8());
+			} else {
+				adc(c0.cvt8(), t4.cvt8());
+			}
+		}
+	}
 	/*
 		c = [c3:c2:c1:c0]
 		c += x[2..0] * y
@@ -1324,28 +1511,10 @@ private:
 		} else {
 			mul3x1(px, y, t2, t1, t0, t3);
 			// [rdx:y:t1:t0] = px[2..0] * y
-			if (isFullBit_) xor_(t4, t4);
 			add_rr(Pack(c3, y, c1, c0), Pack(rdx, c2, t1, t0));
-			if (isFullBit_) adc(t4, 0);
+			if (isFullBit_) setc(t4.cvt8());
 		}
-		// [t4:c3:y:c1:c0]
-		// t4 = 0 or 1 if isFullBit_, = 0 otherwise
-		mov(rax, pp);
-		mul(c0); // q = rax
-		mov(c2, rax);
-		mul3x1(p, c2, t2, t1, t0, t3);
-		// [rdx:c2:t1:t0] = p * q
-		add(c0, t0); // always c0 is zero
-		adc(c1, t1);
-		adc(c2, y);
-		adc(c3, rdx);
-		if (isFullBit_) {
-			if (isFirst) {
-				adc(c0, 0);
-			} else {
-				adc(c0, t4);
-			}
-		}
+		montgomery3_sub(pp, c3, c2, c1, c0, px, y, p, t0, t1, t2, t3, t4, isFirst);
 	}
 	/*
 		pc[0..n] += x[0..n-1] * y ; pc[] = 0 if isFirst
@@ -1356,24 +1525,19 @@ private:
 		output : pc[0..n]   ; if isFullBit_
 		         pc[0..n-1] ; if !isFullBit_
 		destroy y
+		use
+		pw1[0] if useMulx_
+		pw1[0..n-2] otherwise
+		pw2[0..n-1]
 	*/
-	void montgomeryN_1(uint64_t pp, int n, const RegExp& pc, const RegExp& px, const Reg64& y, const Reg64& p, const Pack& pt, const RegExp& pw1, const RegExp& pw2, bool isFirst)
+	void montgomeryN_1(uint64_t pp, int n, const RegExp& pc, const RegExp& px, const Reg64& y, const Reg64& p, const Reg64& t, const MixPack& pw1, const RegExp& pw2, bool isFirst)
 	{
-		const Reg64& t = pt[0];
 		// pc[] += x[] * y
 		if (isFirst) {
-			if (useMulx_) {
-				gen_raw_mulI_with_mulx(pc, px, y, pt[0], pt[1], n);
-			} else {
-				gen_raw_mulI(pc, px, y, pw1, t, n);
-			}
+			gen_raw_mulI(pc, px, y, pw1, t, n);
 			mov(ptr [pc + n * 8], rdx);
 		} else {
-			if (useMulx_) {
-				gen_raw_mulI_with_mulx(pw2, px, y, pt[0], pt[1], n);
-			} else {
-				gen_raw_mulI(pw2, px, y, pw1, t, n);
-			}
+			gen_raw_mulI(pw2, px, y, pw1, t, n);
 			mov(t, ptr [pw2 + 0 * 8]);
 			add(ptr [pc + 0 * 8], t);
 			for (int i = 1; i < n; i++) {
@@ -1390,11 +1554,7 @@ private:
 		mov(rax, pp);
 		mul(qword [pc]);
 		mov(y, rax); // y = q
-		if (useMulx_) {
-			gen_raw_mulI_with_mulx(pw2, p, y, pt[0], pt[1], n);
-		} else {
-			gen_raw_mulI(pw2, p, y, pw1, t, n);
-		}
+		gen_raw_mulI(pw2, p, y, pw1, t, n);
 		// c[] = (c[] + pw2[]) >> 64
 		mov(t, ptr [pw2 + 0 * 8]);
 		add(t, ptr [pc + 0 * 8]);
@@ -1424,24 +1584,36 @@ private:
 	*/
 	void mul4x1(const RegExp& py, const Reg64& x, const Reg64& t3, const Reg64& t2, const Reg64& t1, const Reg64& t0, const Reg64& t)
 	{
-		mov(rax, ptr [py]);
-		mul(x);
-		mov(t0, rax);
-		mov(t1, rdx);
-		mov(rax, ptr [py + 8]);
-		mul(x);
-		mov(t, rax);
-		mov(t2, rdx);
-		mov(rax, ptr [py + 8 * 2]);
-		mul(x);
-		mov(t3, rax);
-		mov(rax, x);
-		mov(x, rdx);
-		mul(qword [py + 8 * 3]);
-		add(t1, t);
-		adc(t2, t3);
-		adc(x, rax);
-		adc(rdx, 0);
+		if (useMulx_) {
+			mov(rdx, x);
+			mulx(t1, t0, ptr [py + 8 * 0]);
+			mulx(t2, rax, ptr [py + 8 * 1]);
+			add(t1, rax);
+			mulx(x, rax, ptr [py + 8 * 2]);
+			adc(t2, rax);
+			mulx(rdx, rax, ptr [py + 8 * 3]);
+			adc(x, rax);
+			adc(rdx, 0);
+		} else {
+			mov(rax, ptr [py]);
+			mul(x);
+			mov(t0, rax);
+			mov(t1, rdx);
+			mov(rax, ptr [py + 8]);
+			mul(x);
+			mov(t, rax);
+			mov(t2, rdx);
+			mov(rax, ptr [py + 8 * 2]);
+			mul(x);
+			mov(t3, rax);
+			mov(rax, x);
+			mov(x, rdx);
+			mul(qword [py + 8 * 3]);
+			add(t1, t);
+			adc(t2, t3);
+			adc(x, rax);
+			adc(rdx, 0);
+		}
 	}
 
 	/*
@@ -1453,10 +1625,11 @@ private:
 		output [c0:c4:c3:c2:c1]
 
 		@note use rax, rdx, destroy y
+		use xt if isFullBit_
 	*/
 	void montgomery4_1(uint64_t pp, const Reg64& c4, const Reg64& c3, const Reg64& c2, const Reg64& c1, const Reg64& c0,
 		const Reg64& px, const Reg64& y, const Reg64& p,
-		const Reg64& t0, const Reg64& t1, const Reg64& t2, const Reg64& t3, const Reg64& t4, bool isFirst)
+		const Reg64& t0, const Reg64& t1, const Reg64& t2, const Reg64& t3, const Reg64& t4, bool isFirst, const Xmm& xt)
 	{
 		if (isFirst) {
 			mul4x1(px, y, c3, c2, c1, c0, c4);
@@ -1466,7 +1639,7 @@ private:
 			mul4x1(px, y, t3, t2, t1, t0, t4);
 			// [rdx:y:t2:t1:t0] = px[3..0] * y
 			if (isFullBit_) {
-				push(px);
+				movq(xt, px);
 				xor_(px, px);
 			}
 			add_rr(Pack(c4, y, c2, c1, c0), Pack(rdx, c3, t2, t1, t0));
@@ -1490,7 +1663,7 @@ private:
 				adc(c0, 0);
 			} else {
 				adc(c0, px);
-				pop(px);
+				movq(px, xt);
 			}
 		}
 	}

@@ -9,7 +9,7 @@
 #include <math.h>
 #include <float.h>
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && (_MSC_VER < 1800)
 const int FP_NAN = 0;
 const int FP_INFINITE = 1;
 const int FP_ZERO = 2;
