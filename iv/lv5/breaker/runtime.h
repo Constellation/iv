@@ -2,6 +2,7 @@
 #define IV_LV5_BREAKER_RUNTIME_H_
 #include <iv/lv5/railgun/railgun.h>
 #include <iv/lv5/breaker/jsfunction.h>
+#include <iv/lv5/breaker/entry_point.h>
 namespace iv {
 namespace lv5 {
 namespace breaker {
