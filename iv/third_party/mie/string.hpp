@@ -672,10 +672,16 @@ inline char *strchr_range(char *str, const char *key)
 */
 inline const char *findChar(const char *begin, const char *end, char c)
 {
+	if (begin == end) {
+		return begin;
+	}
 	return Xbyak::CastTo<const char *(*)(const char*, const char *, char c)>(str_util_impl::InstanceIsHere<>::buf + str_util_impl::findCharOffset)(begin, end, c);
 }
 inline char *findChar(char *begin, const char *end, char c)
 {
+	if (begin == end) {
+		return begin;
+	}
 	return Xbyak::CastTo<char *(*)(char*, const char *, char c)>(str_util_impl::InstanceIsHere<>::buf + str_util_impl::findCharOffset)(begin, end, c);
 }
 
@@ -686,10 +692,22 @@ inline char *findChar(char *begin, const char *end, char c)
 */
 inline const char *findChar_any(const char *begin, const char *end, const char *key, size_t keySize)
 {
+	if (keySize == 0) {
+		return begin;
+	}
+	if (begin == end) {
+		return begin;
+	}
 	return Xbyak::CastTo<const char *(*)(const char*, const char *, const char *,size_t)>(str_util_impl::InstanceIsHere<>::buf + str_util_impl::findChar_anyOffset)(begin, end, key, keySize);
 }
 inline char *findChar_any(char *begin, const char *end, const char *key, size_t keySize)
 {
+	if (keySize == 0) {
+		return begin;
+	}
+	if (begin == end) {
+		return begin;
+	}
 	return Xbyak::CastTo<char *(*)(char*, const char *, const char *,size_t)>(str_util_impl::InstanceIsHere<>::buf + str_util_impl::findChar_anyOffset)(begin, end, key, keySize);
 }
 
@@ -700,10 +718,22 @@ inline char *findChar_any(char *begin, const char *end, const char *key, size_t 
 */
 inline const char *findChar_range(const char *begin, const char *end, const char *key, size_t keySize)
 {
+	if (keySize == 0) {
+		return begin;
+	}
+	if (begin == end) {
+		return begin;
+	}
 	return Xbyak::CastTo<const char *(*)(const char*, const char *, const char *,size_t)>(str_util_impl::InstanceIsHere<>::buf + str_util_impl::findChar_rangeOffset)(begin, end, key, keySize);
 }
 inline char *findChar_range(char *begin, const char *end, const char *key, size_t keySize)
 {
+	if (keySize == 0) {
+		return begin;
+	}
+	if (begin == end) {
+		return begin;
+	}
 	return Xbyak::CastTo<char *(*)(char*, const char *, const char *,size_t)>(str_util_impl::InstanceIsHere<>::buf + str_util_impl::findChar_rangeOffset)(begin, end, key, keySize);
 }
 /*
@@ -711,10 +741,22 @@ inline char *findChar_range(char *begin, const char *end, const char *key, size_
 */
 inline const char *findStr(const char*begin, const char *end, const char *key, size_t keySize)
 {
+	if (keySize == 0) {
+		return begin;
+	}
+	if (begin == end) {
+		return begin;
+	}
 	return Xbyak::CastTo<const char *(*)(const char*, const char *, const char *,size_t)>(str_util_impl::InstanceIsHere<>::buf + str_util_impl::findStrOffset)(begin, end, key, keySize);
 }
 inline char *findStr(char*begin, const char *end, const char *key, size_t keySize)
 {
+	if (keySize == 0) {
+		return begin;
+	}
+	if (begin == end) {
+		return begin;
+	}
 	return Xbyak::CastTo<char *(*)(char*, const char *, const char *,size_t)>(str_util_impl::InstanceIsHere<>::buf + str_util_impl::findStrOffset)(begin, end, key, keySize);
 }
 
@@ -738,10 +780,22 @@ inline char *strcasestr(char *str, const char *key)
 */
 inline const char *findCaseStr(const char*begin, const char *end, const char *key, size_t keySize)
 {
+	if (keySize == 0) {
+		return begin;
+	}
+	if (begin == end) {
+		return begin;
+	}
 	return Xbyak::CastTo<const char *(*)(const char*, const char *, const char *,size_t)>(str_util_impl::InstanceIsHere<>::buf + str_util_impl::findCaseStrOffset)(begin, end, key, keySize);
 }
 inline char *findCaseStr(char*begin, const char *end, const char *key, size_t keySize)
 {
+	if (keySize == 0) {
+		return begin;
+	}
+	if (begin == end) {
+		return begin;
+	}
 	return Xbyak::CastTo<char *(*)(char*, const char *, const char *,size_t)>(str_util_impl::InstanceIsHere<>::buf + str_util_impl::findCaseStrOffset)(begin, end, key, keySize);
 }
 

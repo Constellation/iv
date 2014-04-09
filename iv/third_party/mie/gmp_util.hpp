@@ -16,6 +16,7 @@
 	#pragma warning(disable : 4244)
 	#pragma warning(disable : 4127)
 	#pragma warning(disable : 4512)
+	#pragma warning(disable : 4146)
 #endif
 #include <gmpxx.h>
 #include <stdint.h>
@@ -23,12 +24,22 @@
 	#pragma warning(pop)
 #endif
 #ifdef _WIN32
+#if _MSC_VER == 1800
+#ifdef _DEBUG
+#pragma comment(lib, "12/mpird.lib")
+#pragma comment(lib, "12/mpirxxd.lib")
+#else
+#pragma comment(lib, "12/mpir.lib")
+#pragma comment(lib, "12/mpirxx.lib")
+#endif
+#else
 #ifdef _DEBUG
 #pragma comment(lib, "mpird.lib")
 #pragma comment(lib, "mpirxxd.lib")
 #else
 #pragma comment(lib, "mpir.lib")
 #pragma comment(lib, "mpirxx.lib")
+#endif
 #endif
 #endif
 #include <mie/operator.hpp>
