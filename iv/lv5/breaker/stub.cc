@@ -17,6 +17,7 @@ IV_DUMMY_CC()
 #include <iv/lv5/breaker/stub.h>
 #include <iv/lv5/breaker/runtime.h>
 #include <iv/lv5/breaker/entry_point.h>
+#include <iv/lv5/breaker/compiler.h>
 #include <iv/lv5/accessor.h>
 namespace iv {
 namespace lv5 {
