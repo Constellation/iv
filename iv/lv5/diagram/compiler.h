@@ -2,6 +2,10 @@
 #define IV_LV5_DIAGRAM_COMPILER_H_
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
+#include <llvm/ExecutionEngine/ExecutionEngine.h>
+#include <llvm/ExecutionEngine/JIT.h>
+#include <llvm/ADT/StringRef.h>
+
 #include <iv/debug.h>
 #include <iv/byteorder.h>
 #include <iv/lv5/jsglobal.h>
