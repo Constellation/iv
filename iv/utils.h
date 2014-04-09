@@ -160,7 +160,7 @@ inline const char* Search<const char*, const char*>(
     return i;
   }
   if (i == iz) {
-    return i;;
+    return i;
   }
   return mie::findStr(i, iz, j, jz - j);
 }
