@@ -11,11 +11,43 @@
 #include <iv/byteorder.h>
 #include <iv/lv5/jsglobal.h>
 #include <iv/lv5/railgun/railgun.h>
+#include <iv/lv5/breaker/compiler.h>
 namespace iv {
 namespace lv5 {
 namespace diagram {
 
 class Compiler {
+ public:
+  enum CompileStatus {
+    CompileStatus_Error,
+    CompileStatus_NotCompiled,
+    CompileStatus_Compiled
+  };
+
+  explicit Compiler(breaker::Context* ctx, railgun::Code* code)
+    : ctx_(ctx),
+      code_(code),
+      codes_() {
+        module_ = new llvm::Module("null", llvm::getGlobalContext());
+  }
+
+  ~Compiler() {
+    llvm::ExecutionEngine *EE = llvm::EngineBuilder(module_).create();
+    llvm::EngineBuilder(module_).create();
+    llvm::Function *F;
+    // link entry points
+    for (const auto& pair : entry_points_) {
+      F = module_->getFunction(llvm::StringRef(pair.second));
+      pair.first->set_executable(EE->getPointerToFunction(F));
+    }
+  }
+
+  CompileStatus Compile(railgun::Code* code) {
+    Initialize(code);
+    return Main();
+  }
+
+ private:
   // introducing railgun to this scope
   typedef railgun::Instruction Instruction;
   typedef railgun::OP OP;
@@ -36,50 +68,30 @@ class Compiler {
     entry_points_.insert(std::make_pair(code, MakeBlockName(code)));
   }
 
-  void Main();
+  CompileStatus Main();
 
- public:
-  explicit Compiler(Context* ctx, railgun::Code* code)
-    : ctx_(ctx),
-      code_(code),
-      codes_() {
-        module_ = new llvm::Module("null", llvm::getGlobalContext());
-  }
-
-  ~Compiler() {
-    llvm::ExecutionEngine *EE = llvm::EngineBuilder(module_).create();
-    llvm::EngineBuilder(module_).create();
-    llvm::Function *F;
-    // link entry points
-    for (const auto& pair : entry_points_) {
-      F = module_->getFunction(llvm::StringRef(pair.second));
-      pair.first->set_executable(EE->getPointerToFunction(F));
-    }
-  }
-
-  void Compile(railgun::Code* code) {
-    Initialize(code);
-    Main();
-  }
-
- private:
-  Context* ctx_;
+  breaker::Context* ctx_;
   railgun::Code* code_;
   EntryPointMap entry_points_;
   Codes codes_;
   llvm::Module *module_;
 };
 
-inline void CompileInternal(Compiler* compiler, railgun::Code* code) {
-  compiler->Compile(code);
+inline void CompileInternal(Compiler* diagram, breaker::Compiler* breaker,
+                            railgun::Code* code) {
+  Compiler::CompileStatus status =  diagram->Compile(code);
+  if (status != Compiler::CompileStatus_Compiled) {
+    breaker->Compile(code);
+  }
   for (railgun::Code* sub : code->codes()) {
-    CompileInternal(compiler, sub);
+    CompileInternal(diagram, breaker, sub);
   }
 }
 
-inline void Compile(Context* ctx, railgun::Code* code) {
-  Compiler compiler(ctx, code);
-  CompileInternal(&compiler, code);
+inline void Compile(breaker::Context* ctx, railgun::Code* code) {
+  Compiler diagram(ctx, code);
+  breaker::Compiler breaker(ctx, code);
+  CompileInternal(&diagram, &breaker, code);
 }
 
 } } }  // namespace iv::lv5::diagram
