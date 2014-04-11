@@ -14,8 +14,7 @@ setup_compiler_definitions()
 add_subdirectory(third_party/netlib_dtoa)
 add_subdirectory(third_party/v8_dtoa)
 
-find_package(LLVM 3.3 REQUIRED
-   all-targets bitwriter linker ipo instrumentation backend support tablegen asmparser lto jit ${EXTRA_LLVM_MODULES})
+find_package(LLVM 3.3 REQUIRED all ${EXTRA_LLVM_MODULES})
 math(EXPR LV5_LLVM_VER ${LLVM_VERSION_MAJOR}*100+${LLVM_VERSION_MINOR})
 
 # include directories
@@ -99,7 +98,7 @@ mz_merge_static_libraries(liblv5 ALL gc-lib v8_dtoa netlib_dtoa)
 add_dependencies(liblv5 gc-lib v8_dtoa netlib_dtoa)
 # LLVM libraries should come after "-lld". To ensure that,
 # we set LLVM_LIBRARIES flag between LLVM_LDFLAGS.
-set(LV5_LIBRARIES "${LLVM_LDFLAGS}" ${LLVM_LIBRARIES} "${LLVM_LDFLAGS}" ${IV_LIBRARIES} liblv5)
+set(LV5_LIBRARIES liblv5 ${IV_LIBRARIES} "${LLVM_LDFLAGS}" ${LLVM_LIBRARIES} "${LLVM_LDFLAGS}")
 
 # lv5 shell
 
