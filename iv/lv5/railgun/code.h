@@ -217,6 +217,8 @@ class Code : public radio::HeapObject<radio::POINTER> {
     return ++hot_code_counter_;
   }
 
+  bool CanDiagram() const { return hot_code_counter_ > 1000; }
+
  private:
   void set_start(std::size_t start) { start_ = start; }
 

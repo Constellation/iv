@@ -153,6 +153,7 @@
     #if defined(IV_COMPILER_CLANG) ||\
       (defined(IV_COMPILER_GCC) && IV_COMPILER_GCC >= IV_MAKE_VERSION(4, 0, 0))
       #define IV_ENABLE_JIT
+      #define IV_ENABLE_DIAGRAM
     #endif
   #endif
 #endif

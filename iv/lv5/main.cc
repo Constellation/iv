@@ -11,6 +11,7 @@
 #include <iv/lv5/railgun/command.h>
 #include <iv/lv5/railgun/interactive.h>
 #include <iv/lv5/breaker/command.h>
+#include <iv/lv5/diagram/api.h>
 #include <iv/lv5/melt/melt.h>
 #if defined(IV_OS_MACOSX) || defined(IV_OS_LINUX) || defined(IV_OS_BSD)
 #include <signal.h>
@@ -28,6 +29,53 @@ void InitContext(iv::lv5::Context* ctx) {
   ctx->DefineFunction<&iv::lv5::railgun::Dis, 1>("dis");
   iv::lv5::melt::Console::Export(ctx, &dummy);
 }
+
+#if defined(IV_ENABLE_DIAGRAM)
+int DiagramExecute(const iv::core::string_view& data,
+                   const std::string& filename, bool statistics) {
+  iv::lv5::Error::Standard e;
+  iv::lv5::breaker::Context ctx;
+  InitContext(&ctx);
+  ctx.DefineFunction<&iv::lv5::breaker::Run, 1>("run");
+  ctx.DefineFunction<&iv::lv5::breaker::Load, 1>("load");
+  std::shared_ptr<iv::core::FileSource>
+      src(new iv::core::FileSource(data, filename));
+  iv::lv5::diagram::ExecuteInGlobal(&ctx, src, &e);
+  if (e) {
+    e.Dump(&ctx, stderr);
+    return EXIT_FAILURE;
+  }
+  ctx.Validate();
+  return EXIT_SUCCESS;
+}
+
+int DiagramExecuteFiles(const std::vector<std::string>& filenames) {
+  iv::lv5::Error::Standard e;
+  iv::lv5::breaker::Context ctx;
+  InitContext(&ctx);
+  ctx.DefineFunction<&iv::lv5::breaker::Run, 1>("run");
+  ctx.DefineFunction<&iv::lv5::breaker::Load, 1>("load");
+
+  std::vector<char> res;
+  for (std::vector<std::string>::const_iterator it = filenames.begin(),
+       last = filenames.end(); it != last; ++it) {
+    if (!iv::core::io::ReadFile(*it, &res)) {
+      return EXIT_FAILURE;
+    }
+    std::shared_ptr<iv::core::FileSource>
+        src(new iv::core::FileSource(
+                iv::core::string_view(res.data(), res.size()), *it));
+    res.clear();
+    iv::lv5::diagram::ExecuteInGlobal(&ctx, src, &e);
+    if (e) {
+      e.Dump(&ctx, stderr);
+      return EXIT_FAILURE;
+    }
+  }
+  ctx.Validate();
+  return EXIT_SUCCESS;
+}
+#endif
 
 #if defined(IV_ENABLE_JIT)
 int BreakerExecute(const iv::core::string_view& data,
@@ -252,7 +300,9 @@ int main(int argc, char **argv) {
         if (cmd.Exist("railgun")) {
           return RailgunExecuteFiles(vec);
         }
-#if defined(IV_ENABLE_JIT)
+#if defined(IV_ENABLE_DIAGRAM)
+        return DiagramExecuteFiles(vec);
+#elif defined(IV_ENABLE_JIT)
         return BreakerExecuteFiles(vec);
 #else
         return RailgunExecuteFiles(vec);
@@ -283,7 +333,9 @@ int main(int argc, char **argv) {
     } else if (cmd.Exist("railgun")) {
       return RailgunExecute(src, filename, cmd.Exist("statistics"));
     } else {
-#if defined(IV_ENABLE_JIT)
+#if defined(IV_ENABLE_DIAGRAM)
+      return DiagramExecute(src, filename, cmd.Exist("statistics"));
+#elif defined(IV_ENABLE_JIT)
       return BreakerExecute(src, filename, cmd.Exist("statistics"));
 #else
       return RailgunExecute(src, filename, cmd.Exist("statistics"));

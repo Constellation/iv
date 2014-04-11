@@ -10,8 +10,8 @@ inline void ExecuteInGlobal(breaker::Context* ctx,
                             std::shared_ptr<core::FileSource> src, Error* e) {
   railgun::Code* code =
       railgun::CompileInGlobal(ctx, src, true, IV_LV5_ERROR_VOID(e));
-  Compile(ctx, code);
-  Run(ctx, code, e);
+  diagram::Compile(ctx, code);
+  breaker::Run(ctx, code, e);
 }
 
 } } }  // namespace iv::lv5::breaker
