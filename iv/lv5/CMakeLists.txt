@@ -15,7 +15,7 @@ add_subdirectory(third_party/netlib_dtoa)
 add_subdirectory(third_party/v8_dtoa)
 
 find_package(LLVM 3.3 REQUIRED
-   all-targets bitwriter linker ipo instrumentation backend support tablegen asmparser lto ${EXTRA_LLVM_MODULES})
+   all-targets bitwriter linker ipo instrumentation backend support tablegen asmparser lto jit ${EXTRA_LLVM_MODULES})
 math(EXPR LV5_LLVM_VER ${LLVM_VERSION_MAJOR}*100+${LLVM_VERSION_MINOR})
 
 # include directories
