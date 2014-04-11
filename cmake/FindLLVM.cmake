@@ -96,7 +96,7 @@ else()
             set(_quiet_arg ERROR_QUIET)
         endif()
         execute_process(
-            COMMAND ${LLVM_CONFIG} --${flag} ${LLVM_FIND_COMPONENTS}
+            COMMAND ${LLVM_CONFIG} --${flag}
             OUTPUT_VARIABLE tmplibs
             OUTPUT_STRIP_TRAILING_WHITESPACE
             ${_quiet_arg}
