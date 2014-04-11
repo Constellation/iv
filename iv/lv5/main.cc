@@ -33,6 +33,7 @@ void InitContext(iv::lv5::Context* ctx) {
 #if defined(IV_ENABLE_DIAGRAM)
 int DiagramExecute(const iv::core::string_view& data,
                    const std::string& filename, bool statistics) {
+  iv::lv5::diagram::Initialize();
   iv::lv5::Error::Standard e;
   iv::lv5::breaker::Context ctx;
   InitContext(&ctx);

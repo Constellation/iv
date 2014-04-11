@@ -3,7 +3,7 @@
 // This compiler parses railgun::opcodes, inlines functions, and optimizes them
 // with LLVM.
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
-#include <llvm/ExecutionEngine/JIT.h>
+#include <llvm/ExecutionEngine/MCJIT.h>
 #include <llvm/ADT/StringRef.h>
 #include <llvm/IR/LLVMContext.h>
 
@@ -16,7 +16,9 @@ typedef railgun::Instruction Instruction;
 typedef Compiler::CompileStatus CompileStatus;
 
 Compiler::~Compiler() {
-  llvm::ExecutionEngine *EE = llvm::EngineBuilder(module_).create();
+  llvm::ExecutionEngine *EE =
+      llvm::EngineBuilder(module_).setUseMCJIT(true).create();
+  EE->finalizeObject();
   llvm::Function *F;
   // link entry points
   for (const auto& pair : entry_points_) {
@@ -788,4 +790,4 @@ CompileStatus Compiler::Main() {
   return CompileStatus_Compiled;
 }
 
-} } } // namespace iv::lv5::diagram::Compiler
+} } } // namespace iv::lv5::diagram
