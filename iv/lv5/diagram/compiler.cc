@@ -28,345 +28,345 @@ Compiler::~Compiler() {
 }
 
 CompileStatus Compiler::CompileNOP(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileENTER(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileMV(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileBUILD_ENV(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileWITH_SETUP(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileRETURN_SUBROUTINE(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileLOAD_CONST(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileBINARY_ADD(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileBINARY_SUBTRACT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileBINARY_MULTIPLY(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileBINARY_DIVIDE(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileBINARY_MODULO(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileBINARY_LSHIFT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileBINARY_RSHIFT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileBINARY_RSHIFT_LOGICAL(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileBINARY_LT(const Instruction* instr,
                                 railgun::OP::Type fused = railgun::OP::NOP) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileBINARY_LTE(const Instruction* instr,
                                 railgun::OP::Type fused = railgun::OP::NOP) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileBINARY_GT(const Instruction* instr,
                                railgun::OP::Type fused = railgun::OP::NOP) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileBINARY_GTE(const Instruction* instr,
                                 railgun::OP::Type fused = railgun::OP::NOP) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileCompare(const Instruction* instr, railgun::OP::Type fused) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileBINARY_INSTANCEOF(const Instruction* instr,
                                        railgun::OP::Type fused = railgun::OP::NOP) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileBINARY_IN(const Instruction* instr,
                                railgun::OP::Type fused = railgun::OP::NOP) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileBINARY_EQ(const Instruction* instr,
                                railgun::OP::Type fused = railgun::OP::NOP) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileBINARY_STRICT_EQ(const Instruction* instr,
                                       railgun::OP::Type fused = railgun::OP::NOP) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileBINARY_NE(const Instruction* instr,
                                railgun::OP::Type fused = railgun::OP::NOP) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileBINARY_STRICT_NE(const Instruction* instr,
                                       railgun::OP::Type fused = railgun::OP::NOP) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileBINARY_BIT_AND(const Instruction* instr,
                                     railgun::OP::Type fused = railgun::OP::NOP) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileBINARY_BIT_XOR(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileBINARY_BIT_OR(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileUNARY_POSITIVE(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileUNARY_NEGATIVE(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileUNARY_NOT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileUNARY_BIT_NOT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileTHROW(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileDEBUGGER(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileTO_NUMBER(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileTO_PRIMITIVE_AND_TO_STRING(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileCONCAT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileRAISE(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileTYPEOF(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileSTORE_OBJECT_INDEXED(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileSTORE_OBJECT_DATA(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileSTORE_OBJECT_GET(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileSTORE_OBJECT_SET(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileLOAD_PROP(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileSTORE_PROP(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileDELETE_PROP(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileINCREMENT_PROP(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileDECREMENT_PROP(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompilePOSTFIX_INCREMENT_PROP(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompilePOSTFIX_DECREMENT_PROP(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompilePOP_ENV(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileINIT_VECTOR_ARRAY_ELEMENT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileINIT_SPARSE_ARRAY_ELEMENT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileLOAD_ARRAY(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileDUP_ARRAY(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileLOAD_FUNCTION(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileLOAD_REGEXP(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileLOAD_OBJECT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileLOAD_ELEMENT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileSTORE_ELEMENT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileDELETE_ELEMENT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileINCREMENT_ELEMENT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileDECREMENT_ELEMENT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompilePOSTFIX_INCREMENT_ELEMENT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompilePOSTFIX_DECREMENT_ELEMENT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileRESULT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileRETURN(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileLOAD_GLOBAL(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileSTORE_GLOBAL(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileLOAD_GLOBAL_DIRECT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileSTORE_GLOBAL_DIRECT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileDELETE_GLOBAL(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileTYPEOF_GLOBAL(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileLOAD_HEAP(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileSTORE_HEAP(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileDELETE_HEAP(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileINCREMENT_HEAP(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileDECREMENT_HEAP(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompilePOSTFIX_INCREMENT_HEAP(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompilePOSTFIX_DECREMENT_HEAP(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileTYPEOF_HEAP(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileCALL(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileCONSTRUCT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileEVAL(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileINSTANTIATE_DECLARATION_BINDING(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileINSTANTIATE_VARIABLE_BINDING(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileINITIALIZE_HEAP_IMMUTABLE(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileINCREMENT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileDECREMENT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompilePOSTFIX_INCREMENT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompilePOSTFIX_DECREMENT(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompilePREPARE_DYNAMIC_CALL(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileIF_FALSE(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileIF_TRUE(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileJUMP_SUBROUTINE(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileFORIN_SETUP(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileFORIN_ENUMERATE(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileFORIN_LEAVE(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileTRY_CATCH_SETUP(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileLOAD_NAME(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileSTORE_NAME(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileDELETE_NAME(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileINCREMENT_NAME(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileDECREMENT_NAME(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompilePOSTFIX_INCREMENT_NAME(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompilePOSTFIX_DECREMENT_NAME(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileTYPEOF_NAME(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileJUMP_BY(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 CompileStatus Compiler::CompileLOAD_ARGUMENTS(const Instruction* instr) {
-  return CompileStatus_NotCompiled;
+  return CompileStatus::NotCompiled;
 }
 
 CompileStatus Compiler::Main() {
@@ -375,7 +375,7 @@ CompileStatus Compiler::Main() {
 
   const Instruction* instr = code_->begin();
   for (const Instruction* last = code_->end(); instr != last;) {
-    CompileStatus status = CompileStatus_Compiled;
+    CompileStatus status = CompileStatus::Compiled;
     const uint32_t opcode = instr->GetOP();
     switch (opcode) {
       case r::OP::NOP:
@@ -781,13 +781,13 @@ CompileStatus Compiler::Main() {
         status = CompileLOAD_ARGUMENTS(instr);
         break;
     }
-    if (status != CompileStatus_Compiled) {
+    if (status != CompileStatus::Compiled) {
       return status;
     }
     const uint32_t length = r::kOPLength[opcode];
     std::advance(instr, length);
   }
-  return CompileStatus_Compiled;
+  return CompileStatus::Compiled;
 }
 
 } } } // namespace iv::lv5::diagram

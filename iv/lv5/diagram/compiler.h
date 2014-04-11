@@ -1,7 +1,9 @@
 #ifndef IV_LV5_DIAGRAM_COMPILER_H_
 #define IV_LV5_DIAGRAM_COMPILER_H_
+#include <array>
 #include <iv/debug.h>
 #include <iv/byteorder.h>
+#include <iv/platform.h>
 #include <iv/lv5/jsglobal.h>
 #include <iv/lv5/railgun/railgun.h>
 #include <iv/lv5/breaker/compiler.h>
@@ -14,10 +16,10 @@ namespace diagram {
 
 class Compiler {
  public:
-  enum CompileStatus {
-    CompileStatus_Error,
-    CompileStatus_NotCompiled,
-    CompileStatus_Compiled
+  enum class CompileStatus {
+    Error,
+    NotCompiled,
+    Compiled
   };
 
   explicit Compiler(breaker::Context* ctx, railgun::Code* code)
@@ -44,9 +46,11 @@ class Compiler {
 
   static inline std::string MakeBlockName(railgun::Code* code) {
     // i.e. Block 0x7fff5fbff8b812
-    char ptr[25];
-    sprintf(ptr,"Block %p", code);
-    return std::string(ptr);
+    std::array<char, 30> buf;
+    const int num = snprintf(buf.data(), buf.size() - 1, "Block %p", code);
+    assert(num < buf.size());
+    buf[num] = '\0';
+    return std::string(buf.data(), num);
   }
 
   void Initialize(railgun::Code* code) {
@@ -79,7 +83,8 @@ class Compiler {
                                  railgun::OP::Type fused);
   CompileStatus CompileBINARY_GTE(const Instruction* instr,
                                   railgun::OP::Type fused);
-  CompileStatus CompileCompare(const Instruction* instr, railgun::OP::Type fused);
+  CompileStatus CompileCompare(const Instruction* instr,
+                               railgun::OP::Type fused);
   CompileStatus CompileBINARY_INSTANCEOF(const Instruction* instr,
                                          railgun::OP::Type fused);
   CompileStatus CompileBINARY_IN(const Instruction* instr,
@@ -152,7 +157,8 @@ class Compiler {
   CompileStatus CompileCALL(const Instruction* instr);
   CompileStatus CompileCONSTRUCT(const Instruction* instr);
   CompileStatus CompileEVAL(const Instruction* instr);
-  CompileStatus CompileINSTANTIATE_DECLARATION_BINDING(const Instruction* instr);
+  CompileStatus CompileINSTANTIATE_DECLARATION_BINDING(
+      const Instruction* instr);
   CompileStatus CompileINSTANTIATE_VARIABLE_BINDING(const Instruction* instr);
   CompileStatus CompileINITIALIZE_HEAP_IMMUTABLE(const Instruction* instr);
   CompileStatus CompileINCREMENT(const Instruction* instr);
@@ -187,7 +193,8 @@ class Compiler {
 
 inline void CompileInternal(Compiler* diagram, breaker::Compiler* breaker,
                             railgun::Code* code) {
-  if (code->CanDiagram() && diagram->Compile(code) != Compiler::CompileStatus_Compiled) {
+  if (code->CanDiagram() &&
+      diagram->Compile(code) != Compiler::CompileStatus::Compiled) {
     printf("false\n");
     breaker->Compile(code);
   }
