@@ -9,24 +9,20 @@ namespace aero {
 
 inline JITExecutable<char>::Executable JITCode::Compile8(const Code* code) {
   if (jit8_) {
-    return exec8_;
+    return jit8_->Get();
   }
-  JIT<char>* jit = new JIT<char>(*code);
-  jit->Compile();
-  jit8_ = jit;
-  exec8_ = jit->Get();
-  return exec8_;
+  jit8_.reset(new JIT<char>(*code));
+  jit8_->Compile();
+  return jit8_->Get();
 }
 
 inline JITExecutable<char16_t>::Executable JITCode::Compile16(const Code* code) {
   if (jit16_) {
-    return exec16_;
+    return jit16_->Get();
   }
-  JIT<char16_t>* jit = new JIT<char16_t>(*code);
-  jit->Compile();
-  jit16_ = jit;
-  exec16_ = jit->Get();
-  return exec16_;
+  jit16_.reset(new JIT<char16_t>(*code));
+  jit16_->Compile();
+  return jit16_->Get();
 }
 
 inline int JITCode::Execute(VM* vm, Code* code, const core::string_view& subject,
