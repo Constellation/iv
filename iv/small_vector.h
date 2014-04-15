@@ -117,6 +117,10 @@ class small_vector
     return std::numeric_limits<std::size_t>::max();
   }
 
+  inline constexpr size_type static_size() const {
+    return N;
+  }
+
   inline size_type size() const {
     return size_;
   }
