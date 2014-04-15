@@ -78,8 +78,7 @@ class QuickCheck : private Visitor {
 
   explicit QuickCheck(Compiler* compiler)
     : compiler_(compiler),
-      aggregator_(),
-      enabled_(true) { }
+      aggregator_() { }
 
   std::pair<uint16_t, std::size_t> Emit(Disjunction* dis);
 
@@ -113,7 +112,6 @@ class QuickCheck : private Visitor {
 
   Compiler* compiler_;
   Aggregator aggregator_;
-  bool enabled_;
 };
 
 } }  // namespace iv::aero
