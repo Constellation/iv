@@ -11,8 +11,7 @@ namespace iv {
 namespace core {
 
 template<typename T, std::size_t N, typename Allocator = std::allocator<T>>
-class small_vector
-  : private Allocator {
+class small_vector {
  public:
   typedef T& reference;
   typedef const T& const_reference;
@@ -26,11 +25,12 @@ class small_vector
   typedef const T* const_pointer;
   typedef std::reverse_iterator<iterator> reverse_iterator;
   typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+  typedef small_vector<T, N, Allocator> this_type;
 
   static_assert(N != 0, "N should be larger than 0");
 
   small_vector(const allocator_type& allocator = allocator_type())
-      : allocator_type(allocator)
+      : allocator_(allocator)
       , static_storage_()
       , data_(static_storage_data())
       , size_(0)
@@ -38,15 +38,28 @@ class small_vector
     assert(capacity() != 0);
   }
 
+  small_vector(const this_type& x)
+      : allocator_(x.allocator_)
+      , static_storage_()
+      , data_(static_storage_data())
+      , size_(0)
+      , capacity_(static_storage_.size()) {
+    assert(capacity() != 0);
+    std::copy(x.begin(), x.end(), std::back_inserter(*this));
+  }
+
+  this_type& operator=(const this_type& x) {
+    this_type copy(x);
+    copy.swap(*this);
+    return *this;
+  }
+
   ~small_vector() {
-    destroy(begin(), end());
-    if (static_storage_data() != data()) {
-      allocator_type::deallocate(data(), capacity());
-    }
+    finalize();
   }
 
   allocator_type get_allocator() const {
-    return *static_cast<const allocator_type*>(this);
+    return allocator_;
   }
 
   inline reference operator[](size_type n) {
@@ -139,16 +152,16 @@ class small_vector
       assert(old != 0);
 
       size_type new_capacity = (std::max<size_type>)(old * 2, n);
-      pointer new_data = allocator_type::allocate(new_capacity);
+      pointer new_data = allocator_.allocate(new_capacity);
       for (pointer new_i = new_data, old_i = data(), old_iz = data() + size();
            old_i != old_iz;
            ++new_i, ++old_i) {
-          allocator_type::construct(new_i, std::move(*old_i));
-          allocator_type::destroy(old_i);
+          allocator_.construct(new_i, std::move(*old_i));
+          allocator_.destroy(old_i);
       }
 
       if (static_storage_data() != data()) {
-        allocator_type::deallocate(data(), capacity());
+        allocator_.deallocate(data(), capacity());
       }
 
       // Replace with new data.
@@ -160,30 +173,31 @@ class small_vector
 
   inline void push_back(const_reference x) {
     reserve(size() + 1);
-    allocator_type::construct(data() + size(), x);
+    allocator_.construct(data() + size(), x);
     ++size_;
   }
 
   inline void push_back(value_type&& x) {
     reserve(size() + 1);
-    allocator_type::construct(data() + size(), std::move(x));
+    allocator_.construct(data() + size(), std::move(x));
     ++size_;
   }
 
   template<class... Args>
   inline void emplace_back(Args&&... args) {
     reserve(size() + 1);
-    allocator_type::construct(data() + size(), std::forward<Args>(args)...);
+    allocator_.construct(data() + size(), std::forward<Args>(args)...);
     ++size_;
   }
 
   inline void pop_back() {
     --size_;
-    allocator_type::destroy(data() + size());
+    allocator_.destroy(data() + size());
   }
 
-  void swap(small_vector<T, N, Allocator>& rhs) {
+  void swap(this_type& rhs) {
     using std::swap;
+    swap(allocator_, rhs.allocator_);
     swap(static_storage_, rhs.static_storage_);
     swap(data_, rhs.data_);
     swap(size_, rhs.size_);
@@ -201,13 +215,25 @@ class small_vector
         static_cast<const void*>(static_storage_.data()));
   }
 
-  template<typename Iter>
-  void destroy(Iter i, Iter iz) {
-    for (; i != iz; ++i) {
-      allocator_type::destroy(&*i);
+  inline bool is_static_storage_used() const {
+    return static_storage_data() == data();
+  }
+
+  void finalize() {
+    destroy(begin(), end());
+    if (!is_static_storage_used()) {
+      allocator_.deallocate(data(), capacity());
     }
   }
 
+  template<typename Iter>
+  void destroy(Iter i, Iter iz) {
+    for (; i != iz; ++i) {
+      allocator_.destroy(&*i);
+    }
+  }
+
+  allocator_type allocator_;
   typedef typename std::aligned_storage<
       sizeof(T), std::alignment_of<T>::value>::type raw_buffer_element;
   std::array<raw_buffer_element, N> static_storage_;
