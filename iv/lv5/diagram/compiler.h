@@ -193,9 +193,11 @@ class Compiler {
 
 inline void CompileInternal(Compiler* diagram, breaker::Compiler* breaker,
                             railgun::Code* code) {
-  if (code->CanDiagram() &&
-      diagram->Compile(code) != Compiler::CompileStatus::Compiled) {
-    printf("false\n");
+  Compiler::CompileStatus status = Compiler::CompileStatus::NotCompiled;
+  if (code->CanDiagram()) {
+    status = diagram->Compile(code);
+  }
+  if (status != Compiler::CompileStatus::Compiled) {
     breaker->Compile(code);
   }
   for (railgun::Code* sub : code->codes()) {
