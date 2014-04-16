@@ -9,6 +9,7 @@
 #include <limits>
 #include <iv/debug.h>
 #include <iv/utils.h>
+#include <iv/string_utils.h>
 namespace iv {
 namespace core {
 namespace detail {
