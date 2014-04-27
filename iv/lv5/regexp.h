@@ -1,5 +1,5 @@
-#ifndef IV_LV5_JSREGEXP_IMPL_H_
-#define IV_LV5_JSREGEXP_IMPL_H_
+#ifndef _IV_LV5_REGEXP_H_
+#define _IV_LV5_REGEXP_H_
 #include <cstdlib>
 #include <cstring>
 #include <gc/gc_cpp.h>
@@ -17,7 +17,7 @@ static const std::u16string kEmptyPattern = core::ToU16String("(?:)");
 
 }  // namespace detail
 
-class JSRegExpImpl : public gc_cleanup {
+class RegExp : public gc_cleanup {
  public:
   enum Flags {
     NONE = 0,
@@ -27,30 +27,28 @@ class JSRegExpImpl : public gc_cleanup {
     STICKY = 8
   };
 
-  JSRegExpImpl(core::Space* allocator,
-               const core::u16string_view& value, int flags)
+  RegExp(core::Space* allocator, const core::u16string_view& value, int flags)
     : flags_(flags),
       error_(0),
       code_(nullptr) {
     Initialize(allocator, value);
   }
 
-  JSRegExpImpl(core::Space* allocator,
-               const core::string_view& value, int flags)
+  RegExp(core::Space* allocator, const core::string_view& value, int flags)
     : flags_(flags),
       error_(0),
       code_(nullptr) {
     Initialize(allocator, value);
   }
 
-  JSRegExpImpl(core::Space* allocator)
+  RegExp(core::Space* allocator)
     : flags_(NONE),
       error_(0),
       code_(nullptr) {
     Initialize(allocator, detail::kEmptyPattern);
   }
 
-  ~JSRegExpImpl() {
+  ~RegExp() {
     if (code_) {
       delete code_;
     }
@@ -135,4 +133,4 @@ class JSRegExpImpl : public gc_cleanup {
 };
 
 } }  // namespace iv::lv5
-#endif  // IV_LV5_JSREGEXP_IMPL_H_
+#endif  // _IV_LV5_REGEXP_H_

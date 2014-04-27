@@ -10,7 +10,7 @@
 #include <iv/lv5/jsstring.h>
 #include <iv/lv5/map.h>
 #include <iv/lv5/context.h>
-#include <iv/lv5/jsregexp_impl.h>
+#include <iv/lv5/regexp.h>
 #include <iv/lv5/bind.h>
 #include <iv/lv5/jsvector.h>
 #include <iv/lv5/jsstring_builder.h>
@@ -42,7 +42,7 @@ class JSRegExp : public JSObject {
 
   static JSRegExp* New(Context* ctx,
                        const core::u16string_view& value,
-                       const JSRegExpImpl* impl,
+                       const RegExp* impl,
                        Error* e) {
     JSRegExp* const reg = new JSRegExp(ctx, value, impl, IV_LV5_ERROR(e));
     reg->set_cls(JSRegExp::GetClass());
@@ -129,10 +129,10 @@ class JSRegExp : public JSObject {
     int f = 0;
     if (flags->Is8Bit()) {
       const JSAsciiFlatString* flat = flags->Flatten8();
-      f = JSRegExpImpl::ComputeFlags(flat->begin(), flat->end());
+      f = RegExp::ComputeFlags(flat->begin(), flat->end());
     } else {
       const JSUTF16FlatString* flat = flags->Flatten16();
-      f = JSRegExpImpl::ComputeFlags(flat->begin(), flat->end());
+      f = RegExp::ComputeFlags(flat->begin(), flat->end());
     }
     impl_ = CompileImpl(ctx->regexp_allocator(), pattern, f);
     JSString* escaped = Escape(ctx, pattern, IV_LV5_ERROR_VOID(e));
@@ -148,7 +148,7 @@ class JSRegExp : public JSObject {
 
   JSRegExp(Context* ctx,
            const core::u16string_view& pattern,
-           const JSRegExpImpl* reg,
+           const RegExp* reg,
            Error* e)
     : JSObject(ctx->global_data()->regexp_map()),
       impl_(reg) {
@@ -158,7 +158,7 @@ class JSRegExp : public JSObject {
 
   JSRegExp(Context* ctx,
            JSString* source,
-           const JSRegExpImpl* reg)
+           const RegExp* reg)
     : JSObject(ctx->global_data()->regexp_map()),
       impl_(reg) {
     InitializeProperty(ctx, source);
@@ -166,13 +166,13 @@ class JSRegExp : public JSObject {
 
   explicit JSRegExp(Context* ctx)
     : JSObject(ctx->global_data()->regexp_map()),
-      impl_(new JSRegExpImpl(ctx->regexp_allocator())) {
+      impl_(new RegExp(ctx->regexp_allocator())) {
     InitializeProperty(ctx, ctx->global_data()->string_empty_regexp());
   }
 
   explicit JSRegExp(Context* ctx, Map* map)
     : JSObject(map),
-      impl_(new JSRegExpImpl(ctx->regexp_allocator())) {
+      impl_(new RegExp(ctx->regexp_allocator())) {
     Direct(FIELD_SOURCE) = ctx->global_data()->string_empty_regexp();
     Direct(FIELD_GLOBAL) = JSVal::Bool(impl_->global());
     Direct(FIELD_IGNORE_CASE) = JSVal::Bool(impl_->ignore());
@@ -310,20 +310,20 @@ class JSRegExp : public JSObject {
     return ary;
   }
 
-  static JSRegExpImpl* CompileImpl(core::Space* space,
+  static RegExp* CompileImpl(core::Space* space,
                                    JSString* pattern, int flags = 0) {
     if (pattern->Is8Bit()) {
-      return new JSRegExpImpl(space, *pattern->Flatten8(), flags);
+      return new RegExp(space, *pattern->Flatten8(), flags);
     } else {
-      return new JSRegExpImpl(space, *pattern->Flatten16(), flags);
+      return new RegExp(space, *pattern->Flatten16(), flags);
     }
   }
 
-  const JSRegExpImpl* impl() const {
+  const RegExp* impl() const {
     return impl_;
   }
 
-  const JSRegExpImpl* impl_;
+  const RegExp* impl_;
 };
 
 } }  // namespace iv::lv5

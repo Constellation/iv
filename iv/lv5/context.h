@@ -32,7 +32,7 @@ class JSObjectEnv;
 
 class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
  public:
-  friend void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg);
+  friend void RegisterLiteralRegExp(Context* ctx, RegExp* reg);
 
   Context(JSAPI fc, JSAPI ge);
   virtual ~Context() { }
