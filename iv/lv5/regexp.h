@@ -2,20 +2,19 @@
 #define _IV_LV5_REGEXP_H_
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <gc/gc_cpp.h>
-#include <iv/ustring.h>
 #include <iv/string_view.h>
 #include <iv/space.h>
-#include <iv/aero/aero.h>
+#include <iv/aero/flags.h>
 #include <iv/lv5/context.h>
-
 namespace iv {
+
+namespace aero {
+class Code;
+}  // namespace aero
+
 namespace lv5 {
-namespace detail {
-
-static const std::u16string kEmptyPattern = core::ToU16String("(?:)");
-
-}  // namespace detail
 
 class RegExp : public gc_cleanup {
  public:
@@ -27,34 +26,13 @@ class RegExp : public gc_cleanup {
     STICKY = 8
   };
 
-  RegExp(core::Space* allocator, const core::u16string_view& value, int flags)
-    : flags_(flags),
-      error_(0),
-      code_(nullptr) {
-    Initialize(allocator, value);
-  }
+  explicit RegExp(core::Space* allocator);
 
-  RegExp(core::Space* allocator, const core::string_view& value, int flags)
-    : flags_(flags),
-      error_(0),
-      code_(nullptr) {
-    Initialize(allocator, value);
-  }
+  RegExp(core::Space* allocator, const core::u16string_view& value, int flags);
 
-  RegExp(core::Space* allocator)
-    : flags_(NONE),
-      error_(0),
-      code_(nullptr) {
-    Initialize(allocator, detail::kEmptyPattern);
-  }
+  RegExp(core::Space* allocator, const core::string_view& value, int flags);
 
-  ~RegExp() {
-    if (code_) {
-      delete code_;
-    }
-  }
-
-  bool IsValid() const { return code_; }
+  bool IsValid() const { return !!code_; }
 
   bool global() const { return flags_ & GLOBAL; }
 
@@ -64,10 +42,7 @@ class RegExp : public gc_cleanup {
 
   bool sticky() const { return flags_ & STICKY; }
 
-  int number_of_captures() const {
-    assert(IsValid());
-    return code_->captures();
-  }
+  int number_of_captures() const;
 
   template<typename Iter>
   static int ComputeFlags(Iter it, Iter last) {
@@ -107,29 +82,19 @@ class RegExp : public gc_cleanup {
     return flags;
   }
 
-  template<typename T>
-  int Execute(Context* ctx,
-              const T& subject,
-              int offset,
-              int* offset_vector) const {
-    assert(IsValid());
-    return ctx->regexp_vm()->Execute(code_, subject, offset_vector, offset);
-  }
+  int Execute(Context* ctx, core::string_view subject,
+              int offset, int* offset_vector) const;
+
+  int Execute(Context* ctx, core::u16string_view subject,
+              int offset, int* offset_vector) const;
 
  private:
   template<typename Source>
-  void Initialize(core::Space* allocator, const Source& value) {
-    if (flags_ != -1) {
-      const int f =
-          ((flags_ & MULTILINE) ? aero::MULTILINE : aero::NONE) |
-          ((flags_ & IGNORE_CASE) ? aero::IGNORE_CASE : aero::NONE);
-      code_ = aero::Compile(allocator, value, f, &error_);
-    }
-  }
+  void Initialize(core::Space* allocator, const Source& value);
 
   int flags_;
   int error_;
-  aero::Code* code_;
+  std::unique_ptr<aero::Code> code_;
 };
 
 } }  // namespace iv::lv5

@@ -45,6 +45,7 @@ add_library(liblv5 STATIC
     global_symbols.cc
     global_data.cc
     jsstring.cc
+    regexp.cc
     breaker/compiler_arithmetic.cc
     breaker/compiler_bitwise.cc
     breaker/compiler_call.cc
