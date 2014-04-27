@@ -9,10 +9,10 @@ inline
 std::pair<uint16_t, std::size_t> QuickCheck::Emit(Disjunction* dis) {
   Visit(dis);
   if (!IsFailed()) {
-    const uint16_t value = filter_.value();
-    return std::make_pair(value, added_character_count());
+    const uint16_t value = aggregator_.filter().value();
+    return std::make_pair(value, aggregator_.count());
   }
-  return std::make_pair(0, added_character_count());
+  return std::make_pair(0, aggregator_.count());
 }
 
 inline void QuickCheck::Visit(Disjunction* dis) {

@@ -1,11 +1,11 @@
 #ifndef IV_LV5_CONTEXT_H_
 #define IV_LV5_CONTEXT_H_
 #include <cstddef>
+#include <memory>
 #include <iv/string_view.h>
 #include <iv/noncopyable.h>
 #include <iv/space.h>
 #include <iv/i18n.h>
-#include <iv/aero/aero.h>
 #include <iv/lv5/error_check.h>
 #include <iv/lv5/jsval_fwd.h>
 #include <iv/lv5/jsenv.h>
@@ -17,7 +17,11 @@
 #include <iv/lv5/stack.h>
 
 namespace iv {
+namespace aero {
+class VM;
+}  // namespace aero
 namespace lv5 {
+
 namespace runtime {
 JSVal ThrowTypeError(const Arguments& args, Error* e);
 }  // namespace runtime
@@ -32,10 +36,10 @@ class JSObjectEnv;
 
 class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
  public:
-  friend void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg);
+  friend void RegisterLiteralRegExp(Context* ctx, RegExp* reg);
 
   Context(JSAPI fc, JSAPI ge);
-  virtual ~Context() { }
+  virtual ~Context();
 
   const JSGlobal* global_obj() const {
     return global_data_.global_obj();
@@ -92,7 +96,7 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
 
   core::Space* regexp_allocator() { return &regexp_allocator_; }
 
-  aero::VM* regexp_vm() { return &regexp_vm_; }
+  aero::VM* regexp_vm() { return regexp_vm_.get(); }
 
   core::SymbolTable* symbol_table() { return global_data_.symbol_table(); }
 
@@ -166,7 +170,7 @@ class Context : public radio::HeapObject<radio::POINTER_CLEANUP> {
   JSInlinedFunction<&runtime::ThrowTypeError, 0>* throw_type_error_;
   JSObjectEnv* global_env_;
   core::Space regexp_allocator_;  // for RegExp AST
-  aero::VM regexp_vm_;
+  std::unique_ptr<aero::VM> regexp_vm_;
   Stack* stack_;
   JSAPI function_constructor_;
   JSAPI global_eval_;

@@ -37,15 +37,14 @@ class VM : private core::Noncopyable<VM> {
   static const uint32_t kInitialStateSize = 64;
 
   VM()
-    : stack_base_pointer_for_jit_(nullptr),
-      state_pointer_for_jit_(
-          reinterpret_cast<int*>(std::malloc(kInitialStateSize * sizeof(int)))),
-      stack_size_(kInitialStackSize),
-      state_size_(kInitialStateSize),
-      stack_(kInitialStackSize)
+    : stack_base_pointer_for_jit_(nullptr)
+    , state_pointer_for_jit_(
+          reinterpret_cast<int*>(std::malloc(kInitialStateSize * sizeof(int))))
+    , stack_size_(kInitialStackSize)
+    , state_size_(kInitialStateSize)
+    , stack_(kInitialStackSize)
 #if !defined(IV_ENABLE_JIT)
-      ,
-      state_()
+    , state_()
 #endif
   {
     stack_base_pointer_for_jit_ = stack_.data();

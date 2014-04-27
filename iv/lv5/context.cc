@@ -6,6 +6,7 @@
 #include <iv/dtoa.h>
 #include <iv/canonicalized_nan.h>
 #include <iv/concat.h>
+#include <iv/aero/aero.h>
 #include <iv/lv5/jsmath.h>
 #include <iv/lv5/jsenv.h>
 #include <iv/lv5/jsjson.h>
@@ -38,6 +39,8 @@
 namespace iv {
 namespace lv5 {
 
+Context::~Context() { }
+
 Context::Context(JSAPI fc, JSAPI ge)
   : global_data_(this),
     throw_type_error_(
@@ -46,7 +49,7 @@ Context::Context(JSAPI fc, JSAPI ge)
             Map::NewUniqueMap(this, static_cast<JSObject*>(nullptr), false))),
     global_env_(JSObjectEnv::New(this, nullptr, global_obj())),
     regexp_allocator_(),
-    regexp_vm_(),
+    regexp_vm_(new aero::VM()),
     stack_(nullptr),
     function_constructor_(fc),
     global_eval_(ge),

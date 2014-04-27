@@ -18,7 +18,7 @@ namespace lv5 {
 
 class JSGlobal;
 class JSString;
-class JSRegExpImpl;
+class RegExp;
 class Context;
 class Map;
 
@@ -77,7 +77,7 @@ class GlobalData : public GlobalSymbols {
 
   JSGlobal* global_obj() const { return global_obj_; }
 
-  void RegisterLiteralRegExp(JSRegExpImpl* reg) {
+  void RegisterLiteralRegExp(RegExp* reg) {
     regs_.push_back(reg); }
 
   template<Class::JSClassType CLS>
@@ -215,7 +215,7 @@ class GlobalData : public GlobalSymbols {
   Context* ctx_;
 
   RandomGenerator random_generator_;
-  trace::Vector<JSRegExpImpl*>::type regs_;
+  trace::Vector<RegExp*>::type regs_;
   core::SymbolTable symbol_table_;
   std::array<ClassSlot, Class::NUM_OF_CLASS> classes_;
   std::array<JSString*, 0x80> string_cache_;

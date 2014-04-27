@@ -44,7 +44,7 @@ TEST(AeroFilterCase, ContentTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
-    EXPECT_EQ(code->filter(), 63);
+    EXPECT_EQ(code->filter(), 0);
     EXPECT_FALSE(code->IsQuickCheckOneChar());
   }
   {
@@ -92,7 +92,7 @@ TEST(AeroFilterCase, ContentTest) {
     ASSERT_FALSE(error);
     iv::aero::Compiler compiler(iv::aero::NONE);
     std::unique_ptr<iv::aero::Code> code(compiler.Compile(data));
-    EXPECT_EQ(code->filter(), 127);
+    EXPECT_EQ(code->filter(), 0);
     EXPECT_FALSE(code->IsQuickCheckOneChar());
   }
   {

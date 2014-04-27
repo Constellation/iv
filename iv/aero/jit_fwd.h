@@ -1,5 +1,6 @@
 #ifndef IV_AERO_JIT_FWD_H_
 #define IV_AERO_JIT_FWD_H_
+#include <memory>
 #include <iv/platform.h>
 #include <iv/string_view.h>
 #if defined(IV_ENABLE_JIT)
@@ -14,20 +15,16 @@ struct JITExecutable {
   typedef int(*Executable)(VM* vm, const CharT* subject, uint32_t size, int* captures, uint32_t cp);  // NOLINT
 };
 
+template<typename CharT>
+class JIT;
+
 class Code;
 
 class JITCode {
  public:
   JITCode()
-    : jit8_(nullptr),
-      jit16_(nullptr),
-      exec8_(nullptr),
-      exec16_(nullptr) {
-  }
-
-  ~JITCode() {
-    delete jit8_;
-    delete jit16_;
+    : jit8_()
+    , jit16_() {
   }
 
   JITExecutable<char>::Executable Compile8(const Code* code);
@@ -41,10 +38,8 @@ class JITCode {
               int* captures, std::size_t current_position);
 
  private:
-  Xbyak::CodeGenerator* jit8_;
-  Xbyak::CodeGenerator* jit16_;
-  JITExecutable<char>::Executable exec8_;
-  JITExecutable<char16_t>::Executable exec16_;
+  std::unique_ptr<JIT<char>> jit8_;
+  std::unique_ptr<JIT<char16_t>> jit16_;
 };
 
 } }  // namespace iv::aero

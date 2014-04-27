@@ -4,7 +4,7 @@
 #include <cassert>
 #include <iv/ast.h>
 #include <iv/lv5/symbol.h>
-#include <iv/lv5/jsregexp_impl.h>
+#include <iv/lv5/regexp.h>
 
 namespace iv {
 namespace lv5 {
@@ -14,7 +14,7 @@ class Context;
 
 namespace context {
 
-void RegisterLiteralRegExp(Context* ctx, JSRegExpImpl* reg);
+void RegisterLiteralRegExp(Context* ctx, RegExp* reg);
 
 } }  // namespace lv5::context
 namespace core {
@@ -25,15 +25,15 @@ class RegExpLiteralBase<iv::lv5::AstFactory>
   : public Inherit<iv::lv5::AstFactory, kRegExpLiteral> {
  public:
   void Initialize(iv::lv5::Context* ctx) {
-    const int flags = iv::lv5::JSRegExpImpl::ComputeFlags(
+    const int flags = iv::lv5::RegExp::ComputeFlags(
         Derived()->flags().begin(),
         Derived()->flags().end());
-    regexp_ = new iv::lv5::JSRegExpImpl(
+    regexp_ = new iv::lv5::RegExp(
         ctx->regexp_allocator(),
         Derived()->value(), flags);
     ctx->global_data()->RegisterLiteralRegExp(regexp_);
   }
-  const iv::lv5::JSRegExpImpl* regexp() const {
+  const iv::lv5::RegExp* regexp() const {
     return regexp_;
   }
   bool IsValid() const {
@@ -44,7 +44,7 @@ class RegExpLiteralBase<iv::lv5::AstFactory>
   RegExpLiteral<iv::lv5::AstFactory>* Derived() {
     return static_cast<RegExpLiteral<iv::lv5::AstFactory>*>(this);
   }
-  iv::lv5::JSRegExpImpl* regexp_;
+  iv::lv5::RegExp* regexp_;
 };
 
 
