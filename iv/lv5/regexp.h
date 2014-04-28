@@ -28,6 +28,8 @@ class RegExp : public gc_cleanup {
 
   explicit RegExp(core::Space* allocator);
 
+  ~RegExp();
+
   RegExp(core::Space* allocator, const core::u16string_view& value, int flags);
 
   RegExp(core::Space* allocator, const core::string_view& value, int flags);
