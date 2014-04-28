@@ -19,6 +19,9 @@
 #  LLVM_VERSION_MINOR  - Minor version of LLVM.
 #  LLVM_VERSION_STRING - Full LLVM version string (e.g. 2.9).
 #
+#  FIXME(Yusuke Suzuki): Added
+#  LLVM_SYSTEM_LIBRARIES - Required system libraries by LLVM
+#
 # Note: The variable names were chosen in conformance with the offical CMake
 # guidelines, see ${CMAKE_ROOT}/Modules/readme.txt.
 
@@ -74,6 +77,11 @@ if (WIN32 OR NOT LLVM_CONFIG)
             # to switch to add_definitions() instead of throwing strings around.
             string(REPLACE ";" " " LLVM_CXXFLAGS "${LLVM_CXXFLAGS}")
         endif()
+
+        set(LLVM_SYSTEM_LIBRARIES)
+        if(${LLVM_VERSION_STRING} VERSION_GREATER "3.5.0" OR ${LLVM_VERSION_STRING} VERSION_EQUAL "3.5.0")
+            get_system_libs(LLVM_SYSTEM_LIBRARIES)
+        endif()
     else()
         if (NOT FIND_LLVM_QUIETLY)
             message(WARNING "Could not find llvm-config. Try manually setting LLVM_CONFIG to the llvm-config executable of the installation to use.")
@@ -127,26 +135,20 @@ else()
     llvm_set(LIBRARY_DIRS libdir)
     llvm_set_libs(LIBRARIES libfiles "${LLVM_LIBRARY_DIRS}/")
     llvm_set(ROOT_DIR prefix)
+    set(LLVM_SYSTEM_LIBRARIES)
+    if(${LLVM_VERSION_STRING} VERSION_GREATER "3.5.0" OR ${LLVM_VERSION_STRING} VERSION_EQUAL "3.5.0")
+        llvm_set(SYSTEM_LIBRARIES system-libs)
+        STRING(REGEX REPLACE "^( |\r?\n)+|( |\r?\n)+$" "" LLVM_SYSTEM_LIBRARIES "${LLVM_SYSTEM_LIBRARIES}")
+    endif()
 endif()
 
-# FIXME(Yusuke Suzuki): no-rtti is needed?
 # On CMake builds of LLVM, the output of llvm-config --cxxflags does not
 # include -fno-rtti, leading to linker errors. Be sure to add it.
-# if(CMAKE_COMPILER_IS_GNUCXX OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
-#     if(NOT ${LLVM_CXXFLAGS} MATCHES "-fno-rtti")
-#         set(LLVM_CXXFLAGS "${LLVM_CXXFLAGS} -fno-rtti")
-#     endif()
-# endif()
-
-# FIXME(Yusuke Suzuki):
-# llvm-config has a -fno-rtti -fno-exception by default, but lv5 requires them.
-STRING(REGEX REPLACE "-fno-rtti" " " LLVM_CXXFLAGS "${LLVM_CXXFLAGS}")
-STRING(REGEX REPLACE "-fno-exceptions" " " LLVM_CXXFLAGS "${LLVM_CXXFLAGS}")
-# FIXME(Yusuke Suzuki):
-# Some flags should be controlled by lv5
-STRING(REGEX REPLACE "-DNDEBUG" " " LLVM_CXXFLAGS "${LLVM_CXXFLAGS}")
-STRING(REGEX REPLACE "-O2" " " LLVM_CXXFLAGS "${LLVM_CXXFLAGS}")
-STRING(REGEX REPLACE "-g" " " LLVM_CXXFLAGS "${LLVM_CXXFLAGS}")
+if(CMAKE_COMPILER_IS_GNUCXX OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
+    if(NOT ${LLVM_CXXFLAGS} MATCHES "-fno-rtti")
+        set(LLVM_CXXFLAGS "${LLVM_CXXFLAGS} -fno-rtti")
+    endif()
+endif()
 
 string(REGEX REPLACE "([0-9]+).*" "\\1" LLVM_VERSION_MAJOR "${LLVM_VERSION_STRING}" )
 string(REGEX REPLACE "[0-9]+\\.([0-9]+).*[A-Za-z]*" "\\1" LLVM_VERSION_MINOR "${LLVM_VERSION_STRING}" )
@@ -158,6 +160,16 @@ if(${CMAKE_VERSION} VERSION_LESS "2.8.4")
   # The VERSION_VAR argument is not supported on pre-2.8.4, work around this.
   set(VERSION_VAR dummy)
 endif()
+
+# FIXME(Yusuke Suzuki):
+# llvm-config has a -fno-rtti -fno-exception by default, but lv5 requires them.
+STRING(REGEX REPLACE "-fno-rtti" " " LLVM_CXXFLAGS "${LLVM_CXXFLAGS}")
+STRING(REGEX REPLACE "-fno-exceptions" " " LLVM_CXXFLAGS "${LLVM_CXXFLAGS}")
+# FIXME(Yusuke Suzuki):
+# Some flags should be controlled by lv5
+STRING(REGEX REPLACE "-DNDEBUG" " " LLVM_CXXFLAGS "${LLVM_CXXFLAGS}")
+STRING(REGEX REPLACE "-O2" " " LLVM_CXXFLAGS "${LLVM_CXXFLAGS}")
+STRING(REGEX REPLACE "-g" " " LLVM_CXXFLAGS "${LLVM_CXXFLAGS}")
 
 find_package_handle_standard_args(LLVM
     REQUIRED_VARS LLVM_ROOT_DIR LLVM_HOST_TARGET
