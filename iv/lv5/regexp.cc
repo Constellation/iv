@@ -35,6 +35,8 @@ RegExp::RegExp(core::Space* allocator)
   Initialize(allocator, kEmptyPattern);
 }
 
+RegExp::~RegExp() { }
+
 int RegExp::number_of_captures() const {
   assert(IsValid());
   return code_->captures();
