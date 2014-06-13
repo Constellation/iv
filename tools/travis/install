@@ -1,7 +1,0 @@
-#!/bin/bash
-
-if [ $TRAVIS_OS_NAME = "linux" ]; then
-  sudo apt-get install -qq --force-yes -y g++-4.8 llvm-3.3-dev libdw-dev libbfd-dev cmake
-elif [ $TRAVIS_OS_NAME = "osx" ]; then
-  sudo brew install llvm binutils cmake
-fi
