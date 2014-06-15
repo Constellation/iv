@@ -9,7 +9,7 @@ install:
     - if [ "$TRAVIS_OS_NAME" == "linux" ]; then export CC="gcc-4.8"; fi
     - if [ "$TRAVIS_OS_NAME" == "linux" ]; then export CXX="g++-4.8"; fi
     - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo apt-get install -y llvm-3.3-dev libdw-dev libbfd-dev; fi
-    - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install binutils cmake llvm; fi
+    - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install binutils cmake llvm --verbose; fi
 
 before_script:
     - cmake -H. -Bdebug -DCMAKE_BUILD_TYPE=Debug
