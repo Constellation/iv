@@ -3,7 +3,7 @@ project (benchmark)
 
 find_package(Threads REQUIRED)
 
-set(CMAKE_CXX_FLAGS "-Wall -Werror -pedantic-errors ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-Wall -Wno-unused-const-variable -pedantic-errors ${CMAKE_CXX_FLAGS}")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DDEBUG ${CMAKE_CXX_FLAGS_DEBUG}")
 set(CMAKE_CXX_FLAGS_RELEASE "-fno-strict-aliasing -O3 -DNDEBUG ${CMAKE_CXX_FLAGS_RELEASE}")
 

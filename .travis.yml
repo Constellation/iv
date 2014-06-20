@@ -1,24 +1,37 @@
 language: cpp
-compiler:
-    - clang
-    - gcc
+
+os:
+    - linux
+    - osx
+
+env:
+    - BUILD_TYPE=Debug
+    - BUILD_TYPE=Release
+
 before_install:
-  - sudo apt-get update -y
+    - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
+    - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo apt-get update -qq; fi
+
 install:
-    - sudo apt-get install -y llvm-3.3-dev libdw-dev libbfd-dev
+    - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo apt-get install -qq g++-4.8; fi
+    - if [ "$TRAVIS_OS_NAME" == "linux" ]; then export CC="gcc-4.8"; fi
+    - if [ "$TRAVIS_OS_NAME" == "linux" ]; then export CXX="g++-4.8"; fi
+    - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo apt-get install -y llvm-3.3-dev libdw-dev libbfd-dev; fi
+    - if [ "$TRAVIS_OS_NAME" == "osx" ]; then export CC="clang"; fi
+    - if [ "$TRAVIS_OS_NAME" == "osx" ]; then export CXX="clang++"; fi
+    - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install binutils cmake llvm --verbose; fi
+
 before_script:
-    - cmake -H. -Bdebug -DCMAKE_BUILD_TYPE=Debug
-    - cmake -H. -Brelease -DCMAKE_BUILD_TYPE=Release
+    - "cmake -H. -Bout -DCMAKE_BUILD_TYPE=$BUILD_TYPE"
+
 script:
-    - make -C debug
-    - make -C release
-    - debug/iv/test/iv_unit_tests
-    - release/iv/test/iv_unit_tests
-    - debug/iv/lv5/test/lv5_unit_tests
-    - release/iv/lv5/test/lv5_unit_tests
-    - release/iv/test/benchmarks/aero_benchmarks --benchmark_iterations=100
-    - make -C release sunspider
-    - TZ=GST+8 python release/tools/download-test262-prefix/src/download-test262/tools/packaging/test262.py --tests=release/tools/download-test262-prefix/src/download-test262 --command=release/iv/lv5/lv5 --summary
+    - make -C out
+    - out/iv/test/iv_unit_tests
+    - out/iv/lv5/test/lv5_unit_tests
+    - if [ "$BUILD_TYPE" == "Release" ]; then out/iv/test/benchmarks/aero_benchmarks --benchmark_iterations=100; fi
+    - if [ "$BUILD_TYPE" == "Release" ]; then make -C out sunspider; fi
+    - if [ "$BUILD_TYPE" == "Release" ]; then TZ=GST+8 python out/tools/download-test262-prefix/src/download-test262/tools/packaging/test262.py --tests=out/tools/download-test262-prefix/src/download-test262 --command=out/iv/lv5/lv5 --summary; fi
+
 notifications:
     recipients:
         - utatane.tea@gmail.com
@@ -27,10 +40,11 @@ notifications:
         on_failure: always
     webhooks:
         urls:
-          - https://webhooks.gitter.im/e/08227c1b059d9d0c5fb8
+            - https://webhooks.gitter.im/e/08227c1b059d9d0c5fb8
         on_success: change  # options: [always|never|change] default: always
         on_failure: always  # options: [always|never|change] default: always
         on_start: false     # default: false
+
 matrix:
-  allow_failures:
-    - compiler: clang
+    allow_failures:
+        - compiler: clang
