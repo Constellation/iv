@@ -48,7 +48,7 @@ class Compiler {
     // i.e. Block 0x7fff5fbff8b812
     std::array<char, 30> buf;
     const int num = snprintf(buf.data(), buf.size() - 1, "Block %p", code);
-    assert(num < buf.size());
+    assert(static_cast<std::size_t>(num) < buf.size());
     buf[num] = '\0';
     return std::string(buf.data(), num);
   }
