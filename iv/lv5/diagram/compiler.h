@@ -188,7 +188,7 @@ class Compiler {
   railgun::Code* code_;
   EntryPointMap entry_points_;
   Codes codes_;
-  llvm::Module *module_;
+  llvm::Module* module_;
 };
 
 inline void CompileInternal(Compiler* diagram, breaker::Compiler* breaker,
