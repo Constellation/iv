@@ -147,6 +147,6 @@ function(build_and_link_backward)
         target_link_libraries(lv5 backward ${BACKWARD_LIBRARIES})
     endif()
 endfunction(build_and_link_backward)
-build_and_link_backward()
+# build_and_link_backward()
 
 add_subdirectory(test)
