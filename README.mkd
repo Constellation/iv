@@ -1,10 +1,10 @@
-# iv [![Build Status](https://travis-ci.org/Constellation/iv.png?branch=master)](https://travis-ci.org/Constellation/iv)
+# iv [![Build Status](https://travis-ci.org/Constellation/iv.svg?branch=master)](https://travis-ci.org/Constellation/iv)
 
 iv is ECMA262 5.1 lexer and parser and engine project written in C++ / JS
 
 a lot of inspired from V8, SpiderMonkey, JavaScriptCore
 
-Gitter: [![Gitter chat](https://badges.gitter.im/Constellation/iv.png)](https://gitter.im/Constellation/iv)
+Gitter: [![Gitter chat](https://badges.gitter.im/Constellation/iv.svg)](https://gitter.im/Constellation/iv)
 
 ## License
 
