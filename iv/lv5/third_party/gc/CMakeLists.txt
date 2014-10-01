@@ -46,10 +46,12 @@ ENDIF()
 #LIBATOMIC #TODO
 #ADD_LIBRARY(atomic_ops STATIC )
 #SET_TARGET_PROPERTIES(atomic_ops PROPERTIES COMPILE_FLAGS -DNO_DEBUGGING)
+
 #TODO(Yusuke Suzuki): workaround
 # we need to implement own GC library
 UNSET(CMAKE_USE_PTHREADS_INIT)
 UNSET(CMAKE_USE_WIN32_THREADS_INIT)
+
 
 #LIBGC
 
@@ -135,8 +137,8 @@ IF(CMAKE_USE_PTHREADS_INIT)
                 IF (${enable_parallel_mark})
                         ADD_DEFINITIONS("-DPARALLEL_MARK")
                 ENDIF()
-                ADD_DEFINITIONS("THREAD_LOCAL_ALLOC")
-                ADD_DEFINITIONS("USE_COMPILER_TLS")
+                ADD_DEFINITIONS("-DTHREAD_LOCAL_ALLOC")
+                ADD_DEFINITIONS("-DUSE_COMPILER_TLS")
         ENDIF()
         IF ( "HOST" MATCHES .*-.*-gnu.*)
                 ADD_DEFINITIONS("-DGC_GNU_THREADS")

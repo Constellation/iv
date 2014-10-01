@@ -21,7 +21,7 @@ C++ Interface to the Boehm Collector
 
 This interface provides access to the Boehm collector.  It provides
 basic facilities similar to those described in "Safe, Efficient
-Garbage Collection for C++", by John R. Elis and David L. Detlefs
+Garbage Collection for C++", by John R. Ellis and David L. Detlefs
 (ftp://ftp.parc.xerox.com/pub/ellis/gc).
 
 All heap-allocated objects are either "collectible" or
@@ -268,7 +268,6 @@ inline void* operator new( size_t size, GC_NS_QUALIFY(GCPlacement) gcp,
                               GC_NS_QUALIFY(GCCleanUpFunc), void * );
 #endif
 
-#if 0
 #ifdef _MSC_VER
  /** This ensures that the system default operator new[] doesn't get
   *  undefined, which is what seems to happen on VC++ 6 for some reason
@@ -288,7 +287,6 @@ inline void* operator new( size_t size, GC_NS_QUALIFY(GCPlacement) gcp,
   void* operator new( size_t size, int /* nBlockUse */,
                      const char * szFileName, int nLine );
 #endif /* _MSC_VER */
-#endif
 
 #ifdef GC_OPERATOR_NEW_ARRAY
   inline void* operator new[]( size_t size, GC_NS_QUALIFY(GCPlacement) gcp,
