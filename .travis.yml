@@ -25,7 +25,7 @@ before_script:
     - "cmake -H. -Bout -DCMAKE_BUILD_TYPE=$BUILD_TYPE"
 
 script:
-    - make -C out
+    - make -C out -j2
     - out/iv/test/iv_unit_tests
     - out/iv/lv5/test/lv5_unit_tests
     - if [ "$BUILD_TYPE" == "Release" ]; then out/iv/test/benchmarks/aero_benchmarks --benchmark_iterations=100; fi
@@ -33,9 +33,9 @@ script:
     - if [ "$BUILD_TYPE" == "Release" ]; then TZ=GST+8 python out/tools/download-test262-prefix/src/download-test262/tools/packaging/test262.py --tests=out/tools/download-test262-prefix/src/download-test262 --command=out/iv/lv5/lv5 --summary; fi
 
 notifications:
-    recipients:
-        - utatane.tea@gmail.com
     email:
+        recipients:
+            - utatane.tea@gmail.com
         on_success: change
         on_failure: always
     webhooks:
