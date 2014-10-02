@@ -25,7 +25,7 @@ before_script:
     - "cmake -H. -Bout -DCMAKE_BUILD_TYPE=$BUILD_TYPE"
 
 script:
-    - make -C out -j2
+    - make -C out
     - out/iv/test/iv_unit_tests
     - out/iv/lv5/test/lv5_unit_tests
     - if [ "$BUILD_TYPE" == "Release" ]; then out/iv/test/benchmarks/aero_benchmarks --benchmark_iterations=100; fi
