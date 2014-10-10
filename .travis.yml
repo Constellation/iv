@@ -61,7 +61,7 @@ before_script:
     - "cmake -H. -Bout -DCMAKE_BUILD_TYPE=$BUILD_TYPE"
 
 script:
-    - if [ "$TEST" == ""]; then
+    - if [ "$TEST" == "" ]; then
         make -C out lv5 iv_unit_tests lv5_unit_tests aero_benchmarks -j$JOBS;
       fi
     - if [ "$TEST" == "unit" ]; then
