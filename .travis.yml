@@ -10,30 +10,30 @@ env:
     - BUILD_TYPE=Release
     - BUILD_TYPE=Release TEST=unit
     - BUILD_TYPE=Release TEST=performance
-    - BUILD_TYPE=Release TEST262=annexB
-    - BUILD_TYPE=Release TEST262=bestPractice
-    - BUILD_TYPE=Release TEST262=ch06
-    - BUILD_TYPE=Release TEST262=ch07
-    - BUILD_TYPE=Release TEST262=ch08
-    - BUILD_TYPE=Release TEST262=ch09
-    - BUILD_TYPE=Release TEST262=ch10
-    - BUILD_TYPE=Release TEST262=ch11
-    - BUILD_TYPE=Release TEST262=ch12
-    - BUILD_TYPE=Release TEST262=ch13
-    - BUILD_TYPE=Release TEST262=ch14
-    - BUILD_TYPE=Release TEST262=ch15/15.1
-    - BUILD_TYPE=Release TEST262=ch15/15.2
-    - BUILD_TYPE=Release TEST262=ch15/15.3
-    - BUILD_TYPE=Release TEST262=ch15/15.4
-    - BUILD_TYPE=Release TEST262=ch15/15.5
-    - BUILD_TYPE=Release TEST262=ch15/15.6
-    - BUILD_TYPE=Release TEST262=ch15/15.7
-    - BUILD_TYPE=Release TEST262=ch15/15.8
-    - BUILD_TYPE=Release TEST262=ch15/15.9
-    - BUILD_TYPE=Release TEST262=ch15/15.10
-    - BUILD_TYPE=Release TEST262=ch15/15.11
-    - BUILD_TYPE=Release TEST262=ch15/15.12
-    - BUILD_TYPE=Release TEST262=intl402
+    - BUILD_TYPE=Release TEST=test262 TEST262=annexB
+    - BUILD_TYPE=Release TEST=test262 TEST262=bestPractice
+    - BUILD_TYPE=Release TEST=test262 TEST262=ch06
+    - BUILD_TYPE=Release TEST=test262 TEST262=ch07
+    - BUILD_TYPE=Release TEST=test262 TEST262=ch08
+    - BUILD_TYPE=Release TEST=test262 TEST262=ch09
+    - BUILD_TYPE=Release TEST=test262 TEST262=ch10
+    - BUILD_TYPE=Release TEST=test262 TEST262=ch11
+    - BUILD_TYPE=Release TEST=test262 TEST262=ch12
+    - BUILD_TYPE=Release TEST=test262 TEST262=ch13
+    - BUILD_TYPE=Release TEST=test262 TEST262=ch14
+    - BUILD_TYPE=Release TEST=test262 TEST262=ch15/15.1
+    - BUILD_TYPE=Release TEST=test262 TEST262=ch15/15.2
+    - BUILD_TYPE=Release TEST=test262 TEST262=ch15/15.3
+    - BUILD_TYPE=Release TEST=test262 TEST262=ch15/15.4
+    - BUILD_TYPE=Release TEST=test262 TEST262=ch15/15.5
+    - BUILD_TYPE=Release TEST=test262 TEST262=ch15/15.6
+    - BUILD_TYPE=Release TEST=test262 TEST262=ch15/15.7
+    - BUILD_TYPE=Release TEST=test262 TEST262=ch15/15.8
+    - BUILD_TYPE=Release TEST=test262 TEST262=ch15/15.9
+    - BUILD_TYPE=Release TEST=test262 TEST262=ch15/15.10
+    - BUILD_TYPE=Release TEST=test262 TEST262=ch15/15.11
+    - BUILD_TYPE=Release TEST=test262 TEST262=ch15/15.12
+    - BUILD_TYPE=Release TEST=test262 TEST262=intl402
 
 before_install:
     - export TZ=GST+8
@@ -60,16 +60,21 @@ before_script:
     - "cmake -H. -Bout -DCMAKE_BUILD_TYPE=$BUILD_TYPE"
 
 script:
-    - make -C out
+    - if [ "$TEST" == ""]; then
+        make -C out lv5 iv_unit_tests lv5_unit_tests aero_benchmarks;
+      fi
     - if [ "$TEST" == "unit" ]; then
+        make -C out iv_unit_tests lv5_unit_tests;
         out/iv/test/iv_unit_tests;
         out/iv/lv5/test/lv5_unit_tests;
       fi
     - if [ "$TEST" == "performance" ]; then
+        make -C out aero_benchmarks lv5 download-sunspider;
         out/iv/test/benchmarks/aero_benchmarks --benchmark_iterations=100;
         make -C out sunspider;
       fi
-    - if [ "$TEST262" != "" ]; then
+    - if [ "$TEST" == "test262" ]; then
+        make -C out lv5 download-test262;
         python out/tools/download-test262-prefix/src/download-test262/tools/packaging/test262.py --tests=out/tools/download-test262-prefix/src/download-test262 --command=out/iv/lv5/lv5 --summary $TEST262;
       fi
 
