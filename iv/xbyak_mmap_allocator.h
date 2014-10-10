@@ -5,6 +5,7 @@
 #include <iv/third_party/xbyak/xbyak.h>
 #include <iv/platform.h>
 #include <iv/utils.h>
+#include <iv/os_allocator.h>
 namespace iv {
 namespace core {
 
@@ -15,9 +16,8 @@ class XbyakMMapAllocator : public Xbyak::Allocator {
 
   virtual uint8_t* alloc(std::size_t size) {
     const std::size_t rounded = IV_ROUNDUP(size, kPageSize);
-    int mode = PROT_READ | PROT_WRITE;
-    void* ptr = mmap(NULL, rounded, mode, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (ptr == MAP_FAILED) {
+    void* ptr = OSAllocator::Allocate(rounded);
+    if (!ptr) {
       return nullptr;
     }
     memory.insert(std::make_pair(ptr, rounded));
@@ -30,7 +30,7 @@ class XbyakMMapAllocator : public Xbyak::Allocator {
     }
     const auto iter = memory.find(reinterpret_cast<void*>(ptr));
     assert(iter != memory.end());
-    munmap(iter->first, iter->second);
+    OSAllocator::Deallocate(iter->first, iter->second);
     memory.erase(iter);
   }
 

@@ -25,7 +25,7 @@ inline void* OSAllocator::Allocate(std::size_t bytes) {
   mem = mmap(mem, bytes,
              PROT_READ | PROT_WRITE, MAP_PRIVATE | IV_MAP_ANON, fd, 0);
   if (mem == MAP_FAILED) {
-    std::abort();
+    return nullptr;
   }
   return mem;
 }
