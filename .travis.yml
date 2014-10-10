@@ -76,7 +76,7 @@ script:
       fi
     - if [ "$TEST" == "test262" ]; then
         make -C out lv5 download-test262 -j$JOBS;
-        python out/tools/download-test262-prefix/src/download-test262/tools/packaging/test262.py --tests=out/tools/download-test262-prefix/src/download-test262 --command=out/iv/lv5/lv5 --summary $TEST262;
+        travis_wait python out/tools/download-test262-prefix/src/download-test262/tools/packaging/test262.py --tests=out/tools/download-test262-prefix/src/download-test262 --command=out/iv/lv5/lv5 --summary $TEST262;
       fi
 
 notifications:
