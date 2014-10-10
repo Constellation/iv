@@ -14,6 +14,7 @@
 #include <iv/assoc_vector.h>
 #include <iv/utils.h>
 #include <iv/noncopyable.h>
+#include <iv/xbyak_mmap_allocator.h>
 #include <iv/aero/op.h>
 #include <iv/aero/code.h>
 #include <iv/aero/utility.h>
@@ -58,7 +59,9 @@ struct Reg<char16_t> {
 }  // namespace jit_detail
 
 template<typename CharT>
-class JIT : public Xbyak::CodeGenerator {
+class JIT
+  : private core::XbyakMMapAllocator
+  , public Xbyak::CodeGenerator {
  public:
   // x64 JIT
   //
@@ -115,7 +118,11 @@ class JIT : public Xbyak::CodeGenerator {
   static const int kASCII = kCharSize == 1;
 
   explicit JIT(const Code& code)
-    : Xbyak::CodeGenerator(4096, Xbyak::AutoGrow),
+    : core::XbyakMMapAllocator(),
+      Xbyak::CodeGenerator(
+        4096,
+        Xbyak::AutoGrow,
+        static_cast<core::XbyakMMapAllocator*>(this)),
       code_(code),
       first_instr_(code.bytes().data()),
       jumps_(),

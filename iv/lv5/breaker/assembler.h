@@ -2,6 +2,7 @@
 #define IV_LV5_BREAKER_ASSEMBLER_H_
 #include <iv/detail/memory.h>
 #include <iv/noncopyable.h>
+#include <iv/xbyak_mmap_allocator.h>
 #include <iv/lv5/breaker/fwd.h>
 #include <iv/lv5/breaker/ic.h>
 #include <iv/lv5/breaker/executable_pages.h>
@@ -9,37 +10,9 @@ namespace iv {
 namespace lv5 {
 namespace breaker {
 
-// For Xbyak
-class MainCodeAllocator : public Xbyak::Allocator {
- public:
-  MainCodeAllocator()
-    : Xbyak::Allocator(),
-      pointer_(nullptr),
-      locked_(false) { }
-
-  virtual ~MainCodeAllocator() {
-    if (pointer_) {
-      Xbyak::Allocator::free(pointer_);
-    }
-  }
-
-	virtual void free(uint8_t *p) {
-    if (!locked_) {
-      Xbyak::Allocator::free(p);
-    } else {
-      assert(pointer_ == nullptr);
-      pointer_ = p;
-    }
-  }
-
-  void Lock() { locked_ = true; }
-  void Unlock() { locked_ = false; }
- private:
-  uint8_t* pointer_;
-  bool locked_;
-};
-
-class Assembler : public Xbyak::CodeGenerator {
+class Assembler
+  : private core::XbyakMMapAllocator
+  , public Xbyak::CodeGenerator {
  public:
   friend class Compiler;
   class LocalLabelScope : core::Noncopyable<> {
@@ -105,7 +78,12 @@ class Assembler : public Xbyak::CodeGenerator {
     std::size_t offset_;
   };
 
-  Assembler() : Xbyak::CodeGenerator(4096, Xbyak::AutoGrow) { }
+  Assembler()
+    : core::XbyakMMapAllocator()
+    , Xbyak::CodeGenerator(
+        4096,
+        Xbyak::AutoGrow,
+        static_cast<core::XbyakMMapAllocator*>(this)) { }
 
   // implementation of INT $3 and INT imm8
   // INT3 is used for gdb breakpoint.
