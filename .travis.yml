@@ -6,31 +6,72 @@ os:
 
 env:
     - BUILD_TYPE=Debug
+    - BUILD_TYPE=Debug TEST=unit
     - BUILD_TYPE=Release
+    - BUILD_TYPE=Release TEST=unit
+    - BUILD_TYPE=Release TEST=performance
+    - BUILD_TYPE=Release TEST262=annexB
+    - BUILD_TYPE=Release TEST262=bestPractice
+    - BUILD_TYPE=Release TEST262=ch06
+    - BUILD_TYPE=Release TEST262=ch07
+    - BUILD_TYPE=Release TEST262=ch08
+    - BUILD_TYPE=Release TEST262=ch09
+    - BUILD_TYPE=Release TEST262=ch10
+    - BUILD_TYPE=Release TEST262=ch11
+    - BUILD_TYPE=Release TEST262=ch12
+    - BUILD_TYPE=Release TEST262=ch13
+    - BUILD_TYPE=Release TEST262=ch14
+    - BUILD_TYPE=Release TEST262=ch15/15.1
+    - BUILD_TYPE=Release TEST262=ch15/15.2
+    - BUILD_TYPE=Release TEST262=ch15/15.3
+    - BUILD_TYPE=Release TEST262=ch15/15.4
+    - BUILD_TYPE=Release TEST262=ch15/15.5
+    - BUILD_TYPE=Release TEST262=ch15/15.6
+    - BUILD_TYPE=Release TEST262=ch15/15.7
+    - BUILD_TYPE=Release TEST262=ch15/15.8
+    - BUILD_TYPE=Release TEST262=ch15/15.9
+    - BUILD_TYPE=Release TEST262=ch15/15.10
+    - BUILD_TYPE=Release TEST262=ch15/15.11
+    - BUILD_TYPE=Release TEST262=ch15/15.12
+    - BUILD_TYPE=Release TEST262=intl402
 
 before_install:
-    - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
-    - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo apt-get update -qq; fi
+    - export TZ=GST+8
+    - if [ "$TRAVIS_OS_NAME" == "linux" ]; then
+        sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test;
+        sudo apt-get update -qq;
+      fi
 
 install:
-    - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo apt-get install -qq g++-4.8; fi
-    - if [ "$TRAVIS_OS_NAME" == "linux" ]; then export CC="gcc-4.8"; fi
-    - if [ "$TRAVIS_OS_NAME" == "linux" ]; then export CXX="g++-4.8"; fi
-    - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo apt-get install -y llvm-3.3-dev libdw-dev libbfd-dev; fi
-    - if [ "$TRAVIS_OS_NAME" == "osx" ]; then export CC="clang"; fi
-    - if [ "$TRAVIS_OS_NAME" == "osx" ]; then export CXX="clang++"; fi
-    - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install binutils cmake llvm --verbose; fi
+    - if [ "$TRAVIS_OS_NAME" == "linux" ]; then
+        sudo apt-get install -qq g++-4.8;
+        export CC="gcc-4.8";
+        export CXX="g++-4.8";
+        sudo apt-get install -y llvm-3.3-dev libdw-dev libbfd-dev;
+      fi
+    - if [ "$TRAVIS_OS_NAME" == "osx" ]; then
+        export CC="clang";
+        export CXX="clang++";
+        brew install binutils cmake llvm --verbose;
+      fi
 
 before_script:
+    - cmake --version
     - "cmake -H. -Bout -DCMAKE_BUILD_TYPE=$BUILD_TYPE"
 
 script:
     - make -C out
-    - out/iv/test/iv_unit_tests
-    - out/iv/lv5/test/lv5_unit_tests
-    - if [ "$BUILD_TYPE" == "Release" ]; then out/iv/test/benchmarks/aero_benchmarks --benchmark_iterations=100; fi
-    - if [ "$BUILD_TYPE" == "Release" ]; then make -C out sunspider; fi
-    - if [ "$BUILD_TYPE" == "Release" ]; then TZ=GST+8 python out/tools/download-test262-prefix/src/download-test262/tools/packaging/test262.py --tests=out/tools/download-test262-prefix/src/download-test262 --command=out/iv/lv5/lv5 --summary; fi
+    - if [ "$TEST" == "unit" ]; then
+        out/iv/test/iv_unit_tests;
+        out/iv/lv5/test/lv5_unit_tests;
+      fi
+    - if [ "$TEST" == "performance" ]; then
+        out/iv/test/benchmarks/aero_benchmarks --benchmark_iterations=100;
+        make -C out sunspider;
+      fi
+    - if [ "$TEST262" != "" ]; then
+        python out/tools/download-test262-prefix/src/download-test262/tools/packaging/test262.py --tests=out/tools/download-test262-prefix/src/download-test262 --command=out/iv/lv5/lv5 --summary $TEST262;
+      fi
 
 notifications:
     email:
