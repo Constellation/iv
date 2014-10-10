@@ -37,6 +37,7 @@ env:
 
 before_install:
     - export TZ=GST+8
+    - export JOBS=2
     - if [ "$TRAVIS_OS_NAME" == "linux" ]; then
         sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test;
         sudo apt-get update -qq;
@@ -61,20 +62,20 @@ before_script:
 
 script:
     - if [ "$TEST" == ""]; then
-        make -C out lv5 iv_unit_tests lv5_unit_tests aero_benchmarks;
+        make -C out lv5 iv_unit_tests lv5_unit_tests aero_benchmarks -j$JOBS;
       fi
     - if [ "$TEST" == "unit" ]; then
-        make -C out iv_unit_tests lv5_unit_tests;
+        make -C out iv_unit_tests lv5_unit_tests -j$JOBS;
         out/iv/test/iv_unit_tests;
         out/iv/lv5/test/lv5_unit_tests;
       fi
     - if [ "$TEST" == "performance" ]; then
-        make -C out aero_benchmarks lv5 download-sunspider;
+        make -C out aero_benchmarks lv5 download-sunspider -j$JOBS;
         out/iv/test/benchmarks/aero_benchmarks --benchmark_iterations=100;
         make -C out sunspider;
       fi
     - if [ "$TEST" == "test262" ]; then
-        make -C out lv5 download-test262;
+        make -C out lv5 download-test262 -j$JOBS;
         python out/tools/download-test262-prefix/src/download-test262/tools/packaging/test262.py --tests=out/tools/download-test262-prefix/src/download-test262 --command=out/iv/lv5/lv5 --summary $TEST262;
       fi
 
