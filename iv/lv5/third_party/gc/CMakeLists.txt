@@ -22,6 +22,7 @@
 #
 
 SET(CMAKE_LEGACY_CYGWIN_WIN32 0) # Remove when CMake >= 2.8.4 is required
+ENABLE_LANGUAGE(ASM)
 
 PROJECT(gc)
 
@@ -63,6 +64,17 @@ SET(SRC alloc.c reclaim.c allchblk.c misc.c mach_dep.c os_dep.c
         new_hblk.c dbg_mlc.c malloc.c stubborn.c dyn_load.c
         typd_mlc.c ptr_chck.c gc_cpp.cc mallocx.c checksums.c
         thread_local_alloc.c)
+
+#FIXME(Yusuke Suzuki): added
+IF(CMAKE_SYSTEM_PROCESSOR MATCHES "^sparc")
+  IF(CMAKE_SYSTEM_NAME MATCHES "kNetBSD.*|NetBSD.*")
+    SET(SRC ${SRC} src/sparc_netbsd_mach_dep.S)
+  ELSE()
+    SET(SRC ${SRC} src/sparc_mach_dep.S)
+  ENDIF()
+ENDIF()
+
+
 SET(LIBS)
 OPTION(enable_threads "TODO" NO)
 IF(enable_threads)
