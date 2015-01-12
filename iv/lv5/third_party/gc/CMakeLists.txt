@@ -22,7 +22,6 @@
 #
 
 SET(CMAKE_LEGACY_CYGWIN_WIN32 0) # Remove when CMake >= 2.8.4 is required
-ENABLE_LANGUAGE(ASM)
 
 PROJECT(gc)
 
@@ -66,12 +65,20 @@ SET(SRC alloc.c reclaim.c allchblk.c misc.c mach_dep.c os_dep.c
         thread_local_alloc.c)
 
 #FIXME(Yusuke Suzuki): added
+SET(ASM_NEEDED false)
 IF(CMAKE_SYSTEM_PROCESSOR MATCHES "^sparc")
   IF(CMAKE_SYSTEM_NAME MATCHES "kNetBSD.*|NetBSD.*")
-    SET(SRC ${SRC} src/sparc_netbsd_mach_dep.S)
+    SET(SRC ${SRC} src/sparc_netbsd_mach_dep.s)
   ELSE()
     SET(SRC ${SRC} src/sparc_mach_dep.S)
   ENDIF()
+  SET(ASM_NEEDED true)
+ELSEIF(CMAKE_SYSTEM_PROCESSOR MATCHES "^ia64")
+  SET(SRC ${SRC} src/ia64_save_regs_in_stack.s)
+  SET(ASM_NEEDED true)
+ENDIF()
+IF(ASM_NEEDED)
+  ENABLE_LANGUAGE(ASM)
 ENDIF()
 
 
