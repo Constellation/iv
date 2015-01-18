@@ -66,7 +66,7 @@ SET(SRC alloc.c reclaim.c allchblk.c misc.c mach_dep.c os_dep.c
 
 #FIXME(Yusuke Suzuki): added
 SET(ASM_NEEDED false)
-IF(CMAKE_SYSTEM_PROCESSOR MATCHES "^sparc")
+IF(CMAKE_SYSTEM_PROCESSOR MATCHES "^sparc|s64fx")
   IF(CMAKE_SYSTEM_NAME MATCHES "kNetBSD.*|NetBSD.*")
     SET(SRC ${SRC} src/sparc_netbsd_mach_dep.s)
   ELSE()
