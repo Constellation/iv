@@ -34,4 +34,10 @@
    */ \
   IV_LV5_ERROR_WITH(error, {})
 
+#define IV_LV5_ERROR_REPORT(error, type, string)\
+  do { \
+    (error)->Report((type), (string)); \
+    return {}; \
+  } while (0)
+
 #endif  // IV_LV5_ERROR_CHECK_H_

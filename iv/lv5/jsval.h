@@ -764,7 +764,8 @@ inline double JSLayout::ToNumber(Context* ctx, Error* e) const {
   } else if (IsUndefined()) {
     return core::kNaN;
   } else if (IsSymbol()) {
-    return core::kNaN;
+    e->Report(Error::Type, "Cannot perform ToNumber operation on Symbols");
+    return {};
   } else {
     assert(IsObject());
     JSLayout prim = object()->DefaultValue(ctx, Hint::NUMBER, IV_LV5_ERROR(e));
@@ -793,7 +794,8 @@ inline JSVal JSVal::ToNumberValue(Context* ctx, Error* e) const {
   } else if (IsUndefined()) {
     return core::kNaN;
   } else if (IsSymbol()) {
-    return core::kNaN;
+    e->Report(Error::Type, "Cannot perform ToNumber operation on Symbols");
+    return {};
   } else {
     assert(IsObject());
     const JSVal prim =
