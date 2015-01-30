@@ -27,7 +27,6 @@ class Cell;
 class Error;
 class JSEnv;
 class Context;
-class JSReference;
 class JSEnv;
 class JSObject;
 class JSString;
@@ -51,7 +50,6 @@ struct Layout<4, true> {
         JSObject* object_;
         JSString* string_;
         JSSymbol* symbol_;
-        JSReference* reference_;
         JSEnv* environment_;
         int32_t int32_;
         radio::Cell* cell_;
@@ -75,7 +73,6 @@ struct Layout<4, false> {
         JSObject* object_;
         JSString* string_;
         JSSymbol* symbol_;
-        JSReference* reference_;
         JSEnv* environment_;
         int32_t int32_;
         radio::Cell* cell_;
@@ -100,7 +97,6 @@ struct Layout<8, true> {
         JSObject* object_;
         JSString* string_;
         JSSymbol* symbol_;
-        JSReference* reference_;
         JSEnv* environment_;
         JSVal* jsvalref_;
         int32_t int32_;
@@ -128,7 +124,6 @@ struct Layout<8, false> {
         JSObject* object_;
         JSString* string_;
         JSSymbol* symbol_;
-        JSReference* reference_;
         JSEnv* environment_;
         JSVal* jsvalref_;
         int32_t int32_;
@@ -274,15 +269,11 @@ class JSLayout {
 
   bool IsObject() const;
 
-  bool IsReference() const;
-
   bool IsEnvironment() const;
 
   bool IsOtherCell() const;
 
   bool IsPrimitive() const;
-
-  JSReference* reference() const;
 
   JSEnv* environment() const;
 
@@ -313,8 +304,6 @@ class JSLayout {
   void set_value(JSString* val);
 
   void set_value(JSSymbol* val);
-
-  void set_value(JSReference* val);
 
   void set_value(JSEnv* val);
 
@@ -391,11 +380,6 @@ class JSVal : public JSLayout {
   }
 
   JSVal(JSSymbol* val)  // NOLINT
-    : JSLayout() {
-    set_value(val);
-  }
-
-  JSVal(JSReference* val)  // NOLINT
     : JSLayout() {
     set_value(val);
   }

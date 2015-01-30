@@ -10,7 +10,6 @@
 #include <iv/lv5/jsobject_fwd.h>
 #include <iv/lv5/context.h>
 #include <iv/lv5/jsenv.h>
-#include <iv/lv5/jsreference.h>
 #include <iv/lv5/jsbooleanobject.h>
 #include <iv/lv5/jsnumberobject.h>
 #include <iv/lv5/jsstringobject.h>
@@ -114,10 +113,6 @@ inline bool JSLayout::IsObject() const {
   return IsCell() && cell()->tag() == radio::OBJECT;
 }
 
-inline bool JSLayout::IsReference() const {
-  return IsCell() && cell()->tag() == radio::REFERENCE;
-}
-
 inline bool JSLayout::IsEnvironment() const {
   return IsCell() && cell()->tag() == radio::ENVIRONMENT;
 }
@@ -128,11 +123,6 @@ inline bool JSLayout::IsOtherCell() const {
 
 inline bool JSLayout::IsPrimitive() const {
   return IsNumber() || IsString() || IsBoolean() || IsSymbol();
-}
-
-inline JSReference* JSLayout::reference() const {
-  assert(IsReference());
-  return static_cast<JSReference*>(value_.cell_);
 }
 
 inline JSEnv* JSLayout::environment() const {
@@ -216,10 +206,6 @@ inline void JSLayout::set_value(JSString* val) {
 }
 
 inline void JSLayout::set_value(JSSymbol* val) {
-  value_.cell_ = static_cast<radio::Cell*>(val);
-}
-
-inline void JSLayout::set_value(JSReference* val) {
   value_.cell_ = static_cast<radio::Cell*>(val);
 }
 
@@ -323,16 +309,15 @@ namespace jsval32 {
 
 static const uint32_t kOtherCellTag   = 0xffffffff;  // cell range end
 static const uint32_t kEnvironmentTag = 0xfffffffe;
-static const uint32_t kReferenceTag   = 0xfffffffd;
-static const uint32_t kStringTag      = 0xfffffffc;
-static const uint32_t kSymbolTag      = 0xfffffffb;
-static const uint32_t kObjectTag      = 0xfffffffa;  // cell range start
-static const uint32_t kEmptyTag       = 0xfffffff9;
-static const uint32_t kUndefinedTag   = 0xfffffff8;
-static const uint32_t kNullTag        = 0xfffffff7;
-static const uint32_t kBoolTag        = 0xfffffff6;
-static const uint32_t kNumberTag      = 0xfffffff5;
-static const uint32_t kInt32Tag       = 0xfffffff4;
+static const uint32_t kStringTag      = 0xfffffffd;
+static const uint32_t kSymbolTag      = 0xfffffffc;
+static const uint32_t kObjectTag      = 0xfffffffb;  // cell range start
+static const uint32_t kEmptyTag       = 0xfffffffa;
+static const uint32_t kUndefinedTag   = 0xfffffff9;
+static const uint32_t kNullTag        = 0xfffffff8;
+static const uint32_t kBoolTag        = 0xfffffff7;
+static const uint32_t kNumberTag      = 0xfffffff6;
+static const uint32_t kInt32Tag       = 0xfffffff5;
 
 inline bool InPtrRange(uint32_t tag) {
   return kObjectTag <= tag;
@@ -384,10 +369,6 @@ inline bool JSLayout::IsNumber() const {
   return value_.struct_.tag_ < detail::jsval32::kNumberTag;
 }
 
-inline bool JSLayout::IsReference() const {
-  return value_.struct_.tag_ == detail::jsval32::kReferenceTag;
-}
-
 inline bool JSLayout::IsEnvironment() const {
   return value_.struct_.tag_ == detail::jsval32::kEnvironmentTag;
 }
@@ -402,11 +383,6 @@ inline bool JSLayout::IsCell() const {
 
 inline bool JSLayout::IsPrimitive() const {
   return IsNumber() || IsString() || IsBoolean() || IsSymbol();
-}
-
-inline JSReference* JSLayout::reference() const {
-  assert(IsReference());
-  return value_.struct_.payload_.reference_;
 }
 
 inline JSEnv* JSLayout::environment() const {
@@ -498,11 +474,6 @@ inline void JSLayout::set_value(JSString* val) {
 inline void JSLayout::set_value(JSSymbol* val) {
   value_.struct_.payload_.symbol_ = val;
   value_.struct_.tag_ = detail::jsval32::kSymbolTag;
-}
-
-inline void JSLayout::set_value(JSReference* ref) {
-  value_.struct_.payload_.reference_ = ref;
-  value_.struct_.tag_ = detail::jsval32::kReferenceTag;
 }
 
 inline void JSLayout::set_value(JSEnv* ref) {
@@ -854,7 +825,7 @@ inline JSVal JSVal::ToPrimitive(Context* ctx,
   if (IsObject()) {
     return object()->DefaultValue(ctx, hint, e);
   } else {
-    assert(!IsEnvironment() && !IsReference() && !IsEmpty());
+    assert(!IsEnvironment() && !IsEmpty());
     return *this;
   }
 }
@@ -902,7 +873,7 @@ inline bool JSLayout::IsCallable() const {
 }
 
 inline void JSLayout::CheckObjectCoercible(Error* e) const {
-  assert(!IsEnvironment() && !IsReference() && !IsEmpty());
+  assert(!IsEnvironment() && !IsEmpty());
   if (IsNullOrUndefined()) {
     e->Report(Error::Type, "null or undefined has no properties");
   }
