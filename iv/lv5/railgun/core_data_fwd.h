@@ -24,8 +24,6 @@ class CoreData : public GCKind<CoreData> {
   typedef std::pair<std::size_t, std::size_t> BytecodeOffsetAndLine;
   typedef std::vector<BytecodeOffsetAndLine> Lines;
 
-  typedef std::vector<breaker::NativeCode*> NativeCodes;
-
   static CoreData* New() {
     return new CoreData();
   }
