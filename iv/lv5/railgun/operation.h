@@ -140,7 +140,7 @@ class Operation {
     if (!slot.IsLoadCacheable() || symbol::IsArrayIndexSymbol(s)) {
       // bailout to generic
       instr[0] = Instruction::GetOPInstruction(generic);
-      return slot.Get(ctx_, base, e);
+      return slot.value();
     }
 
     assert(!symbol::IsArrayIndexSymbol(s));
