@@ -81,10 +81,10 @@ add_library(liblv5 STATIC
     radio/core.cc
     )
 set_target_properties(liblv5 PROPERTIES PREFIX "")
-mz_merge_static_libraries(liblv5 ALL gc-lib v8_dtoa netlib_dtoa)
+# mz_merge_static_libraries(liblv5 ALL gc-lib v8_dtoa netlib_dtoa)
 add_dependencies(liblv5 gc-lib v8_dtoa netlib_dtoa)
 
-set(LV5_LIBRARIES liblv5 ${IV_LIBRARIES})
+set(LV5_LIBRARIES liblv5 gc-lib v8_dtoa netlib_dtoa ${IV_LIBRARIES})
 
 # lv5 shell
 
